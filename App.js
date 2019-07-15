@@ -1,19 +1,38 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { View, Platform } from 'react-native';
+import { createStackNavigator, createAppContainer } from 'react-navigation';
+import { StyleSheet, SafeAreaView, AsyncStorage } from 'react-native';
 
-export default function App() {
-  return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-    </View>
-  );
+import Splash from './src/screens/Splash';
+import Login from './src/screens/Login';
+// import Home from './src/screens/Home';
+
+const AppContainer = createAppContainer(
+  createStackNavigator(
+    {
+      Splash: { screen: Splash },
+      Login: { screen: Login },
+      // Home: { screen: Home },
+    },
+    { initialRouteName: "Splash", headerMode: 'none' }
+  )
+);
+
+export default class App extends React.Component {
+
+  render() {
+    return (
+      <SafeAreaView style={styles.safeArea} behavior="padding">
+        <AppContainer/>
+      </SafeAreaView>
+    );
+  }
 }
 
+
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
+    marginTop: Platform.OS == 'android' ? 31 : 0,
   },
 });
