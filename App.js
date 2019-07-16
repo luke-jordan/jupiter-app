@@ -5,6 +5,7 @@ import { StyleSheet, SafeAreaView, AsyncStorage } from 'react-native';
 
 import Splash from './src/screens/Splash';
 import Login from './src/screens/Login';
+import OTPVerification from './src/screens/OTPVerification';
 // import Home from './src/screens/Home';
 
 const AppContainer = createAppContainer(
@@ -12,6 +13,7 @@ const AppContainer = createAppContainer(
     {
       Splash: { screen: Splash },
       Login: { screen: Login },
+      OTPVerification: { screen: OTPVerification },
       // Home: { screen: Home },
     },
     { initialRouteName: "Splash", headerMode: 'none' }

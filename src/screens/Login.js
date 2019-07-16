@@ -18,7 +18,7 @@ export default class Login extends React.Component {
   }
 
   onPressLogin = () => {
-
+    this.props.navigation.navigate('OTPVerification');
   }
 
   onPressSignUp = () => {
@@ -133,6 +133,7 @@ const styles = StyleSheet.create({
     color: Colors.PURPLE,
   },
   signUpLink: {
+    alignItems: 'center',
     flex: 1,
   },
   noAccText: {

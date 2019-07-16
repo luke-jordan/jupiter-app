@@ -3,4 +3,5 @@ export const Colors = {
   PURPLE : "#5353a1",
   LIGHT_BLUE : "#35bad5",
   GRAY : "#d8d8d8",
+  TRANSPARENT_BACKGROUND : "#212c3299",
 };
