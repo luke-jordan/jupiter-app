@@ -3,6 +3,7 @@ import { StyleSheet, View, Image, Text, AsyncStorage, ImageBackground, Modal, To
 import { Colors } from '../util/Values';
 import { Input, Button } from 'react-native-elements';
 import { LinearGradient } from 'expo-linear-gradient';
+import { NavigationUtil } from '../util/NavigationUtil';
 
 export default class OTPVerification extends React.Component {
 
@@ -12,6 +13,7 @@ export default class OTPVerification extends React.Component {
       phoneNumber: "********87",
       pin: [null, null, null, null],
       modalVisible: false,
+      loading: false,
     };
   }
 
@@ -19,8 +21,33 @@ export default class OTPVerification extends React.Component {
 
   }
 
-  onPressContinue = () => {
-
+  onPressContinue = async () => {
+    if (this.state.loading) return;
+    this.setState({loading: true});
+    let userId = this.props.navigation.getParam("userId");
+    let password = this.props.navigation.getParam("password");
+    try {
+      let result = await fetch('https://staging-auth.jupiterapp.net/login', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        method: 'POST',
+        body: JSON.stringify({
+          "phoneOrEmail": "someone@jupitersave.com",
+          "password": "holy_CHRYSALIS_hatching9531"
+        }),
+      });
+      let resultJson = await result.json();
+      //todo handle response
+      AsyncStorage.setItem('userInfo', JSON.stringify(resultJson));
+      this.setState({loading: false});
+      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', { userInfo: resultJson });
+      console.log("result:", resultJson);
+    } catch (error) {
+      console.log("error!", error);
+      this.setState({loading: false});
+    }
   }
 
   onPressResend = () => {

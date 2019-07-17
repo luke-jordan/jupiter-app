@@ -20,11 +20,15 @@ export default class Splash extends React.Component {
       'poppins-regular': require('./../../assets/poppins/Poppins-Regular.ttf'),
       'poppins-semibold': require('./../../assets/poppins/Poppins-SemiBold.ttf'),
     })
-    // if (token && token.length > 0) {
-    //   this.props.navigation.navigate('Home');
-    // } else {
+    let userInfo = await AsyncStorage.getItem('userInfo');
+    if (userInfo) {
+      userInfo = JSON.parse(userInfo);
+    }
+    if (userInfo && userInfo.token && userInfo.token.length > 0) {
+      this.props.navigation.navigate('Home');
+    } else {
       this.props.navigation.navigate('Login');
-    // }
+    }
   }
 
   render() {

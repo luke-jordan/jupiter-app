@@ -9,7 +9,8 @@ export default class Login extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-
+      userId: "",
+      password: "",
     };
   }
 
@@ -18,7 +19,10 @@ export default class Login extends React.Component {
   }
 
   onPressLogin = () => {
-    this.props.navigation.navigate('OTPVerification');
+    this.props.navigation.navigate('OTPVerification', {
+      userId: this.state.userId,
+      password: this.state.password,
+    });
   }
 
   onPressSignUp = () => {
