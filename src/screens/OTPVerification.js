@@ -77,7 +77,9 @@ export default class OTPVerification extends React.Component {
   render() {
     return (
       <View style={styles.container}>
-        <Image style={styles.headerImage} source={require('../../assets/otp_phone_illi.png')}/>
+        <View style={styles.headerImageWrapper}>
+          <Image style={styles.headerImage} source={require('../../assets/otp_phone_illi.png')}/>
+        </View>
         <View style={styles.mainContent}>
           <Text style={styles.labelStyle}>Please enter the OTP pin sent to:</Text>
           <Text style={styles.otpText}>{this.state.phoneNumber}</Text>
@@ -177,13 +179,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  headerImageWrapper: {
+    flex: 1,
+  },
   headerImage: {
-    marginBottom: 20,
-    marginTop: 40,
+    marginVertical: 20,
   },
   mainContent: {
-    flex: 2,
+    flex: 1,
     width: '90%',
+    minHeight: 100,
+    justifyContent: 'center',
   },
   inputContainerStyle: {
     borderBottomWidth: 0,
@@ -198,18 +204,18 @@ const styles = StyleSheet.create({
     borderColor: Colors.GRAY,
     width: '20%',
     marginHorizontal: 10,
-    minHeight: 70,
+    minHeight: 60,
     alignItems: 'center',
     justifyContent: 'center',
   },
   pinInputs: {
-    flex: 1,
+    marginTop: 10,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
   },
   labelStyle: {
-    fontSize: 28,
+    fontSize: 24,
     fontFamily: 'poppins-regular',
     marginVertical: 5,
     marginBottom: 10,
@@ -230,10 +236,10 @@ const styles = StyleSheet.create({
   buttonStyle: {
     borderRadius: 10,
     minHeight: 55,
-    minWidth: 320,
+    minWidth: 220,
   },
   buttonContainerStyle: {
-    flex: 1,
+    marginBottom: 20,
     justifyContent: 'center',
     width: '80%',
   },
@@ -243,12 +249,13 @@ const styles = StyleSheet.create({
   },
   signUpLink: {
     alignItems: 'center',
-    flex: 1,
+    marginBottom: 10,
   },
   noAccText: {
-    marginBottom: 5,
+    textAlign: 'center',
     fontFamily: 'poppins-regular',
-    fontSize: 16,
+    marginBottom: 5,
+    fontSize: 14,
   },
   noAccButton: {
     color: Colors.PURPLE,
@@ -276,6 +283,7 @@ const styles = StyleSheet.create({
   helpModal: {
     width: '90%',
     height: '40%',
+    minHeight: 340,
     backgroundColor: 'white',
     borderRadius: 10,
     justifyContent: 'space-around',

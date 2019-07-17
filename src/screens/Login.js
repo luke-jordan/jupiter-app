@@ -32,7 +32,9 @@ export default class Login extends React.Component {
   render() {
     return (
       <View style={styles.container}>
-        <Image style={styles.headerImage} source={require('../../assets/group_16.png')}/>
+        <View style={styles.headerImageWrapper}>
+          <Image style={styles.headerImage} source={require('../../assets/group_16.png')}/>
+        </View>
         <View style={styles.mainContent}>
           <Text style={styles.labelStyle}>Enter your ID/Phone Number or Email Address*</Text>
           <Input
@@ -86,12 +88,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  headerImageWrapper: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   headerImage: {
-    marginVertical: 80,
+    marginVertical: 20,
   },
   mainContent: {
     flex: 2,
     width: '90%',
+    minHeight: 170,
+    justifyContent: 'center',
   },
   inputContainerStyle: {
     borderBottomWidth: 0,
@@ -100,7 +109,7 @@ const styles = StyleSheet.create({
     fontFamily: 'poppins-semibold',
   },
   labelStyle: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: 'poppins-semibold',
     marginVertical: 5,
   },
@@ -121,10 +130,11 @@ const styles = StyleSheet.create({
   buttonStyle: {
     borderRadius: 10,
     minHeight: 55,
-    minWidth: 320,
+    minWidth: 220,
   },
   buttonContainerStyle: {
     flex: 1,
+    marginVertical: 10,
     justifyContent: 'center',
     width: '80%',
   },
@@ -137,8 +147,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   noAccText: {
+    textAlign: 'center',
     fontFamily: 'poppins-regular',
-    fontSize: 16,
+    fontSize: 14,
   },
   noAccButton: {
     color: Colors.PURPLE,
