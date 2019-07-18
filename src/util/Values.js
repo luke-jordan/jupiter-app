@@ -1,7 +1,13 @@
 export const Colors = {
   BLACK : "#000000",
-  PURPLE : "#5353a1",
-  LIGHT_BLUE : "#35bad5",
-  GRAY : "#d8d8d8",
-  TRANSPARENT_BACKGROUND : "#212c3299",
+  PURPLE : "#5353A1",
+  LIGHT_BLUE : "#35BAD5",
+  GRAY : "#D8D8D8",
+  DARK_GRAY : "#4D565B",
+  // MEDIUM_GRAY : "",
+  // LIGHT_GRAY : "",
+  YELLOW : "#FBC943",
+  RED : "#CE0D25",
+  BACKGROUND_GRAY : "F4F6F8",
+  TRANSPARENT_BACKGROUND : "#212C3299",
 };

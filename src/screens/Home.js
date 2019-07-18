@@ -64,9 +64,9 @@ export default class Home extends React.Component {
                 <Text style={styles.endOfMonthDesc}>Due end of month</Text>
               </View>
             </ImageBackground>
+            <NavigationBar navigation={this.props.navigation} currentTab={0} />
           </LinearGradient>
         </View>
-        <NavigationBar navigation={this.props.navigation} />
       </View>
     );
   }
