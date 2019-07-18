@@ -1,10 +1,13 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, ImageBackground } from 'react-native';
+import { StyleSheet, View, Image, Text, AsyncStorage, ImageBackground, Dimensions, Animated, Easing } from 'react-native';
 import { Colors } from '../util/Values';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Icon } from 'react-native-elements';
 import NavigationBar from '../elements/NavigationBar';
 import { NavigationUtil } from '../util/NavigationUtil';
+
+let {height, width} = Dimensions.get('window');
+const FONT_UNIT = 0.01 * width;
 
 export default class Home extends React.Component {
 
@@ -15,6 +18,7 @@ export default class Home extends React.Component {
       currency: "R",
       balance: "2,200.40",
       expectedToAdd: "100.00",
+      rotation: new Animated.Value(0),
     };
   }
 
@@ -32,9 +36,30 @@ export default class Home extends React.Component {
     this.setState({
       firstName: info.profile.personalName,
     });
+    this.rotateCircle();
+  }
+
+  rotateCircle() {
+    Animated.timing(
+      this.state.rotation,
+      {
+        toValue: 1,
+        duration: 10000,
+        easing: Easing.linear,
+      }
+    ).start(() => {
+      this.setState({
+        rotation: new Animated.Value(0),
+      });
+      this.rotateCircle();
+    });
   }
 
   render() {
+    const circleRotation = this.state.rotation.interpolate({
+      inputRange: [0, 1],
+      outputRange: ['0deg', '360deg']
+    });
     return (
       <View style={styles.container}>
         <View style={styles.gradientWrapper}>
@@ -48,6 +73,7 @@ export default class Home extends React.Component {
                 }
               </View>
               <View style={styles.mainContent}>
+                <Animated.Image style={[styles.whiteCircle, {transform: [{rotate: circleRotation}]}]} source={require('../../assets/arrow_circle.png')}/>
                 <View style={styles.balanceWrapper}>
                   <Text style={styles.currency}>{this.state.currency}</Text>
                   <Text style={styles.balance}>{this.state.balance}</Text>
@@ -108,23 +134,29 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingTop: 20,
+  },
+  whiteCircle: {
+    width: width,
+    height: width,
+    position: 'absolute',
   },
   balanceWrapper: {
     flexDirection: 'row',
   },
   balance: {
     color: 'white',
-    fontSize: 55,
+    fontSize: 13 * FONT_UNIT,
     fontFamily: 'poppins-semibold',
     lineHeight: 70,
   },
   currency: {
     color: 'white',
-    fontSize: 28,
+    fontSize: 6.5 * FONT_UNIT,
     fontFamily: 'poppins-semibold',
     textAlignVertical: 'top',
     marginRight: 2,
-    lineHeight: 36,
+    lineHeight: 40,
   },
   endOfMonthBalanceWrapper: {
     flexDirection: 'row',
@@ -133,12 +165,12 @@ const styles = StyleSheet.create({
   },
   endOfMonthBalance: {
     color: 'white',
-    fontSize: 22,
+    fontSize: 7.5 * FONT_UNIT,
     fontFamily: 'poppins-semibold',
   },
   endOfMonthDesc: {
     color: Colors.GRAY,
-    fontSize: 15,
+    fontSize: 5 * FONT_UNIT,
     fontFamily: 'poppins-regular',
   },
 });
