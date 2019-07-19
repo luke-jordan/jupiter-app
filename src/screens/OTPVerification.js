@@ -38,12 +38,16 @@ export default class OTPVerification extends React.Component {
           "password": "holy_CHRYSALIS_hatching9531"
         }),
       });
-      let resultJson = await result.json();
-      //todo handle response
-      AsyncStorage.setItem('userInfo', JSON.stringify(resultJson));
-      this.setState({loading: false});
-      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', { userInfo: resultJson });
-      console.log("result:", resultJson);
+      if (result.ok) {
+        let resultJson = await result.json();
+        //todo handle response
+        AsyncStorage.setItem('userInfo', JSON.stringify(resultJson));
+        this.setState({loading: false});
+        NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', { userInfo: resultJson });
+        console.log("result:", resultJson);
+      } else {
+        throw result;
+      }
     } catch (error) {
       console.log("error!", error);
       this.setState({loading: false});

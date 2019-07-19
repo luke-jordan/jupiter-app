@@ -1,10 +1,10 @@
 {
-  "expoServerNgrokUrl": "https://th-tqz.martin-doychev.jupiter.exp.direct",
-  "packagerNgrokUrl": "https://packager.th-tqz.martin-doychev.jupiter.exp.direct",
-  "ngrokPid": 8716,
+  "expoServerNgrokUrl": "https://th-tqz.jupitersaving.jupiter.exp.direct",
+  "packagerNgrokUrl": "https://packager.th-tqz.jupitersaving.jupiter.exp.direct",
+  "ngrokPid": 9900,
   "expoServerPort": 19000,
   "packagerPort": 19001,
-  "packagerPid": 22520,
+  "packagerPid": 20492,
   "webpackServerPort": null,
   "devToolsPort": 19002
 }

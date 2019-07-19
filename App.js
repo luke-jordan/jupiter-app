@@ -7,6 +7,7 @@ import Splash from './src/screens/Splash';
 import Login from './src/screens/Login';
 import OTPVerification from './src/screens/OTPVerification';
 import Home from './src/screens/Home';
+import AddCash from './src/screens/AddCash';
 
 const AppContainer = createAppContainer(
   createStackNavigator(
@@ -15,6 +16,7 @@ const AppContainer = createAppContainer(
       Login: { screen: Login },
       OTPVerification: { screen: OTPVerification },
       Home: { screen: Home },
+      AddCash: { screen: AddCash },
     },
     { initialRouteName: "Splash", headerMode: 'none' }
   )
@@ -35,6 +37,6 @@ export default class App extends React.Component {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    marginTop: Platform.OS == 'android' ? 31 : 0,
+    marginTop: Platform.OS == 'android' ? 30 : 0,
   },
 });

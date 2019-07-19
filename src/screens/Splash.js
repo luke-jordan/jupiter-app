@@ -2,6 +2,7 @@ import React from 'react';
 import * as Font from 'expo-font';
 import { StyleSheet, View, Image, Text, AsyncStorage } from 'react-native';
 // import { reloadIfUpdateAvailable } from '../util/ExpoPublishUtil';
+import { NavigationUtil } from '../util/NavigationUtil';
 
 export default class Splash extends React.Component {
 
@@ -25,9 +26,9 @@ export default class Splash extends React.Component {
       userInfo = JSON.parse(userInfo);
     }
     if (userInfo && userInfo.token && userInfo.token.length > 0) {
-      this.props.navigation.navigate('Home');
+      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home');
     } else {
-      this.props.navigation.navigate('Login');
+      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Login');
     }
   }
 
