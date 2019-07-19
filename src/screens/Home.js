@@ -24,6 +24,7 @@ export default class Home extends React.Component {
   }
 
   async componentDidMount() {
+    this.rotateCircle();
     let info = this.props.navigation.getParam('userInfo');
     if (!info) {
       info = await AsyncStorage.getItem('userInfo');
@@ -37,7 +38,6 @@ export default class Home extends React.Component {
     this.setState({
       firstName: info.profile.personalName,
     });
-    this.rotateCircle();
   }
 
   rotateCircle() {
