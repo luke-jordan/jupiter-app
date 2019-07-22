@@ -3,6 +3,7 @@ import * as Font from 'expo-font';
 import { StyleSheet, View, Image, Text, AsyncStorage } from 'react-native';
 // import { reloadIfUpdateAvailable } from '../util/ExpoPublishUtil';
 import { NavigationUtil } from '../util/NavigationUtil';
+import { LoggingUtil } from '../util/LoggingUtil';
 
 export default class Splash extends React.Component {
 
@@ -14,6 +15,8 @@ export default class Splash extends React.Component {
   }
 
   async componentDidMount() {
+    LoggingUtil.initialize();
+
     await Font.loadAsync({
       'poppins-bold': require('./../../assets/poppins/Poppins-Bold.ttf'),
       'poppins-light': require('./../../assets/poppins/Poppins-Light.ttf'),

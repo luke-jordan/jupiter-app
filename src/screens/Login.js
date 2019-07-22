@@ -3,6 +3,7 @@ import { StyleSheet, View, Image, Text, AsyncStorage, ImageBackground } from 're
 import { Colors } from '../util/Values';
 import { Input, Button } from 'react-native-elements';
 import { LinearGradient } from 'expo-linear-gradient';
+import { LoggingUtil } from '../util/LoggingUtil';
 
 export default class Login extends React.Component {
 
@@ -19,6 +20,7 @@ export default class Login extends React.Component {
   }
 
   onPressLogin = () => {
+    LoggingUtil.logEvent("Pressed Login");
     this.props.navigation.navigate('OTPVerification', {
       userId: this.state.userId,
       password: this.state.password,

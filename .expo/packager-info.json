@@ -1,10 +1,10 @@
 {
   "expoServerNgrokUrl": "https://th-tqz.jupitersaving.jupiter.exp.direct",
   "packagerNgrokUrl": "https://packager.th-tqz.jupitersaving.jupiter.exp.direct",
-  "ngrokPid": 9900,
+  "ngrokPid": 14976,
   "expoServerPort": 19000,
   "packagerPort": 19001,
-  "packagerPid": 20492,
+  "packagerPid": 3324,
   "webpackServerPort": null,
   "devToolsPort": 19002
 }
