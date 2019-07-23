@@ -10,8 +10,8 @@ export default class Login extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      userId: "",
-      password: "",
+      userId: "someone@jupitersave.com",
+      password: "holy_CHRYSALIS_hatching9531",
     };
   }
 
@@ -19,12 +19,39 @@ export default class Login extends React.Component {
 
   }
 
-  onPressLogin = () => {
+  onPressLogin = async () => {
     LoggingUtil.logEvent("Pressed Login");
-    this.props.navigation.navigate('OTPVerification', {
-      userId: this.state.userId,
-      password: this.state.password,
-    });
+    if (this.state.loading) return;
+    this.setState({loading: true});
+    try {
+      let result = await fetch('https://staging-auth.jupiterapp.net/otp/generate', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        method: 'POST',
+        body: JSON.stringify({
+          "phoneOrEmail": this.state.userId,
+          "type": "LOGIN",
+        }),
+      });
+      if (result.ok && result.result == "SENT") {
+        this.setState({loading: false});
+        this.props.navigation.navigate('OTPVerification', {
+          userId: this.state.userId,
+          password: this.state.password,
+        });
+      } else {
+        throw result;
+      }
+    } catch (error) {
+      console.log("error!", error);
+      this.setState({loading: false});
+      this.props.navigation.navigate('OTPVerification', {
+        userId: this.state.userId,
+        password: this.state.password,
+      }); //todo remove when backend is working
+    }
   }
 
   onPressSignUp = () => {

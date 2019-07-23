@@ -33,8 +33,8 @@ export default class NavigationBar extends React.Component {
       break;
 
       case 3:
-      // AsyncStorage.removeItem("userInfo");
-      // NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Splash');
+      AsyncStorage.removeItem("userInfo");
+      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Splash');
       break;
 
       default:

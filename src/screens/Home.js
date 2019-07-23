@@ -8,6 +8,7 @@ import { NavigationUtil } from '../util/NavigationUtil';
 
 let {height, width} = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
+const FETCH_DELAY = 30000; //millis
 
 export default class Home extends React.Component {
 
@@ -16,10 +17,11 @@ export default class Home extends React.Component {
     this.state = {
       firstName: "",
       currency: "R",
-      balance: "2,200.40",
-      expectedToAdd: "100.00",
+      balance: "0",
+      // expectedToAdd: "100.00",
       rotation: new Animated.Value(0),
       hasMessage: false,
+      loading: false,
     };
   }
 
@@ -36,8 +38,58 @@ export default class Home extends React.Component {
     }
     console.log(info);
     this.setState({
+      token: info.token,
       firstName: info.profile.personalName,
+      balance: (info.balance.currentBalance.amount / this.getDivisor(info.balance.currentBalance.unit)).toFixed(2),
+      currency: this.getCurrencySymbol(info.balance.currentBalance.currency),
     });
+    setTimeout(() => {this.fetchUpdates()}, FETCH_DELAY);
+  }
+
+  getCurrencySymbol(currencyName) {
+    //todo improve this to handle more currencies
+    switch (currencyName) {
+      case "ZAR":
+      return "R";
+
+      default:
+      return "?";
+    }
+  }
+
+  getDivisor(unit) {
+    switch(unit) {
+      case "HUNDREDTH_CENT":
+      return 10000;
+
+      default:
+      return 1;
+    }
+  }
+
+  fetchUpdates = async () => {
+    if (this.state.loading) return;
+    this.setState({loading: true});
+    try {
+      let result = await fetch('https://staging.jupiterapp.net/balance_fetch', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer_' + this.state.token,
+        },
+        method: 'GET',
+      });
+      if (result.ok) {
+        let resultJson = await result.json();
+        // console.log("result:", resultJson);
+      } else {
+        throw result;
+      }
+    } catch (error) {
+      // console.log("error!", error.status);
+      this.setState({loading: false});
+    }
+    setTimeout(() => {this.fetchUpdates()}, FETCH_DELAY);
   }
 
   rotateCircle() {

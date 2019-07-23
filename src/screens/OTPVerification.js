@@ -34,8 +34,9 @@ export default class OTPVerification extends React.Component {
         },
         method: 'POST',
         body: JSON.stringify({
-          "phoneOrEmail": "someone@jupitersave.com",
-          "password": "holy_CHRYSALIS_hatching9531"
+          "phoneOrEmail": userId,
+          "password": password,
+          // "otp": this.state.pin.join(""), //todo uncomment when backend is working
         }),
       });
       if (result.ok) {
@@ -44,13 +45,14 @@ export default class OTPVerification extends React.Component {
         AsyncStorage.setItem('userInfo', JSON.stringify(resultJson));
         this.setState({loading: false});
         NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', { userInfo: resultJson });
-        console.log("result:", resultJson);
+        // console.log("result:", resultJson);
       } else {
         throw result;
       }
     } catch (error) {
       console.log("error!", error);
       this.setState({loading: false});
+      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home'); //todo remove when backend is working
     }
   }
 
