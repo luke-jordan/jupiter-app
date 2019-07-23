@@ -24,7 +24,7 @@ export default class Login extends React.Component {
     if (this.state.loading) return;
     this.setState({loading: true});
     try {
-      let result = await fetch(Endpoints.AUTH + 'otp/generate?phoneOrEmail=' + this.state.userId + '&type=LOGIN', {
+      let result = await fetch(Endpoints.AUTH + 'otp/generate', {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
