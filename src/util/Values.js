@@ -18,6 +18,6 @@ export const Sizes = {
 };
 
 export const Endpoints = {
-  AUTH = "https://staging-auth.jupiterapp.net/",
-  CORE = "https://staging.jupiterapp.net",
+  AUTH : "https://staging-auth.jupiterapp.net/",
+  CORE : "https://staging.jupiterapp.net",
 }

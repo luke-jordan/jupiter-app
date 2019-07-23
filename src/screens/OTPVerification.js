@@ -36,7 +36,7 @@ export default class OTPVerification extends React.Component {
         body: JSON.stringify({
           "phoneOrEmail": userId,
           "password": password,
-          // "otp": this.state.pin.join(""), //todo uncomment when backend is working
+          "otp": this.state.pin.join(""),
         }),
       });
       if (result.ok) {
