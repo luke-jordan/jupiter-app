@@ -59,8 +59,23 @@ export default class Home extends React.Component {
 
   getDivisor(unit) {
     switch(unit) {
+      case "MILLIONTH_CENT":
+      return 100000000;
+
+      case "TEN_THOUSANDTH_CENT":
+      return 1000000;
+
+      case "THOUSANDTH_CENT":
+      return 100000;
+
       case "HUNDREDTH_CENT":
       return 10000;
+
+      case "WHOLE_CENT":
+      return 100;
+
+      case "WHOLE_CURRENCY":
+      return 1;
 
       default:
       return 1;
