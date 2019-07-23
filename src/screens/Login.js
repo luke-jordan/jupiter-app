@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, Image, Text, AsyncStorage, ImageBackground } from 'react-native';
-import { Colors } from '../util/Values';
+import { Colors, Endpoints } from '../util/Values';
 import { Input, Button } from 'react-native-elements';
 import { LinearGradient } from 'expo-linear-gradient';
 import { LoggingUtil } from '../util/LoggingUtil';
@@ -24,7 +24,7 @@ export default class Login extends React.Component {
     if (this.state.loading) return;
     this.setState({loading: true});
     try {
-      let result = await fetch('https://staging-auth.jupiterapp.net/otp/generate', {
+      let result = await fetch(Endpoints.AUTH + 'otp/generate', {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'

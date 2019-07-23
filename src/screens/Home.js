@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, Image, Text, AsyncStorage, ImageBackground, Dimensions, Animated, Easing } from 'react-native';
-import { Colors, Sizes } from '../util/Values';
+import { Colors, Sizes, Endpoints } from '../util/Values';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Icon } from 'react-native-elements';
 import NavigationBar from '../elements/NavigationBar';
@@ -86,7 +86,7 @@ export default class Home extends React.Component {
     if (this.state.loading) return;
     this.setState({loading: true});
     try {
-      let result = await fetch('https://staging.jupiterapp.net/balance_fetch', {
+      let result = await fetch(Endpoints.CORE + '/balance_fetch', {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',

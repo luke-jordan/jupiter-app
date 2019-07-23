@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, Image, Text, AsyncStorage, ImageBackground, Modal, TouchableOpacity } from 'react-native';
-import { Colors } from '../util/Values';
+import { Colors, Endpoints } from '../util/Values';
 import { Input, Button } from 'react-native-elements';
 import { LinearGradient } from 'expo-linear-gradient';
 import { NavigationUtil } from '../util/NavigationUtil';
@@ -27,7 +27,7 @@ export default class OTPVerification extends React.Component {
     let userId = this.props.navigation.getParam("userId");
     let password = this.props.navigation.getParam("password");
     try {
-      let result = await fetch('https://staging-auth.jupiterapp.net/login', {
+      let result = await fetch(Endpoints.AUTH + 'login', {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'

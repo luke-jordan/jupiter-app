@@ -15,4 +15,9 @@ export const Colors = {
 export const Sizes = {
   VISIBLE_NAVIGATION_BAR_HEIGHT : 50,
   NAVIGATION_BAR_HEIGHT : 80,
+};
+
+export const Endpoints = {
+  AUTH = "https://staging-auth.jupiterapp.net/",
+  CORE = "https://staging.jupiterapp.net",
 }
