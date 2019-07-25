@@ -44,8 +44,6 @@ export default class Splash extends React.Component {
   }
 }
 
-// </Mutation>
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,

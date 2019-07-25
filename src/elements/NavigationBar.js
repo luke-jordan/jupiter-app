@@ -34,6 +34,7 @@ export default class NavigationBar extends React.Component {
 
       case 3:
       AsyncStorage.removeItem("userInfo");
+      AsyncStorage.removeItem("lastShownBalance");
       NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Splash');
       break;
 
@@ -73,8 +74,6 @@ export default class NavigationBar extends React.Component {
     );
   }
 }
-
-// </Mutation>
 
 const styles = StyleSheet.create({
   container: {

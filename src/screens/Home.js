@@ -1,14 +1,28 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, ImageBackground, Dimensions, Animated, Easing } from 'react-native';
+import { StyleSheet, View, Image, Text, AsyncStorage, ImageBackground, Dimensions, Animated, Easing, YellowBox } from 'react-native';
 import { Colors, Sizes, Endpoints } from '../util/Values';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Icon } from 'react-native-elements';
 import NavigationBar from '../elements/NavigationBar';
 import { NavigationUtil } from '../util/NavigationUtil';
+import AnimatedNumber from '../elements/AnimatedNumber';
+import moment from 'moment';
+
+/*
+This is here because currently long timers are not purely supported on Android.
+We should continue to follow the support threads on this issue (visible in the error if you remove this ignore block)
+*/
+YellowBox.ignoreWarnings([
+  'Setting a timer',
+]);
 
 let {height, width} = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
-const FETCH_DELAY = 30000; //millis
+const FETCH_DELAY = 15 * 60 * 1000; //15 minutes * 60 seconds * 1000 millis
+
+const DEFAULT_BALANCE_ANIMATION_INTERVAL = 14;
+const DEFAULT_BALANCE_ANIMATION_DURATION = 5000;
+const DEFAULT_BALANCE_ANIMATION_STEP_SIZE = 50;
 
 export default class Home extends React.Component {
 
@@ -17,16 +31,28 @@ export default class Home extends React.Component {
     this.state = {
       firstName: "",
       currency: "R",
-      balance: "0",
+      balance: 0,
       // expectedToAdd: "100.00",
       rotation: new Animated.Value(0),
       hasMessage: false,
       loading: false,
+      balanceAnimationInterval: DEFAULT_BALANCE_ANIMATION_INTERVAL,
+      balanceAnimationStepSize: DEFAULT_BALANCE_ANIMATION_STEP_SIZE,
+      balanceAnimationDuration: DEFAULT_BALANCE_ANIMATION_DURATION,
+      initialBalanceAnimationStarted: false,
+      secondaryBalanceAnimationStarted: false,
     };
+  }
+
+  async componentWillMount() {
+    this.showInitialData();
   }
 
   async componentDidMount() {
     this.rotateCircle();
+  }
+
+  async showInitialData() {
     let info = this.props.navigation.getParam('userInfo');
     if (!info) {
       info = await AsyncStorage.getItem('userInfo');
@@ -36,14 +62,52 @@ export default class Home extends React.Component {
         info = JSON.parse(info);
       }
     }
-    console.log(info);
-    this.setState({
+    await this.setState({
       token: info.token,
       firstName: info.profile.personalName,
-      balance: (info.balance.currentBalance.amount / this.getDivisor(info.balance.currentBalance.unit)).toFixed(2),
-      currency: this.getCurrencySymbol(info.balance.currentBalance.currency),
     });
+    this.animateBalance(info.balance);
+    this.fetchUpdates();
+  }
+
+  fetchUpdates = async () => {
+    if (this.state.loading) return;
+    this.setState({loading: true});
+    try {
+      let result = await fetch(Endpoints.CORE + 'balance', {
+        headers: {
+          'Authorization': 'Bearer ' + this.state.token,
+        },
+        method: 'GET',
+      });
+      if (result.ok) {
+        let resultJson = await result.json();
+        this.setState({
+          endOfDayBalance: resultJson.balanceEndOfToday.amount
+        });
+      } else {
+        throw result;
+      }
+    } catch (error) {
+      console.log("error!", error.status);
+      this.setState({loading: false});
+    }
     setTimeout(() => {this.fetchUpdates()}, FETCH_DELAY);
+  }
+
+  async animateBalance(balance) {
+    let lastShownBalance = await AsyncStorage.getItem('lastShownBalance');
+    if (lastShownBalance) lastShownBalance = JSON.parse(lastShownBalance);
+    else lastShownBalance = 0;
+    this.setState({
+      lastShownBalance: lastShownBalance,
+      balance: balance.currentBalance.amount,
+      endOfDayBalance: balance.balanceEndOfToday.amount,
+      unit: balance.currentBalance.unit,
+      currency: this.getCurrencySymbol(balance.currentBalance.currency),
+      balanceAnimationStepSize: Math.abs(balance.currentBalance.amount - lastShownBalance) / 50,
+      initialBalanceAnimationStarted: true,
+    });
   }
 
   getCurrencySymbol(currencyName) {
@@ -80,31 +144,6 @@ export default class Home extends React.Component {
       default:
       return 1;
     }
-  }
-
-  fetchUpdates = async () => {
-    if (this.state.loading) return;
-    this.setState({loading: true});
-    try {
-      let result = await fetch(Endpoints.CORE + '/balance_fetch', {
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': 'Bearer_' + this.state.token,
-        },
-        method: 'GET',
-      });
-      if (result.ok) {
-        let resultJson = await result.json();
-        // console.log("result:", resultJson);
-      } else {
-        throw result;
-      }
-    } catch (error) {
-      // console.log("error!", error.status);
-      this.setState({loading: false});
-    }
-    setTimeout(() => {this.fetchUpdates()}, FETCH_DELAY);
   }
 
   rotateCircle() {
@@ -144,6 +183,95 @@ export default class Home extends React.Component {
     );
   }
 
+  async playNextAnimationPhase() {
+    console.log("playing next animation phase");
+    let currentBalance = this.state.balance; //get balance as of right now
+    let endOfDayBalance = this.state.endOfDayBalance; //get end of day balance
+
+    if (currentBalance < endOfDayBalance) { //only keep going if we actually need to animate anything
+      let timeToEndOfDay = moment().endOf('day').valueOf() - moment().valueOf(); //get the time left until end of day in millis
+      // let timeToEndOfDay = moment().add(30, 'seconds').valueOf() - moment().valueOf(); //testing for 120 seconds
+      let balanceDiff = endOfDayBalance - currentBalance; //get the amount to be earned by the end of day in "huge numbers"
+      let balanceDiffInCents = balanceDiff / this.getDivisor(this.state.unit) * 100; //get the amount to be earned by the end of day in cents
+
+      let steps = balanceDiffInCents; //set a default amount of steps, equal to the amount of cents we want to increase
+      let stepSize = 0.01; //set a default count by to 1 cent per step
+
+      //if there are too many steps, make them go twice as fast until we reach a good speed
+      //this way, if the amount to increase is way too big, we will be moving not by a cent every millisecond, but 2 cents per milli, etc.
+      while (steps > timeToEndOfDay) {
+        steps /= 2;
+        stepSize *= 2;
+      }
+
+      this.setState({
+        balance: this.state.endOfDayBalance,
+        balanceAnimationStepSize: stepSize * this.getDivisor(this.state.unit),
+        balanceAnimationDuration: timeToEndOfDay,
+        secondaryBalanceAnimationStarted: true,
+        initialBalanceAnimationFinished: true,
+      });
+    }
+  }
+
+  async onFinishBalanceAnimation(isInitial) {
+    AsyncStorage.setItem('lastShownBalance', JSON.stringify(this.state.balance));
+    this.setState({
+      lastShownBalance: this.state.balance,
+    });
+    if (isInitial) {
+      setTimeout(() => {
+        this.playNextAnimationPhase();
+      }, 300);
+    } else {
+      // this.setState({
+      //   secondaryBalanceAnimationStarted: false
+      // });
+      // this.fetchEndOfDayUpdate();
+    }
+  }
+
+  fetchEndOfDayUpdate = async () => {
+    console.log("fetching end of day");
+    try {
+      let result = await fetch(Endpoints.CORE + 'balance', {
+        headers: {
+          'Authorization': 'Bearer ' + this.state.token,
+        },
+        method: 'GET',
+      });
+      if (result.ok) {
+        let resultJson = await result.json();
+        this.setState({
+          secondaryBalanceAnimationStarted: true,
+          endOfDayBalance: resultJson.balanceEndOfToday.amount
+        });
+        this.playNextAnimationPhase();
+      } else {
+        throw result;
+      }
+    } catch (error) {
+      console.log("error!", error.status);
+      this.setState({loading: false});
+    }
+  }
+
+  async onProgressBalanceAnimation(value) {
+    this.setState({
+      lastShownBalance: this.state.balance,
+    });
+    if (!this.state.lastSetStorage || moment().valueOf() - this.state.lastSetStorage.valueOf() > 15000) { //if the last time we saved it was more than 15 seconds ago, save it again
+      AsyncStorage.setItem('lastShownBalance', JSON.stringify(value));
+      this.setState({
+        lastSetStorage: moment(),
+      });
+    }
+  }
+
+  getFormattedValue(value) {
+    return (value / this.getDivisor(this.state.unit)).toFixed(2);
+  }
+
   render() {
     const circleRotation = this.state.rotation.interpolate({
       inputRange: [0, 1],
@@ -171,10 +299,37 @@ export default class Home extends React.Component {
                 */}
                 <Animated.Image style={[styles.whiteCircle, {transform: [{rotate: circleRotation}]}]} source={require('../../assets/arrow_circle.png')}/>
               </View>
-              <View style={styles.balanceWrapper}>
-                <Text style={styles.currency}>{this.state.currency}</Text>
-                <Text style={styles.balance}>{this.state.balance}</Text>
-              </View>
+              {
+                this.state.initialBalanceAnimationStarted ?
+                <View style={styles.balanceWrapper}>
+                  <Text style={styles.currency}>{this.state.currency}</Text>
+                  {
+                    this.state.initialBalanceAnimationStarted && !this.state.initialBalanceAnimationFinished ?
+                    <AnimatedNumber style={styles.balance}
+                      initial={this.state.lastShownBalance} target={this.state.balance}
+                      formatting={(value) => this.getFormattedValue(value)}
+                      stepSize={this.state.balanceAnimationStepSize}
+                      duration={this.state.balanceAnimationDuration}
+                      onAnimationProgress={(value) => {this.onProgressBalanceAnimation(value)}}
+                      onAnimationFinished={() => {this.onFinishBalanceAnimation(true)}}
+                      />
+                    : null
+                  }
+                  {
+                    this.state.initialBalanceAnimationFinished && this.state.secondaryBalanceAnimationStarted ?
+                    <AnimatedNumber style={styles.balance}
+                      initial={this.state.lastShownBalance} target={this.state.balance}
+                      formatting={(value) => this.getFormattedValue(value)}
+                      stepSize={this.state.balanceAnimationStepSize}
+                      duration={this.state.balanceAnimationDuration}
+                      onAnimationProgress={(value) => {this.onProgressBalanceAnimation(value)}}
+                      onAnimationFinished={() => {this.onFinishBalanceAnimation(false)}}
+                      />
+                    : null
+                  }
+                </View>
+                : null
+              }
               {/*<View style={styles.endOfMonthBalanceWrapper}>
                 <Text style={styles.endOfMonthBalance}>+R{this.state.expectedToAdd}</Text>
                   <Icon
@@ -198,8 +353,6 @@ export default class Home extends React.Component {
     );
   }
 }
-
-// </Mutation>
 
 const styles = StyleSheet.create({
   container: {

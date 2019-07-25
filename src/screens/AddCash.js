@@ -88,8 +88,6 @@ export default class AddCash extends React.Component {
   }
 }
 
-// </Mutation>
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
