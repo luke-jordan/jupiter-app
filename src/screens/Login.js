@@ -23,31 +23,31 @@ export default class Login extends React.Component {
     LoggingUtil.logEvent("Pressed Login");
     if (this.state.loading) return;
     this.setState({loading: true});
-    // try {
-    //   let result = await fetch(Endpoints.AUTH + 'otp/generate', {
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //       'Accept': 'application/json'
-    //     },
-    //     method: 'POST',
-    //     body: JSON.stringify({
-    //       "phoneOrEmail": this.state.userId,
-    //       "type": "LOGIN",
-    //     }),
-    //   });
-    //   if (result.ok) {
-    //     this.setState({loading: false});
+    try {
+      let result = await fetch(Endpoints.AUTH + 'otp/generate', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        method: 'POST',
+        body: JSON.stringify({
+          "phoneOrEmail": this.state.userId,
+          "type": "LOGIN",
+        }),
+      });
+      if (result.ok) {
+        this.setState({loading: false});
         this.props.navigation.navigate('OTPVerification', {
           userId: this.state.userId,
           password: this.state.password,
         });
-    //   } else {
-    //     throw result;
-    //   }
-    // } catch (error) {
-    //   console.log("error!", error);
-    //   this.setState({loading: false});
-    // }
+      } else {
+        throw result;
+      }
+    } catch (error) {
+      console.log("error!", error);
+      this.setState({loading: false});
+    }
   }
 
   onPressSignUp = () => {

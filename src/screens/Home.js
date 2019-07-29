@@ -7,6 +7,7 @@ import NavigationBar from '../elements/NavigationBar';
 import { NavigationUtil } from '../util/NavigationUtil';
 import AnimatedNumber from '../elements/AnimatedNumber';
 import moment from 'moment';
+import { FlingGestureHandler, Directions, State } from 'react-native-gesture-handler';
 
 /*
 This is here because currently long timers are not purely supported on Android.
@@ -19,6 +20,8 @@ YellowBox.ignoreWarnings([
 let {height, width} = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 const FETCH_DELAY = 15 * 60 * 1000; //15 minutes * 60 seconds * 1000 millis
+
+const CIRCLE_ROTATION_DURATION = 6000;
 
 const DEFAULT_BALANCE_ANIMATION_INTERVAL = 14;
 const DEFAULT_BALANCE_ANIMATION_DURATION = 5000;
@@ -34,7 +37,7 @@ export default class Home extends React.Component {
       balance: 0,
       // expectedToAdd: "100.00",
       rotation: new Animated.Value(0),
-      hasMessage: false,
+      hasMessage: true,
       loading: false,
       balanceAnimationInterval: DEFAULT_BALANCE_ANIMATION_INTERVAL,
       balanceAnimationStepSize: DEFAULT_BALANCE_ANIMATION_STEP_SIZE,
@@ -151,7 +154,7 @@ export default class Home extends React.Component {
       this.state.rotation,
       {
         toValue: 1,
-        duration: 10000,
+        duration: CIRCLE_ROTATION_DURATION,
         easing: Easing.linear,
       }
     ).start(() => {
@@ -162,24 +165,38 @@ export default class Home extends React.Component {
     });
   }
 
+  onFlingMessage(event) {
+    this.setState({
+      hasMessage: false,
+    });
+  }
+
   renderMessageCard() {
     return (
-      <View style={styles.messageCard}>
-        <View style={styles.messageCardHeader}>
-          <Image style={styles.messageCardIcon} source={require('../../assets/notification.png')}/>
-          <Text style={styles.messageCardTitle}>Watch your savings grow</Text>
-        </View>
-        <Text style={styles.messageCardText}>Since July 2019 you have earned <Text style={styles.messageCardBold}>R40.57</Text> in interest! Keep adding cash to your Pluto account to earn more each month for nothing.</Text>
-          <View style={styles.messageCardButton}>
-            <Text style={styles.messageCardButtonText}>SEE HISTORY</Text>
-              <Icon
-                name='chevron-right'
-                type='evilicon'
-                size={30}
-                color={Colors.PURPLE}
-              />
-          </View>
-      </View>
+      <FlingGestureHandler
+            direction={Directions.DOWN}
+            onHandlerStateChange={({ nativeEvent }) => {
+              if (nativeEvent.state === State.ACTIVE) {
+                this.onFlingMessage(nativeEvent);
+              }
+            }}>
+            <View style={styles.messageCard}>
+              <View style={styles.messageCardHeader}>
+                <Image style={styles.messageCardIcon} source={require('../../assets/notification.png')}/>
+                <Text style={styles.messageCardTitle}>Watch your savings grow</Text>
+              </View>
+              <Text style={styles.messageCardText}>Since July 2019 you have earned <Text style={styles.messageCardBold}>R40.57</Text> in interest! Keep adding cash to your Pluto account to earn more each month for nothing.</Text>
+                <View style={styles.messageCardButton}>
+                  <Text style={styles.messageCardButtonText}>SEE HISTORY</Text>
+                    <Icon
+                      name='chevron-right'
+                      type='evilicon'
+                      size={30}
+                      color={Colors.PURPLE}
+                    />
+                </View>
+            </View>
+        </FlingGestureHandler>
     );
   }
 
