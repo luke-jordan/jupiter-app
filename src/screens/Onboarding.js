@@ -1,11 +1,14 @@
 import React from 'react';
 import * as Font from 'expo-font';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Dimensions } from 'react-native';
 // import { reloadIfUpdateAvailable } from '../util/ExpoPublishUtil';
 import { Button, Icon } from 'react-native-elements';
 import { Colors } from '../util/Values';
 import { NavigationUtil } from '../util/NavigationUtil';
 import Swiper from 'react-native-swiper';
+
+let {height, width} = Dimensions.get('window');
+const FONT_UNIT = 0.01 * width;
 
 export default class Onboarding extends React.Component {
 
@@ -143,17 +146,18 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
   },
   tabImage: {
-    marginBottom: 50,
+    height: '40%',
+    marginBottom: 30,
   },
   tabTitle: {
     fontFamily: 'poppins-semibold',
-    fontSize: 33,
-    lineHeight: 45,
+    fontSize: 8 * FONT_UNIT,
+    lineHeight: 10 * FONT_UNIT,
     marginBottom: 5,
   },
   tabDescription: {
     fontFamily: 'poppins-regular',
-    fontSize: 15,
+    fontSize: 4 * FONT_UNIT,
   },
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
@@ -175,12 +179,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 40,
+    marginVertical: 20,
     marginLeft: 5,
   },
   skipButtonText: {
     fontFamily: 'poppins-semibold',
-    fontSize: 15,
+    fontSize: 4.8 * FONT_UNIT,
     color: Colors.PURPLE,
     marginRight: -5,
   },
