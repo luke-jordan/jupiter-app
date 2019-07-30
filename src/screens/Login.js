@@ -82,7 +82,7 @@ export default class Login extends React.Component {
             inputStyle={styles.inputStyle}
             containerStyle={styles.containerStyle}
           />
-        <Text style={styles.textAsButton}>
+          <Text style={styles.textAsButton}>
             Forgot Password?
           </Text>
         </View>

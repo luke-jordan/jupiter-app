@@ -44,7 +44,7 @@ export default class Splash extends React.Component {
     if (userInfo && userInfo.token && userInfo.token.length > 0) {
       NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home');
     } else {
-      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Login');
+      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Onboarding');
     }
   }
 
