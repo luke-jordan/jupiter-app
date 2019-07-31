@@ -27,7 +27,7 @@ export default class Onboarding extends React.Component {
     if (this.swiperRef && this.state.currentTab < 3) {
       this.swiperRef.scrollBy(1, true);
     } else if (this.state.currentTab == 3) {
-      this.props.navigation.navigate('Login');
+      this.props.navigation.navigate('LimitedUsers');
     }
   }
 
@@ -38,7 +38,7 @@ export default class Onboarding extends React.Component {
   }
 
   onPressSkip = async () => {
-    this.props.navigation.navigate('Login');
+    this.props.navigation.navigate('LimitedUsers');
   }
 
   getTabTitle = (index) => {

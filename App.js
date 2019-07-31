@@ -9,6 +9,8 @@ import OTPVerification from './src/screens/OTPVerification';
 import Home from './src/screens/Home';
 import AddCash from './src/screens/AddCash';
 import Onboarding from './src/screens/Onboarding';
+import LimitedUsers from './src/screens/LimitedUsers';
+import ThankYou from './src/screens/ThankYou';
 
 const AppContainer = createAppContainer(
   createStackNavigator(
@@ -19,6 +21,8 @@ const AppContainer = createAppContainer(
       Home: { screen: Home },
       AddCash: { screen: AddCash },
       Onboarding: { screen: Onboarding },
+      LimitedUsers: { screen: LimitedUsers },
+      ThankYou: { screen: ThankYou },
     },
     { initialRouteName: "Splash", headerMode: 'none' }
   )

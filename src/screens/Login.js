@@ -55,7 +55,7 @@ export default class Login extends React.Component {
   }
 
   onPressWhatIs = () => {
-
+    this.props.navigation.navigate('Onboarding');
   }
 
   render() {
