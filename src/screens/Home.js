@@ -99,9 +99,10 @@ export default class Home extends React.Component {
   }
 
   async animateBalance(balance) {
-    let lastShownBalance = await AsyncStorage.getItem('lastShownBalance');
-    if (lastShownBalance) lastShownBalance = JSON.parse(lastShownBalance);
-    else lastShownBalance = 0;
+    // let lastShownBalance = await AsyncStorage.getItem('lastShownBalance');
+    // if (lastShownBalance) lastShownBalance = JSON.parse(lastShownBalance);
+    // else lastShownBalance = 0;
+    let lastShownBalance = 0;
     this.setState({
       lastShownBalance: lastShownBalance,
       balance: balance.currentBalance.amount,

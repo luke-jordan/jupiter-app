@@ -5,6 +5,10 @@ import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Endpoints } from '../util/Values';
 
+/*
+This component is not actually used in the app, but serves as a template for creating other screens.
+*/
+
 export default class Template extends React.Component {
 
   constructor(props) {

@@ -36,7 +36,7 @@ export default class Splash extends React.Component {
     fetch(Endpoints.CORE + 'warmup');
 
     setTimeout(() => {
-      this.navigate();
+      this.navigate(userInfo);
     }, SPLASH_TIMEOUT);
   }
 
