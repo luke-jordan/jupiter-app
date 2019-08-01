@@ -31,6 +31,7 @@ export default class NavigationBar extends React.Component {
       break;
 
       case 1:
+      this.props.navigation.navigate('Friends');
       break;
 
       case 2:

@@ -52,7 +52,7 @@ export default class OTPVerification extends React.Component {
     } catch (error) {
       console.log("error!", error);
       this.setState({loading: false});
-      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home'); //todo remove when backend is working
+      // NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home'); //todo remove when backend is working
     }
   }
 

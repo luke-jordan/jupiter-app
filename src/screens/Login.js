@@ -4,6 +4,7 @@ import { Colors, Endpoints } from '../util/Values';
 import { Input, Button } from 'react-native-elements';
 import { LinearGradient } from 'expo-linear-gradient';
 import { LoggingUtil } from '../util/LoggingUtil';
+import { NavigationUtil } from '../util/NavigationUtil';
 
 export default class Login extends React.Component {
 
@@ -51,7 +52,7 @@ export default class Login extends React.Component {
   }
 
   onPressSignUp = () => {
-
+    NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home'); //todo remove when backend is working
   }
 
   onPressWhatIs = () => {

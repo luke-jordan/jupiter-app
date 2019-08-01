@@ -12,6 +12,7 @@ import Onboarding from './src/screens/Onboarding';
 import LimitedUsers from './src/screens/LimitedUsers';
 import ThankYou from './src/screens/ThankYou';
 import Boosts from './src/screens/Boosts';
+import Friends from './src/screens/Friends';
 
 const AppContainer = createAppContainer(
   createStackNavigator(
@@ -25,6 +26,7 @@ const AppContainer = createAppContainer(
       LimitedUsers: { screen: LimitedUsers },
       ThankYou: { screen: ThankYou },
       Boosts: { screen: Boosts },
+      Friends: { screen: Friends },
     },
     { initialRouteName: "Splash", headerMode: 'none' }
   )
