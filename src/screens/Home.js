@@ -56,14 +56,25 @@ export default class Home extends React.Component {
 
   async componentDidMount() {
     this.rotateCircle();
+    this.checkIfUpdateNeeded();
+  }
 
-    // Version Check - once we have a Play Store / App Store version, we can start using this
-    // VersionCheck.getCountry().then(country => console.log(country));
-    // console.log(VersionCheck.getPackageName());
-    // console.log(VersionCheck.getCurrentBuildNumber());
-    // console.log(VersionCheck.getCurrentVersion());
-    // VersionCheck.getLatestVersion().then(latestVersion => {console.log(latestVersion);});
-    // this.showUpdateModal(true); //run this to show an update modal - param: update required
+  async checkIfUpdateNeeded() {
+    let localVersion = VersionCheck.getCurrentVersion();
+    let remoteVersion = await VersionCheck.getLatestVersion();
+    if (this.needsUpdate(localVersion, remoteVersion)) {
+      this.showUpdateModal(true);
+    }
+  }
+
+  needsUpdate(localVersion, remoteVersion) {
+    let localParts = localVersion.split('.');
+    if (!remoteVersion) return false;
+    let remoteParts = remoteVersion.split('.');
+    if (localParts[0] < remoteParts[0]) return true;
+    if (localParts[1] < remoteParts[1]) return true;
+    if (localParts[2] < remoteParts[2]) return true;
+    return false;
   }
 
   async showUpdateModal(required){
@@ -233,7 +244,6 @@ export default class Home extends React.Component {
   }
 
   async playNextAnimationPhase() {
-    console.log("playing next animation phase");
     let currentBalance = this.state.balance; //get balance as of right now
     let endOfDayBalance = this.state.endOfDayBalance; //get end of day balance
 
@@ -435,6 +445,10 @@ export default class Home extends React.Component {
             <View style={styles.helpModal}>
               <Text style={styles.helpTitle}>New Features!</Text>
               <Text style={styles.helpContent}>
+                We've made some changes to the app. Please update to activate the new features.
+              </Text>
+              {/*
+              <Text style={styles.helpContent}>
                 Grow your savings even more with these new features on Jupiter:
               </Text>
               <View style={styles.updateFeatureItem}>
@@ -459,6 +473,7 @@ export default class Home extends React.Component {
                   <Text style={styles.updateFeatureItemBold}>SAVING HISTORY</Text> - Keep track of all your savings, with a full history view.
                 </Text>
               </View>
+              */}
               <View style={styles.modalBottomLine}>
                 <Text style={styles.helpLink} onPress={this.onCloseModal}>Later</Text>
                 <Button
