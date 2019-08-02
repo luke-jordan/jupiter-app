@@ -14,7 +14,9 @@ export default class LimitedUsers extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      userInput: "",
       notifyMode: false,
+      hasError: false,
     };
   }
 
@@ -24,7 +26,9 @@ export default class LimitedUsers extends React.Component {
 
   onPressNotifyMe = () => {
     this.setState({
+      userInput: "",
       notifyMode: !this.state.notifyMode,
+      hasError: false,
     });
   }
 
@@ -32,15 +36,52 @@ export default class LimitedUsers extends React.Component {
     this.props.navigation.navigate('Login');
   }
 
-  onPressContinue = () => {
+  onPressContinue = async () => {
     if (this.state.notifyMode) {
       //TODO send request to subscribe
       this.props.navigation.navigate('ThankYou');
     } else {
-      //TODO send request to check for correctness
-      // this.props.navigation.navigate('CreateAccount');
-      this.props.navigation.navigate('ThankYou');
+      this.verifyReferral();
     }
+  }
+
+  verifyReferral = async () => {
+    if (this.state.loading) return;
+    this.setState({loading: true});
+    try {
+      let result = await fetch(Endpoints.AUTH + 'referral/verify', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        method: 'POST',
+        body: JSON.stringify({
+          "referralCode": this.state.userInput,
+        }),
+      });
+      if (result.ok) {
+        let resultJson = await result.json();
+        this.setState({loading: false});
+        if (resultJson.result.includes("CODE_IS_ACTIVE")) {
+          // this.props.navigation.navigate('CreateAccount');
+          this.props.navigation.navigate('Login');
+        } else {
+          this.showError();
+        }
+      } else {
+        throw result;
+      }
+    } catch (error) {
+      console.log("error!", error);
+      this.showError();
+    }
+  }
+
+  showError() {
+    this.setState({
+      loading: false,
+      hasError: true,
+    });
   }
 
   render() {
@@ -56,12 +97,17 @@ export default class LimitedUsers extends React.Component {
         <View style={styles.inputWrapper}>
           <Text style={styles.labelStyle}>{this.state.notifyMode ? "Enter your email address to be notified*" : "Enter your referral code*"}</Text>
           <Input
-            value={this.state.email}
-            onChangeText={(text) => this.setState({email: text})}
+            value={this.state.userInput}
+            onChangeText={(text) => this.setState({userInput: text, hasError: false})}
             inputContainerStyle={styles.inputContainerStyle}
-            inputStyle={styles.inputStyle}
+            inputStyle={[styles.inputStyle, this.state.hasError ? styles.redText : null]}
             containerStyle={styles.containerStyle}
           />
+          {
+            this.state.hasError ?
+            <Text style={styles.errorMessage}>Please enter a valid referral code</Text>
+            : null
+          }
         </View>
         <View style={styles.nextButtonWrapper}>
           <Button
@@ -127,6 +173,16 @@ const styles = StyleSheet.create({
   },
   inputStyle: {
     fontFamily: 'poppins-semibold',
+  },
+  redText: {
+    color: Colors.RED,
+  },
+  errorMessage: {
+    fontFamily: 'poppins-regular',
+    color: Colors.RED,
+    fontSize: 12,
+    marginTop: -15, //this is valid because of the exact alignment of other elements - do not reuse in other components
+    marginBottom: 20,
   },
   labelStyle: {
     fontSize: 12,

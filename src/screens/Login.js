@@ -52,7 +52,7 @@ export default class Login extends React.Component {
   }
 
   onPressSignUp = () => {
-    NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home'); //todo remove when backend is working
+    // NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home');
   }
 
   onPressWhatIs = () => {
@@ -100,9 +100,11 @@ export default class Login extends React.Component {
             end: { x: 1, y: 0.5 },
           }} />
         <View style={styles.signUpLink}>
+          {/*
           <Text style={styles.noAccText}>Don't have an account yet?
             <Text style={styles.noAccButton} onPress={this.onPressSignUp}> Sign up</Text>
           </Text>
+          */}
         </View>
         <ImageBackground source={require('../../assets/wave_pattern.png')} style={styles.bottomView}>
           <Text style={styles.bottomText} onPress={this.onPressWhatIs}>WHAT IS JUPITER?</Text>

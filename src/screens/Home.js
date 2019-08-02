@@ -1,13 +1,14 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, ImageBackground, Dimensions, Animated, Easing, YellowBox } from 'react-native';
+import { StyleSheet, View, Image, Text, AsyncStorage, ImageBackground, Dimensions, Animated, Easing, YellowBox, Modal, TouchableOpacity } from 'react-native';
 import { Colors, Sizes, Endpoints } from '../util/Values';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Icon } from 'react-native-elements';
+import { Icon, Button } from 'react-native-elements';
 import NavigationBar from '../elements/NavigationBar';
 import { NavigationUtil } from '../util/NavigationUtil';
 import AnimatedNumber from '../elements/AnimatedNumber';
 import moment from 'moment';
 import { FlingGestureHandler, Directions, State } from 'react-native-gesture-handler';
+import VersionCheck from 'react-native-version-check-expo';
 
 /*
 This is here because currently long timers are not purely supported on Android.
@@ -44,6 +45,8 @@ export default class Home extends React.Component {
       balanceAnimationDuration: DEFAULT_BALANCE_ANIMATION_DURATION,
       initialBalanceAnimationStarted: false,
       secondaryBalanceAnimationStarted: false,
+      updateRequiredModalVisible: false,
+      updateAvailableModalVisible: false,
     };
   }
 
@@ -53,6 +56,34 @@ export default class Home extends React.Component {
 
   async componentDidMount() {
     this.rotateCircle();
+
+    // Version Check - once we have a Play Store / App Store version, we can start using this
+    // VersionCheck.getCountry().then(country => console.log(country));
+    // console.log(VersionCheck.getPackageName());
+    // console.log(VersionCheck.getCurrentBuildNumber());
+    // console.log(VersionCheck.getCurrentVersion());
+    // VersionCheck.getLatestVersion().then(latestVersion => {console.log(latestVersion);});
+    // this.showUpdateModal(true); //run this to show an update modal - param: update required
+  }
+
+  async showUpdateModal(required){
+    if (required) {
+      this.setState({updateRequiredModalVisible: true});
+    } else {
+      this.setState({updateAvailableModalVisible: true});
+    }
+  }
+
+  onCloseModal = () => {
+    this.setState({
+      updateRequiredModalVisible: false,
+      updateAvailableModalVisible: false,
+    });
+  }
+
+  onPressUpdate = () => {
+    //TODO handle update
+    this.onCloseModal();
   }
 
   async showInitialData() {
@@ -367,6 +398,87 @@ export default class Home extends React.Component {
             <NavigationBar navigation={this.props.navigation} currentTab={0} />
           </LinearGradient>
         </View>
+
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={this.state.updateRequiredModalVisible}>
+          <View style={styles.modalWrapper}>
+            <View style={styles.helpModal}>
+              <Text style={styles.helpTitle}>Update Required</Text>
+              <Text style={styles.helpContent}>
+                We've made some big changes to the app,(more than usual). Please update to activate the new features. This version will no longer be supported in the future.
+              </Text>
+              <View style={styles.modalBottomRight}>
+                <Button
+                  title="UPDATE NOW"
+                  titleStyle={styles.buttonTitleStyle}
+                  buttonStyle={styles.buttonStyle}
+                  containerStyle={styles.buttonContainerStyle}
+                  onPress={this.onPressUpdate}
+                  linearGradientProps={{
+                    colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+                    start: { x: 0, y: 0.5 },
+                    end: { x: 1, y: 0.5 },
+                  }}/>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={this.state.updateAvailableModalVisible}
+          onRequestClose={this.onCloseModal}>
+          <View style={styles.modalWrapper}>
+            <View style={styles.helpModal}>
+              <Text style={styles.helpTitle}>New Features!</Text>
+              <Text style={styles.helpContent}>
+                Grow your savings even more with these new features on Jupiter:
+              </Text>
+              <View style={styles.updateFeatureItem}>
+                <Icon
+                  name='check'
+                  type='feather'
+                  size={28}
+                  color={Colors.PURPLE}
+                />
+                <Text style={styles.updateFeatureItemText}>
+                  <Text style={styles.updateFeatureItemBold}>BOOSTS</Text> - Earn rewards to boost your savings even more!
+                </Text>
+              </View>
+              <View style={styles.updateFeatureItem}>
+                <Icon
+                  name='check'
+                  type='feather'
+                  size={28}
+                  color={Colors.PURPLE}
+                />
+                <Text style={styles.updateFeatureItemText}>
+                  <Text style={styles.updateFeatureItemBold}>SAVING HISTORY</Text> - Keep track of all your savings, with a full history view.
+                </Text>
+              </View>
+              <View style={styles.modalBottomLine}>
+                <Text style={styles.helpLink} onPress={this.onCloseModal}>Later</Text>
+                <Button
+                  title="UPDATE NOW"
+                  titleStyle={styles.buttonTitleStyle}
+                  buttonStyle={styles.buttonStyle}
+                  containerStyle={styles.buttonContainerStyle}
+                  onPress={this.onPressUpdate}
+                  linearGradientProps={{
+                    colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+                    start: { x: 0, y: 0.5 },
+                    end: { x: 1, y: 0.5 },
+                  }}/>
+              </View>
+              <TouchableOpacity style={styles.closeModal} onPress={this.onCloseModal} >
+                <Image source={require('../../assets/close.png')}/>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </View>
     );
   }
@@ -519,4 +631,80 @@ const styles = StyleSheet.create({
     color: Colors.PURPLE,
     marginRight: -5,
   },
+  modalWrapper: {
+    flex: 1,
+    backgroundColor: Colors.TRANSPARENT_BACKGROUND,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  helpModal: {
+    width: '90%',
+    height: '40%',
+    minHeight: 340,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    justifyContent: 'space-around',
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    paddingTop: 10,
+  },
+  helpTitle: {
+    textAlign: 'left',
+    fontFamily: 'poppins-semibold',
+    fontSize: 19,
+  },
+  helpContent: {
+    color: Colors.MEDIUM_GRAY,
+    fontFamily: 'poppins-regular',
+    fontSize: 16,
+    lineHeight: 20,
+  },
+  helpLink: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 16,
+    color: Colors.PURPLE,
+    fontWeight: 'bold',
+    textDecorationLine: 'underline',
+  },
+  closeModal: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+  },
+  modalBottomLine: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  modalBottomRight: {
+    alignItems: 'flex-end',
+  },
+  buttonTitleStyle: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 19,
+    color: 'white',
+    marginHorizontal: 15,
+  },
+  buttonStyle: {
+    borderRadius: 10,
+    minHeight: 55,
+  },
+  buttonContainerStyle: {
+    justifyContent: 'center',
+  },
+  updateFeatureItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    width: '87%',
+  },
+  updateFeatureItemText: {
+    marginLeft: 10,
+    marginTop: 5,
+    fontFamily: 'poppins-regular',
+    fontSize: 16,
+    lineHeight: 20,
+  },
+  updateFeatureItemBold: {
+    fontFamily: 'poppins-semibold',
+  }
 });

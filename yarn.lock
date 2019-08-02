@@ -1846,7 +1846,7 @@ expo-camera@~5.0.1:
     lodash "^4.6.0"
     prop-types "^15.6.0"
 
-expo-constants@~5.0.1:
+expo-constants@5.0.1, expo-constants@~5.0.1:
   version "5.0.1"
   resolved "https://registry.yarnpkg.com/expo-constants/-/expo-constants-5.0.1.tgz#597263397f269d7fe37d9cd6b30e305c16635a00"
   dependencies:
@@ -1935,7 +1935,7 @@ expo-local-authentication@~5.0.1:
   dependencies:
     invariant "^2.2.4"
 
-expo-localization@~5.0.1:
+expo-localization@5.0.1, expo-localization@~5.0.1:
   version "5.0.1"
   resolved "https://registry.yarnpkg.com/expo-localization/-/expo-localization-5.0.1.tgz#9b617198f4627ed5c4eea406ed1a616dbc6d44f6"
   dependencies:
@@ -2930,6 +2930,14 @@ locate-path@^3.0.0:
     p-locate "^3.0.0"
     path-exists "^3.0.0"
 
+lodash.isfunction@^3.0.9:
+  version "3.0.9"
+  resolved "https://registry.yarnpkg.com/lodash.isfunction/-/lodash.isfunction-3.0.9.tgz#06de25df4db327ac931981d1bdb067e5af68d051"
+
+lodash.isnil@^4.0.0:
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/lodash.isnil/-/lodash.isnil-4.0.0.tgz#49e28cd559013458c814c5479d3c663a21bfaa6c"
+
 lodash.pad@^4.1.0:
   version "4.5.1"
   resolved "https://registry.yarnpkg.com/lodash.pad/-/lodash.pad-4.5.1.tgz#4330949a833a7c8da22cc20f6a26c4d59debba70"
@@ -2941,6 +2949,10 @@ lodash.padend@^4.1.0:
 lodash.padstart@^4.1.0:
   version "4.6.1"
   resolved "https://registry.yarnpkg.com/lodash.padstart/-/lodash.padstart-4.6.1.tgz#d2e3eebff0d9d39ad50f5cbd1b52a7bce6bb611b"
+
+lodash.pick@^4.4.0:
+  version "4.4.0"
+  resolved "https://registry.yarnpkg.com/lodash.pick/-/lodash.pick-4.4.0.tgz#52f05610fff9ded422611441ed1fc123a03001b3"
 
 lodash.throttle@^4.1.1:
   version "4.1.1"
@@ -4112,6 +4124,23 @@ react-native-vector-icons@^6.6.0:
     lodash "^4.0.0"
     prop-types "^15.6.2"
     yargs "^13.2.2"
+
+react-native-version-check-expo@^3.3.0:
+  version "3.3.0"
+  resolved "https://registry.yarnpkg.com/react-native-version-check-expo/-/react-native-version-check-expo-3.3.0.tgz#3da5a4df28e005064088d25654147a8e426da6a7"
+  dependencies:
+    expo-constants "5.0.1"
+    expo-localization "5.0.1"
+    react-native-version-check "^3.3.0"
+
+react-native-version-check@^3.3.0:
+  version "3.3.0"
+  resolved "https://registry.yarnpkg.com/react-native-version-check/-/react-native-version-check-3.3.0.tgz#b2c5c4d0e490c3cee83e99377f42dbeddff47fd8"
+  dependencies:
+    lodash.isfunction "^3.0.9"
+    lodash.isnil "^4.0.0"
+    lodash.pick "^4.4.0"
+    semver "^6.1.1"
 
 react-native-view-shot@2.6.0:
   version "2.6.0"
