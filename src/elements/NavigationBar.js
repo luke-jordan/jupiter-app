@@ -2,7 +2,6 @@ import React from 'react';
 import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity } from 'react-native';
 import { Colors, Sizes } from '../util/Values';
 import { Icon } from 'react-native-elements';
-import { NavigationUtil } from '../util/NavigationUtil';
 
 const NOTIFICATION_DOT_SIZE = 9;
 
@@ -39,9 +38,7 @@ export default class NavigationBar extends React.Component {
       break;
 
       case 3:
-      AsyncStorage.removeItem("userInfo");
-      AsyncStorage.removeItem("lastShownBalance");
-      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Splash');
+      this.props.navigation.navigate('Account');
       break;
 
       default:

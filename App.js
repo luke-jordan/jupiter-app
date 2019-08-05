@@ -13,6 +13,10 @@ import LimitedUsers from './src/screens/LimitedUsers';
 import ThankYou from './src/screens/ThankYou';
 import Boosts from './src/screens/Boosts';
 import Friends from './src/screens/Friends';
+import Account from './src/screens/Account';
+import Terms from './src/screens/Terms';
+import PrivacyPolicy from './src/screens/PrivacyPolicy';
+import Profile from './src/screens/Profile';
 
 const AppContainer = createAppContainer(
   createStackNavigator(
@@ -27,6 +31,10 @@ const AppContainer = createAppContainer(
       ThankYou: { screen: ThankYou },
       Boosts: { screen: Boosts },
       Friends: { screen: Friends },
+      Account: { screen: Account },
+      Terms: { screen: Terms },
+      PrivacyPolicy: { screen: PrivacyPolicy },
+      Profile: { screen: Profile },
     },
     { initialRouteName: "Splash", headerMode: 'none' }
   )
