@@ -14,7 +14,7 @@ export default class LimitedUsers extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      userInput: "",
+      userInput: "LETMEIN",
       notifyMode: false,
       hasError: false,
     };
@@ -37,6 +37,7 @@ export default class LimitedUsers extends React.Component {
   }
 
   onPressContinue = async () => {
+    if (this.state.loading) return;
     if (this.state.notifyMode) {
       //TODO send request to subscribe
       this.props.navigation.navigate('ThankYou');
@@ -63,8 +64,7 @@ export default class LimitedUsers extends React.Component {
         let resultJson = await result.json();
         this.setState({loading: false});
         if (resultJson.result.includes("CODE_IS_ACTIVE")) {
-          // this.props.navigation.navigate('CreateAccount');
-          this.props.navigation.navigate('Login');
+          this.props.navigation.navigate('Register', {referralCode: this.state.userInput});
         } else {
           this.showError();
         }

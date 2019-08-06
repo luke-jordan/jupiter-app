@@ -17,6 +17,7 @@ import Account from './src/screens/Account';
 import Terms from './src/screens/Terms';
 import PrivacyPolicy from './src/screens/PrivacyPolicy';
 import Profile from './src/screens/Profile';
+import Register from './src/screens/Register';
 
 const AppContainer = createAppContainer(
   createStackNavigator(
@@ -35,6 +36,7 @@ const AppContainer = createAppContainer(
       Terms: { screen: Terms },
       PrivacyPolicy: { screen: PrivacyPolicy },
       Profile: { screen: Profile },
+      Register: { screen: Register },
     },
     { initialRouteName: "Splash", headerMode: 'none' }
   )

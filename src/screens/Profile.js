@@ -79,11 +79,11 @@ export default class Profile extends React.Component {
   }
 
   onPressTakePhoto = () => {
-
+    if (this.state.takePhotoLoading) return;
   }
 
   onPressChooseFromLibrary = () => {
-
+    if (this.state.chooseFromLibraryLoading) return;
   }
 
   render() {

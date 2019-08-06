@@ -39,6 +39,7 @@ export default class Account extends React.Component {
   }
 
   onPressLogout = () => {
+    if (this.state.loading) return;
     this.setState({loading: true});
     AsyncStorage.removeItem("userInfo");
     AsyncStorage.removeItem("lastShownBalance");

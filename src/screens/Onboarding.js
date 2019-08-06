@@ -24,6 +24,7 @@ export default class Onboarding extends React.Component {
   }
 
   onPressNext = async () => {
+    if (this.state.loading) return;
     if (this.swiperRef && this.state.currentTab < 3) {
       this.swiperRef.scrollBy(1, true);
     } else if (this.state.currentTab == 3) {

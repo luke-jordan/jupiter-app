@@ -25,13 +25,12 @@ export default class Friends extends React.Component {
   }
 
   onPressShare = () => {
-
+    if (this.state.loading) return;
   }
 
   onPressCopy = () => {
     Clipboard.setString(this.state.shareCode);
     this.refs.toast.show('Copied to clipboard!');
-    //TODO show toast
   }
 
   render() {

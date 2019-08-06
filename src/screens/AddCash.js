@@ -23,7 +23,8 @@ export default class AddCash extends React.Component {
   }
 
   onPressAddCash = () => {
-
+    if (this.state.loading) return;
+    
   }
 
   onChangeAmount = (text) => {
