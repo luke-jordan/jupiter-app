@@ -66,7 +66,7 @@ export default class Home extends React.Component {
     // if (this.needsUpdate(localVersion, remoteVersion)) {
     //   this.showUpdateDialog(true);
     // }
-    this.showUpdateDialog(false);
+    // this.showUpdateDialog(false);
   }
 
   needsUpdate(localVersion, remoteVersion) {

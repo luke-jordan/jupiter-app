@@ -94,17 +94,19 @@ const styles = StyleSheet.create({
     marginHorizontal: 15,
   },
   image: {
+    height: '35%',
+    marginTop: 10,
     marginBottom: 35,
   },
   title: {
     fontFamily: 'poppins-regular',
-    fontSize: 6.8 * FONT_UNIT,
+    fontSize: 5.4 * FONT_UNIT,
     marginBottom: 15,
     textAlign: 'center',
   },
   description: {
     fontFamily: 'poppins-regular',
-    fontSize: 3.7 * FONT_UNIT,
+    fontSize: 2.9 * FONT_UNIT,
     marginBottom: 5,
   },
   bold: {
@@ -126,11 +128,11 @@ const styles = StyleSheet.create({
     marginLeft: 15,
     fontFamily: 'poppins-regular',
     color: Colors.PURPLE,
-    fontSize: 16,
+    fontSize: 4.4 * FONT_UNIT,
   },
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
-    fontSize: 19,
+    fontSize: 5 * FONT_UNIT,
     color: 'white',
   },
   buttonStyle: {
@@ -139,7 +141,6 @@ const styles = StyleSheet.create({
     minWidth: '90%',
   },
   buttonContainerStyle: {
-    marginTop: 10,
     marginBottom: 15,
     justifyContent: 'center',
     width: '100%',
