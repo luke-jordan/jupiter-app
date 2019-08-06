@@ -1,9 +1,10 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, ImageBackground, Modal, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Image, Text, AsyncStorage, ImageBackground, TouchableOpacity } from 'react-native';
 import { Colors, Endpoints } from '../util/Values';
 import { Input, Button } from 'react-native-elements';
 import { LinearGradient } from 'expo-linear-gradient';
 import { NavigationUtil } from '../util/NavigationUtil';
+import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
 
 export default class OTPVerification extends React.Component {
 
@@ -12,8 +13,8 @@ export default class OTPVerification extends React.Component {
     this.state = {
       phoneNumber: "********87",
       pin: [null, null, null, null],
-      modalVisible: false,
       loading: false,
+      dialogVisible: false,
     };
   }
 
@@ -62,18 +63,19 @@ export default class OTPVerification extends React.Component {
 
   onPressHelp = () => {
     this.setState({
-      modalVisible: true,
+      dialogVisible: true,
     });
   }
 
   onPressContactUs = () => {
-    this.onCloseModal();
+    this.onHideDialog();
   }
 
-  onCloseModal = () => {
+  onHideDialog = () => {
     this.setState({
-      modalVisible: false,
+      dialogVisible: false,
     });
+    return true;
   }
 
   onChangePinField = (text, index) => {
@@ -180,13 +182,17 @@ export default class OTPVerification extends React.Component {
           </Text>
         </View>
 
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={this.state.modalVisible}
-          onRequestClose={this.onCloseModal}>
-          <View style={styles.modalWrapper}>
-            <View style={styles.helpModal}>
+        <Dialog
+          visible={this.state.dialogVisible}
+          dialogStyle={styles.editPicDialog}
+          dialogAnimation={new SlideAnimation({
+            slideFrom: 'bottom',
+          })}
+          onTouchOutside={this.onHideDialog}
+          onHardwareBackPress={this.onHideDialog}
+        >
+          <DialogContent style={styles.dialogWrapper}>
+            <View style={styles.helpDialog}>
               <Text style={styles.helpTitle}>Help</Text>
               <Text style={styles.helpContent}>
                 A one-time password (OTP) is a password that is valid for only one login session, or transaction on a digital device.
@@ -194,13 +200,12 @@ export default class OTPVerification extends React.Component {
                 Check that you haven’t entered an incorrect OTP or resend a new pin.
               </Text>
               <Text style={styles.helpLink} onPress={this.onPressContactUs}>Contact Us</Text>
-              <TouchableOpacity style={styles.closeModal} onPress={this.onCloseModal} >
+              <TouchableOpacity style={styles.closeDialog} onPress={this.onHideDialog} >
                 <Image source={require('../../assets/close.png')}/>
               </TouchableOpacity>
             </View>
-          </View>
-        </Modal>
-
+          </DialogContent>
+        </Dialog>
       </View>
     );
   }
@@ -307,16 +312,13 @@ const styles = StyleSheet.create({
     color: 'white',
     marginTop: 15,
   },
-  modalWrapper: {
-    flex: 1,
-    backgroundColor: Colors.TRANSPARENT_BACKGROUND,
+  dialogWrapper: {
+    width: '90%',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  helpModal: {
-    width: '90%',
-    height: '40%',
-    minHeight: 340,
+  helpDialog: {
+    minHeight: 310,
     backgroundColor: 'white',
     borderRadius: 10,
     justifyContent: 'space-around',
@@ -341,7 +343,7 @@ const styles = StyleSheet.create({
     color: Colors.PURPLE,
     fontWeight: 'bold',
   },
-  closeModal: {
+  closeDialog: {
     position: 'absolute',
     top: 20,
     right: 20,

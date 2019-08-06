@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, ImageBackground, Dimensions, Animated, Easing, YellowBox, Modal, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Image, Text, AsyncStorage, ImageBackground, Dimensions, Animated, Easing, YellowBox, TouchableOpacity } from 'react-native';
 import { Colors, Sizes, Endpoints } from '../util/Values';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Icon, Button } from 'react-native-elements';
@@ -9,6 +9,7 @@ import AnimatedNumber from '../elements/AnimatedNumber';
 import moment from 'moment';
 import { FlingGestureHandler, Directions, State } from 'react-native-gesture-handler';
 import VersionCheck from 'react-native-version-check-expo';
+import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
 
 /*
 This is here because currently long timers are not purely supported on Android.
@@ -45,8 +46,8 @@ export default class Home extends React.Component {
       balanceAnimationDuration: DEFAULT_BALANCE_ANIMATION_DURATION,
       initialBalanceAnimationStarted: false,
       secondaryBalanceAnimationStarted: false,
-      updateRequiredModalVisible: false,
-      updateAvailableModalVisible: false,
+      updateRequiredDialogVisible: false,
+      updateAvailableDialogVisible: false,
     };
   }
 
@@ -61,10 +62,11 @@ export default class Home extends React.Component {
 
   async checkIfUpdateNeeded() {
     let localVersion = VersionCheck.getCurrentVersion();
-    let remoteVersion = await VersionCheck.getLatestVersion();
-    if (this.needsUpdate(localVersion, remoteVersion)) {
-      this.showUpdateModal(true);
-    }
+    // let remoteVersion = await VersionCheck.getLatestVersion();
+    // if (this.needsUpdate(localVersion, remoteVersion)) {
+    //   this.showUpdateDialog(true);
+    // }
+    this.showUpdateDialog(false);
   }
 
   needsUpdate(localVersion, remoteVersion) {
@@ -77,24 +79,25 @@ export default class Home extends React.Component {
     return false;
   }
 
-  async showUpdateModal(required){
+  async showUpdateDialog(required){
     if (required) {
-      this.setState({updateRequiredModalVisible: true});
+      this.setState({updateRequiredDialogVisible: true});
     } else {
-      this.setState({updateAvailableModalVisible: true});
+      this.setState({updateAvailableDialogVisible: true});
     }
   }
 
-  onCloseModal = () => {
+  onCloseDialog = () => {
     this.setState({
-      updateRequiredModalVisible: false,
-      updateAvailableModalVisible: false,
+      updateRequiredDialogVisible: false,
+      updateAvailableDialogVisible: false,
     });
+    return true;
   }
 
   onPressUpdate = () => {
     //TODO handle update
-    this.onCloseModal();
+    this.onCloseDialog();
   }
 
   async showInitialData() {
@@ -409,91 +412,95 @@ export default class Home extends React.Component {
           </LinearGradient>
         </View>
 
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={this.state.updateRequiredModalVisible}>
-          <View style={styles.modalWrapper}>
-            <View style={styles.helpModal}>
-              <Text style={styles.helpTitle}>Update Required</Text>
-              <Text style={styles.helpContent}>
-                We've made some big changes to the app,(more than usual). Please update to activate the new features. This version will no longer be supported in the future.
-              </Text>
-              <View style={styles.modalBottomRight}>
-                <Button
-                  title="UPDATE NOW"
-                  titleStyle={styles.buttonTitleStyle}
-                  buttonStyle={styles.buttonStyle}
-                  containerStyle={styles.buttonContainerStyle}
-                  onPress={this.onPressUpdate}
-                  linearGradientProps={{
-                    colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
-                    start: { x: 0, y: 0.5 },
-                    end: { x: 1, y: 0.5 },
-                  }}/>
-              </View>
+        <Dialog
+          visible={this.state.updateRequiredDialogVisible}
+          dialogStyle={styles.dialogWrapper}
+          dialogAnimation={new SlideAnimation({
+            slideFrom: 'bottom',
+          })}
+          onTouchOutside={this.onCloseDialog}
+        >
+          <DialogContent style={styles.helpDialog}>
+            <Text style={styles.helpTitle}>Update Required</Text>
+            <Text style={styles.helpContent}>
+              We've made some big changes to the app,(more than usual). Please update to activate the new features. This version will no longer be supported in the future.
+            </Text>
+            <View style={styles.dialogBottomRight}>
+              <Button
+                title="UPDATE NOW"
+                titleStyle={styles.buttonTitleStyle}
+                buttonStyle={styles.buttonStyle}
+                containerStyle={styles.buttonContainerStyle}
+                onPress={this.onPressUpdate}
+                linearGradientProps={{
+                  colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+                  start: { x: 0, y: 0.5 },
+                  end: { x: 1, y: 0.5 },
+                }}/>
             </View>
-          </View>
-        </Modal>
+          </DialogContent>
+        </Dialog>
 
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={this.state.updateAvailableModalVisible}
-          onRequestClose={this.onCloseModal}>
-          <View style={styles.modalWrapper}>
-            <View style={styles.helpModal}>
-              <Text style={styles.helpTitle}>New Features!</Text>
-              <Text style={styles.helpContent}>
-                We've made some changes to the app. Please update to activate the new features.
+        <Dialog
+          visible={this.state.updateAvailableDialogVisible}
+          dialogStyle={styles.dialogWrapper}
+          dialogAnimation={new SlideAnimation({
+            slideFrom: 'bottom',
+          })}
+          onTouchOutside={this.onCloseDialog}
+          onHardwareBackPress={this.onCloseDialog}
+        >
+          <DialogContent style={styles.helpDialog}>
+            <Text style={styles.helpTitle}>New Features!</Text>
+            <Text style={styles.helpContent}>
+              We've made some changes to the app. Please update to activate the new features.
+            </Text>
+            {/*
+            <Text style={styles.helpContent}>
+              Grow your savings even more with these new features on Jupiter:
+            </Text>
+            <View style={styles.updateFeatureItem}>
+              <Icon
+                name='check'
+                type='feather'
+                size={28}
+                color={Colors.PURPLE}
+              />
+              <Text style={styles.updateFeatureItemText}>
+                <Text style={styles.updateFeatureItemBold}>BOOSTS</Text> - Earn rewards to boost your savings even more!
               </Text>
-              {/*
-              <Text style={styles.helpContent}>
-                Grow your savings even more with these new features on Jupiter:
-              </Text>
-              <View style={styles.updateFeatureItem}>
-                <Icon
-                  name='check'
-                  type='feather'
-                  size={28}
-                  color={Colors.PURPLE}
-                />
-                <Text style={styles.updateFeatureItemText}>
-                  <Text style={styles.updateFeatureItemBold}>BOOSTS</Text> - Earn rewards to boost your savings even more!
-                </Text>
-              </View>
-              <View style={styles.updateFeatureItem}>
-                <Icon
-                  name='check'
-                  type='feather'
-                  size={28}
-                  color={Colors.PURPLE}
-                />
-                <Text style={styles.updateFeatureItemText}>
-                  <Text style={styles.updateFeatureItemBold}>SAVING HISTORY</Text> - Keep track of all your savings, with a full history view.
-                </Text>
-              </View>
-              */}
-              <View style={styles.modalBottomLine}>
-                <Text style={styles.helpLink} onPress={this.onCloseModal}>Later</Text>
-                <Button
-                  title="UPDATE NOW"
-                  titleStyle={styles.buttonTitleStyle}
-                  buttonStyle={styles.buttonStyle}
-                  containerStyle={styles.buttonContainerStyle}
-                  onPress={this.onPressUpdate}
-                  linearGradientProps={{
-                    colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
-                    start: { x: 0, y: 0.5 },
-                    end: { x: 1, y: 0.5 },
-                  }}/>
-              </View>
-              <TouchableOpacity style={styles.closeModal} onPress={this.onCloseModal} >
-                <Image source={require('../../assets/close.png')}/>
-              </TouchableOpacity>
             </View>
-          </View>
-        </Modal>
+            <View style={styles.updateFeatureItem}>
+              <Icon
+                name='check'
+                type='feather'
+                size={28}
+                color={Colors.PURPLE}
+              />
+              <Text style={styles.updateFeatureItemText}>
+                <Text style={styles.updateFeatureItemBold}>SAVING HISTORY</Text> - Keep track of all your savings, with a full history view.
+              </Text>
+            </View>
+            */}
+            <View style={styles.dialogBottomLine}>
+              <Text style={styles.helpLink} onPress={this.onCloseDialog}>Later</Text>
+              <Button
+                title="UPDATE NOW"
+                titleStyle={styles.buttonTitleStyle}
+                buttonStyle={styles.buttonStyle}
+                containerStyle={styles.buttonContainerStyle}
+                onPress={this.onPressUpdate}
+                linearGradientProps={{
+                  colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+                  start: { x: 0, y: 0.5 },
+                  end: { x: 1, y: 0.5 },
+                }}/>
+            </View>
+            <TouchableOpacity style={styles.closeDialog} onPress={this.onCloseDialog} >
+              <Image source={require('../../assets/close.png')}/>
+            </TouchableOpacity>
+          </DialogContent>
+        </Dialog>
       </View>
     );
   }
@@ -646,15 +653,12 @@ const styles = StyleSheet.create({
     color: Colors.PURPLE,
     marginRight: -5,
   },
-  modalWrapper: {
-    flex: 1,
-    backgroundColor: Colors.TRANSPARENT_BACKGROUND,
+  dialogWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  helpModal: {
+  helpDialog: {
     width: '90%',
-    height: '40%',
     minHeight: 340,
     backgroundColor: 'white',
     borderRadius: 10,
@@ -681,17 +685,17 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textDecorationLine: 'underline',
   },
-  closeModal: {
+  closeDialog: {
     position: 'absolute',
     top: 20,
     right: 20,
   },
-  modalBottomLine: {
+  dialogBottomLine: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  modalBottomRight: {
+  dialogBottomRight: {
     alignItems: 'flex-end',
   },
   buttonTitleStyle: {

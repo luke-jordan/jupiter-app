@@ -140,7 +140,7 @@ export default class Account extends React.Component {
             titleStyle={styles.buttonTitleStyle}
             buttonStyle={styles.buttonStyle}
             containerStyle={styles.buttonContainerStyle}
-            onPress={this.onPressLogin}
+            onPress={this.onPressLogout}
             linearGradientProps={{
               colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
               start: { x: 0, y: 0.5 },

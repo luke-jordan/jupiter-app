@@ -4,8 +4,9 @@ import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Dimensio
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Endpoints } from '../util/Values';
-import { Icon } from 'react-native-elements';
+import { Button, Icon } from 'react-native-elements';
 import { Colors } from '../util/Values';
+import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
 
 let {height, width} = Dimensions.get('window');
 const PROFILE_PIC_SIZE = 0.16 * width;
@@ -22,6 +23,9 @@ export default class Profile extends React.Component {
       idNumber: "",
       email: "",
       initials: "",
+      dialogVisible: false,
+      chooseFromLibraryLoading: false,
+      takePhotoLoading: false,
     };
   }
 
@@ -50,7 +54,9 @@ export default class Profile extends React.Component {
   }
 
   onPressEditPic = () => {
-
+    this.setState({
+      dialogVisible: true,
+    });
   }
 
   renderProfilePicture() {
@@ -65,6 +71,19 @@ export default class Profile extends React.Component {
         </View>
       )
     }
+  }
+
+  onHideDialog = () => {
+    this.setState({ dialogVisible: false });
+    return true;
+  }
+
+  onPressTakePhoto = () => {
+
+  }
+
+  onPressChooseFromLibrary = () => {
+
   }
 
   render() {
@@ -120,6 +139,45 @@ export default class Profile extends React.Component {
             />
           </TouchableOpacity>
         </View>
+
+        <Dialog
+          visible={this.state.dialogVisible}
+          dialogStyle={styles.editPicDialog}
+          dialogAnimation={new SlideAnimation({
+            slideFrom: 'bottom',
+          })}
+          onTouchOutside={this.onHideDialog}
+          onHardwareBackPress={this.onHideDialog}
+        >
+          <DialogContent style={styles.dialogContent}>
+            <Text style={styles.editPicDialogTitle}>Select a photo</Text>
+            <Button
+              title="TAKE PHOTO"
+              loading={this.state.takePhotoLoading}
+              titleStyle={styles.buttonTitleStyle}
+              buttonStyle={styles.buttonStyle}
+              containerStyle={styles.buttonContainerStyle}
+              onPress={this.onPressTakePhoto}
+              linearGradientProps={{
+                colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+                start: { x: 0, y: 0.5 },
+                end: { x: 1, y: 0.5 },
+              }} />
+            <Button
+              title="CHOOSE FROM LIBRARY"
+              loading={this.state.chooseFromLibraryLoading}
+              titleStyle={styles.buttonTitleStyle}
+              buttonStyle={styles.buttonStyle}
+              containerStyle={styles.buttonContainerStyle}
+              onPress={this.onPressChooseFromLibrary}
+              linearGradientProps={{
+                colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+                start: { x: 0, y: 0.5 },
+                end: { x: 1, y: 0.5 },
+              }} />
+            <Text style={styles.editPicDialogCancel} onPress={this.onHideDialog}>Cancel</Text>
+          </DialogContent>
+        </Dialog>
       </View>
     );
   }
@@ -231,5 +289,45 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: Colors.GRAY,
     width: '100%',
+  },
+  editPicDialog: {
+    width: '88%',
+    position: 'absolute',
+    bottom: -20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dialogContent: {
+    width: '100%',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  buttonTitleStyle: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 19,
+    color: 'white',
+  },
+  buttonStyle: {
+    borderRadius: 10,
+    minHeight: 55,
+    minWidth: 220,
+  },
+  buttonContainerStyle: {
+    flex: 1,
+    marginVertical: 10,
+    justifyContent: 'center',
+    width: '95%',
+  },
+  editPicDialogTitle: {
+    color: Colors.DARK_GRAY,
+    fontSize: 20,
+    fontFamily: 'poppins-semibold',
+    marginTop: 10,
+  },
+  editPicDialogCancel: {
+    color: Colors.PURPLE,
+    fontSize: 15,
+    fontFamily: 'poppins-semibold',
   },
 });
