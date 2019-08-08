@@ -5,34 +5,36 @@ import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Button, Icon, Input } from 'react-native-elements';
 import { Colors, Endpoints } from '../util/Values';
+import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
 
-export default class Register extends React.Component {
+export default class SetPassword extends React.Component {
 
   constructor(props) {
     super(props);
     this.state = {
       loading: false,
-      firstName: "test",
-      lastName: "test",
-      idNumber: "000000021",
-      userId: "testemail21@test.tst",
-      referralCode: "",
+      generatePasswordLoading: false,
+      password: "",
+      passwordConfirm: "",
       errors: {
-        firstName: false,
-        lastName: false,
-        idNumber: false,
-        userId: false,
+        password: false,
+        passwordConfirm: false,
         general: false,
       },
-      generalErrorText: "There is a problem with your request",
-      defaultGeneralErrorText: "There is a problem with your request",
+      dialogVisible: false,
+      generatedPassword: "",
     };
   }
 
   async componentDidMount() {
-    let referralCode = this.props.navigation.getParam("referralCode");
-    if (referralCode && referralCode.length > 0) {
-      this.setState({referralCode});
+    let params = this.props.navigation.state.params;
+    if (params) {
+      this.setState({
+        systemWideUserId: params.systemWideUserId,
+        clientId: params.clientId,
+        defaultFloatId: params.defaultFloatId,
+        defaultCurrency: params.defaultCurrency,
+      });
     }
   }
 
@@ -42,9 +44,8 @@ export default class Register extends React.Component {
 
   fieldIsMandatory(field) {
     switch (field) {
-      case "firstName":
-      case "lastName":
-      case "idNumber":
+      case "password":
+      case "passwordConfirm":
       return true;
 
       default:
@@ -75,27 +76,17 @@ export default class Register extends React.Component {
     });
   }
 
-  onPressTerms = () => {
-    this.props.navigation.navigate('Terms');
-  }
-
   validateInput = async () => {
     let hasErrors = false;
     let errors = Object.assign({}, this.state.errors);
-    if (this.state.firstName.length < 1) {
+    if (this.state.password.length < 8) {
       hasErrors = true;
-      errors.firstName = true;
+      errors.password = true;
     }
-    if (this.state.lastName.length < 1) {
+    if (this.state.passwordConfirm.length < 8 || this.state.password != this.state.passwordConfirm) {
       hasErrors = true;
-      errors.lastName = true;
+      errors.passwordConfirm = true;
     }
-    if (this.state.idNumber.length < 1) {
-      hasErrors = true;
-      errors.idNumber = true;
-    }
-    //TODO validate email format or phone number
-    // (note: not strictly necessary, but best if phone number is converted to E164 standard, e.g., 27813074085),
     if (hasErrors) {
       await this.setState({
         errors: errors,
@@ -114,19 +105,18 @@ export default class Register extends React.Component {
       return;
     }
     try {
-      let result = await fetch(Endpoints.AUTH + 'register/profile', {
+      let result = await fetch(Endpoints.AUTH + 'register/password', {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
         method: 'POST',
         body: JSON.stringify({
-          "countryCode3Letter": 'ZAF',
-          "nationalId": this.state.idNumber,
-          "phoneOrEmail": this.state.userId,
-          "personalName": this.state.firstName,
-          "familyName": this.state.lastName,
-          "referralCode": this.state.referralCode,
+          systemWideUserId: this.state.systemWideUserId,
+          password: this.state.password,
+          clientId: this.state.clientId,
+          floatId: this.state.defaultFloatId,
+          currency: this.state.defaultCurrency,
         }),
       });
       if (result.ok) {
@@ -134,44 +124,78 @@ export default class Register extends React.Component {
         console.log(resultJson);
         this.setState({loading: false});
         if (resultJson.result.includes("SUCCESS")) {
-          this.props.navigation.navigate("SetPassword", {
+          this.props.navigation.navigate("AddCash", {
+            isOnboarding: true,
             systemWideUserId: resultJson.systemWideUserId,
-            clientId: resultJson.clientId,
-            defaultFloatId: resultJson.defaultFloatId,
-            defaultCurrency: resultJson.defaultCurrency,
+            token: resultJson.token,
+            accountId: resultJson.accountId[0],
           });
         } else {
           this.showError();
         }
       } else {
-        let resultJson = await result.json();
-        console.log("resultJson:", resultJson);
-        let errors = Object.assign({}, this.state.errors);
-        if (resultJson.errorField.includes("NATIONAL_ID")) {
-          errors.idNumber = true;
-        }
-        if (resultJson.errorField.includes("EMAIL")) {
-          errors.userId = true;
-        }
-        this.setState({
-          errors: errors,
-        });
-        throw resultJson.messageToUser;
+        // let resultJson = await result.json();
+        // console.log("resultJson:", resultJson);
+        let resultText = await result.text();
+        console.log("resultText:", resultText);
+        throw result;
       }
     } catch (error) {
       console.log("error!", error);
-      this.showError(error);
+      this.showError();
     }
   }
 
-  showError(errorText) {
+  showError() {
     let errors = Object.assign({}, this.state.errors);
     errors.general = true;
     this.setState({
       loading: false,
       errors: errors,
-      generalErrorText: errorText ? errorText : this.state.defaultGeneralErrorText,
     });
+  }
+
+  onPressGeneratePassword = async () => {
+    if (this.state.generatePasswordLoading) return;
+    this.setState({
+      dialogVisible: true,
+      generatePassword: "",
+      generatePasswordLoading: true,
+    });
+    try {
+      let result = await fetch(Endpoints.AUTH + 'password/generate', {
+        method: 'GET',
+      });
+      console.log(result);
+      if (result.ok) {
+        let resultJson = await result.json();
+        let generated = resultJson.message.newPassword;
+        this.setState({
+          generatedPassword: generated,
+          generatePasswordLoading: false,
+        });
+      } else {
+        throw result;
+      }
+    } catch (error) {
+      console.log("error!", error.status);
+      this.setState({generatePasswordLoading: false});
+    }
+  }
+
+  onPressUseThisPassword = () => {
+    this.setState({
+      password: this.state.generatedPassword,
+      passwordConfirm: this.state.generatedPassword,
+      dialogVisible: false,
+    });
+  }
+
+  onHideDialog = () => {
+    this.setState({
+      dialogVisible: false,
+    });
+    return true;
   }
 
   render() {
@@ -188,81 +212,49 @@ export default class Register extends React.Component {
           </TouchableOpacity>
         </View>
         <View style={styles.contentWrapper}>
-          <Text style={styles.title}>Let’s create your Jupiter account</Text>
+          <Text style={styles.title}>Set a password</Text>
           <ScrollView style={styles.scrollView} contentContainerStyle={styles.mainContent}>
             <View style={styles.profileField}>
-              <Text style={styles.profileFieldTitle}>First Name*</Text>
+              <Text style={styles.profileFieldTitle}>Your Password*</Text>
                 <Input
-                  value={this.state.firstName}
-                  onChangeText={(text) => this.onEditField(text, "firstName")}
-                  onEndEditing={() => this.onEndEditing("firstName")}
+                  value={this.state.password}
+                  secureTextEntry={true}
+                  onChangeText={(text) => this.onEditField(text, "password")}
+                  onEndEditing={() => this.onEndEditing("password")}
                   inputContainerStyle={styles.inputContainerStyle}
-                  inputStyle={[styles.inputStyle, this.state.errors && this.state.errors.firstName ? styles.redText : null]}
+                  inputStyle={[styles.inputStyle, this.state.errors && this.state.errors.password ? styles.redText : null]}
                   containerStyle={styles.containerStyle}
                 />
                 {
-                  this.state.errors && this.state.errors.firstName ?
-                  <Text style={styles.errorMessage}>Please enter a valid first name</Text>
+                  this.state.errors && this.state.errors.password ?
+                  <Text style={styles.errorMessage}>Please enter a valid password</Text>
                   : null
                 }
             </View>
             <View style={styles.profileField}>
-              <Text style={styles.profileFieldTitle}>Last Name*</Text>
+              <Text style={styles.profileFieldTitle}>Retype Password*</Text>
                 <Input
-                  value={this.state.lastName}
-                  onChangeText={(text) => this.onEditField(text, "lastName")}
-                  onEndEditing={() => this.onEndEditing("lastName")}
+                  value={this.state.passwordConfirm}
+                  secureTextEntry={true}
+                  onChangeText={(text) => this.onEditField(text, "passwordConfirm")}
+                  onEndEditing={() => this.onEndEditing("passwordConfirm")}
                   inputContainerStyle={styles.inputContainerStyle}
-                  inputStyle={[styles.inputStyle, this.state.errors && this.state.errors.lastName ? styles.redText : null]}
+                  inputStyle={[styles.inputStyle, this.state.errors && this.state.errors.passwordConfirm ? styles.redText : null]}
                   containerStyle={styles.containerStyle}
                 />
                 {
-                  this.state.errors && this.state.errors.lastName ?
-                  <Text style={styles.errorMessage}>Please enter a valid last name</Text>
-                  : null
-                }
-            </View>
-            <View style={styles.profileField}>
-              <Text style={styles.profileFieldTitle}>ID Number*</Text>
-                <Input
-                  value={this.state.idNumber}
-                  onChangeText={(text) => this.onEditField(text, "idNumber")}
-                  onEndEditing={() => this.onEndEditing("idNumber")}
-                  inputContainerStyle={styles.inputContainerStyle}
-                  inputStyle={[styles.inputStyle, this.state.errors && this.state.errors.idNumber ? styles.redText : null]}
-                  containerStyle={styles.containerStyle}
-                />
-                {
-                  this.state.errors && this.state.errors.idNumber ?
-                  <Text style={styles.errorMessage}>Please enter a valid ID number</Text>
-                  : null
-                }
-            </View>
-            <View style={styles.profileField}>
-              <Text style={styles.profileFieldTitle}>Email Address or Phone number</Text>
-                <Input
-                  value={this.state.userId}
-                  onChangeText={(text) => this.onEditField(text, "userId")}
-                  onEndEditing={() => this.onEndEditing("userId")}
-                  inputContainerStyle={styles.inputContainerStyle}
-                  inputStyle={[styles.inputStyle, this.state.errors && this.state.errors.userId ? styles.redText : null]}
-                  containerStyle={styles.containerStyle}
-                />
-                {
-                  this.state.errors && this.state.errors.userId ?
-                  <Text style={styles.errorMessage}>Please enter a valid email address or phone number</Text>
+                  this.state.errors && this.state.errors.passwordConfirm ?
+                  <Text style={styles.errorMessage}>Passwords don't match</Text>
                   : null
                 }
             </View>
           </ScrollView>
           {
             this.state.errors && this.state.errors.general ?
-            <Text style={styles.errorMessage}>{this.state.generalErrorText}</Text>
+            <Text style={styles.errorMessage}>There is a problem with your request</Text>
             : null
           }
-          <Text style={styles.disclaimer}>Continuing means you’ve read and agreed to Jupiter’s{" "}
-            <Text style={styles.disclaimerButton} onPress={this.onPressTerms}>T’C & C’s.</Text>
-          </Text>
+          <Text style={styles.generatePassword} onPress={this.onPressGeneratePassword}>Help me generate a password</Text>
           <Button
             title="CONTINUE"
             loading={this.state.loading}
@@ -276,6 +268,41 @@ export default class Register extends React.Component {
               end: { x: 1, y: 0.5 },
             }} />
         </View>
+
+        <Dialog
+          visible={this.state.dialogVisible}
+          dialogStyle={styles.dialogStyle}
+          dialogAnimation={new SlideAnimation({
+            slideFrom: 'bottom',
+          })}
+          onTouchOutside={this.onHideDialog}
+          onHardwareBackPress={this.onHideDialog}
+        >
+          <DialogContent style={styles.dialogWrapper}>
+            <View style={styles.dialogContent}>
+              <Text style={styles.dialogTitle}>Suggested password</Text>
+              <View style={styles.profileField}>
+                <Text style={styles.profileFieldTitle}>Password</Text>
+                <Text style={[styles.containerStyle, styles.generatedPasswordStyle]}>{this.state.generatedPassword}</Text>
+                <Button
+                  title="USE THIS PASSWORD"
+                  loading={this.state.generatePasswordLoading}
+                  titleStyle={styles.buttonTitleStyle}
+                  buttonStyle={styles.buttonStyle}
+                  containerStyle={styles.buttonContainerStyle}
+                  onPress={this.onPressUseThisPassword}
+                  linearGradientProps={{
+                    colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+                    start: { x: 0, y: 0.5 },
+                    end: { x: 1, y: 0.5 },
+                  }} />
+              </View>
+            </View>
+            <TouchableOpacity style={styles.closeDialog} onPress={this.onHideDialog} >
+              <Image source={require('../../assets/close.png')}/>
+            </TouchableOpacity>
+          </DialogContent>
+        </Dialog>
       </KeyboardAvoidingView>
     );
   }
@@ -308,7 +335,8 @@ const styles = StyleSheet.create({
     fontFamily: 'poppins-semibold',
     fontSize: 27,
     color: Colors.DARK_GRAY,
-    marginLeft: 15,
+    width: '100%',
+    paddingLeft: 15,
   },
   mainContent: {
     width: '100%',
@@ -379,14 +407,42 @@ const styles = StyleSheet.create({
   redText: {
     color: Colors.RED,
   },
-  disclaimer: {
-    width: '100%',
-    paddingHorizontal: 15,
+  generatePassword: {
     fontFamily: 'poppins-semibold',
-    color: Colors.DARK_GRAY,
-    fontSize: 11,
+    color: Colors.PURPLE,
+    fontSize: 13,
+    marginBottom: 10,
   },
-  disclaimerButton: {
-    textDecorationLine: 'underline',
-  }
+  dialogStyle: {
+    width: '90%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dialogWrapper: {
+    minHeight: 310,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    width: '100%',
+  },
+  dialogTitle: {
+    textAlign: 'center',
+    fontFamily: 'poppins-semibold',
+    fontSize: 19,
+  },
+  closeDialog: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+  },
+  dialogContent: {
+    flex: 1,
+    width: '100%',
+  },
+  generatedPasswordStyle: {
+    fontFamily: 'poppins-regular',
+    paddingLeft: 10,
+    textAlignVertical: 'center',
+  },
 });

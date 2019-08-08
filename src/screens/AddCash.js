@@ -11,11 +11,21 @@ export default class AddCash extends React.Component {
       currency: "R",
       balance: "2,200.40",
       amountToAdd: 0,
+      isOnboarding: false,
+      loading: false,
     };
   }
 
   async componentDidMount() {
-
+    let params = this.props.navigation.state.params;
+    if (params) {
+      this.setState({
+        isOnboarding: params.isOnboarding,
+        systemWideUserId: params.systemWideUserId,
+        token: params.token,
+        accountId: params.accountId,
+      });
+    }
   }
 
   onPressBack = () => {
@@ -24,7 +34,9 @@ export default class AddCash extends React.Component {
 
   onPressAddCash = () => {
     if (this.state.loading) return;
-    
+    this.setState({
+      loading: true,
+    });
   }
 
   onChangeAmount = (text) => {
@@ -36,9 +48,25 @@ export default class AddCash extends React.Component {
     this.amountInputRef.blur();
   }
 
-  render() {
-    return (
-      <View style={styles.container}>
+  renderHeader() {
+    if (this.state.isOnboarding) {
+      return (
+        <View style={styles.headerWrapper}>
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.headerButton} onPress={this.onPressBack} >
+              <Icon
+                name='chevron-left'
+                type='evilicon'
+                size={45}
+                color={Colors.GRAY}
+              />
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.headerTitleOnboarding}>Add some cash</Text>
+        </View>
+      );
+    } else {
+      return (
         <View style={styles.header}>
           <TouchableOpacity style={styles.headerButton} onPress={this.onPressBack} >
             <Icon
@@ -50,11 +78,24 @@ export default class AddCash extends React.Component {
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Add cash</Text>
         </View>
+      );
+    }
+  }
+
+  render() {
+    return (
+      <View style={styles.container}>
+        {this.renderHeader()}
         <ScrollView style={styles.mainContent} contentContainerStyle={styles.mainContentContainer} >
-          <View style={styles.currentBalance}>
-            <Text style={styles.balanceAmount}>{this.state.currency}{this.state.balance}</Text>
-            <Text style={styles.balanceDesc}>Current Balance</Text>
-          </View>
+          {
+            this.state.isOnboarding ?
+            <Text style={styles.onboardingTitle}>Choose an amount</Text>
+            :
+            <View style={styles.currentBalance}>
+              <Text style={styles.balanceAmount}>{this.state.currency}{this.state.balance}</Text>
+              <Text style={styles.balanceDesc}>Current Balance</Text>
+            </View>
+          }
           <View style={styles.inputWrapper}>
             <View style={styles.inputWrapperLeft}>
               <Text style={styles.currencyLabel}>{this.state.currency}</Text>
@@ -73,7 +114,7 @@ export default class AddCash extends React.Component {
           <Text style={styles.makeSureDisclaimer}>Please make sure you have added the correct amount as this transaction cannot be reversed.</Text>
         </ScrollView>
         <Button
-          title="ADD CASH"
+          title="NEXT: PAYMENT"
           loading={this.state.loading}
           titleStyle={styles.buttonTitleStyle}
           buttonStyle={styles.buttonStyle}
@@ -95,6 +136,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: Colors.BACKGROUND_GRAY,
   },
+  headerWrapper: {
+    width: '100%',
+    backgroundColor: 'white',
+    alignItems: 'center',
+    paddingHorizontal: 5,
+  },
   header: {
     width: '100%',
     height: 50,
@@ -108,9 +155,25 @@ const styles = StyleSheet.create({
     fontFamily: 'poppins-semibold',
     fontSize: 22,
   },
+  headerTitleOnboarding: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 27,
+    color: Colors.DARK_GRAY,
+    width: '100%',
+    paddingLeft: 15,
+  },
+  onboardingTitle: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 17,
+    color: Colors.DARK_GRAY,
+    textAlign: 'left',
+    width: '90%',
+    marginTop: 25,
+    marginBottom: -10,
+  },
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
-    fontSize: 19,
+    fontSize: 17,
     color: 'white',
   },
   buttonStyle: {
