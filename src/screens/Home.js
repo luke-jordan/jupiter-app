@@ -294,7 +294,6 @@ export default class Home extends React.Component {
   }
 
   fetchEndOfDayUpdate = async () => {
-    console.log("fetching end of day");
     try {
       let result = await fetch(Endpoints.CORE + 'balance', {
         headers: {

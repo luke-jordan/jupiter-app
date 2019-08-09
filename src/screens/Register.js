@@ -131,7 +131,6 @@ export default class Register extends React.Component {
       });
       if (result.ok) {
         let resultJson = await result.json();
-        console.log(resultJson);
         this.setState({loading: false});
         if (resultJson.result.includes("SUCCESS")) {
           this.props.navigation.navigate("SetPassword", {
@@ -145,7 +144,6 @@ export default class Register extends React.Component {
         }
       } else {
         let resultJson = await result.json();
-        console.log("resultJson:", resultJson);
         let errors = Object.assign({}, this.state.errors);
         if (resultJson.errorField.includes("NATIONAL_ID")) {
           errors.idNumber = true;

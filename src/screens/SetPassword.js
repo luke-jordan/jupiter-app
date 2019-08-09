@@ -134,7 +134,6 @@ export default class SetPassword extends React.Component {
         }
       } else {
         let resultText = await result.text();
-        console.log("resultText:", resultText);
         throw result;
       }
     } catch (error) {
@@ -163,7 +162,6 @@ export default class SetPassword extends React.Component {
       let result = await fetch(Endpoints.AUTH + 'password/generate', {
         method: 'GET',
       });
-      console.log(result);
       if (result.ok) {
         let resultJson = await result.json();
         let generated = resultJson.message.newPassword;
