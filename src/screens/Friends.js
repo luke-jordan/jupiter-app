@@ -6,7 +6,7 @@ import { LoggingUtil } from '../util/LoggingUtil';
 import { Endpoints, Colors } from '../util/Values';
 import NavigationBar from '../elements/NavigationBar';
 import { Input, Button } from 'react-native-elements';
-import Toast, {DURATION} from 'react-native-easy-toast'
+import Toast, {DURATION} from 'react-native-easy-toast';
 
 let {height, width} = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;

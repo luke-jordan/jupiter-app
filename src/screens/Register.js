@@ -14,8 +14,8 @@ export default class Register extends React.Component {
       loading: false,
       firstName: "test",
       lastName: "test",
-      idNumber: "000000021",
-      userId: "testemail21@test.tst",
+      idNumber: "000000031",
+      userId: "testemail31@test.tst",
       referralCode: "",
       errors: {
         firstName: false,
@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
   profileField: {
     flex: 1,
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: 10,
   },
   profileFieldTitle: {
     fontFamily: 'poppins-semibold',

@@ -19,6 +19,8 @@ import PrivacyPolicy from './src/screens/PrivacyPolicy';
 import Profile from './src/screens/Profile';
 import Register from './src/screens/Register';
 import SetPassword from './src/screens/SetPassword';
+import Payment from './src/screens/Payment';
+import CheckingForPayment from './src/screens/CheckingForPayment';
 
 const AppContainer = createAppContainer(
   createStackNavigator(
@@ -39,6 +41,8 @@ const AppContainer = createAppContainer(
       Profile: { screen: Profile },
       Register: { screen: Register },
       SetPassword: { screen: SetPassword },
+      Payment: { screen: Payment },
+      CheckingForPayment: { screen: CheckingForPayment },
     },
     { initialRouteName: "Splash", headerMode: 'none' }
   )

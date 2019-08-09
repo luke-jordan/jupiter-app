@@ -1,9 +1,9 @@
 import React from 'react';
-import * as Font from 'expo-font';
-import { StyleSheet, View, Image, Text, AsyncStorage } from 'react-native';
+import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity } from 'react-native';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
-import { Endpoints } from '../util/Values';
+import { Endpoints, Colors } from '../util/Values';
+import { Button, Icon, Input } from 'react-native-elements';
 
 /*
 This component is not actually used in the app, but serves as a template for creating other screens.

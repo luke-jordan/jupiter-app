@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, ScrollView } from 'react-native';
-import { Colors } from '../util/Values';
+import { Colors, Endpoints } from '../util/Values';
 import { Icon, Input, Button } from 'react-native-elements';
 
 export default class AddCash extends React.Component {
@@ -25,6 +25,7 @@ export default class AddCash extends React.Component {
         token: params.token,
         accountId: params.accountId,
       });
+      console.log(params);
     }
   }
 
@@ -32,11 +33,59 @@ export default class AddCash extends React.Component {
     this.props.navigation.goBack();
   }
 
-  onPressAddCash = () => {
+  onPressAddCash = async () => {
     if (this.state.loading) return;
-    this.setState({
-      loading: true,
-    });
+    this.setState({loading: true});
+
+    let token = null, accountId = null;
+    if (this.state.isOnboarding) {
+      token = this.props.navigation.state.params.token;
+      accountId = this.props.navigation.state.params.accountId;
+    } else {
+      //TODO set token and accountId from profile info
+      this.setState({loading: false});
+      return;
+    }
+    try {
+      let result = await fetch(Endpoints.CORE + 'addcash/initiate', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer ' + token,
+        },
+        method: 'POST',
+        body: JSON.stringify({
+          "accountId": accountId,
+          "savedAmount": this.state.amountToAdd * 10000, //multiplying by 100 to get cents and again by 100 to get hundreth cent
+          "savedCurrency": "ZAR", //TODO implement for handling other currencies
+          "savedUnit": "HUNDREDTH_CENT"
+        }),
+      });
+      if (result.ok) {
+        let resultJson = await result.json();
+        console.log(resultJson);
+        this.setState({loading: false});
+        // if (resultJson.result.includes("SUCCESS")) {
+        //   this.props.navigation.navigate("AddCash", {
+        //     isOnboarding: true,
+        //     systemWideUserId: resultJson.systemWideUserId,
+        //     token: resultJson.token,
+        //     accountId: resultJson.accountId[0],
+        //   });
+        // } else {
+        //   this.showError();
+        // }
+      } else {
+        let resultText = await result.text();
+        console.log("resultText:", resultText);
+        // throw result;
+      }
+      this.props.navigation.navigate('Payment');
+    } catch (error) {
+      console.log("error!", error);
+      this.setState({loading: false});
+      // this.showError();
+    }
   }
 
   onChangeAmount = (text) => {

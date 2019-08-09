@@ -121,7 +121,6 @@ export default class SetPassword extends React.Component {
       });
       if (result.ok) {
         let resultJson = await result.json();
-        console.log(resultJson);
         this.setState({loading: false});
         if (resultJson.result.includes("SUCCESS")) {
           this.props.navigation.navigate("AddCash", {
@@ -134,8 +133,6 @@ export default class SetPassword extends React.Component {
           this.showError();
         }
       } else {
-        // let resultJson = await result.json();
-        // console.log("resultJson:", resultJson);
         let resultText = await result.text();
         console.log("resultText:", resultText);
         throw result;
@@ -184,6 +181,7 @@ export default class SetPassword extends React.Component {
   }
 
   onPressUseThisPassword = () => {
+    if (this.state.generatePasswordLoading) return;
     this.setState({
       password: this.state.generatedPassword,
       passwordConfirm: this.state.generatedPassword,
