@@ -1,23 +1,89 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Clipboard } from 'react-native';
+import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Clipboard, AppState, Linking, ActivityIndicator } from 'react-native';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Endpoints, Colors } from '../util/Values';
 import { Button, Icon, Input } from 'react-native-elements';
 import { LinearGradient } from 'expo-linear-gradient';
 import Toast, {DURATION} from 'react-native-easy-toast';
+import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
 
 export default class Payment extends React.Component {
 
   constructor(props) {
     super(props);
     this.state = {
-      paymentLink: "http://pay.ozow.com/p/27UEB49E758",
+      paymentLink: "",
+      accountTransactionId: -1,
+      appState: AppState.currentState,
+      checkingForPayment: false,
+      token: "",
+      isOnboarding: false,
     };
   }
 
   async componentDidMount() {
+    AppState.addEventListener('change', this.handleAppStateChange);
+    let params = this.props.navigation.state.params;
+    if (params) {
+      this.setState({
+        paymentLink: params.urlToCompletePayment,
+        accountTransactionId: params.accountTransactionId,
+        token: params.token,
+        isOnboarding: params.isOnboarding,
+      });
+    }
+  }
 
+  componentWillUnmount() {
+    AppState.removeEventListener('change', this.handleAppStateChange);
+  }
+
+  handleAppStateChange = async (nextAppState) => {
+    if (this.state.appState.match(/inactive|background/) && nextAppState === 'active') {
+      if (this.state.checkingForPayment) {
+        this.setState({ appState: nextAppState });
+        return;
+      }
+      this.setState({
+        checkingForPayment: true,
+      });
+      try {
+        let token = null, accountId = null;
+        if (this.state.isOnboarding) {
+          token = this.props.navigation.state.params.token;
+        } else {
+          //TODO set token from profile info
+          this.setState({checkingForPayment: false});
+          return;
+        }
+        let result = await fetch(Endpoints.CORE + 'addcash/check?transactionId=' + this.state.accountTransactionId, {
+          headers: {
+            'Authorization': 'Bearer ' + token,
+          },
+          method: 'GET',
+        });
+        if (result.ok) {
+          let resultJson = await result.json();
+          console.log(resultJson);
+          if (resultJson.result.includes("PAYMENT_SUCCEEDED")) {
+            // this.props.navigation.navigate('PaymentComplete');
+          } else {
+            // this.props.navigation.navigate('PaymentPending');
+          }
+          this.setState({
+            checkingForPayment: false,
+          });
+        } else {
+          throw result;
+        }
+      } catch (error) {
+        console.log("error!", error.status);
+        this.setState({checkingForPayment: false});
+      }
+    } else {
+      this.setState({ appState: nextAppState });
+    }
   }
 
   onPressBack = () => {
@@ -34,7 +100,7 @@ export default class Payment extends React.Component {
   }
 
   onPressPaymentLink = () => {
-    //TODO
+    Linking.openURL(this.state.paymentLink);
   }
 
   render() {
@@ -118,6 +184,21 @@ export default class Payment extends React.Component {
           </View>
         </View>
         <Toast ref="toast" opacity={1} style={styles.toast}/>
+
+          <Dialog
+            visible={this.state.checkingForPayment}
+            dialogStyle={styles.dialogStyle}
+            dialogAnimation={new SlideAnimation({
+              slideFrom: 'bottom',
+            })}
+            onTouchOutside={() => {}}
+            onHardwareBackPress={() => {this.setState({checkingForPayment: false}); return true;}}
+          >
+            <DialogContent style={styles.dialogWrapper}>
+              <ActivityIndicator size="large" color={Colors.PURPLE} />
+              <Text style={styles.dialogText}>Checking if your payment is complete...</Text>
+            </DialogContent>
+          </Dialog>
       </View>
     );
   }
@@ -251,5 +332,20 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     tintColor: 'white',
+  },
+  dialogWrapper: {
+    width: '80%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 200,
+    paddingBottom: 0,
+  },
+  dialogText: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 17,
+    color: Colors.DARK_GRAY,
+    marginTop: 10,
+    marginHorizontal: 30,
+    textAlign: 'center',
   },
 });

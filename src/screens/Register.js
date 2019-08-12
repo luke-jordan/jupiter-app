@@ -5,6 +5,7 @@ import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Button, Icon, Input } from 'react-native-elements';
 import { Colors, Endpoints } from '../util/Values';
+import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
 
 export default class Register extends React.Component {
 
@@ -26,6 +27,7 @@ export default class Register extends React.Component {
       },
       generalErrorText: "There is a problem with your request",
       defaultGeneralErrorText: "There is a problem with your request",
+      dialogVisible: false,
     };
   }
 
@@ -146,6 +148,9 @@ export default class Register extends React.Component {
         let resultJson = await result.json();
         let errors = Object.assign({}, this.state.errors);
         if (resultJson.errorField.includes("NATIONAL_ID")) {
+          this.setState({
+            dialogVisible: true,
+          });
           errors.idNumber = true;
         }
         if (resultJson.errorField.includes("EMAIL")) {
@@ -170,6 +175,28 @@ export default class Register extends React.Component {
       errors: errors,
       generalErrorText: errorText ? errorText : this.state.defaultGeneralErrorText,
     });
+  }
+
+  onHideDialog = () => {
+    this.setState({
+      dialogVisible: false,
+    });
+    return true;
+  }
+
+  onPressLogin = () => {
+    this.onHideDialog();
+    this.props.navigation.navigate('Login');
+  }
+
+  onPressResetPassword = () => {
+    this.onHideDialog();
+    this.props.navigation.navigate('ResetPassword');
+  }
+
+  onPressContactUs = () => {
+    this.onHideDialog();
+    //TODO
   }
 
   render() {
@@ -274,6 +301,55 @@ export default class Register extends React.Component {
               end: { x: 1, y: 0.5 },
             }} />
         </View>
+
+        <Dialog
+          visible={this.state.dialogVisible}
+          dialogStyle={styles.dialogStyle}
+          dialogAnimation={new SlideAnimation({
+            slideFrom: 'bottom',
+          })}
+          onTouchOutside={this.onHideDialog}
+          onHardwareBackPress={this.onHideDialog}
+        >
+          <DialogContent style={styles.dialogWrapper}>
+            <View style={styles.helpDialog}>
+              <Text style={styles.helpTitle}>Account already exists</Text>
+              <Text style={styles.helpContent}>An account with this <Text style={styles.bold}>ID number</Text> has already been created.</Text>
+              <Text style={styles.explanation}>Log in to your account</Text>
+              <Button
+                title="LOG IN"
+                loading={this.state.loginLoading}
+                titleStyle={styles.buttonTitleStyle}
+                buttonStyle={styles.buttonStyle}
+                containerStyle={styles.buttonContainerStyle}
+                onPress={this.onPressLogin}
+                linearGradientProps={{
+                  colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+                  start: { x: 0, y: 0.5 },
+                  end: { x: 1, y: 0.5 },
+                }} />
+              <Text style={styles.explanation}>Forgot your password?</Text>
+              <Button
+                title="RESET PASSWORD"
+                loading={this.state.resetPasswordLoading}
+                titleStyle={styles.buttonTitleStyle}
+                buttonStyle={styles.buttonStyle}
+                containerStyle={styles.buttonContainerStyle}
+                onPress={this.onPressResetPassword}
+                linearGradientProps={{
+                  colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+                  start: { x: 0, y: 0.5 },
+                  end: { x: 1, y: 0.5 },
+                }} />
+              <TouchableOpacity style={styles.closeDialog} onPress={this.onHideDialog} >
+                <Image source={require('../../assets/close.png')}/>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.dialogFooter}>
+              <Text style={styles.dialogFooterText}>Something not right? <Text style={styles.dialogFooterLink} onPress={this.onPressContactUs}>Contact us</Text></Text>
+            </View>
+          </DialogContent>
+        </Dialog>
       </KeyboardAvoidingView>
     );
   }
@@ -386,5 +462,85 @@ const styles = StyleSheet.create({
   },
   disclaimerButton: {
     textDecorationLine: 'underline',
-  }
+  },
+  dialogStyle: {
+    width: '90%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dialogWrapper: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 0,
+    paddingLeft: 0,
+    paddingRight: 0,
+    paddingTop: 0,
+  },
+  helpDialog: {
+    minHeight: 330,
+    borderRadius: 10,
+    justifyContent: 'space-around',
+    paddingBottom: 20,
+    paddingTop: 10,
+    paddingHorizontal: 15,
+  },
+  helpTitle: {
+    textAlign: 'center',
+    fontFamily: 'poppins-semibold',
+    fontSize: 19,
+    color: Colors.DARK_GRAY,
+  },
+  helpContent: {
+    fontFamily: 'poppins-regular',
+    color: Colors.MEDIUM_GRAY,
+    fontSize: 16,
+    lineHeight: 20,
+    textAlign: 'center',
+  },
+  closeDialog: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+  },
+  buttonTitleStyle: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 17,
+    color: 'white',
+  },
+  buttonStyle: {
+    borderRadius: 10,
+    minHeight: 55,
+    minWidth: 220,
+  },
+  buttonContainerStyle: {
+    alignSelf: 'stretch',
+    paddingHorizontal: 15,
+  },
+  explanation: {
+    fontFamily: 'poppins-regular',
+    fontSize: 15,
+    color: Colors.MEDIUM_GRAY,
+    textAlign: 'center',
+    paddingHorizontal: 15,
+  },
+  dialogFooter: {
+    backgroundColor: Colors.BACKGROUND_GRAY,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dialogFooterText: {
+    fontFamily: 'poppins-regular',
+    fontSize: 13,
+    color: Colors.MEDIUM_GRAY,
+    textAlign: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 15,
+  },
+  dialogFooterLink: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 13,
+    color: Colors.PURPLE,
+  },
 });

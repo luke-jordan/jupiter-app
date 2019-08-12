@@ -25,7 +25,6 @@ export default class AddCash extends React.Component {
         token: params.token,
         accountId: params.accountId,
       });
-      console.log(params);
     }
   }
 
@@ -63,24 +62,19 @@ export default class AddCash extends React.Component {
       });
       if (result.ok) {
         let resultJson = await result.json();
-        console.log(resultJson);
+        //TODO this might need improving after we implement the full backend response
         this.setState({loading: false});
-        // if (resultJson.result.includes("SUCCESS")) {
-        //   this.props.navigation.navigate("AddCash", {
-        //     isOnboarding: true,
-        //     systemWideUserId: resultJson.systemWideUserId,
-        //     token: resultJson.token,
-        //     accountId: resultJson.accountId[0],
-        //   });
-        // } else {
-        //   this.showError();
-        // }
+        this.props.navigation.navigate('Payment', {
+          urlToCompletePayment: resultJson.paymentRedirectDetails.urlToCompletePayment,
+          accountTransactionId: resultJson.transactionDetails.accountTransactionId,
+          token: token,
+          isOnboarding: this.state.isOnboarding,
+        });
       } else {
         let resultText = await result.text();
         console.log("resultText:", resultText);
-        // throw result;
+        throw result;
       }
-      this.props.navigation.navigate('Payment');
     } catch (error) {
       console.log("error!", error);
       this.setState({loading: false});
