@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Clipboard, AppState, Linking, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Clipboard, AppState, Linking, ActivityIndicator, BackHandler } from 'react-native';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Endpoints, Colors } from '../util/Values';
@@ -24,6 +24,7 @@ export default class Payment extends React.Component {
 
   async componentDidMount() {
     AppState.addEventListener('change', this.handleAppStateChange);
+    this.backHandler = BackHandler.addEventListener('hardwareBackPress', this.handleHardwareBackPress);
     let params = this.props.navigation.state.params;
     if (params) {
       this.setState({
@@ -37,6 +38,7 @@ export default class Payment extends React.Component {
 
   componentWillUnmount() {
     AppState.removeEventListener('change', this.handleAppStateChange);
+    this.backHandler.remove();
   }
 
   handleAppStateChange = async (nextAppState) => {
@@ -45,53 +47,81 @@ export default class Payment extends React.Component {
         this.setState({ appState: nextAppState });
         return;
       }
-      this.setState({
-        checkingForPayment: true,
-      });
-      try {
-        let token = null, accountId = null;
-        if (this.state.isOnboarding) {
-          token = this.props.navigation.state.params.token;
-        } else {
-          //TODO set token from profile info
-          this.setState({checkingForPayment: false});
-          return;
-        }
-        let result = await fetch(Endpoints.CORE + 'addcash/check?transactionId=' + this.state.accountTransactionId, {
-          headers: {
-            'Authorization': 'Bearer ' + token,
-          },
-          method: 'GET',
-        });
-        if (result.ok) {
-          let resultJson = await result.json();
-          console.log(resultJson);
-          if (resultJson.result.includes("PAYMENT_SUCCEEDED")) {
-            // this.props.navigation.navigate('PaymentComplete');
-          } else {
-            // this.props.navigation.navigate('PaymentPending');
-          }
-          this.setState({
-            checkingForPayment: false,
-          });
-        } else {
-          throw result;
-        }
-      } catch (error) {
-        console.log("error!", error.status);
-        this.setState({checkingForPayment: false});
-      }
+      this.checkIfPaymentCompleted();
     } else {
       this.setState({ appState: nextAppState });
     }
   }
 
+  checkIfPaymentCompleted = async () => {
+    this.setState({
+      checkingForPayment: true,
+    });
+    try {
+      let token = null, accountId = null;
+      if (this.state.isOnboarding) {
+        token = this.props.navigation.state.params.token;
+      } else {
+        //TODO set token from profile info
+        this.setState({checkingForPayment: false});
+        return;
+      }
+      // let result = await fetch(Endpoints.CORE + 'addcash/check?transactionId=' + this.state.accountTransactionId + '&failureType=PENDING', {
+      let result = await fetch(Endpoints.CORE + 'addcash/check?transactionId=' + this.state.accountTransactionId, {
+        headers: {
+          'Authorization': 'Bearer ' + token,
+        },
+        method: 'GET',
+      });
+      if (result.ok) {
+        let resultJson = await result.json();
+        // console.log(resultJson);
+        this.setState({
+          checkingForPayment: false,
+        });
+        AppState.removeEventListener('change', this.handleAppStateChange);
+        this.backHandler.remove();
+        if (resultJson.result.includes("PAYMENT_SUCCEEDED")) {
+          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'PaymentComplete', {
+            paymentLink: this.state.paymentLink,
+            accountTransactionId:this.state.accountTransactionId,
+            token: this.state.token,
+            isOnboarding: this.state.isOnboarding,
+          });
+        } else if (resultJson.result.includes("PAYMENT_PENDING")) {
+          this.props.navigation.navigate('CheckingForPayment', {
+            paymentLink: this.state.paymentLink,
+            accountTransactionId:this.state.accountTransactionId,
+            token: this.state.token,
+            isOnboarding: this.state.isOnboarding,
+          });
+        } else {
+          //failed
+          //TODO redirect to failed screen
+        }
+      } else {
+        throw result;
+      }
+    } catch (error) {
+      console.log("error!", error.status);
+      this.setState({checkingForPayment: false});
+    }
+  }
+
+  handleHardwareBackPress = () => {
+    AppState.removeEventListener('change', this.handleAppStateChange);
+    this.backHandler.remove();
+    return true;
+  }
+
   onPressBack = () => {
+    AppState.removeEventListener('change', this.handleAppStateChange);
+    this.backHandler.remove();
     this.props.navigation.goBack();
   }
 
   onPressAlreadyPaid = () => {
-    this.props.navigation.navigate('CheckingForPayment');
+    this.checkIfPaymentCompleted();
   }
 
   onPressCopy = () => {
@@ -185,20 +215,20 @@ export default class Payment extends React.Component {
         </View>
         <Toast ref="toast" opacity={1} style={styles.toast}/>
 
-          <Dialog
-            visible={this.state.checkingForPayment}
-            dialogStyle={styles.dialogStyle}
-            dialogAnimation={new SlideAnimation({
-              slideFrom: 'bottom',
-            })}
-            onTouchOutside={() => {}}
-            onHardwareBackPress={() => {this.setState({checkingForPayment: false}); return true;}}
-          >
-            <DialogContent style={styles.dialogWrapper}>
-              <ActivityIndicator size="large" color={Colors.PURPLE} />
-              <Text style={styles.dialogText}>Checking if your payment is complete...</Text>
-            </DialogContent>
-          </Dialog>
+        <Dialog
+          visible={this.state.checkingForPayment}
+          dialogStyle={styles.dialogStyle}
+          dialogAnimation={new SlideAnimation({
+            slideFrom: 'bottom',
+          })}
+          onTouchOutside={() => {}}
+          onHardwareBackPress={() => {this.setState({checkingForPayment: false}); return true;}}
+        >
+          <DialogContent style={styles.dialogWrapper}>
+            <ActivityIndicator size="large" color={Colors.PURPLE} />
+            <Text style={styles.dialogText}>Checking if your payment is complete...</Text>
+          </DialogContent>
+        </Dialog>
       </View>
     );
   }
@@ -347,5 +377,10 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginHorizontal: 30,
     textAlign: 'center',
+  },
+  toast: {
+    backgroundColor: Colors.DARK_GRAY,
+    width: '60%',
+    alignItems: 'center',
   },
 });

@@ -66,7 +66,7 @@ export default class AddCash extends React.Component {
         this.setState({loading: false});
         this.props.navigation.navigate('Payment', {
           urlToCompletePayment: resultJson.paymentRedirectDetails.urlToCompletePayment,
-          accountTransactionId: resultJson.transactionDetails.accountTransactionId,
+          accountTransactionId: resultJson.transactionDetails[0].accountTransactionId,
           token: token,
           isOnboarding: this.state.isOnboarding,
         });

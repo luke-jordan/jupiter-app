@@ -15,8 +15,8 @@ export default class Register extends React.Component {
       loading: false,
       firstName: "test",
       lastName: "test",
-      idNumber: "000000031",
-      userId: "testemail31@test.tst",
+      idNumber: "000000056",
+      userId: "testemail56@test.tst",
       referralCode: "",
       errors: {
         firstName: false,

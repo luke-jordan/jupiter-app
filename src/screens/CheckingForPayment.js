@@ -1,24 +1,37 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Linking, Clipboard, ActivityIndicator } from 'react-native';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Endpoints, Colors } from '../util/Values';
 import { Button, Icon, Input } from 'react-native-elements';
 import { LinearGradient } from 'expo-linear-gradient';
 import Toast, {DURATION} from 'react-native-easy-toast';
+import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
 
 export default class CheckingForPayment extends React.Component {
 
   constructor(props) {
     super(props);
     this.state = {
-      paymentLink: "http://pay.ozow.com/p/27UEB49E758",
+      paymentLink: "",
+      accountTransactionId: -1,
+      token: "",
+      isOnboarding: false,
       loading: false,
+      checkingForPayment: false,
     };
   }
 
   async componentDidMount() {
-
+    let params = this.props.navigation.state.params;
+    if (params) {
+      this.setState({
+        paymentLink: params.paymentLink,
+        accountTransactionId: params.accountTransactionId,
+        token: params.token,
+        isOnboarding: params.isOnboarding,
+      });
+    }
   }
 
   onPressCopy = () => {
@@ -26,9 +39,65 @@ export default class CheckingForPayment extends React.Component {
     this.refs.toast.show('Copied to clipboard!');
   }
 
+  checkIfPaymentCompleted = async () => {
+    this.setState({
+      checkingForPayment: true,
+      loading: true,
+    });
+    try {
+      let token = null, accountId = null;
+      if (this.state.isOnboarding) {
+        token = this.props.navigation.state.params.token;
+      } else {
+        //TODO set token from profile info
+        this.setState({checkingForPayment: false, loading: false});
+        return;
+      }
+      let result = await fetch(Endpoints.CORE + 'addcash/check?transactionId=' + this.state.accountTransactionId + '&failureType=PENDING', {
+        headers: {
+          'Authorization': 'Bearer ' + token,
+        },
+        method: 'GET',
+      });
+      if (result.ok) {
+        let resultJson = await result.json();
+        // console.log(resultJson);
+        AppState.removeEventListener('change', this.handleAppStateChange);
+        this.backHandler.remove();
+        this.setState({
+          checkingForPayment: false,
+          loading: false,
+        });
+        if (resultJson.result.includes("PAYMENT_SUCCEEDED")) {
+          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'PaymentComplete', {
+            paymentLink: this.state.paymentLink,
+            accountTransactionId:this.state.accountTransactionId,
+            token: this.state.token,
+            isOnboarding: this.state.isOnboarding,
+          });
+        } else if (resultJson.result.includes("PAYMENT_PENDING")) {
+          //do nothing, already on the page
+        } else {
+          //failed
+          //TODO redirect to failed screen
+        }
+      } else {
+        throw result;
+      }
+    } catch (error) {
+      console.log("error!", error.status);
+      this.setState({checkingForPayment: false, loading: false});
+    }
+  }
+
   onPressAlreadyPaid = () => {
     if (this.state.loading) return;
     this.setState({loading: true});
+    this.checkIfPaymentCompleted();
+  }
+
+  onPressPaymentLink = () => {
+    Linking.openURL(this.state.paymentLink);
   }
 
   render() {
@@ -71,6 +140,23 @@ export default class CheckingForPayment extends React.Component {
         <View style={styles.footer}>
           <Text style={styles.footerText}>Payment still not going through? <Text style={styles.footerLink}>Contact us</Text></Text>
         </View>
+
+        <Dialog
+          visible={this.state.checkingForPayment}
+          dialogStyle={styles.dialogStyle}
+          dialogAnimation={new SlideAnimation({
+            slideFrom: 'bottom',
+          })}
+          onTouchOutside={() => {}}
+          onHardwareBackPress={() => {this.setState({checkingForPayment: false}); return true;}}
+        >
+          <DialogContent style={styles.dialogWrapper}>
+            <ActivityIndicator size="large" color={Colors.PURPLE} />
+            <Text style={styles.dialogText}>Checking if your payment is complete...</Text>
+          </DialogContent>
+        </Dialog>
+
+        <Toast ref="toast" opacity={1} style={styles.toast}/>
       </View>
     );
   }
@@ -118,22 +204,22 @@ const styles = StyleSheet.create({
   gradientStyle: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-around',
     width: '90%',
     borderRadius: 10,
     minHeight: 65,
-    minWidth: 220,
+    paddingHorizontal: 20,
   },
   paymentLink: {
+    flex: 1,
     fontFamily: 'poppins-semibold',
     fontSize: 14,
     color: 'white',
-    textAlign: 'center',
   },
   copyIcon: {
     width: 22,
     height: 22,
     tintColor: 'white',
+    alignSelf: 'flex-end',
   },
   orView: {
     backgroundColor: Colors.BACKGROUND_GRAY,
@@ -187,5 +273,25 @@ const styles = StyleSheet.create({
   footerLink: {
     fontFamily: 'poppins-semibold',
     color: Colors.PURPLE,
+  },
+  toast: {
+    backgroundColor: Colors.DARK_GRAY,
+    width: '60%',
+    alignItems: 'center',
+  },
+  dialogWrapper: {
+    width: '80%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 200,
+    paddingBottom: 0,
+  },
+  dialogText: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 17,
+    color: Colors.DARK_GRAY,
+    marginTop: 10,
+    marginHorizontal: 30,
+    textAlign: 'center',
   },
 });
