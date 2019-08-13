@@ -9,7 +9,7 @@ export default class AddCash extends React.Component {
     super(props);
     this.state = {
       currency: "R",
-      balance: "2,200.40",
+      balance: 0,
       amountToAdd: parseFloat(100).toFixed(2),
       isOnboarding: false,
       loading: false,
@@ -26,6 +26,21 @@ export default class AddCash extends React.Component {
         accountId: params.accountId,
       });
     }
+
+    if (!params || !params.isOnboarding) {
+      let info = await AsyncStorage.getItem('userInfo');
+      if (!info) {
+        NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Login');
+      } else {
+        info = JSON.parse(info);
+        this.setState({
+          balance: info.balance.currentBalance.amount,
+          unit: info.balance.currentBalance.unit,
+          token: info.token,
+          accountId: info.balance.accountId[0],
+        });
+      }
+    }
   }
 
   onPressBack = () => {
@@ -36,25 +51,16 @@ export default class AddCash extends React.Component {
     if (this.state.loading) return;
     this.setState({loading: true});
 
-    let token = null, accountId = null;
-    if (this.state.isOnboarding) {
-      token = this.props.navigation.state.params.token;
-      accountId = this.props.navigation.state.params.accountId;
-    } else {
-      //TODO set token and accountId from profile info
-      this.setState({loading: false});
-      return;
-    }
     try {
       let result = await fetch(Endpoints.CORE + 'addcash/initiate', {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'Authorization': 'Bearer ' + token,
+          'Authorization': 'Bearer ' + this.state.token,
         },
         method: 'POST',
         body: JSON.stringify({
-          "accountId": accountId,
+          "accountId": this.state.accountId,
           "savedAmount": this.state.amountToAdd * 10000, //multiplying by 100 to get cents and again by 100 to get hundreth cent
           "savedCurrency": "ZAR", //TODO implement for handling other currencies
           "savedUnit": "HUNDREDTH_CENT"
@@ -67,8 +73,9 @@ export default class AddCash extends React.Component {
         this.props.navigation.navigate('Payment', {
           urlToCompletePayment: resultJson.paymentRedirectDetails.urlToCompletePayment,
           accountTransactionId: resultJson.transactionDetails[0].accountTransactionId,
-          token: token,
+          token: this.state.token,
           isOnboarding: this.state.isOnboarding,
+          amountAdded: this.state.amountToAdd,
         });
       } else {
         let resultText = await result.text();
@@ -89,6 +96,35 @@ export default class AddCash extends React.Component {
   onChangeAmountEnd = () => {
     this.setState({amountToAdd: parseFloat(this.state.amountToAdd).toFixed(2)});
     this.amountInputRef.blur();
+  }
+
+  getFormattedBalance(balance) {
+    return (balance / this.getDivisor(this.state.unit)).toFixed(2);
+  }
+
+  getDivisor(unit) {
+    switch(unit) {
+      case "MILLIONTH_CENT":
+      return 100000000;
+
+      case "TEN_THOUSANDTH_CENT":
+      return 1000000;
+
+      case "THOUSANDTH_CENT":
+      return 100000;
+
+      case "HUNDREDTH_CENT":
+      return 10000;
+
+      case "WHOLE_CENT":
+      return 100;
+
+      case "WHOLE_CURRENCY":
+      return 1;
+
+      default:
+      return 1;
+    }
   }
 
   renderHeader() {
@@ -135,7 +171,7 @@ export default class AddCash extends React.Component {
             <Text style={styles.onboardingTitle}>Choose an amount</Text>
             :
             <View style={styles.currentBalance}>
-              <Text style={styles.balanceAmount}>{this.state.currency}{this.state.balance}</Text>
+              <Text style={styles.balanceAmount}>{this.state.currency}{this.getFormattedBalance(this.state.balance)}</Text>
               <Text style={styles.balanceDesc}>Current Balance</Text>
             </View>
           }

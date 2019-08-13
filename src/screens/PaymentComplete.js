@@ -14,6 +14,7 @@ export default class PaymentComplete extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      isOnboarding: false,
       loading: false,
       fetchingProfile: true,
       userInfo: null,
@@ -22,7 +23,18 @@ export default class PaymentComplete extends React.Component {
 
   async componentDidMount() {
     this.backHandler = BackHandler.addEventListener('hardwareBackPress', this.handleHardwareBackPress);
-    this.fetchProfile();
+
+    let params = this.props.navigation.state.params;
+    if (params) {
+      this.setState({
+        paymentLink: params.paymentLink,
+        accountTransactionId: params.accountTransactionId,
+        token: params.token,
+        isOnboarding: params.isOnboarding,
+      });
+    }
+
+    this.fetchProfile(params.token);
   }
 
   componentWillUnmount() {
@@ -35,14 +47,13 @@ export default class PaymentComplete extends React.Component {
     return false;
   }
 
-  async fetchProfile() {
+  async fetchProfile(token) {
     this.setState({
       fetchingProfile: true,
     });
     try {
-      let token = this.props.navigation.state.params.token;
       if (!token) {
-        //TODO handle lack of token?
+        NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Login');
       }
       let result = await fetch(Endpoints.AUTH + 'profile/fetch', {
         headers: {
@@ -52,7 +63,6 @@ export default class PaymentComplete extends React.Component {
       });
       if (result.ok) {
         let resultJson = await result.json();
-        console.log(resultJson);
         AsyncStorage.setItem('userInfo', JSON.stringify(resultJson));
         this.setState({
           userInfo: resultJson,
@@ -70,7 +80,7 @@ export default class PaymentComplete extends React.Component {
   onPressDone = (attempts) => {
     if (!attempts) attempts = 0;
     this.setState({loading: true});
-    if (this.state.fetchingProfile && attempts > 10) {
+    if (this.state.fetchingProfile && attempts < 10) {
       setTimeout(() => {this.onPressDone()}, 1000);
     } else {
       this.setState({loading: false});
@@ -78,7 +88,38 @@ export default class PaymentComplete extends React.Component {
     }
   }
 
+  getFormattedBalance(balance, unit) {
+    return (balance / this.getDivisor(unit)).toFixed(2);
+  }
+
+  getDivisor(unit) {
+    switch(unit) {
+      case "MILLIONTH_CENT":
+      return 100000000;
+
+      case "TEN_THOUSANDTH_CENT":
+      return 1000000;
+
+      case "THOUSANDTH_CENT":
+      return 100000;
+
+      case "HUNDREDTH_CENT":
+      return 10000;
+
+      case "WHOLE_CENT":
+      return 100;
+
+      case "WHOLE_CURRENCY":
+      return 1;
+
+      default:
+      return 1;
+    }
+  }
+
   render() {
+    let newBalance = this.props.navigation.state.params.newBalance;
+    let amountAdded = this.props.navigation.state.params.amountAdded;
     return (
       <View style={styles.container}>
         <TouchableOpacity style={styles.closeButton} onPress={this.onPressDone}>
@@ -97,12 +138,12 @@ export default class PaymentComplete extends React.Component {
           </View>
           <View style={styles.amountsView}>
             <Text style={styles.description}>Your new account has been topped up with:</Text>
-            <Text style={styles.amount}>{this.props.amount}R100.00</Text>
+            <Text style={styles.amount}>{this.props.amount}R{amountAdded}</Text>
           </View>
           <View style={styles.separator} />
           <View style={styles.amountsView}>
             <Text style={styles.description}>Your balance is now:</Text>
-            <Text style={styles.amount}>{this.props.balance}R100.00</Text>
+            <Text style={styles.amount}>{this.props.balance}R{this.getFormattedBalance(newBalance.amount, newBalance.unit)}</Text>
           </View>
           <View style={styles.separator} />
         </View>

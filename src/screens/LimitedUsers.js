@@ -90,8 +90,8 @@ export default class LimitedUsers extends React.Component {
         <View style={styles.wrapper}>
           <Image style={styles.image} source={require('../../assets/group_10.png')} resizeMode="contain"/>
           <Text style={styles.title}>Jupiter is giving early access to limited users.</Text>
-          <Text style={styles.description}><Text style={styles.bold}>{this.state.notifyMode ? "Don’t have a referral code?" : "Found a referral code? "}</Text>{this.state.notifyMode ? "\nBe one of the first to know when access is open! " : ""}
-            <Text style={styles.textAsButton} onPress={this.onPressNotifyMe}>{this.state.notifyMode ? "Notify me" : "Press here to enter it"}</Text>
+          <Text style={styles.description}><Text style={styles.bold}>{this.state.notifyMode ? "Found a referral code? " : "Don’t have a referral code? "}</Text>{this.state.notifyMode ? "" : "\nBe one of the first to know when access is open! "}
+            <Text style={styles.textAsButton} onPress={this.onPressNotifyMe}>{this.state.notifyMode ? "Press here to enter it" : "Notify me"}</Text>
           </Text>
         </View>
         <View style={styles.inputWrapper}>

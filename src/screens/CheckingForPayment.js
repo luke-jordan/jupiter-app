@@ -30,6 +30,7 @@ export default class CheckingForPayment extends React.Component {
         accountTransactionId: params.accountTransactionId,
         token: params.token,
         isOnboarding: params.isOnboarding,
+        amountAdded: params.amountAdded,
       });
     }
   }
@@ -74,6 +75,8 @@ export default class CheckingForPayment extends React.Component {
             accountTransactionId:this.state.accountTransactionId,
             token: this.state.token,
             isOnboarding: this.state.isOnboarding,
+            newBalance: resultJson.newBalance,
+            amountAdded: this.state.amountAdded,
           });
         } else if (resultJson.result.includes("PAYMENT_PENDING")) {
           //do nothing, already on the page

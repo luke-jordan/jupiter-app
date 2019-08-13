@@ -32,6 +32,7 @@ export default class Payment extends React.Component {
         accountTransactionId: params.accountTransactionId,
         token: params.token,
         isOnboarding: params.isOnboarding,
+        amountAdded: params.amountAdded,
       });
     }
   }
@@ -58,24 +59,15 @@ export default class Payment extends React.Component {
       checkingForPayment: true,
     });
     try {
-      let token = null, accountId = null;
-      if (this.state.isOnboarding) {
-        token = this.props.navigation.state.params.token;
-      } else {
-        //TODO set token from profile info
-        this.setState({checkingForPayment: false});
-        return;
-      }
       // let result = await fetch(Endpoints.CORE + 'addcash/check?transactionId=' + this.state.accountTransactionId + '&failureType=PENDING', {
       let result = await fetch(Endpoints.CORE + 'addcash/check?transactionId=' + this.state.accountTransactionId, {
         headers: {
-          'Authorization': 'Bearer ' + token,
+          'Authorization': 'Bearer ' + this.state.token,
         },
         method: 'GET',
       });
       if (result.ok) {
         let resultJson = await result.json();
-        // console.log(resultJson);
         this.setState({
           checkingForPayment: false,
         });
@@ -84,9 +76,11 @@ export default class Payment extends React.Component {
         if (resultJson.result.includes("PAYMENT_SUCCEEDED")) {
           NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'PaymentComplete', {
             paymentLink: this.state.paymentLink,
-            accountTransactionId:this.state.accountTransactionId,
+            accountTransactionId: this.state.accountTransactionId,
             token: this.state.token,
             isOnboarding: this.state.isOnboarding,
+            newBalance: resultJson.newBalance,
+            amountAdded: this.state.amountAdded,
           });
         } else if (resultJson.result.includes("PAYMENT_PENDING")) {
           this.props.navigation.navigate('CheckingForPayment', {
@@ -94,6 +88,7 @@ export default class Payment extends React.Component {
             accountTransactionId:this.state.accountTransactionId,
             token: this.state.token,
             isOnboarding: this.state.isOnboarding,
+            amountAdded: this.state.amountAdded,
           });
         } else {
           //failed
