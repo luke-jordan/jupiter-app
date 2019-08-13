@@ -42,22 +42,26 @@ export default class OTPVerification extends React.Component {
       });
       if (result.ok) {
         let resultJson = await result.json();
-        //todo handle response
-        AsyncStorage.setItem('userInfo', JSON.stringify(resultJson));
         this.setState({loading: false});
-        NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', { userInfo: resultJson });
         // console.log("result:", resultJson);
+        if (resultJson.onboardStepsComplete.includes("ALL")) {
+          AsyncStorage.setItem('userInfo', JSON.stringify(resultJson));
+          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', { userInfo: resultJson });
+        } else {
+          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'PendingRegistrationSteps', { userInfo: resultJson });
+        }
       } else {
+        // NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'PendingRegistrationSteps');
         throw result;
       }
     } catch (error) {
-      console.log("error!", error);
+      console.log("error!", await error.text());
       this.setState({loading: false});
     }
   }
 
   onPressResend = () => {
-
+    //TODO ?
   }
 
   onPressHelp = () => {

@@ -10,7 +10,7 @@ export default class AddCash extends React.Component {
     this.state = {
       currency: "R",
       balance: "2,200.40",
-      amountToAdd: 0,
+      amountToAdd: parseFloat(100).toFixed(2),
       isOnboarding: false,
       loading: false,
     };

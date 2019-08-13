@@ -8,17 +8,21 @@ import { Button, Icon, Input } from 'react-native-elements';
 let {height, width} = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
+//TODO the screen assumes we are always in onboarding mode; we should reuse it for other cases too
 export default class PaymentComplete extends React.Component {
 
   constructor(props) {
     super(props);
     this.state = {
       loading: false,
+      fetchingProfile: true,
+      userInfo: null,
     };
   }
 
   async componentDidMount() {
     this.backHandler = BackHandler.addEventListener('hardwareBackPress', this.handleHardwareBackPress);
+    this.fetchProfile();
   }
 
   componentWillUnmount() {
@@ -31,8 +35,47 @@ export default class PaymentComplete extends React.Component {
     return false;
   }
 
-  onPressDone = () => {
-    NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home');
+  async fetchProfile() {
+    this.setState({
+      fetchingProfile: true,
+    });
+    try {
+      let token = this.props.navigation.state.params.token;
+      if (!token) {
+        //TODO handle lack of token?
+      }
+      let result = await fetch(Endpoints.AUTH + 'profile/fetch', {
+        headers: {
+          'Authorization': 'Bearer ' + token,
+        },
+        method: 'GET',
+      });
+      if (result.ok) {
+        let resultJson = await result.json();
+        console.log(resultJson);
+        AsyncStorage.setItem('userInfo', JSON.stringify(resultJson));
+        this.setState({
+          userInfo: resultJson,
+          fetchingProfile: false,
+        });
+      } else {
+        throw result;
+      }
+    } catch (error) {
+      console.log("error!", error.status);
+      this.setState({fetchingProfile: false});
+    }
+  }
+
+  onPressDone = (attempts) => {
+    if (!attempts) attempts = 0;
+    this.setState({loading: true});
+    if (this.state.fetchingProfile && attempts > 10) {
+      setTimeout(() => {this.onPressDone()}, 1000);
+    } else {
+      this.setState({loading: false});
+      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', { userInfo: this.state.userInfo });
+    }
   }
 
   render() {
