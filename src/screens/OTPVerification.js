@@ -61,7 +61,31 @@ export default class OTPVerification extends React.Component {
   }
 
   onPressResend = () => {
-    //TODO ?
+    if (this.state.loading) return;
+    this.setState({loading: true});
+    let userId = this.props.navigation.getParam("userId");
+    let password = this.props.navigation.getParam("password");
+    try {
+      let result = await fetch(Endpoints.AUTH + 'otp/generate', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        method: 'POST',
+        body: JSON.stringify({
+          "phoneOrEmail": userId,
+          "type": "LOGIN",
+        }),
+      });
+      if (result.ok) {
+        this.setState({loading: false});
+      } else {
+        throw result;
+      }
+    } catch (error) {
+      console.log("error!", error);
+      this.setState({loading: false});
+    }
   }
 
   onPressHelp = () => {
