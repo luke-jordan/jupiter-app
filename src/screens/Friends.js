@@ -1,6 +1,6 @@
 import React from 'react';
 import * as Font from 'expo-font';
-import { StyleSheet, View, Image, Text, AsyncStorage, Dimensions, Clipboard, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Image, Text, AsyncStorage, Dimensions, Clipboard, TouchableOpacity, Share } from 'react-native';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Endpoints, Colors } from '../util/Values';
@@ -16,16 +16,35 @@ export default class Friends extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      shareCode: "jupiter2019!savings",
+      shareCode: "",
+      shareLink: "https://jupiter.com/share/something",
     };
   }
 
   async componentDidMount() {
+    let info = await AsyncStorage.getItem('userInfo');
+    if (!info) {
+      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Login');
+    } else {
+      info = JSON.parse(info);
+      this.setState({
+        shareCode: info.profile.referralCode,
+      });
+    }
 
   }
 
-  onPressShare = () => {
+  onPressShare = async () => {
     if (this.state.loading) return;
+    this.setState({loading: true});
+    try {
+      const result = await Share.share({
+        message: `I’d love for you to join me as a friend on the Jupiter app. Jupiter makes saving at good rates, with no lock up, easy and enticing for everyone! As friends we can earn extra rewards and encourage each other to save more! Just use my referral code ${this.state.shareCode} to sign up. Download here: ${this.state.shareLink}`,
+      });
+    } catch (error) {
+      //handle somehow?
+    }
+    this.setState({loading: false});
   }
 
   onPressCopy = () => {
