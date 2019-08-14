@@ -60,7 +60,7 @@ export default class OTPVerification extends React.Component {
     }
   }
 
-  onPressResend = () => {
+  onPressResend = async () => {
     if (this.state.loading) return;
     this.setState({loading: true});
     let userId = this.props.navigation.getParam("userId");
