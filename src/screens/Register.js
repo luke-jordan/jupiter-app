@@ -6,6 +6,9 @@ import { LoggingUtil } from '../util/LoggingUtil';
 import { Button, Icon, Input } from 'react-native-elements';
 import { Colors, Endpoints } from '../util/Values';
 import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
+var PhoneNumber = require( 'awesome-phonenumber' );
+
+const emailRegex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 
 export default class Register extends React.Component {
 
@@ -16,7 +19,7 @@ export default class Register extends React.Component {
       firstName: "test",
       lastName: "test",
       idNumber: "000000056",
-      userId: "testemail56@test.tst",
+      userId: "+359886405663",
       referralCode: "",
       errors: {
         firstName: false,
@@ -57,6 +60,10 @@ export default class Register extends React.Component {
   onEditField = (text, field) => {
     let errors = Object.assign({}, this.state.errors);
     errors[field] = false;
+    if (field == "userId") {
+      errors.phone = false;
+      errors.email = false;
+    }
     errors.general = false;
     this.setState({
       [field]: text,
@@ -64,7 +71,7 @@ export default class Register extends React.Component {
     });
   }
 
-  onEndEditing = (field) => {
+  onEndEditing = async (field) => {
     let errors = Object.assign({}, this.state.errors);
     if (this.fieldIsMandatory(field) && this.state[field].length == 0) {
       errors[field] = true;
@@ -96,8 +103,21 @@ export default class Register extends React.Component {
       hasErrors = true;
       errors.idNumber = true;
     }
-    //TODO validate email format or phone number
-    // (note: not strictly necessary, but best if phone number is converted to E164 standard, e.g., 27813074085),
+    if (this.state.userId.length > 0) {
+      if (this.state.userId.includes("@")) {
+        if (!emailRegex.test(this.state.userId.toLowerCase())) {
+          hasErrors = true;
+          errors.email = true;          
+        }
+      } else {
+        let phoneInput = this.state.userId;
+        var number = new PhoneNumber(phoneInput);
+        if (!number.isValid()) {
+          hasErrors = true;
+          errors.phone = true;
+        }
+      }
+    }
     if (hasErrors) {
       await this.setState({
         errors: errors,
@@ -274,8 +294,13 @@ export default class Register extends React.Component {
                   containerStyle={styles.containerStyle}
                 />
                 {
-                  this.state.errors && this.state.errors.userId ?
-                  <Text style={styles.errorMessage}>Please enter a valid email address or phone number</Text>
+                  this.state.errors && this.state.errors.email ?
+                  <Text style={styles.errorMessage}>Please enter a valid email address</Text>
+                  : null
+                }
+                {
+                  this.state.errors && this.state.errors.phone ?
+                  <Text style={styles.errorMessage}>Please enter a valid phone number (e.g. +27123456)</Text>
                   : null
                 }
             </View>

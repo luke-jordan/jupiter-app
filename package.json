@@ -8,6 +8,7 @@
     "eject": "expo eject"
   },
   "dependencies": {
+    "awesome-phonenumber": "^2.15.0",
     "expo": "^33.0.0",
     "expo-analytics-amplitude": "~5.0.1",
     "expo-font": "~5.0.1",
