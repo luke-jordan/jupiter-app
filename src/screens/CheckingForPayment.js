@@ -46,17 +46,9 @@ export default class CheckingForPayment extends React.Component {
       loading: true,
     });
     try {
-      let token = null, accountId = null;
-      if (this.state.isOnboarding) {
-        token = this.props.navigation.state.params.token;
-      } else {
-        //TODO set token from profile info
-        this.setState({checkingForPayment: false, loading: false});
-        return;
-      }
       let result = await fetch(Endpoints.CORE + 'addcash/check?transactionId=' + this.state.accountTransactionId + '&failureType=PENDING', {
         headers: {
-          'Authorization': 'Bearer ' + token,
+          'Authorization': 'Bearer ' + this.state.token,
         },
         method: 'GET',
       });

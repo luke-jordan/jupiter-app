@@ -68,7 +68,6 @@ export default class AddCash extends React.Component {
       });
       if (result.ok) {
         let resultJson = await result.json();
-        //TODO this might need improving after we implement the full backend response
         this.setState({loading: false});
         this.props.navigation.navigate('Payment', {
           urlToCompletePayment: resultJson.paymentRedirectDetails.urlToCompletePayment,

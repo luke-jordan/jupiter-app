@@ -8,7 +8,6 @@ import { Button, Icon, Input } from 'react-native-elements';
 let {height, width} = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
-//TODO the screen assumes we are always in onboarding mode; we should reuse it for other cases too
 export default class PaymentComplete extends React.Component {
 
   constructor(props) {
