@@ -39,6 +39,7 @@ export default class LimitedUsers extends React.Component {
   onPressContinue = async () => {
     if (this.state.loading) return;
     if (this.state.notifyMode) {
+      LoggingUtil.logEvent("USER_HAS_NO_REFERRAL_CODE");
       //TODO send request to subscribe
       this.props.navigation.navigate('ThankYou');
     } else {
@@ -64,8 +65,10 @@ export default class LimitedUsers extends React.Component {
         let resultJson = await result.json();
         this.setState({loading: false});
         if (resultJson.result.includes("CODE_IS_ACTIVE")) {
+          LoggingUtil.logEvent("USER_ENTERED_VALID_REFERRAL_CODE");
           this.props.navigation.navigate('Register', {referralCode: this.state.userInput});
         } else {
+          LoggingUtil.logEvent("USER_ENTERED_INVALID_REFERRAL_CODE");
           this.showError();
         }
       } else {

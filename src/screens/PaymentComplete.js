@@ -31,6 +31,10 @@ export default class PaymentComplete extends React.Component {
         token: params.token,
         isOnboarding: params.isOnboarding,
       });
+
+      if (params.isOnboarding) {
+        LoggingUtil.logEvent("USER_ENTERED_INVALID_REFERRAL_CODE", {"amountAdded": params.amountAdded}); 
+      }
     }
 
     this.fetchProfile(params.token);

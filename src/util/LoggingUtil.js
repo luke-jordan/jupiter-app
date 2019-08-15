@@ -4,6 +4,7 @@ export const LoggingUtil = {
 
   initialize() {
     Amplitude.initialize('80b9b8a9b4bf0b6c4bdff7782cf85af2');
+    LoggingUtil.logEvent("USER_OPENED_APP");
   },
 
   setUserId(id) {

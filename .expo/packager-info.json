@@ -1,10 +1,10 @@
 {
-  "expoServerPort": 19000,
-  "expoServerNgrokUrl": "https://th-tqz.anonymous.jupiter-app.exp.direct",
-  "packagerNgrokUrl": "https://packager.th-tqz.anonymous.jupiter-app.exp.direct",
-  "ngrokPid": 12988,
-  "packagerPort": 19001,
-  "packagerPid": 12938,
+  "expoServerPort": null,
+  "expoServerNgrokUrl": null,
+  "packagerNgrokUrl": null,
+  "ngrokPid": null,
+  "packagerPort": null,
+  "packagerPid": null,
   "webpackServerPort": null,
   "devToolsPort": 19002
 }

@@ -5,6 +5,7 @@ import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Dimensio
 import { Button, Icon } from 'react-native-elements';
 import { Colors } from '../util/Values';
 import { NavigationUtil } from '../util/NavigationUtil';
+import { LoggingUtil } from '../util/LoggingUtil';
 import Swiper from 'react-native-swiper';
 
 let {height, width} = Dimensions.get('window');
@@ -20,12 +21,13 @@ export default class Onboarding extends React.Component {
   }
 
   async componentDidMount() {
-
+    LoggingUtil.logEvent("USER_VISITED_SCREEN", {"intro_screen_name": this.getTabTitle(0)});
   }
 
   onPressNext = async () => {
     if (this.state.loading) return;
     if (this.swiperRef && this.state.currentTab < 3) {
+      LoggingUtil.logEvent("USER_VISITED_SCREEN", {"intro_screen_name": this.getTabTitle(this.state.currentTab + 1)});
       this.swiperRef.scrollBy(1, true);
     } else if (this.state.currentTab == 3) {
       this.props.navigation.navigate('LimitedUsers');
@@ -39,6 +41,7 @@ export default class Onboarding extends React.Component {
   }
 
   onPressSkip = async () => {
+    LoggingUtil.logEvent("USER_SKIPPED_INTRO");
     this.props.navigation.navigate('LimitedUsers');
   }
 

@@ -17,7 +17,7 @@ export default class Terms extends React.Component {
   }
 
   async componentDidMount() {
-
+    LoggingUtil.logEvent("USER_ENTERED_SCREEN", {"screen_name": "Terms"});
   }
 
   onPressBack = () => {

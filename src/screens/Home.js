@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Icon, Button } from 'react-native-elements';
 import NavigationBar from '../elements/NavigationBar';
 import { NavigationUtil } from '../util/NavigationUtil';
+import { LoggingUtil } from '../util/LoggingUtil';
 import AnimatedNumber from '../elements/AnimatedNumber';
 import moment from 'moment';
 import { FlingGestureHandler, Directions, State } from 'react-native-gesture-handler';
@@ -114,6 +115,8 @@ export default class Home extends React.Component {
       token: info.token,
       firstName: info.profile.personalName,
     });
+    LoggingUtil.setUserId(info.systemWideUserId); //TODO
+    LoggingUtil.logEvent("USER_ENTERED_SCREEN", {"screen_name": "Home"});
     this.animateBalance(info.balance);
     this.fetchUpdates();
   }

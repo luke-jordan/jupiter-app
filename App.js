@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Platform } from 'react-native';
 import { createStackNavigator, createAppContainer } from 'react-navigation';
-import { StyleSheet, SafeAreaView, AsyncStorage } from 'react-native';
+import { StyleSheet, SafeAreaView, AsyncStorage, AppState } from 'react-native';
+import { LoggingUtil } from './src/util/LoggingUtil';
 
 import Splash from './src/screens/Splash';
 import Login from './src/screens/Login';
@@ -53,6 +54,22 @@ const AppContainer = createAppContainer(
 );
 
 export default class App extends React.Component {
+
+  componentDidMount() {
+    AppState.addEventListener('change', this.handleAppStateChange);
+  }
+
+  componentWillUnmount() {
+    AppState.removeEventListener('change', this.handleAppStateChange);
+  }
+
+  handleAppStateChange = (nextAppState) => {
+    if (nextAppState === 'inactive') {
+      LoggingUtil.logEvent("USER_EXITED_APP");
+    } else if (nextAppState === 'active') {
+      //we are currently logging the USER_OPENED_APP after initialization to avoid conflicts, but here would be another spot to do that
+    }
+  }
 
   render() {
     return (

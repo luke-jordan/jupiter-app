@@ -21,7 +21,7 @@ export default class Login extends React.Component {
   }
 
   onPressLogin = async () => {
-    LoggingUtil.logEvent("Pressed Login");
+    // LoggingUtil.logEvent("Pressed Login");
     if (this.state.loading) return;
     this.setState({loading: true});
     try {
