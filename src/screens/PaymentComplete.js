@@ -52,7 +52,7 @@ export default class PaymentComplete extends React.Component {
     });
     try {
       if (!token) {
-        NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Login');
+        NavigationUtil.logout(this.props.navigation);
       }
       let result = await fetch(Endpoints.AUTH + 'profile/fetch', {
         headers: {

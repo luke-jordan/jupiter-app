@@ -107,15 +107,15 @@ export default class Register extends React.Component {
       if (this.state.userId.includes("@")) {
         if (!emailRegex.test(this.state.userId.toLowerCase())) {
           hasErrors = true;
-          errors.email = true;          
+          errors.email = true;
         }
-      } else {
-        let phoneInput = this.state.userId;
-        var number = new PhoneNumber(phoneInput);
-        if (!number.isValid()) {
-          hasErrors = true;
-          errors.phone = true;
-        }
+      // } else {
+      //   let phoneInput = this.state.userId;
+      //   var number = new PhoneNumber(phoneInput);
+      //   if (!number.isValid()) {
+      //     hasErrors = true;
+      //     errors.phone = true;
+      //   }
       }
     }
     if (hasErrors) {

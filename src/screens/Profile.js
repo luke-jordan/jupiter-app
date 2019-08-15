@@ -32,7 +32,7 @@ export default class Profile extends React.Component {
   async componentDidMount() {
     let info = await AsyncStorage.getItem('userInfo');
     if (!info) {
-      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Login');
+      NavigationUtil.logout(this.props.navigation);
     } else {
       info = JSON.parse(info);
       this.setState({

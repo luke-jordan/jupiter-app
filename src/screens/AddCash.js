@@ -30,7 +30,7 @@ export default class AddCash extends React.Component {
     if (!params || !params.isOnboarding) {
       let info = await AsyncStorage.getItem('userInfo');
       if (!info) {
-        NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Login');
+        NavigationUtil.logout(this.props.navigation);
       } else {
         info = JSON.parse(info);
         this.setState({

@@ -16,5 +16,9 @@ export const LoggingUtil = {
     } else {
       Amplitude.logEvent(event);
     }
+  },
+
+  clearUserProperties() {
+    Amplitude.clearUserProperties();
   }
 };
