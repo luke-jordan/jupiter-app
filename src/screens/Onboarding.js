@@ -45,16 +45,16 @@ export default class Onboarding extends React.Component {
   getTabTitle = (index) => {
     switch (index) {
       case 0:
-      return "A savings account with a difference";
+      return "A new way to save";
 
       case 1:
-      return "Add cash and earn interest immediately";
+      return "Add money, earn interest";
 
       case 2:
-      return "Withdraw your funds when you need them";
+      return "Your cash stays your cash";
 
       case 3:
-      return "We reward you for saving not spending";
+      return "You save, you win";
     }
   }
 
@@ -74,12 +74,28 @@ export default class Onboarding extends React.Component {
     }
   }
 
+  getTabText = (index) => {
+    switch (index) {
+      case 0:
+      return 'Welcome to Jupiter, the savings account with a difference. We’re here to help you make the most of your money, by letting you build good habits and be rewarded along the way.';
+
+      case 1:
+      return 'Yep, it\’s that easy. Once you add money in your Jupiter account, you start earning interest immediately. No limits or hidden fees, just straight up earnings.';
+
+      case 2:
+      return 'You always have access to your money, so you can withdraw funds at any time. Perfect for that little (or huge) unplanned expense.';
+
+      case 3:
+      return 'Unlike most financial services, Jupiter exists to help you build good saving habits. So, every time you save, you get rewarded for it—just like that.';
+    }
+  }
+
   renderTab(item, index) {
     return (
       <View style={styles.slide} key={index}>
         <Image style={styles.tabImage} source={this.getTabImage(index)} resizeMode="contain"/>
         <Text style={styles.tabTitle}>{this.getTabTitle(index)}</Text>
-        <Text style={styles.tabDescription}>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin consequat placerat varius. Sed convallis velit ac dolor finibus egestas eget.</Text>
+        <Text style={styles.tabDescription}>{this.getTabText(index)}</Text>
       </View>
     );
   }
