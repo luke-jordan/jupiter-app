@@ -155,6 +155,7 @@ export default class Register extends React.Component {
         let resultJson = await result.json();
         this.setState({loading: false});
         if (resultJson.result.includes("SUCCESS")) {
+          LoggingUtil.logEvent("USER_PROFILE_REGISTER_SUCCEEDED");
           this.props.navigation.navigate("SetPassword", {
             systemWideUserId: resultJson.systemWideUserId,
             clientId: resultJson.clientId,
@@ -162,10 +163,12 @@ export default class Register extends React.Component {
             defaultCurrency: resultJson.defaultCurrency,
           });
         } else {
+          LoggingUtil.logEvent("USER_PROFILE_REGISTER_FAILED", {"reason" : "Result didn't include SUCCESS"});
           this.showError();
         }
       } else {
         let resultJson = await result.json();
+        LoggingUtil.logEvent("USER_PROFILE_REGISTER_FAILED", {"reason": resultJson.errorField});
         let errors = Object.assign({}, this.state.errors);
         if (resultJson.errorField.includes("NATIONAL_ID")) {
           this.setState({

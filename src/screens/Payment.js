@@ -44,12 +44,14 @@ export default class Payment extends React.Component {
 
   handleAppStateChange = async (nextAppState) => {
     if (this.state.appState.match(/inactive|background/) && nextAppState === 'active') {
+      LoggingUtil.logEvent("USER_RETURNED_TO_PAYMENT_LINK");
       if (this.state.checkingForPayment) {
         this.setState({ appState: nextAppState });
         return;
       }
       this.checkIfPaymentCompleted();
     } else {
+      LoggingUtil.logEvent("USER_LEFT_APP_AT_PAYMENT_LINK");
       this.setState({ appState: nextAppState });
     }
   }
@@ -112,6 +114,7 @@ export default class Payment extends React.Component {
   onPressBack = () => {
     AppState.removeEventListener('change', this.handleAppStateChange);
     this.backHandler.remove();
+    LoggingUtil.logEvent("USER_WENT_BACK_AT_PAYMENT_LINK");
     this.props.navigation.goBack();
   }
 

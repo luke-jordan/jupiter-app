@@ -51,6 +51,9 @@ export default class AddCash extends React.Component {
     if (this.state.loading) return;
     this.setState({loading: true});
 
+    if (this.state.isOnboarding) {
+      LoggingUtil.logEvent("USER_INITIATED_FIRST_ADD_CASH", {"amountAdded": this.state.amountToAdd});
+    }
     try {
       let result = await fetch(Endpoints.CORE + 'addcash/initiate', {
         headers: {

@@ -123,6 +123,7 @@ export default class SetPassword extends React.Component {
         let resultJson = await result.json();
         this.setState({loading: false});
         if (resultJson.result.includes("SUCCESS")) {
+          LoggingUtil.logEvent("USER_PROFILE_PASSWORD_SUCCEEDED");
           this.props.navigation.navigate("AddCash", {
             isOnboarding: true,
             systemWideUserId: resultJson.systemWideUserId,
@@ -130,10 +131,12 @@ export default class SetPassword extends React.Component {
             accountId: resultJson.accountId[0],
           });
         } else {
+          LoggingUtil.logEvent("USER_PROFILE_PASSWORD_FAILED", {"reason" : "Result didn't include SUCCESS"});
           this.showError();
         }
       } else {
         let resultText = await result.text();
+        LoggingUtil.logEvent("USER_PROFILE_PASSWORD_FAILED", {"reason" : resultText});
         throw result;
       }
     } catch (error) {
@@ -153,6 +156,7 @@ export default class SetPassword extends React.Component {
 
   onPressGeneratePassword = async () => {
     if (this.state.generatePasswordLoading) return;
+    LoggingUtil.logEvent("USER_REQUESTED_PASSWORD");
     this.setState({
       dialogVisible: true,
       generatePassword: "",
@@ -180,6 +184,7 @@ export default class SetPassword extends React.Component {
 
   onPressUseThisPassword = () => {
     if (this.state.generatePasswordLoading) return;
+    LoggingUtil.logEvent("USER_ACCEPTED_PASSWORD");
     this.setState({
       password: this.state.generatedPassword,
       passwordConfirm: this.state.generatedPassword,
