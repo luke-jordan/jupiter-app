@@ -34,6 +34,7 @@ export default class SetPassword extends React.Component {
         clientId: params.clientId,
         defaultFloatId: params.defaultFloatId,
         defaultCurrency: params.defaultCurrency,
+        isReset: params.isReset,
       });
     }
   }
@@ -96,7 +97,7 @@ export default class SetPassword extends React.Component {
     return true;
   }
 
-  onPressRegister = async () => {
+  onPressContinue = async () => {
     if (this.state.loading) return;
     this.setState({loading: true});
     let validation = await this.validateInput();
@@ -104,6 +105,48 @@ export default class SetPassword extends React.Component {
       this.showError();
       return;
     }
+    if (this.state.isReset) {
+      this.handleResetPassword();
+    } else {
+      this.handleRegisterPassword();
+    }
+  }
+
+  handleResetPassword = async () => {
+    try {
+      let result = await fetch(Endpoints.AUTH + 'password/set', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        method: 'POST',
+        body: JSON.stringify({
+          systemWideUserId: this.state.systemWideUserId,
+          newPassword: this.state.password,
+        }),
+      });
+      if (result.ok) {
+        let resultJson = await result.json();
+        this.setState({loading: false});
+        if (resultJson.result.includes("SUCCESS")) {
+        //   LoggingUtil.logEvent("USER_PROFILE_PASSWORD_SUCCEEDED"); //TODO we should probably log another event here
+          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'ResetComplete');
+        } else {
+        //   LoggingUtil.logEvent("USER_PROFILE_PASSWORD_FAILED", {"reason" : "Result didn't include SUCCESS"}); //TODO we should probably log another event here
+          this.showError();
+        }
+      } else {
+        let resultText = await result.text();
+        // LoggingUtil.logEvent("USER_PROFILE_PASSWORD_FAILED", {"reason" : resultText}); //TODO we should probably log another event here
+        throw result;
+      }
+    } catch (error) {
+      console.log("error!", error);
+      this.showError();
+    }
+  }
+
+  handleRegisterPassword = async () => {
     try {
       let result = await fetch(Endpoints.AUTH + 'register/password', {
         headers: {
@@ -203,20 +246,29 @@ export default class SetPassword extends React.Component {
     return (
       <KeyboardAvoidingView style={styles.container} contentContainerStyle={styles.container} behavior="padding">
         <View style={styles.header}>
-          <TouchableOpacity style={styles.headerButton} onPress={this.onPressBack} >
-            <Icon
-              name='chevron-left'
-              type='evilicon'
-              size={45}
-              color={Colors.MEDIUM_GRAY}
-            />
-          </TouchableOpacity>
+          {
+            this.state.isReset ?
+            <Text style={styles.resetTitle}>Reset password</Text>
+            :
+            <TouchableOpacity style={styles.headerButton} onPress={this.onPressBack} >
+              <Icon
+                name='chevron-left'
+                type='evilicon'
+                size={45}
+                color={Colors.MEDIUM_GRAY}
+              />
+            </TouchableOpacity>
+          }
         </View>
         <View style={styles.contentWrapper}>
-          <Text style={styles.title}>Set a password</Text>
+          {
+            this.state.isReset ?
+            null :
+            <Text style={styles.title}>Set a password</Text>
+          }
           <ScrollView style={styles.scrollView} contentContainerStyle={styles.mainContent}>
             <View style={styles.profileField}>
-              <Text style={styles.profileFieldTitle}>Your Password*</Text>
+              <Text style={styles.profileFieldTitle}>{this.state.isReset ? "New Password*" : "Your Password*"}</Text>
                 <Input
                   value={this.state.password}
                   secureTextEntry={true}
@@ -233,7 +285,7 @@ export default class SetPassword extends React.Component {
                 }
             </View>
             <View style={styles.profileField}>
-              <Text style={styles.profileFieldTitle}>Retype Password*</Text>
+              <Text style={styles.profileFieldTitle}>{this.state.isReset ? "Retype New Password*" : "Retype Password*"}</Text>
                 <Input
                   value={this.state.passwordConfirm}
                   secureTextEntry={true}
@@ -262,7 +314,7 @@ export default class SetPassword extends React.Component {
             titleStyle={styles.buttonTitleStyle}
             buttonStyle={styles.buttonStyle}
             containerStyle={styles.buttonContainerStyle}
-            onPress={this.onPressRegister}
+            onPress={this.onPressContinue}
             linearGradientProps={{
               colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
               start: { x: 0, y: 0.5 },
@@ -321,7 +373,7 @@ const styles = StyleSheet.create({
   },
   header: {
     width: '100%',
-    height: 50,
+    minHeight: 50,
     backgroundColor: 'white',
     flexDirection: 'row',
     alignItems: 'center',
@@ -331,6 +383,15 @@ const styles = StyleSheet.create({
     marginLeft: -5,
     fontFamily: 'poppins-semibold',
     fontSize: 22,
+  },
+  resetTitle: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 27,
+    color: Colors.DARK_GRAY,
+    width: '100%',
+    paddingLeft: 15,
+    marginTop: 20,
+    marginBottom: 10,
   },
   title: {
     fontFamily: 'poppins-semibold',

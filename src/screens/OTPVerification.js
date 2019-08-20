@@ -22,11 +22,7 @@ export default class OTPVerification extends React.Component {
 
   }
 
-  onPressContinue = async () => {
-    if (this.state.loading) return;
-    this.setState({loading: true});
-    let userId = this.props.navigation.getParam("userId");
-    let password = this.props.navigation.getParam("password");
+  async handleLogin(userId, password) {
     try {
       let result = await fetch(Endpoints.AUTH + 'login', {
         headers: {
@@ -51,11 +47,49 @@ export default class OTPVerification extends React.Component {
           NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'PendingRegistrationSteps', { userInfo: resultJson });
         }
       } else {
-        // NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'PendingRegistrationSteps');
         throw result;
       }
     } catch (error) {
       console.log("error!", await error.text());
+      this.setState({loading: false});
+    }
+
+  }
+
+  async handlePassReset(userId) {
+    try {
+      let result = await fetch(Endpoints.AUTH + 'password/reset/obtainqs?phoneOrEmail=' + userId + '&otp=' + this.state.pin.join(""), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        method: 'GET',
+      });
+      if (result.ok) {
+        let resultJson = await result.json();
+        this.setState({loading: false});
+        NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'ResetQuestions', { questions: resultJson });
+      } else {
+        throw result;
+      }
+    } catch (error) {
+      console.log("error!", await error.text());
+      this.setState({loading: false});
+    }
+
+  }
+
+  onPressContinue = async () => {
+    if (this.state.loading) return;
+    this.setState({loading: true});
+    let userId = this.props.navigation.getParam("userId");
+    let password = this.props.navigation.getParam("password");
+    let redirection = this.props.navigation.getParam("redirection");
+    if (redirection.includes('Login')) {
+      this.handleLogin(userId, password);
+    } else if (redirection.includes('Reset')) {
+      this.handlePassReset(userId);
+    } else {
       this.setState({loading: false});
     }
   }
@@ -65,6 +99,13 @@ export default class OTPVerification extends React.Component {
     this.setState({loading: true});
     let userId = this.props.navigation.getParam("userId");
     let password = this.props.navigation.getParam("password");
+    let redirection = this.props.navigation.getParam("redirection");
+    let type = "LOGIN";
+    if (redirection.includes('Reset')) {
+      type = "RESET";
+    // } else if (redirection.includes('')) {
+
+    }
     try {
       let result = await fetch(Endpoints.AUTH + 'otp/generate', {
         headers: {
@@ -74,7 +115,7 @@ export default class OTPVerification extends React.Component {
         method: 'POST',
         body: JSON.stringify({
           "phoneOrEmail": userId,
-          "type": "LOGIN",
+          "type": type,
         }),
       });
       if (result.ok) {

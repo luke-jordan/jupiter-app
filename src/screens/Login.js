@@ -41,6 +41,7 @@ export default class Login extends React.Component {
         this.props.navigation.navigate('OTPVerification', {
           userId: this.state.userId,
           password: this.state.password,
+          redirection: 'Login',
         });
       } else {
         throw result;
@@ -57,6 +58,10 @@ export default class Login extends React.Component {
 
   onPressWhatIs = () => {
     this.props.navigation.navigate('Onboarding');
+  }
+
+  onPressForgotPassword = () => {
+    this.props.navigation.navigate('ResetPassword');
   }
 
   render() {
@@ -83,7 +88,7 @@ export default class Login extends React.Component {
             inputStyle={styles.inputStyle}
             containerStyle={styles.containerStyle}
           />
-          <Text style={styles.textAsButton}>
+          <Text style={styles.textAsButton} onPress={this.onPressForgotPassword}>
             Forgot Password?
           </Text>
         </View>
