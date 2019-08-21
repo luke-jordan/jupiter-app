@@ -6,6 +6,8 @@ import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Endpoints } from '../util/Values';
 
+import { Notifications } from 'expo';
+import * as Permissions from 'expo-permissions';
 
 const SPLASH_TIMEOUT = 1400;
 
@@ -36,9 +38,27 @@ export default class Splash extends React.Component {
     fetch(Endpoints.CORE + 'warmup');
     fetch(Endpoints.AUTH + 'warmup');
 
+    this.registerForPushNotifications();
+
     setTimeout(() => {
       this.navigate(userInfo);
     }, SPLASH_TIMEOUT);
+  }
+
+  registerForPushNotifications = async () => {
+    const { status: existingStatus } = await Permissions.getAsync(Permissions.NOTIFICATIONS);
+    let finalStatus = existingStatus;
+
+    if (existingStatus !== 'granted') {
+      const { status } = await Permissions.askAsync(Permissions.NOTIFICATIONS);
+      finalStatus = status;
+    }
+    if (finalStatus !== 'granted') {
+      return;
+    }
+
+    let token = await Notifications.getExpoPushTokenAsync();
+    console.log("PUSH TOKEN: ", token);
   }
 
   navigate(userInfo) {
