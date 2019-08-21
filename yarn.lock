@@ -1923,13 +1923,7 @@ expo-file-system@~6.0.0:
   dependencies:
     uuid-js "^0.7.5"
 
-expo-font@~5.0.1:
-  version "5.0.1"
-  resolved "https://registry.yarnpkg.com/expo-font/-/expo-font-5.0.1.tgz#b3174134efd0ce3382db3a6c282147cba8bee203"
-  dependencies:
-    fontfaceobserver "^2.1.0"
-
-expo-font@~6.0.1:
+expo-font@^6.0.1, expo-font@~6.0.1:
   version "6.0.1"
   resolved "https://registry.yarnpkg.com/expo-font/-/expo-font-6.0.1.tgz#239b0468edf90d441dca20253c00b334e812c5c5"
   dependencies:
@@ -1938,10 +1932,6 @@ expo-font@~6.0.1:
 expo-keep-awake@~6.0.0:
   version "6.0.0"
   resolved "https://registry.yarnpkg.com/expo-keep-awake/-/expo-keep-awake-6.0.0.tgz#e0d6d1263c6a73488272a62aef98312ab25cab1f"
-
-expo-linear-gradient@~5.0.1:
-  version "5.0.1"
-  resolved "https://registry.yarnpkg.com/expo-linear-gradient/-/expo-linear-gradient-5.0.1.tgz#b4f5450d680b9315f22f4f99fee6a2b90fb49d92"
 
 expo-linear-gradient@~6.0.0:
   version "6.0.0"
