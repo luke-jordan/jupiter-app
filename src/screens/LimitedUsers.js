@@ -40,10 +40,37 @@ export default class LimitedUsers extends React.Component {
     if (this.state.loading) return;
     if (this.state.notifyMode) {
       LoggingUtil.logEvent("USER_HAS_NO_REFERRAL_CODE");
-      //TODO send request to subscribe
-      this.props.navigation.navigate('ThankYou');
+      this.addUserToWaitingList();
     } else {
       this.verifyReferral();
+    }
+  }
+
+  addUserToWaitingList = async () => {
+    if (this.state.loading) return;
+    this.setState({loading: true});
+    try {
+      let result = await fetch(Endpoints.AUTH + 'list/add', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        method: 'POST',
+        body: JSON.stringify({
+          "phoneOrEmail": this.state.userInput,
+        }),
+      });
+      if (result.ok) {
+        let resultJson = await result.json();
+        console.log(resultJson);
+        this.setState({loading: false});
+        this.props.navigation.navigate('ThankYou');
+      } else {
+        throw result;
+      }
+    } catch (error) {
+      console.log("error!", error);
+      this.showError();
     }
   }
 
