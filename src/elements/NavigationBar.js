@@ -2,7 +2,8 @@ import React from 'react';
 import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity } from 'react-native';
 import { Colors, Sizes } from '../util/Values';
 import { Icon } from 'react-native-elements';
-import { NavigationUtil } from '../util/NavigationUtil';
+
+const NOTIFICATION_DOT_SIZE = 9;
 
 export default class NavigationBar extends React.Component {
 
@@ -22,19 +23,22 @@ export default class NavigationBar extends React.Component {
   }
 
   onPressTab = async (index) => {
+    if (this.props.currentTab == index) return;
     switch (index) {
       case 0:
+      this.props.navigation.navigate('Home');
       break;
 
       case 1:
+      this.props.navigation.navigate('Friends');
       break;
 
       case 2:
+      this.props.navigation.navigate('Boosts');
       break;
 
       case 3:
-      // AsyncStorage.removeItem("userInfo");
-      // NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Splash');
+      this.props.navigation.navigate('Account');
       break;
 
       default:
@@ -46,7 +50,7 @@ export default class NavigationBar extends React.Component {
     return (
       <View style={styles.container}>
         <View style={styles.heightPlaceholder} />
-        <View style={styles.visibleBar}>
+        <View style={[styles.visibleBar, styles.boxShadow]}>
           <TouchableOpacity style={styles.navButton} onPress={() => this.onPressTab(0)}>
             <Image style={[styles.navImage, this.props.currentTab == 0 ? styles.purpleTint : styles.grayTint]} source={require('../../assets/home.png')}/>
           </TouchableOpacity>
@@ -55,10 +59,19 @@ export default class NavigationBar extends React.Component {
           </TouchableOpacity>
           <View style={styles.navButton} />
           <TouchableOpacity style={styles.navButton} onPress={() => this.onPressTab(2)}>
-            <Image style={[styles.navImage, this.props.currentTab == 3 ? styles.purpleTint : styles.grayTint]} source={require('../../assets/gift_card_1.png')}/>
+            <View>
+              <Image style={[styles.navImage, this.props.currentTab == 2 ? styles.purpleTint : styles.grayTint]} source={require('../../assets/gift_card_1.png')}/>
+                {
+                  this.props.hasNotification ?
+                  <View style={styles.notificationDot}>
+                    <View style={styles.notificationDotCenter}/>
+                  </View>
+                  : null
+                }
+            </View>
           </TouchableOpacity>
           <TouchableOpacity style={styles.navButton} onPress={() => this.onPressTab(3)}>
-            <Image style={[styles.navImage, this.props.currentTab == 4 ? styles.purpleTint : styles.grayTint]} source={require('../../assets/wallet_7.png')}/>
+            <Image style={[styles.navImage, this.props.currentTab == 3 ? styles.purpleTint : styles.grayTint]} source={require('../../assets/wallet_7.png')}/>
           </TouchableOpacity>
         </View>
         <TouchableOpacity style={styles.navButtonOnSteroids} onPress={() => this.onPressAddCash()}>
@@ -74,8 +87,6 @@ export default class NavigationBar extends React.Component {
   }
 }
 
-// </Mutation>
-
 const styles = StyleSheet.create({
   container: {
     width: '100%',
@@ -89,6 +100,13 @@ const styles = StyleSheet.create({
     height: Sizes.VISIBLE_NAVIGATION_BAR_HEIGHT,
     backgroundColor: 'white',
     flexDirection: 'row',
+  },
+  boxShadow: {
+    shadowColor: 'red',
+    shadowOffset: { width: 0, height: 1000 },
+    shadowOpacity: 0.1,
+    shadowRadius: 500,
+    elevation: 20,
   },
   navButton: {
     flex: 1,
@@ -107,6 +125,7 @@ const styles = StyleSheet.create({
     borderColor: 'white',
     borderWidth: 6,
     borderRadius: Sizes.NAVIGATION_BAR_HEIGHT / 2,
+    elevation: 20,
   },
   navImage: {
 
@@ -116,5 +135,21 @@ const styles = StyleSheet.create({
   },
   grayTint: {
     tintColor: Colors.GRAY,
+  },
+  notificationDot: {
+    width: NOTIFICATION_DOT_SIZE,
+    height: NOTIFICATION_DOT_SIZE,
+    backgroundColor: Colors.LIGHT_BLUE,
+    position: 'absolute',
+    top: - NOTIFICATION_DOT_SIZE / 6,
+    right: - NOTIFICATION_DOT_SIZE / 3,
+    borderRadius: NOTIFICATION_DOT_SIZE / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notificationDotCenter: {
+    width: NOTIFICATION_DOT_SIZE / 4,
+    height: NOTIFICATION_DOT_SIZE / 4,
+    backgroundColor: 'white',
   },
 });

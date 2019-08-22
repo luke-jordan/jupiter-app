@@ -1,9 +1,10 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, ImageBackground, Modal, TouchableOpacity } from 'react-native';
-import { Colors } from '../util/Values';
+import { StyleSheet, View, Image, Text, AsyncStorage, ImageBackground, TouchableOpacity } from 'react-native';
+import { Colors, Endpoints } from '../util/Values';
 import { Input, Button } from 'react-native-elements';
 import { LinearGradient } from 'expo-linear-gradient';
 import { NavigationUtil } from '../util/NavigationUtil';
+import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
 
 export default class OTPVerification extends React.Component {
 
@@ -12,12 +13,69 @@ export default class OTPVerification extends React.Component {
     this.state = {
       phoneNumber: "********87",
       pin: [null, null, null, null],
-      modalVisible: false,
       loading: false,
+      dialogVisible: false,
     };
   }
 
   async componentDidMount() {
+
+  }
+
+  async handleLogin(userId, password) {
+    try {
+      let result = await fetch(Endpoints.AUTH + 'login', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        method: 'POST',
+        body: JSON.stringify({
+          "phoneOrEmail": userId,
+          "password": password,
+          "otp": this.state.pin.join(""),
+        }),
+      });
+      if (result.ok) {
+        let resultJson = await result.json();
+        this.setState({loading: false});
+        // console.log("result:", resultJson);
+        if (resultJson.onboardStepsComplete.includes("ALL")) {
+          AsyncStorage.setItem('userInfo', JSON.stringify(resultJson));
+          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', { userInfo: resultJson });
+        } else {
+          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'PendingRegistrationSteps', { userInfo: resultJson });
+        }
+      } else {
+        throw result;
+      }
+    } catch (error) {
+      console.log("error!", await error.text());
+      this.setState({loading: false});
+    }
+
+  }
+
+  async handlePassReset(userId) {
+    try {
+      let result = await fetch(Endpoints.AUTH + 'password/reset/obtainqs?phoneOrEmail=' + userId + '&otp=' + this.state.pin.join(""), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        method: 'GET',
+      });
+      if (result.ok) {
+        let resultJson = await result.json();
+        this.setState({loading: false});
+        NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'ResetQuestions', { questions: resultJson });
+      } else {
+        throw result;
+      }
+    } catch (error) {
+      console.log("error!", await error.text());
+      this.setState({loading: false});
+    }
 
   }
 
@@ -26,25 +84,42 @@ export default class OTPVerification extends React.Component {
     this.setState({loading: true});
     let userId = this.props.navigation.getParam("userId");
     let password = this.props.navigation.getParam("password");
+    let redirection = this.props.navigation.getParam("redirection");
+    if (redirection.includes('Login')) {
+      this.handleLogin(userId, password);
+    } else if (redirection.includes('Reset')) {
+      this.handlePassReset(userId);
+    } else {
+      this.setState({loading: false});
+    }
+  }
+
+  onPressResend = async () => {
+    if (this.state.loading) return;
+    this.setState({loading: true});
+    let userId = this.props.navigation.getParam("userId");
+    let password = this.props.navigation.getParam("password");
+    let redirection = this.props.navigation.getParam("redirection");
+    let type = "LOGIN";
+    if (redirection.includes('Reset')) {
+      type = "RESET";
+    // } else if (redirection.includes('')) {
+
+    }
     try {
-      let result = await fetch('https://staging-auth.jupiterapp.net/login', {
+      let result = await fetch(Endpoints.AUTH + 'otp/generate', {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
         method: 'POST',
         body: JSON.stringify({
-          "phoneOrEmail": "someone@jupitersave.com",
-          "password": "holy_CHRYSALIS_hatching9531"
+          "phoneOrEmail": userId,
+          "type": type,
         }),
       });
       if (result.ok) {
-        let resultJson = await result.json();
-        //todo handle response
-        AsyncStorage.setItem('userInfo', JSON.stringify(resultJson));
         this.setState({loading: false});
-        NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', { userInfo: resultJson });
-        console.log("result:", resultJson);
       } else {
         throw result;
       }
@@ -54,24 +129,21 @@ export default class OTPVerification extends React.Component {
     }
   }
 
-  onPressResend = () => {
-
-  }
-
   onPressHelp = () => {
     this.setState({
-      modalVisible: true,
+      dialogVisible: true,
     });
   }
 
   onPressContactUs = () => {
-    this.onCloseModal();
+    this.onHideDialog();
   }
 
-  onCloseModal = () => {
+  onHideDialog = () => {
     this.setState({
-      modalVisible: false,
+      dialogVisible: false,
     });
+    return true;
   }
 
   onChangePinField = (text, index) => {
@@ -178,13 +250,17 @@ export default class OTPVerification extends React.Component {
           </Text>
         </View>
 
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={this.state.modalVisible}
-          onRequestClose={this.onCloseModal}>
-          <View style={styles.modalWrapper}>
-            <View style={styles.helpModal}>
+        <Dialog
+          visible={this.state.dialogVisible}
+          dialogStyle={styles.editPicDialog}
+          dialogAnimation={new SlideAnimation({
+            slideFrom: 'bottom',
+          })}
+          onTouchOutside={this.onHideDialog}
+          onHardwareBackPress={this.onHideDialog}
+        >
+          <DialogContent style={styles.dialogWrapper}>
+            <View style={styles.helpDialog}>
               <Text style={styles.helpTitle}>Help</Text>
               <Text style={styles.helpContent}>
                 A one-time password (OTP) is a password that is valid for only one login session, or transaction on a digital device.
@@ -192,13 +268,12 @@ export default class OTPVerification extends React.Component {
                 Check that you haven’t entered an incorrect OTP or resend a new pin.
               </Text>
               <Text style={styles.helpLink} onPress={this.onPressContactUs}>Contact Us</Text>
-              <TouchableOpacity style={styles.closeModal} onPress={this.onCloseModal} >
+              <TouchableOpacity style={styles.closeDialog} onPress={this.onHideDialog} >
                 <Image source={require('../../assets/close.png')}/>
               </TouchableOpacity>
             </View>
-          </View>
-        </Modal>
-
+          </DialogContent>
+        </Dialog>
       </View>
     );
   }
@@ -305,16 +380,13 @@ const styles = StyleSheet.create({
     color: 'white',
     marginTop: 15,
   },
-  modalWrapper: {
-    flex: 1,
-    backgroundColor: Colors.TRANSPARENT_BACKGROUND,
+  dialogWrapper: {
+    width: '90%',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  helpModal: {
-    width: '90%',
-    height: '40%',
-    minHeight: 340,
+  helpDialog: {
+    minHeight: 310,
     backgroundColor: 'white',
     borderRadius: 10,
     justifyContent: 'space-around',
@@ -339,7 +411,7 @@ const styles = StyleSheet.create({
     color: Colors.PURPLE,
     fontWeight: 'bold',
   },
-  closeModal: {
+  closeDialog: {
     position: 'absolute',
     top: 20,
     right: 20,

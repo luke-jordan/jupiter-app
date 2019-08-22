@@ -1,16 +1,18 @@
 import React from 'react';
 import { StyleSheet, View, Image, Text, AsyncStorage, ImageBackground } from 'react-native';
-import { Colors } from '../util/Values';
+import { Colors, Endpoints } from '../util/Values';
 import { Input, Button } from 'react-native-elements';
 import { LinearGradient } from 'expo-linear-gradient';
+import { LoggingUtil } from '../util/LoggingUtil';
+import { NavigationUtil } from '../util/NavigationUtil';
 
 export default class Login extends React.Component {
 
   constructor(props) {
     super(props);
     this.state = {
-      userId: "",
-      password: "",
+      userId: "someone@jupitersave.com",
+      password: "holy_CHRYSALIS_hatching9531",
     };
   }
 
@@ -18,19 +20,48 @@ export default class Login extends React.Component {
 
   }
 
-  onPressLogin = () => {
-    this.props.navigation.navigate('OTPVerification', {
-      userId: this.state.userId,
-      password: this.state.password,
-    });
+  onPressLogin = async () => {
+    // LoggingUtil.logEvent("Pressed Login");
+    if (this.state.loading) return;
+    this.setState({loading: true});
+    try {
+      let result = await fetch(Endpoints.AUTH + 'otp/generate', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        method: 'POST',
+        body: JSON.stringify({
+          "phoneOrEmail": this.state.userId,
+          "type": "LOGIN",
+        }),
+      });
+      if (result.ok) {
+        this.setState({loading: false});
+        this.props.navigation.navigate('OTPVerification', {
+          userId: this.state.userId,
+          password: this.state.password,
+          redirection: 'Login',
+        });
+      } else {
+        throw result;
+      }
+    } catch (error) {
+      console.log("error!", error);
+      this.setState({loading: false});
+    }
   }
 
   onPressSignUp = () => {
-
+    // NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home');
   }
 
   onPressWhatIs = () => {
+    this.props.navigation.navigate('Onboarding');
+  }
 
+  onPressForgotPassword = () => {
+    this.props.navigation.navigate('ResetPassword');
   }
 
   render() {
@@ -57,7 +88,7 @@ export default class Login extends React.Component {
             inputStyle={styles.inputStyle}
             containerStyle={styles.containerStyle}
           />
-        <Text style={styles.textAsButton}>
+          <Text style={styles.textAsButton} onPress={this.onPressForgotPassword}>
             Forgot Password?
           </Text>
         </View>
@@ -74,9 +105,11 @@ export default class Login extends React.Component {
             end: { x: 1, y: 0.5 },
           }} />
         <View style={styles.signUpLink}>
+          {/*
           <Text style={styles.noAccText}>Don't have an account yet?
             <Text style={styles.noAccButton} onPress={this.onPressSignUp}> Sign up</Text>
           </Text>
+          */}
         </View>
         <ImageBackground source={require('../../assets/wave_pattern.png')} style={styles.bottomView}>
           <Text style={styles.bottomText} onPress={this.onPressWhatIs}>WHAT IS JUPITER?</Text>

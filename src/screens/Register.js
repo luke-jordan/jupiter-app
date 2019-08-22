@@ -1,0 +1,574 @@
+import React from 'react';
+import * as Font from 'expo-font';
+import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { NavigationUtil } from '../util/NavigationUtil';
+import { LoggingUtil } from '../util/LoggingUtil';
+import { Button, Icon, Input } from 'react-native-elements';
+import { Colors, Endpoints } from '../util/Values';
+import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
+var PhoneNumber = require( 'awesome-phonenumber' );
+
+const emailRegex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+
+export default class Register extends React.Component {
+
+  constructor(props) {
+    super(props);
+    this.state = {
+      loading: false,
+      firstName: "test",
+      lastName: "test",
+      idNumber: "000000056",
+      userId: "+359886405663",
+      referralCode: "",
+      errors: {
+        firstName: false,
+        lastName: false,
+        idNumber: false,
+        userId: false,
+        general: false,
+      },
+      generalErrorText: "There is a problem with your request",
+      defaultGeneralErrorText: "There is a problem with your request",
+      dialogVisible: false,
+    };
+  }
+
+  async componentDidMount() {
+    let referralCode = this.props.navigation.getParam("referralCode");
+    if (referralCode && referralCode.length > 0) {
+      this.setState({referralCode});
+    }
+  }
+
+  onPressBack = () => {
+    this.props.navigation.goBack();
+  }
+
+  fieldIsMandatory(field) {
+    switch (field) {
+      case "firstName":
+      case "lastName":
+      case "idNumber":
+      return true;
+
+      default:
+      return false;
+    }
+  }
+
+  onEditField = (text, field) => {
+    let errors = Object.assign({}, this.state.errors);
+    errors[field] = false;
+    if (field == "userId") {
+      errors.phone = false;
+      errors.email = false;
+    }
+    errors.general = false;
+    this.setState({
+      [field]: text,
+      errors: errors,
+    });
+  }
+
+  onEndEditing = async (field) => {
+    let errors = Object.assign({}, this.state.errors);
+    if (this.fieldIsMandatory(field) && this.state[field].length == 0) {
+      errors[field] = true;
+    } else {
+      errors[field] = false;
+    }
+    errors.general = false;
+    this.setState({
+      errors: errors,
+    });
+  }
+
+  onPressTerms = () => {
+    this.props.navigation.navigate('Terms');
+  }
+
+  validateInput = async () => {
+    let hasErrors = false;
+    let errors = Object.assign({}, this.state.errors);
+    if (this.state.firstName.length < 1) {
+      hasErrors = true;
+      errors.firstName = true;
+    }
+    if (this.state.lastName.length < 1) {
+      hasErrors = true;
+      errors.lastName = true;
+    }
+    if (this.state.idNumber.length < 1) {
+      hasErrors = true;
+      errors.idNumber = true;
+    }
+    if (this.state.userId.length > 0) {
+      if (this.state.userId.includes("@")) {
+        if (!emailRegex.test(this.state.userId.toLowerCase())) {
+          hasErrors = true;
+          errors.email = true;
+        }
+      // } else {
+      //   let phoneInput = this.state.userId;
+      //   var number = new PhoneNumber(phoneInput);
+      //   if (!number.isValid()) {
+      //     hasErrors = true;
+      //     errors.phone = true;
+      //   }
+      }
+    }
+    if (hasErrors) {
+      await this.setState({
+        errors: errors,
+      });
+      return false;
+    }
+    return true;
+  }
+
+  onPressRegister = async () => {
+    if (this.state.loading) return;
+    this.setState({loading: true});
+    let validation = await this.validateInput();
+    if (!validation) {
+      this.showError();
+      return;
+    }
+    try {
+      let result = await fetch(Endpoints.AUTH + 'register/profile', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        method: 'POST',
+        body: JSON.stringify({
+          "countryCode3Letter": 'ZAF',
+          "nationalId": this.state.idNumber,
+          "phoneOrEmail": this.state.userId,
+          "personalName": this.state.firstName,
+          "familyName": this.state.lastName,
+          "referralCode": this.state.referralCode,
+        }),
+      });
+      if (result.ok) {
+        let resultJson = await result.json();
+        this.setState({loading: false});
+        if (resultJson.result.includes("SUCCESS")) {
+          LoggingUtil.logEvent("USER_PROFILE_REGISTER_SUCCEEDED");
+          this.props.navigation.navigate("SetPassword", {
+            systemWideUserId: resultJson.systemWideUserId,
+            clientId: resultJson.clientId,
+            defaultFloatId: resultJson.defaultFloatId,
+            defaultCurrency: resultJson.defaultCurrency,
+          });
+        } else {
+          LoggingUtil.logEvent("USER_PROFILE_REGISTER_FAILED", {"reason" : "Result didn't include SUCCESS"});
+          this.showError();
+        }
+      } else {
+        let resultJson = await result.json();
+        LoggingUtil.logEvent("USER_PROFILE_REGISTER_FAILED", {"reason": resultJson.errorField});
+        let errors = Object.assign({}, this.state.errors);
+        if (resultJson.errorField.includes("NATIONAL_ID")) {
+          this.setState({
+            dialogVisible: true,
+          });
+          errors.idNumber = true;
+        }
+        if (resultJson.errorField.includes("EMAIL")) {
+          errors.userId = true;
+        }
+        this.setState({
+          errors: errors,
+        });
+        throw resultJson.messageToUser;
+      }
+    } catch (error) {
+      console.log("error!", error);
+      this.showError(error);
+    }
+  }
+
+  showError(errorText) {
+    let errors = Object.assign({}, this.state.errors);
+    errors.general = true;
+    this.setState({
+      loading: false,
+      errors: errors,
+      generalErrorText: errorText ? errorText : this.state.defaultGeneralErrorText,
+    });
+  }
+
+  onHideDialog = () => {
+    this.setState({
+      dialogVisible: false,
+    });
+    return true;
+  }
+
+  onPressLogin = () => {
+    this.onHideDialog();
+    this.props.navigation.navigate('Login');
+  }
+
+  onPressResetPassword = () => {
+    this.onHideDialog();
+    this.props.navigation.navigate('ResetPassword');
+  }
+
+  onPressContactUs = () => {
+    this.onHideDialog();
+    //TODO
+  }
+
+  render() {
+    return (
+      <KeyboardAvoidingView style={styles.container} contentContainerStyle={styles.container} behavior="padding">
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.headerButton} onPress={this.onPressBack} >
+            <Icon
+              name='chevron-left'
+              type='evilicon'
+              size={45}
+              color={Colors.MEDIUM_GRAY}
+            />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.contentWrapper}>
+          <Text style={styles.title}>Let’s create your Jupiter account</Text>
+          <ScrollView style={styles.scrollView} contentContainerStyle={styles.mainContent}>
+            <View style={styles.profileField}>
+              <Text style={styles.profileFieldTitle}>First Name*</Text>
+                <Input
+                  value={this.state.firstName}
+                  onChangeText={(text) => this.onEditField(text, "firstName")}
+                  onEndEditing={() => this.onEndEditing("firstName")}
+                  inputContainerStyle={styles.inputContainerStyle}
+                  inputStyle={[styles.inputStyle, this.state.errors && this.state.errors.firstName ? styles.redText : null]}
+                  containerStyle={styles.containerStyle}
+                />
+                {
+                  this.state.errors && this.state.errors.firstName ?
+                  <Text style={styles.errorMessage}>Please enter a valid first name</Text>
+                  : null
+                }
+            </View>
+            <View style={styles.profileField}>
+              <Text style={styles.profileFieldTitle}>Last Name*</Text>
+                <Input
+                  value={this.state.lastName}
+                  onChangeText={(text) => this.onEditField(text, "lastName")}
+                  onEndEditing={() => this.onEndEditing("lastName")}
+                  inputContainerStyle={styles.inputContainerStyle}
+                  inputStyle={[styles.inputStyle, this.state.errors && this.state.errors.lastName ? styles.redText : null]}
+                  containerStyle={styles.containerStyle}
+                />
+                {
+                  this.state.errors && this.state.errors.lastName ?
+                  <Text style={styles.errorMessage}>Please enter a valid last name</Text>
+                  : null
+                }
+            </View>
+            <View style={styles.profileField}>
+              <Text style={styles.profileFieldTitle}>ID Number*</Text>
+                <Input
+                  value={this.state.idNumber}
+                  onChangeText={(text) => this.onEditField(text, "idNumber")}
+                  onEndEditing={() => this.onEndEditing("idNumber")}
+                  inputContainerStyle={styles.inputContainerStyle}
+                  inputStyle={[styles.inputStyle, this.state.errors && this.state.errors.idNumber ? styles.redText : null]}
+                  containerStyle={styles.containerStyle}
+                />
+                {
+                  this.state.errors && this.state.errors.idNumber ?
+                  <Text style={styles.errorMessage}>Please enter a valid ID number</Text>
+                  : null
+                }
+            </View>
+            <View style={styles.profileField}>
+              <Text style={styles.profileFieldTitle}>Email Address or Phone number</Text>
+                <Input
+                  value={this.state.userId}
+                  onChangeText={(text) => this.onEditField(text, "userId")}
+                  onEndEditing={() => this.onEndEditing("userId")}
+                  inputContainerStyle={styles.inputContainerStyle}
+                  inputStyle={[styles.inputStyle, this.state.errors && this.state.errors.userId ? styles.redText : null]}
+                  containerStyle={styles.containerStyle}
+                />
+                {
+                  this.state.errors && this.state.errors.email ?
+                  <Text style={styles.errorMessage}>Please enter a valid email address</Text>
+                  : null
+                }
+                {
+                  this.state.errors && this.state.errors.phone ?
+                  <Text style={styles.errorMessage}>Please enter a valid phone number (e.g. +27123456)</Text>
+                  : null
+                }
+            </View>
+          </ScrollView>
+          {
+            this.state.errors && this.state.errors.general ?
+            <Text style={styles.errorMessage}>{this.state.generalErrorText}</Text>
+            : null
+          }
+          <Text style={styles.disclaimer}>Continuing means you’ve read and agreed to Jupiter’s{" "}
+            <Text style={styles.disclaimerButton} onPress={this.onPressTerms}>T’C & C’s.</Text>
+          </Text>
+          <Button
+            title="CONTINUE"
+            loading={this.state.loading}
+            titleStyle={styles.buttonTitleStyle}
+            buttonStyle={styles.buttonStyle}
+            containerStyle={styles.buttonContainerStyle}
+            onPress={this.onPressRegister}
+            linearGradientProps={{
+              colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+              start: { x: 0, y: 0.5 },
+              end: { x: 1, y: 0.5 },
+            }} />
+        </View>
+
+        <Dialog
+          visible={this.state.dialogVisible}
+          dialogStyle={styles.dialogStyle}
+          dialogAnimation={new SlideAnimation({
+            slideFrom: 'bottom',
+          })}
+          onTouchOutside={this.onHideDialog}
+          onHardwareBackPress={this.onHideDialog}
+        >
+          <DialogContent style={styles.dialogWrapper}>
+            <View style={styles.helpDialog}>
+              <Text style={styles.helpTitle}>Account already exists</Text>
+              <Text style={styles.helpContent}>An account with this <Text style={styles.bold}>ID number</Text> has already been created.</Text>
+              <Text style={styles.explanation}>Log in to your account</Text>
+              <Button
+                title="LOG IN"
+                loading={this.state.loginLoading}
+                titleStyle={styles.buttonTitleStyle}
+                buttonStyle={styles.buttonStyle}
+                containerStyle={styles.buttonContainerStyle}
+                onPress={this.onPressLogin}
+                linearGradientProps={{
+                  colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+                  start: { x: 0, y: 0.5 },
+                  end: { x: 1, y: 0.5 },
+                }} />
+              <Text style={styles.explanation}>Forgot your password?</Text>
+              <Button
+                title="RESET PASSWORD"
+                loading={this.state.resetPasswordLoading}
+                titleStyle={styles.buttonTitleStyle}
+                buttonStyle={styles.buttonStyle}
+                containerStyle={styles.buttonContainerStyle}
+                onPress={this.onPressResetPassword}
+                linearGradientProps={{
+                  colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+                  start: { x: 0, y: 0.5 },
+                  end: { x: 1, y: 0.5 },
+                }} />
+              <TouchableOpacity style={styles.closeDialog} onPress={this.onHideDialog} >
+                <Image source={require('../../assets/close.png')}/>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.dialogFooter}>
+              <Text style={styles.dialogFooterText}>Something not right? <Text style={styles.dialogFooterLink} onPress={this.onPressContactUs}>Contact us</Text></Text>
+            </View>
+          </DialogContent>
+        </Dialog>
+      </KeyboardAvoidingView>
+    );
+  }
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  contentWrapper: {
+    flex: 1,
+    backgroundColor: Colors.BACKGROUND_GRAY,
+    width: '100%',
+    alignItems: 'center',
+  },
+  header: {
+    width: '100%',
+    height: 50,
+    backgroundColor: 'white',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 5,
+  },
+  headerTitle: {
+    marginLeft: -5,
+    fontFamily: 'poppins-semibold',
+    fontSize: 22,
+  },
+  title: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 27,
+    color: Colors.DARK_GRAY,
+    marginLeft: 15,
+  },
+  mainContent: {
+    width: '100%',
+    justifyContent: 'space-around',
+    backgroundColor: Colors.BACKGROUND_GRAY,
+  },
+  scrollView: {
+    flex: 1,
+    width: '100%',
+    marginVertical: 15,
+    paddingHorizontal: 15,
+  },
+  buttonTitleStyle: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 19,
+    color: 'white',
+  },
+  buttonStyle: {
+    borderRadius: 10,
+    minHeight: 55,
+    minWidth: 220,
+  },
+  buttonContainerStyle: {
+    marginVertical: 10,
+    justifyContent: 'center',
+    width: '100%',
+    paddingHorizontal: 15,
+  },
+  profileField: {
+    flex: 1,
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  profileFieldTitle: {
+    fontFamily: 'poppins-semibold',
+    color: Colors.MEDIUM_GRAY,
+    fontSize: 14,
+    marginBottom: 5,
+  },
+  profileFieldValue: {
+    fontFamily: 'poppins-regular',
+    color: Colors.DARK_GRAY,
+    fontSize: 18,
+  },
+  inputContainerStyle: {
+    borderBottomWidth: 0,
+  },
+  inputStyle: {
+    fontFamily: 'poppins-semibold',
+  },
+  containerStyle: {
+    borderWidth: 1,
+    borderRadius: 5,
+    backgroundColor: 'white',
+    borderColor: Colors.GRAY,
+    marginBottom: 20,
+    minHeight: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  errorMessage: {
+    fontFamily: 'poppins-regular',
+    color: Colors.RED,
+    fontSize: 13,
+    marginTop: -15, //this is valid because of the exact alignment of other elements - do not reuse in other components
+    marginBottom: 20,
+  },
+  redText: {
+    color: Colors.RED,
+  },
+  disclaimer: {
+    width: '100%',
+    paddingHorizontal: 15,
+    fontFamily: 'poppins-semibold',
+    color: Colors.DARK_GRAY,
+    fontSize: 11,
+  },
+  disclaimerButton: {
+    textDecorationLine: 'underline',
+  },
+  dialogStyle: {
+    width: '90%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dialogWrapper: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 0,
+    paddingLeft: 0,
+    paddingRight: 0,
+    paddingTop: 0,
+  },
+  helpDialog: {
+    minHeight: 330,
+    borderRadius: 10,
+    justifyContent: 'space-around',
+    paddingBottom: 20,
+    paddingTop: 10,
+    paddingHorizontal: 15,
+  },
+  helpTitle: {
+    textAlign: 'center',
+    fontFamily: 'poppins-semibold',
+    fontSize: 19,
+    color: Colors.DARK_GRAY,
+  },
+  helpContent: {
+    fontFamily: 'poppins-regular',
+    color: Colors.MEDIUM_GRAY,
+    fontSize: 16,
+    lineHeight: 20,
+    textAlign: 'center',
+  },
+  closeDialog: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+  },
+  buttonTitleStyle: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 17,
+    color: 'white',
+  },
+  buttonStyle: {
+    borderRadius: 10,
+    minHeight: 55,
+    minWidth: 220,
+  },
+  buttonContainerStyle: {
+    alignSelf: 'stretch',
+    paddingHorizontal: 15,
+  },
+  explanation: {
+    fontFamily: 'poppins-regular',
+    fontSize: 15,
+    color: Colors.MEDIUM_GRAY,
+    textAlign: 'center',
+    paddingHorizontal: 15,
+  },
+  dialogFooter: {
+    backgroundColor: Colors.BACKGROUND_GRAY,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dialogFooterText: {
+    fontFamily: 'poppins-regular',
+    fontSize: 13,
+    color: Colors.MEDIUM_GRAY,
+    textAlign: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 15,
+  },
+  dialogFooterLink: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 13,
+    color: Colors.PURPLE,
+  },
+});

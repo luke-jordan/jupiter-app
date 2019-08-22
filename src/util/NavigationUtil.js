@@ -1,4 +1,6 @@
 import { StackActions, NavigationActions } from 'react-navigation';
+import { AsyncStorage } from 'react-native';
+import { LoggingUtil } from '../util/LoggingUtil';
 
 export const NavigationUtil = {
 
@@ -22,5 +24,12 @@ export const NavigationUtil = {
   //   });
   //   navigation.dispatch(resetAction);
   // },
+
+  logout(navigation) {
+    AsyncStorage.removeItem("userInfo");
+    AsyncStorage.removeItem("lastShownBalance");
+    LoggingUtil.clearUserProperties();
+    NavigationUtil.navigateWithoutBackstack(navigation, 'Login');
+  }
 
 };
