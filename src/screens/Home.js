@@ -1,9 +1,12 @@
 import React from 'react';
 import { StyleSheet, View, Image, Text, AsyncStorage, ImageBackground, Dimensions, Animated, Easing, YellowBox, TouchableOpacity } from 'react-native';
+import { Notifications } from 'expo';
+import * as Permissions from 'expo-permissions';
 import { Colors, Sizes, Endpoints } from '../util/Values';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Icon, Button } from 'react-native-elements';
 import NavigationBar from '../elements/NavigationBar';
+import { NotificationsUtil } from './src/util/NotificationsUtil';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import AnimatedNumber from '../elements/AnimatedNumber';
@@ -115,10 +118,36 @@ export default class Home extends React.Component {
       token: info.token,
       firstName: info.profile.personalName,
     });
+    this.handleNotificationsModule();
     LoggingUtil.setUserId(info.systemWideUserId); //TODO
     LoggingUtil.logEvent("USER_ENTERED_SCREEN", {"screen_name": "Home"});
     this.animateBalance(info.balance);
     this.fetchUpdates();
+  }
+
+  async handleNotificationsModule() {
+    this.registerForPushNotifications();
+    this._notificationSubscription = Notifications.addListener(this.handleNotification);
+  }
+
+  handleNotification = (notification) => {
+    NotificationsUtil.handleNotification(notification); //TODO handle the result
+  };
+
+  registerForPushNotifications = async () => {
+    const { status: existingStatus } = await Permissions.getAsync(Permissions.NOTIFICATIONS);
+    let finalStatus = existingStatus;
+
+    if (existingStatus !== 'granted') {
+      const { status } = await Permissions.askAsync(Permissions.NOTIFICATIONS);
+      finalStatus = status;
+    }
+    if (finalStatus !== 'granted') {
+      return;
+    }
+
+    let token = await Notifications.getExpoPushTokenAsync();
+    NotificationsUtil.uploadTokenToServer(token, this.state.token);
   }
 
   fetchUpdates = async () => {
