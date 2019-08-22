@@ -1889,9 +1889,9 @@ expand-range@^1.8.1:
   dependencies:
     fill-range "^2.1.0"
 
-expo-analytics-amplitude@~5.0.1:
-  version "5.0.1"
-  resolved "https://registry.yarnpkg.com/expo-analytics-amplitude/-/expo-analytics-amplitude-5.0.1.tgz#2f0d046f1949342c45cf0b6351f5b021357d4f92"
+expo-analytics-amplitude@~6.0.0:
+  version "6.0.0"
+  resolved "https://registry.yarnpkg.com/expo-analytics-amplitude/-/expo-analytics-amplitude-6.0.0.tgz#f3b7d336b6e93d2a7175b059fedbbdc44ff4c5b7"
 
 expo-app-loader-provider@~6.0.0:
   version "6.0.0"
