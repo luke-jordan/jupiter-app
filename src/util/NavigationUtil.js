@@ -28,6 +28,8 @@ export const NavigationUtil = {
   logout(navigation) {
     AsyncStorage.removeItem("userInfo");
     AsyncStorage.removeItem("lastShownBalance");
+    AsyncStorage.removeItem("gameId");
+    AsyncStorage.removeItem("currentGames");
     LoggingUtil.clearUserProperties();
     NavigationUtil.navigateWithoutBackstack(navigation, 'Login');
   }

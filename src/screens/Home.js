@@ -6,7 +6,8 @@ import { Colors, Sizes, Endpoints } from '../util/Values';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Icon, Button } from 'react-native-elements';
 import NavigationBar from '../elements/NavigationBar';
-import { NotificationsUtil } from './src/util/NotificationsUtil';
+import { NotificationsUtil } from '../util/NotificationsUtil';
+import { MessagingUtil } from '../util/MessagingUtil';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import AnimatedNumber from '../elements/AnimatedNumber';
@@ -43,7 +44,10 @@ export default class Home extends React.Component {
       balance: 0,
       // expectedToAdd: "100.00",
       rotation: new Animated.Value(0),
-      hasMessage: true,
+      hasMessage: false,
+      messageDetails: null,
+      hasGameModal: false,
+      gameModalDetails: null,
       loading: false,
       balanceAnimationInterval: DEFAULT_BALANCE_ANIMATION_INTERVAL,
       balanceAnimationStepSize: DEFAULT_BALANCE_ANIMATION_STEP_SIZE,
@@ -64,8 +68,35 @@ export default class Home extends React.Component {
     this.checkIfUpdateNeeded();
   }
 
+  async fetchMessagesIfNeeded() {
+    let gameId = await MessagingUtil.getGameId();
+    if (gameId) {
+      let game = await MessagingUtil.getGame(gameId);
+      console.log(game);
+      if (game) this.showGame(game);
+    } else {
+      let data = await MessagingUtil.fetchMessagesAndGetTop(this.state.token);
+      if (data) this.showGame(data);
+    }
+  }
+
+  async showGame(game) {
+    if (game.display.type.includes("CARD")) {
+      this.setState({
+        hasMessage: true,
+        messageDetails: game,
+      });
+    } else if (game.display.type.includes("MODAL")) {
+      this.setState({
+        hasGameModal: true,
+        gameModalDetails: game,
+      });
+    }
+  }
+
   async checkIfUpdateNeeded() {
     let localVersion = VersionCheck.getCurrentVersion();
+    //TODO uncomment this when relevant
     // let remoteVersion = await VersionCheck.getLatestVersion();
     // if (this.needsUpdate(localVersion, remoteVersion)) {
     //   this.showUpdateDialog(true);
@@ -123,6 +154,7 @@ export default class Home extends React.Component {
     LoggingUtil.logEvent("USER_ENTERED_SCREEN", {"screen_name": "Home"});
     this.animateBalance(info.balance);
     this.fetchUpdates();
+    this.fetchMessagesIfNeeded();
   }
 
   async handleNotificationsModule() {
@@ -131,7 +163,7 @@ export default class Home extends React.Component {
   }
 
   handleNotification = (notification) => {
-    NotificationsUtil.handleNotification(notification); //TODO handle the result
+    NotificationsUtil.handleNotification(this.props.navigation, notification);
   };
 
   registerForPushNotifications = async () => {
@@ -247,9 +279,59 @@ export default class Home extends React.Component {
     this.setState({
       hasMessage: false,
     });
+    //TODO tell the backend the user dismissed it and fetch again
+    AsyncStorage.removeItem("gameId"); //TODO check if this always has to be removed or only if it's actually a game
+    AsyncStorage.removeItem("currentGames");
+  }
+
+  getMessageCardButtonText(action) {
+    switch (action) {
+      case "ADD_CASH":
+      return "ADD CASH";
+
+      case "VIEW_HISTORY":
+      return "VIEW HISTORY";
+
+      default:
+      return "";
+    }
+  }
+
+  getMessageCardIcon(iconType) {
+    switch (iconType) {
+      case "BOOST_ROCKET":
+      return require('../../assets/notification.png'); //TODO set the proper icon
+
+      case "UNLOCKED":
+      return require('../../assets/notification.png'); //TODO set the proper icon
+
+      default:
+      return require('../../assets/notification.png');
+    }
+  }
+
+  onPressModalAction = (action) => {
+    switch (action) {
+      case "ADD_CASH":
+      this.props.navigation.navigate('AddCash');
+      break;
+
+      case "VIEW_HISTORY":
+      //TODO navigate to history when available
+      break;
+
+      default:
+      break;
+    }
   }
 
   renderMessageCard() {
+    let messageDetails = this.state.messageDetails;
+    if (!messageDetails) {
+      return null;
+    }
+    let isEmphasis = messageDetails.display.titleType && messageDetails.display.titleType.includes("EMPHASIS");
+    let messageActionText = this.getMessageCardButtonText(messageDetails.actionToTake);
     return (
       <FlingGestureHandler
             direction={Directions.DOWN}
@@ -259,20 +341,33 @@ export default class Home extends React.Component {
               }
             }}>
             <View style={styles.messageCard}>
-              <View style={styles.messageCardHeader}>
-                <Image style={styles.messageCardIcon} source={require('../../assets/notification.png')}/>
-                <Text style={styles.messageCardTitle}>Watch your savings grow</Text>
+              <View style={isEmphasis ? styles.messageCardHeaderEmphasis : styles.messageCardHeader}>
+                {
+                  !isEmphasis ?
+                  <Image style={styles.messageCardIcon} source={this.getMessageCardIcon(messageDetails.display.iconType)}/>
+                  : null
+                }
+                <Text style={isEmphasis ? styles.messageCardTitleEmphasis : styles.messageCardTitle}>{messageDetails.title}</Text>
+                  {
+                    isEmphasis ?
+                    <Image style={styles.messageCardIcon} source={this.getMessageCardIcon(messageDetails.display.iconType)}/>
+                    : null
+                  }
               </View>
-              <Text style={styles.messageCardText}>Since July 2019 you have earned <Text style={styles.messageCardBold}>R40.57</Text> in interest! Keep adding cash to your Pluto account to earn more each month for nothing.</Text>
-                <View style={styles.messageCardButton}>
-                  <Text style={styles.messageCardButtonText}>SEE HISTORY</Text>
+              <Text style={styles.messageCardText}>{messageDetails.body}</Text>
+              {
+                messageActionText && messageActionText.length > 0 ?
+                <TouchableOpacity style={styles.messageCardButton} onPress={() => this.onPressModalAction(messageDetails.actionToTake)}>
+                  <Text style={styles.messageCardButtonText}>{messageActionText}</Text>
                     <Icon
                       name='chevron-right'
                       type='evilicon'
                       size={30}
                       color={Colors.PURPLE}
                     />
-                </View>
+                </TouchableOpacity>
+                : null
+              }
             </View>
         </FlingGestureHandler>
     );
@@ -365,6 +460,55 @@ export default class Home extends React.Component {
     return (value / this.getDivisor(this.state.unit)).toFixed(2);
   }
 
+  onPressPlayLater = () => {
+    this.setState({
+      hasGameModal: false,
+    });
+    //TODO
+  }
+
+  onPressStartGame = () => {
+    //TODO
+  }
+
+  onCloseGameDialog = () => {
+    this.setState({
+      hasGameModal: false,
+    });
+    //TODO
+  }
+
+  renderGameDialog() {
+    let gameDetails = this.state.gameModalDetails;
+    if (!gameDetails) return null;
+    console.log(gameDetails);
+    return (
+      <DialogContent style={styles.gameDialog}>
+        <Text style={styles.helpTitle}>{gameDetails.title}</Text>
+        <Text style={styles.helpContent}>
+          {gameDetails.body}
+        </Text>
+        <View>
+          <Text>{gameDetails.actionContext.gameParams.instructionBand}</Text>
+        </View>
+        <View style={styles.dialogBottomRight}>
+          <Button
+            title="START GAME"
+            titleStyle={styles.buttonTitleStyle}
+            buttonStyle={styles.buttonStyle}
+            containerStyle={styles.buttonContainerStyle}
+            onPress={this.onPressStartGame}
+            linearGradientProps={{
+              colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+              start: { x: 0, y: 0.5 },
+              end: { x: 1, y: 0.5 },
+            }}/>
+        </View>
+        <Text style={styles.gamePlayLater} onPress={this.onPressPlayLater}>Play later</Text>
+      </DialogContent>
+    );
+  }
+
   render() {
     const circleRotation = this.state.rotation.interpolate({
       inputRange: [0, 1],
@@ -444,12 +588,26 @@ export default class Home extends React.Component {
         </View>
 
         <Dialog
+          visible={this.state.hasGameModal}
+          dialogStyle={styles.dialogWrapper}
+          dialogAnimation={new SlideAnimation({
+            slideFrom: 'top',
+          })}
+          onTouchOutside={this.onCloseGameDialog}
+          onHardwareBackPress={this.onCloseGameDialog}
+        >
+          {
+            this.renderGameDialog()
+          }
+        </Dialog>
+
+
+        <Dialog
           visible={this.state.updateRequiredDialogVisible}
           dialogStyle={styles.dialogWrapper}
           dialogAnimation={new SlideAnimation({
             slideFrom: 'bottom',
           })}
-          onTouchOutside={this.onCloseDialog}
         >
           <DialogContent style={styles.helpDialog}>
             <Text style={styles.helpTitle}>Update Required</Text>
@@ -652,15 +810,31 @@ const styles = StyleSheet.create({
     marginBottom: - (Sizes.NAVIGATION_BAR_HEIGHT - Sizes.VISIBLE_NAVIGATION_BAR_HEIGHT),
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    padding: 15,
+  },
+  messageCardHeaderEmphasis: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+    backgroundColor: Colors.LIGHT_BLUE,
+    borderTopLeftRadius: 5,
+    borderTopRightRadius: 5,
   },
   messageCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
+    padding: 15,
   },
   messageCardIcon: {
-    marginRight: 10,
+    marginHorizontal: 10,
+  },
+  messageCardTitleEmphasis: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 3.7 * FONT_UNIT,
+    color: 'white',
+    paddingVertical: 10,
+    marginLeft: 10,
   },
   messageCardTitle: {
     fontFamily: 'poppins-semibold',
@@ -669,6 +843,8 @@ const styles = StyleSheet.create({
   messageCardText: {
     fontFamily: 'poppins-regular',
     fontSize: 3.2 * FONT_UNIT,
+    paddingHorizontal: 15,
+    paddingTop: 5,
   },
   messageCardBold: {
     fontFamily: 'poppins-semibold',

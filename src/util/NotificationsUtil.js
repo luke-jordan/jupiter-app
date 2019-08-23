@@ -1,8 +1,9 @@
-import { Endpoints } from './Values';
+import { NavigationUtil } from '../util/NavigationUtil';
+import { Endpoints } from '../util/Values';
 
 export const NotificationsUtil = {
 
-  uploadTokenToServer(notificationsToken, authenticationToken) {
+  async uploadTokenToServer(notificationsToken, authenticationToken) {
     try {
       let result = await fetch(Endpoints.CORE + 'message/token', {
         headers: {
@@ -18,7 +19,8 @@ export const NotificationsUtil = {
       });
       if (result.ok) {
         let resultJson = await result.json();
-        if (resultJson.result.includes("SUCCESS")) {
+        // console.log(resultJson);
+        if (resultJson.result && resultJson.result.includes("SUCCESS")) { //TODO check if this actually includes it
           return true;
         }
         return false;
@@ -33,9 +35,18 @@ export const NotificationsUtil = {
     }
   },
 
-  handleNotification(notification) {
-    console.log(notification);
-    //TODO implement message/fetch and return the result 
+  async handleNotification(navigation, notification) {
+    //TODO this fires both on receiving and clicking the notification on Android and probably
+    //only once on iOS; we should make sure we are only handling it once
+    // console.log(notification);
+
+    if (notification.origin == "received") {
+      //TODO
+      //   if (ios) show in tray
+    } else if (notificaiton.origin == "selected") {
+      NavigationUtil.navigateWithoutBackstack(navigation, 'Home');
+    }
+
   }
 
 };

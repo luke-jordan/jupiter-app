@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Dimensions, BackHandler } from 'react-native';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
+import { MessagingUtil } from '../util/MessagingUtil';
 import { Endpoints, Colors } from '../util/Values';
 import { Button, Icon, Input } from 'react-native-elements';
 
@@ -39,6 +40,8 @@ export default class PaymentComplete extends React.Component {
     }
 
     this.fetchProfile(params.token);
+
+    this.checkForActiveGame(params.token);
   }
 
   componentWillUnmount() {
@@ -49,6 +52,13 @@ export default class PaymentComplete extends React.Component {
     this.backHandler.remove();
     this.onPressDone();
     return false;
+  }
+
+  checkForActiveGame = async (token) => {
+    let game = await MessagingUtil.fetchMessagesAndGetTop(token);
+    if (game && game.actionToTake && game.actionToTake.includes("ADD_CASH")) {
+      MessagingUtil.setGameId(game.actionContext.msgOnSuccess);
+    }
   }
 
   async fetchProfile(token) {
