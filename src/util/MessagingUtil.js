@@ -49,9 +49,6 @@ export const MessagingUtil = {
       if (result.ok) {
         let resultJson = await result.json();
         // console.log("resultJson:", resultJson);
-        //TODO if game - handle it, return it as displayable data?
-        //if normal message - return it
-
         MessagingUtil.setGameId(resultJson.messagesToDisplay[0].messageId);
         MessagingUtil.setGames(resultJson.messagesToDisplay);
         return resultJson.messagesToDisplay[0];
@@ -63,6 +60,83 @@ export const MessagingUtil = {
     } catch (error) {
       console.log("error!", error);
     }
-  }
+  },
+
+  async dismissedGame(authenticationToken) {
+    let gameId = await MessagingUtil.getGameId();
+    if (!gameId) {
+      return false;
+    } else {
+      try {
+        let result = await fetch(Endpoints.CORE + 'message/process', {
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': 'Bearer ' + authenticationToken,
+          },
+          method: 'POST',
+          body: JSON.stringify({
+            messageId: "",
+            userAction: "DISMISSED"
+          })
+        });
+        if (result.ok) {
+          let resultJson = await result.json();
+          // console.log("resultJson:", resultJson);
+          if (resultJson.result.includes("SUCCESS")) {
+            AsyncStorage.removeItem("gameId");
+            AsyncStorage.removeItem("currentGames");
+            return true;
+          } else {
+            return false;
+          }
+        } else {
+          let resultText = await result.text();
+          console.log("resultText:", resultText);
+          throw result;
+        }
+      } catch (error) {
+        console.log("error!", error);
+      }
+    }
+  },
+
+   async sendTapGameResults(taps) {
+     let gameId = await MessagingUtil.getGameId();
+     let game = await MessagingUtil.getGame(gameId);
+     if (!gameId || !game) {
+       return false;
+     } else {
+       try {
+         let result = await fetch(Endpoints.CORE + 'boost/respond', {
+           headers: {
+             'Content-Type': 'application/json',
+             'Accept': 'application/json',
+             'Authorization': 'Bearer ' + authenticationToken,
+           },
+           method: 'POST',
+           body: JSON.stringify({
+             boostId: game.actionContext.boostId,
+             screenClicks: taps
+           })
+         });
+         if (result.ok) {
+           let resultJson = await result.json();
+           // console.log("resultJson:", resultJson);
+           if (resultJson.result.includes("SUCCESS")) {
+             return true;
+           } else {
+             return false;
+           }
+         } else {
+           let resultText = await result.text();
+           console.log("resultText:", resultText);
+           throw result;
+         }
+       } catch (error) {
+         console.log("error!", error);
+       }
+     }
+   }
 
 }

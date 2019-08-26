@@ -29,6 +29,7 @@ const FONT_UNIT = 0.01 * width;
 const FETCH_DELAY = 15 * 60 * 1000; //15 minutes * 60 seconds * 1000 millis
 
 const CIRCLE_ROTATION_DURATION = 6000;
+const CIRCLE_SCALE_DURATION = 200;
 
 const DEFAULT_BALANCE_ANIMATION_INTERVAL = 14;
 const DEFAULT_BALANCE_ANIMATION_DURATION = 5000;
@@ -44,6 +45,7 @@ export default class Home extends React.Component {
       balance: 0,
       // expectedToAdd: "100.00",
       rotation: new Animated.Value(0),
+      circleScale: new Animated.Value(0),
       hasMessage: false,
       messageDetails: null,
       hasGameModal: false,
@@ -56,6 +58,7 @@ export default class Home extends React.Component {
       secondaryBalanceAnimationStarted: false,
       updateRequiredDialogVisible: false,
       updateAvailableDialogVisible: false,
+      tapScreenGameMode: false,
     };
   }
 
@@ -72,7 +75,6 @@ export default class Home extends React.Component {
     let gameId = await MessagingUtil.getGameId();
     if (gameId) {
       let game = await MessagingUtil.getGame(gameId);
-      console.log(game);
       if (game) this.showGame(game);
     } else {
       let data = await MessagingUtil.fetchMessagesAndGetTop(this.state.token);
@@ -275,12 +277,27 @@ export default class Home extends React.Component {
     });
   }
 
+  scaleCircle() {
+    Animated.timing(
+      this.state.circleScale,
+      {
+        toValue: 1,
+        duration: CIRCLE_SCALE_DURATION,
+        easing: Easing.linear,
+      }
+    ).start(() => {
+      this.setState({
+        circleScale: new Animated.Value(0),
+      });
+    });
+  }
+
   onFlingMessage(event) {
     this.setState({
       hasMessage: false,
     });
-    //TODO tell the backend the user dismissed it and fetch again
-    AsyncStorage.removeItem("gameId"); //TODO check if this always has to be removed or only if it's actually a game
+    MessagingUtil.dismissedGame();
+    AsyncStorage.removeItem("gameId");
     AsyncStorage.removeItem("currentGames");
   }
 
@@ -464,49 +481,178 @@ export default class Home extends React.Component {
     this.setState({
       hasGameModal: false,
     });
-    //TODO
+    //TODO show gameDetails.actionContext.gameParams.waitMessage maybe?
   }
 
   onPressStartGame = () => {
-    //TODO
+    let game = this.state.gameModalDetails;
+    this.setState({
+      hasGameModal: false,
+    });
+    if (game.actionContext.gameType.includes("TAP_SCREEN")) {
+      this.setState({tapScreenGameMode: true, tapScreenGameTimer: game.actionContext.gameParams.timeLimitSeconds});
+      this.tapScreenGameTaps = 0;
+      setTimeout(() => {this.handleTapScreenGameEnd()}, game.actionContext.gameParams.timeLimitSeconds * 1000);
+      setTimeout(() => {this.decrementTapScreenGameTimer()}, 1000);
+    } else if (game.actionContext.gameType.includes("")) {
+      //TODO handle other game types
+    }
+  }
+
+  decrementTapScreenGameTimer = () => {
+    setTimeout(() => {this.decrementTapScreenGameTimer()}, 1000);
+    this.setState({tapScreenGameTimer: this.state.tapScreenGameTimer - 1});
+  }
+
+  handleTapScreenGameEnd = async () => {
+    this.setState({tapScreenGameMode: false});
+
+    let nextStepId = this.state.gameModalDetails.actionContext.gameParams.finishedMessage;
+    MessagingUtil.setGameId(nextStepId);
+    let nextStep = await MessagingUtil.getGame(nextStepId);
+    if (nextStep) this.showGame(nextStep);
+    MessagingUtil.sendTapGameResults(this.tapScreenGameTaps);
+  }
+
+  onPressTapScreenGame = () => {
+    this.tapScreenGameTaps = this.tapScreenGameTaps + 1;
+    this.scaleCircle();
+    this.forceUpdate();
   }
 
   onCloseGameDialog = () => {
     this.setState({
       hasGameModal: false,
     });
-    //TODO
+    MessagingUtil.dismissedGame(this.state.token);
+    AsyncStorage.removeItem("gameId");
+    AsyncStorage.removeItem("currentGames");
+  }
+
+  getGameDetailsBody(body) {
+    let taps = this.tapScreenGameTaps ? this.tapScreenGameTaps : 0;
+    if (body.includes("#{numberUserTaps}")) {
+      body = body.replace("#{numberUserTaps}", taps);
+    }
+    return body;
+  }
+
+  onPressViewOtherBoosts = () => {
+    this.onCloseGameDialog();
+    this.props.navigation.navigate('Boosts');
   }
 
   renderGameDialog() {
     let gameDetails = this.state.gameModalDetails;
     if (!gameDetails) return null;
-    console.log(gameDetails);
+
+    if (gameDetails.actionContext.gameParams) {
+      return this.renderGameStartDialog(gameDetails);
+    } else {
+      return this.renderGameEndDialog(gameDetails);
+    }
+  }
+
+  renderGameEndDialog(gameDetails) {
+    //TODO set the proper image for the image
     return (
       <DialogContent style={styles.gameDialog}>
         <Text style={styles.helpTitle}>{gameDetails.title}</Text>
-        <Text style={styles.helpContent}>
-          {gameDetails.body}
+        <Text style={styles.gameInfoBody}>
+          {this.getGameDetailsBody(gameDetails.body)}
         </Text>
-        <View>
-          <Text>{gameDetails.actionContext.gameParams.instructionBand}</Text>
-        </View>
-        <View style={styles.dialogBottomRight}>
-          <Button
-            title="START GAME"
-            titleStyle={styles.buttonTitleStyle}
-            buttonStyle={styles.buttonStyle}
-            containerStyle={styles.buttonContainerStyle}
-            onPress={this.onPressStartGame}
-            linearGradientProps={{
-              colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
-              start: { x: 0, y: 0.5 },
-              end: { x: 1, y: 0.5 },
-            }}/>
-        </View>
-        <Text style={styles.gamePlayLater} onPress={this.onPressPlayLater}>Play later</Text>
+        <Button
+          title="DONE"
+          titleStyle={styles.buttonTitleStyle}
+          buttonStyle={styles.buttonStyle}
+          containerStyle={styles.buttonContainerStyle}
+          onPress={this.onCloseGameDialog}
+          linearGradientProps={{
+            colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+            start: { x: 0, y: 0.5 },
+            end: { x: 1, y: 0.5 },
+          }}/>
+        <Text style={styles.gamePlayLater} onPress={this.onPressPlayLater} onPress={this.onPressViewOtherBoosts}>View other boosts</Text>
+        <TouchableOpacity style={styles.closeDialog} onPress={this.onCloseGameDialog} >
+          <Image source={require('../../assets/close.png')}/>
+        </TouchableOpacity>
       </DialogContent>
     );
+  }
+
+  renderGameStartDialog(gameDetails) {
+    //TODO set the proper image for gameInstructionsImage
+    return (
+      <DialogContent style={styles.gameDialog}>
+        <Text style={styles.helpTitle}>{gameDetails.title}</Text>
+        <Text style={styles.gameInfoBody}>
+          {this.getGameDetailsBody(gameDetails.body)}
+        </Text>
+        <View style={styles.gameInstructions}>
+          <View style={styles.gameInstructionsRow}>
+            <Image style={styles.gameInstructionsImage} resizeMode='contain' source={require('../../assets/clock.png')}/>
+            <Text style={styles.gameInstructionsText}>{gameDetails.actionContext.gameParams.instructionBand}</Text>
+          </View>
+        </View>
+        <Button
+          title="START GAME"
+          titleStyle={styles.buttonTitleStyle}
+          buttonStyle={styles.buttonStyle}
+          containerStyle={styles.buttonContainerStyle}
+          onPress={this.onPressStartGame}
+          linearGradientProps={{
+            colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+            start: { x: 0, y: 0.5 },
+            end: { x: 1, y: 0.5 },
+          }}/>
+        <Text style={styles.gamePlayLater} onPress={this.onPressPlayLater} onPress={this.onPressPlayLater}>Play Later</Text>
+        <TouchableOpacity style={styles.closeDialog} onPress={this.onCloseGameDialog} >
+          <Image source={require('../../assets/close.png')}/>
+        </TouchableOpacity>
+      </DialogContent>
+    );
+  }
+
+  renderBalance() {
+    if (!this.state.initialBalanceAnimationStarted) return null;
+    return (
+      <View style={styles.balanceWrapper}>
+        <Text style={styles.currency}>{this.state.currency}</Text>
+        {
+          this.state.initialBalanceAnimationStarted && !this.state.initialBalanceAnimationFinished ?
+          <AnimatedNumber style={styles.balance}
+            initial={this.state.lastShownBalance} target={this.state.balance}
+            formatting={(value) => this.getFormattedValue(value)}
+            stepSize={this.state.balanceAnimationStepSize}
+            duration={this.state.balanceAnimationDuration}
+            onAnimationProgress={(value) => {this.onProgressBalanceAnimation(value)}}
+            onAnimationFinished={() => {this.onFinishBalanceAnimation(true)}}
+            />
+          : null
+        }
+        {
+          this.state.initialBalanceAnimationFinished && this.state.secondaryBalanceAnimationStarted ?
+          <AnimatedNumber style={styles.balance}
+            initial={this.state.lastShownBalance} target={this.state.balance}
+            formatting={(value) => this.getFormattedValue(value)}
+            stepSize={this.state.balanceAnimationStepSize}
+            duration={this.state.balanceAnimationDuration}
+            onAnimationProgress={(value) => {this.onProgressBalanceAnimation(value)}}
+            onAnimationFinished={() => {this.onFinishBalanceAnimation(false)}}
+            />
+          : null
+        }
+      </View>
+    )
+  }
+
+  renderTapCounter() {
+    return (
+      <View style={styles.tapCounterWrapper}>
+        <Text style={styles.balance}>{this.tapScreenGameTaps ? this.tapScreenGameTaps : 0}</Text>
+        <Text style={styles.timerStyle}>{this.state.tapScreenGameTimer ? this.state.tapScreenGameTimer : 0} {this.state.tapScreenGameTimer == 1 ? " second" : " seconds"} left</Text>
+      </View>
+    )
   }
 
   render() {
@@ -514,6 +660,13 @@ export default class Home extends React.Component {
       inputRange: [0, 1],
       outputRange: ['0deg', '360deg']
     });
+    let circleScale = 1;
+    if (this.state.tapScreenGameMode) {
+      circleScale = this.state.circleScale.interpolate({
+        inputRange: [0, 1],
+        outputRange: [1, 1.04]
+      });
+    }
     return (
       <View style={styles.container}>
         <View style={styles.gradientWrapper}>
@@ -534,38 +687,13 @@ export default class Home extends React.Component {
                 {/*
                   <Animated.Image style={[styles.coloredCircle, {transform: [{rotate: circleRotation}]}]} source={require('../../assets/oval.png')}/>
                 */}
-                <Animated.Image style={[styles.whiteCircle, {transform: [{rotate: circleRotation}]}]} source={require('../../assets/arrow_circle.png')}/>
+                <Animated.Image style={[styles.whiteCircle, {transform: [{rotate: circleRotation}, {scale: circleScale}]}]} source={require('../../assets/arrow_circle.png')}/>
               </View>
               {
-                this.state.initialBalanceAnimationStarted ?
-                <View style={styles.balanceWrapper}>
-                  <Text style={styles.currency}>{this.state.currency}</Text>
-                  {
-                    this.state.initialBalanceAnimationStarted && !this.state.initialBalanceAnimationFinished ?
-                    <AnimatedNumber style={styles.balance}
-                      initial={this.state.lastShownBalance} target={this.state.balance}
-                      formatting={(value) => this.getFormattedValue(value)}
-                      stepSize={this.state.balanceAnimationStepSize}
-                      duration={this.state.balanceAnimationDuration}
-                      onAnimationProgress={(value) => {this.onProgressBalanceAnimation(value)}}
-                      onAnimationFinished={() => {this.onFinishBalanceAnimation(true)}}
-                      />
-                    : null
-                  }
-                  {
-                    this.state.initialBalanceAnimationFinished && this.state.secondaryBalanceAnimationStarted ?
-                    <AnimatedNumber style={styles.balance}
-                      initial={this.state.lastShownBalance} target={this.state.balance}
-                      formatting={(value) => this.getFormattedValue(value)}
-                      stepSize={this.state.balanceAnimationStepSize}
-                      duration={this.state.balanceAnimationDuration}
-                      onAnimationProgress={(value) => {this.onProgressBalanceAnimation(value)}}
-                      onAnimationFinished={() => {this.onFinishBalanceAnimation(false)}}
-                      />
-                    : null
-                  }
-                </View>
-                : null
+                this.state.tapScreenGameMode ?
+                this.renderTapCounter()
+                :
+                this.renderBalance()
               }
               {/*<View style={styles.endOfMonthBalanceWrapper}>
                 <Text style={styles.endOfMonthBalance}>+R{this.state.expectedToAdd}</Text>
@@ -593,7 +721,6 @@ export default class Home extends React.Component {
           dialogAnimation={new SlideAnimation({
             slideFrom: 'top',
           })}
-          onTouchOutside={this.onCloseGameDialog}
           onHardwareBackPress={this.onCloseGameDialog}
         >
           {
@@ -690,6 +817,13 @@ export default class Home extends React.Component {
             </TouchableOpacity>
           </DialogContent>
         </Dialog>
+
+        {
+          this.state.tapScreenGameMode ?
+          <TouchableOpacity style={styles.tapScreenGameWrapper} onPress={this.onPressTapScreenGame}>
+          </TouchableOpacity>
+          : null
+        }
       </View>
     );
   }
@@ -698,6 +832,13 @@ export default class Home extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  tapScreenGameWrapper: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
   gradientWrapper: {
     flex: 1,
@@ -772,11 +913,20 @@ const styles = StyleSheet.create({
   balanceWrapper: {
     flexDirection: 'row',
   },
+  tapCounterWrapper: {
+    alignItems: 'center',
+  },
   balance: {
     color: 'white',
     fontSize: 13 * FONT_UNIT,
     fontFamily: 'poppins-semibold',
     lineHeight: 70,
+  },
+  timerStyle: {
+    color: 'white',
+    fontSize: 5 * FONT_UNIT,
+    fontFamily: 'poppins-semibold',
+    lineHeight: 50,
   },
   currency: {
     color: 'white',
@@ -863,6 +1013,54 @@ const styles = StyleSheet.create({
   dialogWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  gameDialog: {
+    width: '90%',
+    minHeight: 380,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    justifyContent: 'space-around',
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    paddingTop: 10,
+  },
+  gameInfoBody: {
+    color: Colors.MEDIUM_GRAY,
+    fontFamily: 'poppins-regular',
+    fontSize: 15,
+    lineHeight: 20,
+    textAlign: 'center',
+  },
+  gameInstructions: {
+    backgroundColor: Colors.PURPLE_TRANSPARENT,
+    borderRadius: 20,
+    minHeight: 30,
+    alignItems: 'center',
+    width: '100%',
+    marginVertical: 10,
+  },
+  gameInstructionsRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 10,
+  },
+  gameInstructionsImage: {
+    flex: 1,
+  },
+  gameInstructionsText: {
+    flex: 5,
+    color: Colors.PURPLE,
+    fontFamily: 'poppins-semibold',
+    fontSize: 13,
+    textAlignVertical: 'center',
+    marginLeft: 5,
+  },
+  gamePlayLater: {
+    marginTop: -10,
+    color: Colors.PURPLE,
+    fontFamily: 'poppins-semibold',
+    fontSize: 16,
+    textAlign: 'center',
+    textDecorationLine: 'underline',
   },
   helpDialog: {
     width: '90%',
