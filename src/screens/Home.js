@@ -59,6 +59,7 @@ export default class Home extends React.Component {
       updateRequiredDialogVisible: false,
       updateAvailableDialogVisible: false,
       tapScreenGameMode: false,
+      chaseArrowGameMode: false,
     };
   }
 
@@ -486,16 +487,20 @@ export default class Home extends React.Component {
 
   onPressStartGame = () => {
     let game = this.state.gameModalDetails;
+    console.log(game);
     this.setState({
       hasGameModal: false,
     });
-    if (game.actionContext.gameType.includes("TAP_SCREEN")) {
+    if (game.actionContext.gameParams.gameType.includes("TAP_SCREEN")) {
       this.setState({tapScreenGameMode: true, tapScreenGameTimer: game.actionContext.gameParams.timeLimitSeconds});
       this.tapScreenGameTaps = 0;
       setTimeout(() => {this.handleTapScreenGameEnd()}, game.actionContext.gameParams.timeLimitSeconds * 1000);
       setTimeout(() => {this.decrementTapScreenGameTimer()}, 1000);
-    } else if (game.actionContext.gameType.includes("")) {
-      //TODO handle other game types
+    } else if (game.actionContext.gameParams.gameType.includes("CHASE_ARROW")) {
+      this.setState({chaseArrowGameMode: true, chaseArrowGameTimer: game.actionContext.gameParams.timeLimitSeconds});
+      this.chaseArrowGameTaps = 0;
+      setTimeout(() => {this.handleChaseArrrowGameEnd()}, game.actionContext.gameParams.timeLimitSeconds * 1000);
+      setTimeout(() => {this.decrementChaseArrowGameTimer()}, 1000);
     }
   }
 
@@ -514,6 +519,21 @@ export default class Home extends React.Component {
     MessagingUtil.sendTapGameResults(this.tapScreenGameTaps);
   }
 
+  decrementChaseArrowGameTimer = () => {
+    setTimeout(() => {this.decrementChaseArrowGameTimer()}, 1000);
+    this.setState({chaseArrowGameTimer: this.state.chaseArrowGameTimer - 1});
+  }
+
+  handleChaseArrrowGameEnd = async () => {
+    this.setState({chaseArrowGameMode: false});
+    //
+    // let nextStepId = this.state.gameModalDetails.actionContext.gameParams.finishedMessage;
+    // MessagingUtil.setGameId(nextStepId);
+    // let nextStep = await MessagingUtil.getGame(nextStepId);
+    // if (nextStep) this.showGame(nextStep);
+    // MessagingUtil.sendTapGameResults(this.tapScreenGameTaps);
+  }
+
   onPressTapScreenGame = () => {
     this.tapScreenGameTaps = this.tapScreenGameTaps + 1;
     this.scaleCircle();
@@ -530,7 +550,9 @@ export default class Home extends React.Component {
   }
 
   getGameDetailsBody(body) {
-    let taps = this.tapScreenGameTaps ? this.tapScreenGameTaps : 0;
+    let taps = 0;
+    if (this.tapScreenGameTaps && this.tapScreenGameTaps > 0) taps = this.tapScreenGameTaps;
+    else if (this.chaseArrowGameTaps && this.chaseArrowGameTaps > 0) taps = this.chaseArrowGameTaps;
     if (body.includes("#{numberUserTaps}")) {
       body = body.replace("#{numberUserTaps}", taps);
     }
@@ -647,10 +669,18 @@ export default class Home extends React.Component {
   }
 
   renderTapCounter() {
+    let taps = 0, timer = 0;
+    if (this.state.tapScreenGameMode) {
+      taps = this.tapScreenGameTaps ? this.tapScreenGameTaps : 0;
+      timer = this.state.tapScreenGameTimer ? this.state.tapScreenGameTimer : 0;
+    } else if (this.state.chaseArrowGameMode) {
+      taps = this.chaseArrowGameTaps ? this.chaseArrowGameTaps : 0;
+      timer = this.state.chaseArrowGameTimer ? this.state.chaseArrowGameTimer : 0;
+    }
     return (
       <View style={styles.tapCounterWrapper}>
-        <Text style={styles.balance}>{this.tapScreenGameTaps ? this.tapScreenGameTaps : 0}</Text>
-        <Text style={styles.timerStyle}>{this.state.tapScreenGameTimer ? this.state.tapScreenGameTimer : 0} {this.state.tapScreenGameTimer == 1 ? " second" : " seconds"} left</Text>
+        <Text style={styles.balance}>{taps}</Text>
+        <Text style={styles.timerStyle}>{timer} {timer == 1 ? " second" : " seconds"} left</Text>
       </View>
     )
   }
@@ -690,7 +720,7 @@ export default class Home extends React.Component {
                 <Animated.Image style={[styles.whiteCircle, {transform: [{rotate: circleRotation}, {scale: circleScale}]}]} source={require('../../assets/arrow_circle.png')}/>
               </View>
               {
-                this.state.tapScreenGameMode ?
+                this.state.tapScreenGameMode || this.state.chaseArrowGameMode ?
                 this.renderTapCounter()
                 :
                 this.renderBalance()
