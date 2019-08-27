@@ -45,6 +45,7 @@ export default class Home extends React.Component {
       balance: 0,
       // expectedToAdd: "100.00",
       rotation: new Animated.Value(0),
+      gameRotation: new Animated.Value(0),
       circleScale: new Animated.Value(0),
       hasMessage: false,
       messageDetails: null,
@@ -263,11 +264,12 @@ export default class Home extends React.Component {
   }
 
   rotateCircle() {
+    let rotationDuration = CIRCLE_ROTATION_DURATION;
     Animated.timing(
       this.state.rotation,
       {
         toValue: 1,
-        duration: CIRCLE_ROTATION_DURATION,
+        duration: rotationDuration,
         easing: Easing.linear,
       }
     ).start(() => {
@@ -275,6 +277,26 @@ export default class Home extends React.Component {
         rotation: new Animated.Value(0),
       });
       this.rotateCircle();
+    });
+  }
+
+  rotateGameCircle(arrowSpeedMultiplier) {
+    let rotationDuration = CIRCLE_ROTATION_DURATION / arrowSpeedMultiplier;
+    console.log(rotationDuration);
+    Animated.timing(
+      this.state.gameRotation,
+      {
+        toValue: 1,
+        duration: rotationDuration,
+        easing: Easing.linear,
+      }
+    ).start(() => {
+      if (this.state.chaseArrowGameMode) {
+        this.setState({
+          gameRotation: new Animated.Value(0),
+        });
+        this.rotateGameCircle(arrowSpeedMultiplier);
+      }
     });
   }
 
@@ -492,13 +514,23 @@ export default class Home extends React.Component {
       hasGameModal: false,
     });
     if (game.actionContext.gameParams.gameType.includes("TAP_SCREEN")) {
-      this.setState({tapScreenGameMode: true, tapScreenGameTimer: game.actionContext.gameParams.timeLimitSeconds});
+      this.setState({
+        tapScreenGameMode: true,
+        tapScreenGameTimer: game.actionContext.gameParams.timeLimitSeconds
+      });
       this.tapScreenGameTaps = 0;
       setTimeout(() => {this.handleTapScreenGameEnd()}, game.actionContext.gameParams.timeLimitSeconds * 1000);
       setTimeout(() => {this.decrementTapScreenGameTimer()}, 1000);
     } else if (game.actionContext.gameParams.gameType.includes("CHASE_ARROW")) {
-      this.setState({chaseArrowGameMode: true, chaseArrowGameTimer: game.actionContext.gameParams.timeLimitSeconds});
+      this.setState({
+        chaseArrowGameMode: true,
+        chaseArrowGameTimer: game.actionContext.gameParams.timeLimitSeconds,
+        // "arrowFuzziness": "10%",
+        gameRotation: new Animated.Value(0),
+      });
       this.chaseArrowGameTaps = 0;
+      let arrowSpeedMultiplier = game.actionContext.gameParams.arrowSpeedMultiplier;
+      this.rotateGameCircle(arrowSpeedMultiplier);
       setTimeout(() => {this.handleChaseArrrowGameEnd()}, game.actionContext.gameParams.timeLimitSeconds * 1000);
       setTimeout(() => {this.decrementChaseArrowGameTimer()}, 1000);
     }
@@ -526,18 +558,26 @@ export default class Home extends React.Component {
 
   handleChaseArrrowGameEnd = async () => {
     this.setState({chaseArrowGameMode: false});
-    //
-    // let nextStepId = this.state.gameModalDetails.actionContext.gameParams.finishedMessage;
-    // MessagingUtil.setGameId(nextStepId);
-    // let nextStep = await MessagingUtil.getGame(nextStepId);
-    // if (nextStep) this.showGame(nextStep);
-    // MessagingUtil.sendTapGameResults(this.tapScreenGameTaps);
+
+    let nextStepId = this.state.gameModalDetails.actionContext.gameParams.finishedMessage;
+    MessagingUtil.setGameId(nextStepId);
+    let nextStep = await MessagingUtil.getGame(nextStepId);
+    if (nextStep) this.showGame(nextStep);
+    MessagingUtil.sendTapGameResults(this.chaseArrowGameTaps);
   }
 
   onPressTapScreenGame = () => {
     this.tapScreenGameTaps = this.tapScreenGameTaps + 1;
     this.scaleCircle();
     this.forceUpdate();
+  }
+
+  onPressArrow = () => {
+    if (this.state.chaseArrowGameMode) {
+      this.chaseArrowGameTaps = this.chaseArrowGameTaps + 1;
+      this.scaleCircle();
+      this.forceUpdate();
+    }
   }
 
   onCloseGameDialog = () => {
@@ -690,8 +730,12 @@ export default class Home extends React.Component {
       inputRange: [0, 1],
       outputRange: ['0deg', '360deg']
     });
+    const gameCircleRotation = this.state.gameRotation.interpolate({
+      inputRange: [0, 1],
+      outputRange: ['0deg', '360deg']
+    });
     let circleScale = 1;
-    if (this.state.tapScreenGameMode) {
+    if (this.state.tapScreenGameMode || this.state.chaseArrowGameMode) {
       circleScale = this.state.circleScale.interpolate({
         inputRange: [0, 1],
         outputRange: [1, 1.04]
@@ -716,8 +760,24 @@ export default class Home extends React.Component {
                 <Image style={styles.coloredCircle} source={require('../../assets/oval.png')}/>
                 {/*
                   <Animated.Image style={[styles.coloredCircle, {transform: [{rotate: circleRotation}]}]} source={require('../../assets/oval.png')}/>
+
                 */}
-                <Animated.Image style={[styles.whiteCircle, {transform: [{rotate: circleRotation}, {scale: circleScale}]}]} source={require('../../assets/arrow_circle.png')}/>
+                {
+                  this.state.chaseArrowGameMode ?
+                  <Animated.View style={[styles.whiteCircle, {transform: [{rotate: gameCircleRotation}, {scale: circleScale}]}]}>
+                    <Image source={require('../../assets/circle.png')} style={styles.animatedViewCircle} resizeMode="cover"/>
+                    <TouchableOpacity activeOpacity={1} style={styles.animatedViewArrow} onPress={this.onPressArrow}>
+                      <Image source={require('../../assets/arrow.png')}/>
+                    </TouchableOpacity>
+                  </Animated.View>
+                  :
+                  <Animated.View style={[styles.whiteCircle, {transform: [{rotate: circleRotation}, {scale: circleScale}]}]}>
+                    <Image source={require('../../assets/circle.png')} style={styles.animatedViewCircle} resizeMode="cover"/>
+                    <View style={styles.animatedViewArrow}>
+                      <Image source={require('../../assets/arrow.png')}/>
+                    </View>
+                  </Animated.View>
+                }
               </View>
               {
                 this.state.tapScreenGameMode || this.state.chaseArrowGameMode ?
@@ -931,6 +991,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   whiteCircle: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: width,
+    height: width,
+  },
+  animatedViewArrow: {
+    position: 'absolute',
+    left: '10%',
+    top: '71.8%',
+  },
+  animatedViewCircle: {
     position: 'absolute',
     width: width,
     height: width,
