@@ -101,7 +101,7 @@ export const MessagingUtil = {
     }
   },
 
-   async sendTapGameResults(taps) {
+   async sendTapGameResults(taps, authenticationToken) {
      let gameId = await MessagingUtil.getGameId();
      let game = await MessagingUtil.getGame(gameId);
      if (!gameId || !game) {

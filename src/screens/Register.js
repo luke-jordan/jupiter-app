@@ -236,8 +236,8 @@ export default class Register extends React.Component {
           </TouchableOpacity>
         </View>
         <View style={styles.contentWrapper}>
-          <Text style={styles.title}>Let’s create your Jupiter account</Text>
           <ScrollView style={styles.scrollView} contentContainerStyle={styles.mainContent}>
+            <Text style={styles.title}>Let’s create your Jupiter account</Text>
             <View style={styles.profileField}>
               <Text style={styles.profileFieldTitle}>First Name*</Text>
                 <Input
@@ -410,7 +410,7 @@ const styles = StyleSheet.create({
     fontFamily: 'poppins-semibold',
     fontSize: 27,
     color: Colors.DARK_GRAY,
-    marginLeft: 15,
+    marginBottom: 15,
   },
   mainContent: {
     width: '100%',

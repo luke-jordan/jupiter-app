@@ -65,7 +65,7 @@ export default class ResetPassword extends React.Component {
       <View style={styles.container} contentContainerStyle={styles.container} behavior="position" keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}>
         <Image style={styles.image} source={require('../../assets/lock.png')} resizeMode="contain"/>
         <Text style={styles.title}>Reset Password</Text>
-        <Text style={styles.description}>We’ll send you a link to reset your password.</Text>
+        <Text style={styles.description}>We’ll send you a code to reset your password.</Text>
         <View style={styles.inputWrapper}>
           <Text style={styles.labelStyle}>Enter your phone number or email address*</Text>
           <Input

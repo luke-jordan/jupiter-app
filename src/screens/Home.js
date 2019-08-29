@@ -319,7 +319,7 @@ export default class Home extends React.Component {
     this.setState({
       hasMessage: false,
     });
-    MessagingUtil.dismissedGame();
+    MessagingUtil.dismissedGame(this.state.token);
     AsyncStorage.removeItem("gameId");
     AsyncStorage.removeItem("currentGames");
   }
@@ -380,7 +380,7 @@ export default class Home extends React.Component {
                 this.onFlingMessage(nativeEvent);
               }
             }}>
-            <View style={styles.messageCard}>
+            <TouchableOpacity style={styles.messageCard} onPress={() => this.onPressModalAction(messageDetails.actionToTake)}>
               <View style={isEmphasis ? styles.messageCardHeaderEmphasis : styles.messageCardHeader}>
                 {
                   !isEmphasis ?
@@ -397,7 +397,7 @@ export default class Home extends React.Component {
               <Text style={styles.messageCardText}>{messageDetails.body}</Text>
               {
                 messageActionText && messageActionText.length > 0 ?
-                <TouchableOpacity style={styles.messageCardButton} onPress={() => this.onPressModalAction(messageDetails.actionToTake)}>
+                <View style={styles.messageCardButton}>
                   <Text style={styles.messageCardButtonText}>{messageActionText}</Text>
                     <Icon
                       name='chevron-right'
@@ -405,10 +405,10 @@ export default class Home extends React.Component {
                       size={30}
                       color={Colors.PURPLE}
                     />
-                </TouchableOpacity>
+                </View>
                 : null
               }
-            </View>
+            </TouchableOpacity>
         </FlingGestureHandler>
     );
   }
@@ -548,7 +548,7 @@ export default class Home extends React.Component {
     MessagingUtil.setGameId(nextStepId);
     let nextStep = await MessagingUtil.getGame(nextStepId);
     if (nextStep) this.showGame(nextStep);
-    MessagingUtil.sendTapGameResults(this.tapScreenGameTaps);
+    MessagingUtil.sendTapGameResults(this.tapScreenGameTaps, this.state.token);
   }
 
   decrementChaseArrowGameTimer = () => {
@@ -563,7 +563,7 @@ export default class Home extends React.Component {
     MessagingUtil.setGameId(nextStepId);
     let nextStep = await MessagingUtil.getGame(nextStepId);
     if (nextStep) this.showGame(nextStep);
-    MessagingUtil.sendTapGameResults(this.chaseArrowGameTaps);
+    MessagingUtil.sendTapGameResults(this.chaseArrowGameTaps, this.state.token);
   }
 
   onPressTapScreenGame = () => {
@@ -668,9 +668,6 @@ export default class Home extends React.Component {
             end: { x: 1, y: 0.5 },
           }}/>
         <Text style={styles.gamePlayLater} onPress={this.onPressPlayLater} onPress={this.onPressPlayLater}>Play Later</Text>
-        <TouchableOpacity style={styles.closeDialog} onPress={this.onCloseGameDialog} >
-          <Image source={require('../../assets/close.png')}/>
-        </TouchableOpacity>
       </DialogContent>
     );
   }
