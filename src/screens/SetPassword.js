@@ -106,11 +106,11 @@ export default class SetPassword extends React.Component {
       checkingForCompletion: true,
       loading: true,
     });
-    // let validation = await this.validateInput();
-    // if (!validation) {
-    //   this.showError();
-    //   return;
-    // }
+    let validation = await this.validateInput();
+    if (!validation) {
+      this.showError();
+      return;
+    }
     if (this.state.isReset) {
       this.handleResetPassword();
     } else {
