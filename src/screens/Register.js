@@ -18,8 +18,8 @@ export default class Register extends React.Component {
       loading: false,
       firstName: "test",
       lastName: "test",
-      idNumber: "000000056",
-      userId: "+359886405663",
+      idNumber: "000000091",
+      userId: "testemail91@test.tst",
       referralCode: "",
       errors: {
         firstName: false,
@@ -170,6 +170,9 @@ export default class Register extends React.Component {
         let resultJson = await result.json();
         LoggingUtil.logEvent("USER_PROFILE_REGISTER_FAILED", {"reason": resultJson.errorField});
         let errors = Object.assign({}, this.state.errors);
+        if (!resultJson.errorField) {
+          throw null;
+        }
         if (resultJson.errorField.includes("NATIONAL_ID")) {
           this.setState({
             dialogVisible: true,
@@ -392,6 +395,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.BACKGROUND_GRAY,
     width: '100%',
     alignItems: 'center',
+    marginBottom: 15,
   },
   header: {
     width: '100%',

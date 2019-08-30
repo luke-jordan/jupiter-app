@@ -1,6 +1,6 @@
 import React from 'react';
 import * as Font from 'expo-font';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Button, Icon, Input } from 'react-native-elements';
@@ -23,6 +23,9 @@ export default class SetPassword extends React.Component {
       },
       dialogVisible: false,
       generatedPassword: "",
+      generalErrorText: "There is a problem with your request",
+      defaultGeneralErrorText: "There is a problem with your request",
+      checkingForCompletion: false,
     };
   }
 
@@ -99,12 +102,15 @@ export default class SetPassword extends React.Component {
 
   onPressContinue = async () => {
     if (this.state.loading) return;
-    this.setState({loading: true});
-    let validation = await this.validateInput();
-    if (!validation) {
-      this.showError();
-      return;
-    }
+    this.setState({
+      checkingForCompletion: true,
+      loading: true,
+    });
+    // let validation = await this.validateInput();
+    // if (!validation) {
+    //   this.showError();
+    //   return;
+    // }
     if (this.state.isReset) {
       this.handleResetPassword();
     } else {
@@ -164,7 +170,10 @@ export default class SetPassword extends React.Component {
       });
       if (result.ok) {
         let resultJson = await result.json();
-        this.setState({loading: false});
+        this.setState({
+          checkingForPayment: false,
+          loading: false,
+        });
         if (resultJson.result.includes("SUCCESS")) {
           LoggingUtil.logEvent("USER_PROFILE_PASSWORD_SUCCEEDED");
           this.props.navigation.navigate("AddCash", {
@@ -174,28 +183,33 @@ export default class SetPassword extends React.Component {
             accountId: resultJson.accountId[0],
           });
         } else {
-          LoggingUtil.logEvent("USER_PROFILE_PASSWORD_FAILED", {"reason" : "Result didn't include SUCCESS"});
-          this.showError();
+          console.log(resultJson);
+          LoggingUtil.logEvent("USER_PROFILE_PASSWORD_FAILED", {"reason": resultJson.message});
+          this.showError(resultJson.message);
         }
       } else {
-        let resultText = await result.text();
-        LoggingUtil.logEvent("USER_PROFILE_PASSWORD_FAILED", {"reason" : resultText});
-        throw result;
+        let resultJson = await result.json();
+        LoggingUtil.logEvent("USER_PROFILE_PASSWORD_FAILED", {"reason" : resultJson.message});
+        throw resultJson.message;
       }
     } catch (error) {
       console.log("error!", error);
-      this.showError();
+      this.showError(error);
     }
   }
 
-  showError() {
+  showError(errorText) {
     let errors = Object.assign({}, this.state.errors);
     errors.general = true;
+    errors.password = true;
     this.setState({
+      checkingForCompletion: false,
       loading: false,
       errors: errors,
+      generalErrorText: errorText ? errorText : this.state.defaultGeneralErrorText,
     });
   }
+
 
   onPressGeneratePassword = async () => {
     if (this.state.generatePasswordLoading) return;
@@ -304,7 +318,7 @@ export default class SetPassword extends React.Component {
           </ScrollView>
           {
             this.state.errors && this.state.errors.general ?
-            <Text style={styles.errorMessage}>There is a problem with your request</Text>
+            <Text style={styles.errorMessage}>{this.state.generalErrorText}</Text>
             : null
           }
           <Text style={styles.generatePassword} onPress={this.onPressGeneratePassword}>Help me generate a password</Text>
@@ -356,6 +370,22 @@ export default class SetPassword extends React.Component {
             </TouchableOpacity>
           </DialogContent>
         </Dialog>
+
+        <Dialog
+          visible={this.state.checkingForCompletion}
+          dialogStyle={styles.dialogStyle}
+          dialogAnimation={new SlideAnimation({
+            slideFrom: 'bottom',
+          })}
+          onTouchOutside={() => {}}
+          onHardwareBackPress={() => {this.setState({checkingForCompletion: false}); return true;}}
+        >
+          <DialogContent style={styles.checkingDialogWrapper}>
+            <ActivityIndicator size="large" color={Colors.PURPLE} />
+            <Text style={styles.checkingDialogText}>We are creating your account...</Text>
+          </DialogContent>
+        </Dialog>
+
       </KeyboardAvoidingView>
     );
   }
@@ -507,4 +537,21 @@ const styles = StyleSheet.create({
     paddingLeft: 10,
     textAlignVertical: 'center',
   },
+
+  checkingDialogWrapper: {
+    width: '80%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 200,
+    paddingBottom: 0,
+  },
+  checkingDialogText: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 17,
+    color: Colors.DARK_GRAY,
+    marginTop: 10,
+    marginHorizontal: 30,
+    textAlign: 'center',
+  },
+
 });

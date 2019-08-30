@@ -76,7 +76,7 @@ export const MessagingUtil = {
           },
           method: 'POST',
           body: JSON.stringify({
-            messageId: "",
+            messageId: gameId,
             userAction: "DISMISSED"
           })
         });
