@@ -23,8 +23,9 @@ export default class SetPassword extends React.Component {
       },
       dialogVisible: false,
       generatedPassword: "",
+      passwordErrorMessage: "Please enter a valid password",
+      defaultPasswordErrorMessage: "Please enter a valid password",
       generalErrorText: "There is a problem with your request",
-      defaultGeneralErrorText: "There is a problem with your request",
       checkingForCompletion: false,
     };
   }
@@ -189,8 +190,10 @@ export default class SetPassword extends React.Component {
         }
       } else {
         let resultJson = await result.json();
-        LoggingUtil.logEvent("USER_PROFILE_PASSWORD_FAILED", {"reason" : resultJson.message});
-        throw resultJson.message;
+        console.log(resultJson);
+        LoggingUtil.logEvent("USER_PROFILE_PASSWORD_FAILED", {"reason" : resultJson.errors.toString()});
+        let errorsString = resultJson.errors.join("\n");
+        this.showError(errorsString);
       }
     } catch (error) {
       console.log("error!", error);
@@ -206,7 +209,7 @@ export default class SetPassword extends React.Component {
       checkingForCompletion: false,
       loading: false,
       errors: errors,
-      generalErrorText: errorText ? errorText : this.state.defaultGeneralErrorText,
+      passwordErrorMessage: errorText ? errorText : this.state.defaultPasswordErrorMessage,
     });
   }
 
@@ -294,7 +297,7 @@ export default class SetPassword extends React.Component {
                 />
                 {
                   this.state.errors && this.state.errors.password ?
-                  <Text style={styles.errorMessage}>Please enter a valid password</Text>
+                  <Text style={styles.errorMessage}>{this.state.passwordErrorMessage}</Text>
                   : null
                 }
             </View>

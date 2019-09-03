@@ -380,7 +380,7 @@ export default class Home extends React.Component {
                 this.onFlingMessage(nativeEvent);
               }
             }}>
-            <TouchableOpacity style={styles.messageCard} onPress={() => this.onPressModalAction(messageDetails.actionToTake)}>
+            <View style={styles.messageCard}>
               <View style={isEmphasis ? styles.messageCardHeaderEmphasis : styles.messageCardHeader}>
                 {
                   !isEmphasis ?
@@ -397,7 +397,7 @@ export default class Home extends React.Component {
               <Text style={styles.messageCardText}>{messageDetails.body}</Text>
               {
                 messageActionText && messageActionText.length > 0 ?
-                <View style={styles.messageCardButton}>
+                <TouchableOpacity style={styles.messageCardButton} onPress={() => this.onPressModalAction(messageDetails.actionToTake)}>
                   <Text style={styles.messageCardButtonText}>{messageActionText}</Text>
                     <Icon
                       name='chevron-right'
@@ -405,10 +405,10 @@ export default class Home extends React.Component {
                       size={30}
                       color={Colors.PURPLE}
                     />
-                </View>
+                </TouchableOpacity>
                 : null
               }
-            </TouchableOpacity>
+            </View>
         </FlingGestureHandler>
     );
   }
@@ -743,7 +743,7 @@ export default class Home extends React.Component {
         <View style={styles.gradientWrapper}>
           <LinearGradient colors={[Colors.LIGHT_BLUE, Colors.PURPLE]} style={styles.gradientContainer}>
             <View style={styles.backgroundLinesWrapper}>
-              <Image style={styles.backgroundLines} source={require('../../assets/group_3.png')} resizeMode="contain"/>
+              <Image style={styles.backgroundLines} source={require('../../assets/stars.png')} resizeMode="contain"/>
             </View>
             <View style={this.state.hasMessage ? styles.headerWithMessage : styles.header}>
               {
@@ -1101,6 +1101,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
+    paddingVertical: 10,
   },
   messageCardButtonText: {
     fontFamily: 'poppins-semibold',
