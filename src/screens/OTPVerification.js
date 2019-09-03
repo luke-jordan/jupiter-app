@@ -16,6 +16,8 @@ export default class OTPVerification extends React.Component {
       loading: false,
       dialogVisible: false,
       otpMethod: "phone",
+      otpError: false,
+      passwordError: false,
     };
   }
 
@@ -48,7 +50,16 @@ export default class OTPVerification extends React.Component {
           NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'PendingRegistrationSteps', { userInfo: resultJson });
         }
       } else {
-        throw result;
+        let resultJson = await result.json();
+        if (Array.isArray(resultJson)) {
+          this.setState({
+            loading: false,
+            otpError: resultJson.indexOf("OTP_ERROR") > -1,
+            passwordError: resultJson.indexOf("PASSWORD_ERROR") > -1,
+          });
+        } else {
+          this.setState({loading: false});
+        }
       }
     } catch (error) {
       console.log("error!", await error.text());
@@ -71,7 +82,19 @@ export default class OTPVerification extends React.Component {
         this.setState({loading: false});
         NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'ResetQuestions', { questions: resultJson });
       } else {
-        throw result;
+        let resultJson = await result.json();
+        if (Array.isArray(resultJson)) {
+          this.setState({
+            loading: false,
+            otpError: resultJson.indexOf("OTP_ERROR") > -1,
+            passwordError: resultJson.indexOf("PASSWORD_ERROR") > -1,
+          });
+        } else {
+          this.setState({
+            loading: false,
+            otpError: true
+          });
+        }
       }
     } catch (error) {
       console.log("error!", await error.text());
@@ -153,6 +176,8 @@ export default class OTPVerification extends React.Component {
     if (num >= 0 && num <= 9) {
       pin[index] = text[text.length - 1];
       this.setState({
+        otpError: false,
+        passwordError: false,
         pin,
       });
     }
@@ -228,6 +253,16 @@ export default class OTPVerification extends React.Component {
               containerStyle={styles.containerStyle}
             />
           </View>
+          {
+            this.state.otpError ?
+            <Text style={styles.redText}>The OTP you entered is not valid.</Text>
+            : null
+          }
+          {
+            this.state.passwordError ?
+            <Text style={styles.redText}>The password you entered is not valid.</Text>
+            : null
+          }
         </View>
         <Button
           title="CONTINUE"
@@ -414,5 +449,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 20,
     right: 20,
+  },
+  redText: {
+    fontFamily: 'poppins-semibold',
+    color: Colors.RED,
+    textAlign: 'center',
+    marginTop: 25,
   },
 });

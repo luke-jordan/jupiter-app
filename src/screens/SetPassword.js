@@ -84,12 +84,13 @@ export default class SetPassword extends React.Component {
   validateInput = async () => {
     let hasErrors = false;
     let errors = Object.assign({}, this.state.errors);
-    if (this.state.password.length < 8) {
+    // if (this.state.password.length < 8) {
+    //   hasErrors = true;
+    //   errors.password = true;
+    // }
+    if (this.state.password != this.state.passwordConfirm) {
       hasErrors = true;
-      errors.password = true;
-    }
-    if (this.state.passwordConfirm.length < 8 || this.state.password != this.state.passwordConfirm) {
-      hasErrors = true;
+      errors.password = false;
       errors.passwordConfirm = true;
     }
     if (hasErrors) {
@@ -107,11 +108,11 @@ export default class SetPassword extends React.Component {
       checkingForCompletion: true,
       loading: true,
     });
-    // let validation = await this.validateInput();
-    // if (!validation) {
-    //   this.showError();
-    //   return;
-    // }
+    let validation = await this.validateInput();
+    if (!validation) {
+      this.showError();
+      return;
+    }
     if (this.state.isReset) {
       this.handleResetPassword();
     } else {
@@ -134,7 +135,10 @@ export default class SetPassword extends React.Component {
       });
       if (result.ok) {
         let resultJson = await result.json();
-        this.setState({loading: false});
+        this.setState({
+          loading: false,
+          checkingForCompletion: false,
+        });
         if (resultJson.result.includes("SUCCESS")) {
         //   LoggingUtil.logEvent("USER_PROFILE_PASSWORD_SUCCEEDED"); //TODO we should probably log another event here
           NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'ResetComplete');
@@ -172,8 +176,8 @@ export default class SetPassword extends React.Component {
       if (result.ok) {
         let resultJson = await result.json();
         this.setState({
-          checkingForPayment: false,
           loading: false,
+          checkingForCompletion: false,
         });
         if (resultJson.result.includes("SUCCESS")) {
           LoggingUtil.logEvent("USER_PROFILE_PASSWORD_SUCCEEDED");
@@ -206,7 +210,9 @@ export default class SetPassword extends React.Component {
   showError(errorText) {
     let errors = Object.assign({}, this.state.errors);
     errors.general = true;
-    errors.password = true;
+    if (errorText) {
+      errors.password = true;
+    }
     this.setState({
       checkingForCompletion: false,
       loading: false,

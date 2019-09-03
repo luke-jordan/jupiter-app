@@ -121,6 +121,10 @@ export default class ResetQuestions extends React.Component {
     );
   }
 
+  onPressLogin = () => {
+    NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Login');
+  }
+
   render() {
     return (
       <View style={styles.container}>
@@ -140,6 +144,7 @@ export default class ResetQuestions extends React.Component {
             <Text style={styles.errorMessage}>Some of your answers might be incorrect.</Text>
             : null
           }
+        <Text style={styles.goback} onPress={this.onPressLogin}>Go to Login</Text>
         <Button
           title="CONTINUE"
           loading={this.state.loading}
@@ -241,5 +246,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: -15, //this is valid because of the exact alignment of other elements - do not reuse in other components
     marginBottom: 20,
+  },
+  goback: {
+    color: Colors.PURPLE,
+    fontFamily: 'poppins-semibold',
+    fontSize: 14,
   },
 });
