@@ -15,11 +15,12 @@ export default class OTPVerification extends React.Component {
       pin: [null, null, null, null],
       loading: false,
       dialogVisible: false,
+      otpMethod: "phone",
     };
   }
 
   async componentDidMount() {
-
+    //TODO show phone / email in this.state.otpMethod properly according to the backend response
   }
 
   async handleLogin(userId, password) {
@@ -184,8 +185,7 @@ export default class OTPVerification extends React.Component {
           <Image style={styles.headerImage} source={require('../../assets/otp_phone_illi.png')}/>
         </View>
         <View style={styles.mainContent}>
-          <Text style={styles.labelStyle}>Please enter the OTP pin sent to:</Text>
-          <Text style={styles.otpText}>{this.state.phoneNumber}</Text>
+          <Text style={styles.labelStyle}>Please enter the one time pin sent to your {this.state.otpMethod}</Text>
           <View style={styles.pinInputs}>
             <Input
               ref={ref => this.inputRefs0 = ref}
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
   mainContent: {
-    flex: 1,
+    flex: 2,
     width: '90%',
     minHeight: 100,
     justifyContent: 'center',
@@ -323,7 +323,6 @@ const styles = StyleSheet.create({
   labelStyle: {
     fontSize: 24,
     fontFamily: 'poppins-regular',
-    marginVertical: 5,
     marginBottom: 10,
     marginHorizontal: 20,
     textAlign: 'center',

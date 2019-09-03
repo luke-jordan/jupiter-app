@@ -37,7 +37,7 @@ export const MessagingUtil = {
 
   async fetchMessagesAndGetTop(authenticationToken) {
     try {
-      let result = await fetch(Endpoints.CORE + 'message/fetch?gameDryRun=true', {
+      let result = await fetch(Endpoints.CORE + 'message/fetch?gameDryRun=true&gameType=CHASE_ARROW', {
       // let result = await fetch(Endpoints.CORE + 'message/fetch', {
         headers: {
           'Content-Type': 'application/json',

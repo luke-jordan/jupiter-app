@@ -55,6 +55,7 @@ export default class PaymentComplete extends React.Component {
   }
 
   checkForActiveGame = async (token) => {
+    //TODO this should check for amounts
     let game = await MessagingUtil.fetchMessagesAndGetTop(token);
     if (game && game.actionToTake && game.actionToTake.includes("ADD_CASH")) {
       MessagingUtil.setGameId(game.actionContext.msgOnSuccess);

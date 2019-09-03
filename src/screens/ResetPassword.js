@@ -45,10 +45,12 @@ export default class ResetPassword extends React.Component {
           redirection: 'Reset',
         });
       } else {
+        let resultText = await result.text();
+        console.log(resultText);
         throw result;
       }
     } catch (error) {
-      console.log("error!", error);
+      // console.log("error!", error);
       this.showError();
     }
   }
