@@ -107,11 +107,11 @@ export default class SetPassword extends React.Component {
       checkingForCompletion: true,
       loading: true,
     });
-    let validation = await this.validateInput();
-    if (!validation) {
-      this.showError();
-      return;
-    }
+    // let validation = await this.validateInput();
+    // if (!validation) {
+    //   this.showError();
+    //   return;
+    // }
     if (this.state.isReset) {
       this.handleResetPassword();
     } else {
@@ -192,7 +192,9 @@ export default class SetPassword extends React.Component {
         let resultJson = await result.json();
         console.log(resultJson);
         LoggingUtil.logEvent("USER_PROFILE_PASSWORD_FAILED", {"reason" : resultJson.errors.toString()});
-        let errorsString = resultJson.errors.join("\n");
+        let responseErrors = resultJson.errors;
+        responseErrors.unshift("Your password must:");
+        let errorsString = responseErrors.join("\n- ");
         this.showError(errorsString);
       }
     } catch (error) {
