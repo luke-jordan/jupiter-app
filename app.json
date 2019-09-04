@@ -25,6 +25,18 @@
     ],
     "ios": {
       "supportsTablet": true
+    },
+    "hooks": {
+      "postPublish": [
+        {
+          "file": "sentry-expo/upload-sourcemaps",
+          "config": {
+            "organization": "Jupiter",
+            "project": "Mobile app",
+            "authToken": "e81cf1b58eb8463d90d1a7ed6838db8e6bff888e00494102942d44f22d7c07cd"
+          }
+        }
+      ]
     }
   }
 }

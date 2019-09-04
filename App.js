@@ -3,6 +3,7 @@ import { View, Platform } from 'react-native';
 import { createStackNavigator, createAppContainer } from 'react-navigation';
 import { StyleSheet, SafeAreaView, AsyncStorage, AppState } from 'react-native';
 import { LoggingUtil } from './src/util/LoggingUtil';
+import * as Sentry from 'sentry-expo';
 
 import Splash from './src/screens/Splash';
 import Login from './src/screens/Login';
@@ -62,6 +63,11 @@ const AppContainer = createAppContainer(
 export default class App extends React.Component {
 
   componentDidMount() {
+    Sentry.init({
+      dsn: 'https://00d51de1c629418ab759202582b78a3c@sentry.io/1546052',
+      enableInExpoDevelopment: true,
+      debug: true
+    });
     AppState.addEventListener('change', this.handleAppStateChange);
   }
 
