@@ -170,22 +170,25 @@ export default class Register extends React.Component {
         let resultJson = await result.json();
         LoggingUtil.logEvent("USER_PROFILE_REGISTER_FAILED", {"reason": resultJson.errorField});
         let errors = Object.assign({}, this.state.errors);
-        if (!resultJson.errorField) {
+        if (!resultJson.conflicts) {
           throw null;
         }
-        if (resultJson.errorField.includes("NATIONAL_ID")) {
-          this.setState({
-            dialogVisible: true,
-          });
-          errors.idNumber = true;
-        }
-        if (resultJson.errorField.includes("EMAIL")) {
-          errors.userId = true;
+        for (let conflict of resultJson.conflicts) {
+          if (conflict.errorField.includes("NATIONAL_ID")) {
+            this.setState({
+              dialogVisible: true,
+            });
+            errors.idNumber = conflict.messageToUser;
+          }
+          if (conflict.errorField.includes("EMAIL_ADDRESS")) {
+            errors.userId = true;
+            errors.email = conflict.messageToUser;
+          }
         }
         this.setState({
+          loading: false,
           errors: errors,
         });
-        throw resultJson.messageToUser;
       }
     } catch (error) {
       console.log("error!", error);
@@ -285,7 +288,7 @@ export default class Register extends React.Component {
                 />
                 {
                   this.state.errors && this.state.errors.idNumber ?
-                  <Text style={styles.errorMessage}>Please enter a valid ID number</Text>
+                  <Text style={styles.errorMessage}>{this.state.errors.idNumber === true ? "Please enter a valid ID number" : this.state.errors.idNumber}</Text>
                   : null
                 }
             </View>
@@ -301,7 +304,7 @@ export default class Register extends React.Component {
                 />
                 {
                   this.state.errors && this.state.errors.email ?
-                  <Text style={styles.errorMessage}>Please enter a valid email address</Text>
+                  <Text style={styles.errorMessage}>{this.state.errors.email === true ? "Please enter a valid email address" : this.state.errors.email}</Text>
                   : null
                 }
                 {
@@ -481,6 +484,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: -15, //this is valid because of the exact alignment of other elements - do not reuse in other components
     marginBottom: 20,
+    width: '90%',
   },
   redText: {
     color: Colors.RED,
