@@ -31,9 +31,9 @@
         {
           "file": "sentry-expo/upload-sourcemaps",
           "config": {
-            "organization": "Jupiter",
-            "project": "Mobile app",
-            "authToken": "e81cf1b58eb8463d90d1a7ed6838db8e6bff888e00494102942d44f22d7c07cd"
+            "organization": "jupiter-70",
+            "project": "jupiter-70",
+            "authToken": "ad2f99cd1d5f47aaa368dd56e2f7a36e36488a47b26e4220a091a5ec0b39c27b"
           }
         }
       ]
