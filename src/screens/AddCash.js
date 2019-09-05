@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, ScrollView } from 'react-native';
 import { Colors, Endpoints } from '../util/Values';
 import { Icon, Input, Button } from 'react-native-elements';
+import { LoggingUtil } from '../util/LoggingUtil';
 
 export default class AddCash extends React.Component {
 
