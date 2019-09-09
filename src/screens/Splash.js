@@ -4,7 +4,6 @@ import { StyleSheet, View, Image, Text, AsyncStorage } from 'react-native';
 // import { reloadIfUpdateAvailable } from '../util/ExpoPublishUtil';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
-import { Endpoints } from '../util/Values';
 
 const SPLASH_TIMEOUT = 1400;
 
@@ -30,10 +29,6 @@ export default class Splash extends React.Component {
     if (userInfo) {
       userInfo = JSON.parse(userInfo);
     }
-
-    //dummy call to the backend to make sure it's up and running for next calls
-    fetch(Endpoints.CORE + 'warmup');
-    fetch(Endpoints.AUTH + 'warmup');
 
     setTimeout(() => {
       this.navigate(userInfo);
