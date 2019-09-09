@@ -48,7 +48,7 @@ export default class Onboarding extends React.Component {
   getTabTitle = (index) => {
     switch (index) {
       case 0:
-      return "A new way to save";
+      return "A new way to grow";
 
       case 1:
       return "Add money, earn interest";
@@ -80,16 +80,16 @@ export default class Onboarding extends React.Component {
   getTabText = (index) => {
     switch (index) {
       case 0:
-      return 'Welcome to Jupiter, the savings account with a difference. We’re here to help you make the most of your money, by letting you build good habits and be rewarded along the way.';
+      return 'Welcome to Jupiter, the savings account with a difference. We’re here to help you make the most of your money, by letting you build healthy saving habits and be rewarded along the way.';
 
       case 1:
-      return 'Yep, it\’s that easy. Once you add money in your Jupiter account, you start earning interest immediately. No limits or hidden fees, just straight up earnings.';
+      return 'Yep, it\’s that easy. Once you add money in your Jupiter account, you start earning interest immediately. From your very first R1, straight up earnings.';
 
       case 2:
       return 'You always have access to your money, so you can withdraw funds at any time. Perfect for that little (or huge) unplanned expense.';
 
       case 3:
-      return 'Unlike most financial services, Jupiter exists to help you build good saving habits. So, every time you save, you get rewarded for it—just like that.';
+      return 'Get rewarded for saving, not spending. Jupiter exists to help you build good saving habits. So, every time you save, you get rewarded for it—just like that.';
     }
   }
 
