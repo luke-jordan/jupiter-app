@@ -1,12 +1,10 @@
 import React from 'react';
-import * as Font from 'expo-font';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Dimensions, KeyboardAvoidingView, Platform } from 'react-native';
-import { Button, Icon, Input } from 'react-native-elements';
-import { NavigationUtil } from '../util/NavigationUtil';
+import { StyleSheet, View, Image, Text, Dimensions, KeyboardAvoidingView, Platform } from 'react-native';
+import { Button, Input } from 'react-native-elements';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Colors, Endpoints } from '../util/Values';
 
-let {height, width} = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
 export default class LimitedUsers extends React.Component {
@@ -50,19 +48,20 @@ export default class LimitedUsers extends React.Component {
     if (this.state.loading) return;
     this.setState({loading: true});
     try {
-      let result = await fetch(Endpoints.AUTH + 'list/add', {
+      const payload = {
+        phoneOrEmail: this.state.userInput,
+        countryCode3Letter: 'ZAF',
+        source: Platform.OS
+      };
+      let result = await fetch(Endpoints.AUTH + 'register/list', {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
         method: 'POST',
-        body: JSON.stringify({
-          "phoneOrEmail": this.state.userInput,
-        }),
+        body: JSON.stringify(payload),
       });
       if (result.ok) {
-        let resultJson = await result.json();
-        console.log(resultJson);
         this.setState({loading: false});
         this.props.navigation.navigate('ThankYou');
       } else {
@@ -231,7 +230,7 @@ const styles = StyleSheet.create({
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
     fontSize: 19,
-    color: 'white',
+    color: Colors.WHITE,
   },
   buttonStyle: {
     borderRadius: 10,

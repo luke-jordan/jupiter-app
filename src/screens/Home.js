@@ -35,6 +35,8 @@ const DEFAULT_BALANCE_ANIMATION_INTERVAL = 14;
 const DEFAULT_BALANCE_ANIMATION_DURATION = 5000;
 const DEFAULT_BALANCE_ANIMATION_STEP_SIZE = 50;
 
+const COLOR_WHITE = '#fff';
+
 export default class Home extends React.Component {
 
   constructor(props) {
@@ -826,7 +828,7 @@ export default class Home extends React.Component {
           <DialogContent style={styles.helpDialog}>
             <Text style={styles.helpTitle}>Update Required</Text>
             <Text style={styles.helpContent}>
-              We've made some big changes to the app,(more than usual). Please update to activate the new features. This version will no longer be supported in the future.
+              We&apos;ve made some big changes to the app,(more than usual). Please update to activate the new features. This version will no longer be supported in the future.
             </Text>
             <View style={styles.dialogBottomRight}>
               <Button
@@ -856,7 +858,7 @@ export default class Home extends React.Component {
           <DialogContent style={styles.helpDialog}>
             <Text style={styles.helpTitle}>New Features!</Text>
             <Text style={styles.helpContent}>
-              We've made some changes to the app. Please update to activate the new features.
+              We&apos;ve made some changes to the app. Please update to activate the new features.
             </Text>
             {/*
             <Text style={styles.helpContent}>
@@ -962,12 +964,12 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   helloText: {
-    color: 'white',
+    color: COLOR_WHITE,
     fontSize: 28,
     fontFamily: 'poppins-regular',
   },
   helloTextWithMessage: {
-    color: 'white',
+    color: COLOR_WHITE,
     fontSize: 24,
     fontFamily: 'poppins-regular',
   },
@@ -1015,46 +1017,46 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   balance: {
-    color: 'white',
+    color: COLOR_WHITE,
     fontSize: 13 * FONT_UNIT,
     fontFamily: 'poppins-semibold',
     lineHeight: 70,
   },
   timerStyle: {
-    color: 'white',
+    color: COLOR_WHITE,
     fontSize: 5 * FONT_UNIT,
     fontFamily: 'poppins-semibold',
     lineHeight: 50,
   },
   currency: {
-    color: 'white',
+    color: COLOR_WHITE,
     fontSize: 6.5 * FONT_UNIT,
     fontFamily: 'poppins-semibold',
     textAlignVertical: 'top',
     marginRight: 2,
     lineHeight: 40,
   },
-  endOfMonthBalanceWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 25,
-    marginLeft: 10,
-    marginBottom: -10,
-  },
-  endOfMonthBalance: {
-    color: 'white',
-    fontSize: 7.5 * FONT_UNIT,
-    fontFamily: 'poppins-semibold',
-  },
-  endOfMonthDesc: {
-    color: Colors.GRAY,
-    fontSize: 5 * FONT_UNIT,
-    fontFamily: 'poppins-regular',
-  },
+  // endOfMonthBalanceWrapper: {
+  //   flexDirection: 'row',
+  //   alignItems: 'center',
+  //   marginTop: 25,
+  //   marginLeft: 10,
+  //   marginBottom: -10,
+  // },
+  // endOfMonthBalance: {
+  //   color: COLOR_WHITE,
+  //   fontSize: 7.5 * FONT_UNIT,
+  //   fontFamily: 'poppins-semibold',
+  // },
+  // endOfMonthDesc: {
+  //   color: Colors.GRAY,
+  //   fontSize: 5 * FONT_UNIT,
+  //   fontFamily: 'poppins-regular',
+  // },
   messageCard: {
     minHeight: height * 0.23,
     width: '95%',
-    backgroundColor: 'white',
+    backgroundColor: COLOR_WHITE,
     marginBottom: - (Sizes.NAVIGATION_BAR_HEIGHT - Sizes.VISIBLE_NAVIGATION_BAR_HEIGHT),
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
@@ -1080,7 +1082,7 @@ const styles = StyleSheet.create({
   messageCardTitleEmphasis: {
     fontFamily: 'poppins-semibold',
     fontSize: 3.7 * FONT_UNIT,
-    color: 'white',
+    color: COLOR_WHITE,
     paddingVertical: 10,
     marginLeft: 10,
   },
@@ -1116,7 +1118,7 @@ const styles = StyleSheet.create({
   gameDialog: {
     width: '90%',
     minHeight: 380,
-    backgroundColor: 'white',
+    backgroundColor: COLOR_WHITE,
     borderRadius: 10,
     justifyContent: 'space-around',
     paddingHorizontal: 20,
@@ -1164,7 +1166,7 @@ const styles = StyleSheet.create({
   helpDialog: {
     width: '90%',
     minHeight: 340,
-    backgroundColor: 'white',
+    backgroundColor: COLOR_WHITE,
     borderRadius: 10,
     justifyContent: 'space-around',
     paddingHorizontal: 20,
@@ -1205,7 +1207,7 @@ const styles = StyleSheet.create({
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
     fontSize: 19,
-    color: 'white',
+    color: COLOR_WHITE,
     marginHorizontal: 15,
   },
   buttonStyle: {

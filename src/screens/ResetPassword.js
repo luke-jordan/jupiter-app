@@ -1,12 +1,12 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
-import { NavigationUtil } from '../util/NavigationUtil';
+import { StyleSheet, View, Image, Text, AsyncStorage, Platform, Dimensions } from 'react-native';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Endpoints, Colors } from '../util/Values';
-import { Button, Icon, Input } from 'react-native-elements';
+import { Button, Input } from 'react-native-elements';
 
-let {height, width} = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
+const COLOR_WHITE = '#fff';
 
 export default class ResetPassword extends React.Component {
 
@@ -20,7 +20,7 @@ export default class ResetPassword extends React.Component {
   }
 
   async componentDidMount() {
-
+    LoggingUtil.logEvent('USER_INITIATED_PWORD_RESET_ON_OTP');
   }
 
   onPressReset = async () => {
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
     fontSize: 19,
-    color: 'white',
+    color: COLOR_WHITE,
   },
   buttonStyle: {
     borderRadius: 10,

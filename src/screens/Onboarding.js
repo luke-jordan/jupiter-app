@@ -1,14 +1,12 @@
 import React from 'react';
-import * as Font from 'expo-font';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Dimensions } from 'react-native';
+import { StyleSheet, View, Image, Text, TouchableOpacity, Dimensions } from 'react-native';
 // import { reloadIfUpdateAvailable } from '../util/ExpoPublishUtil';
 import { Button, Icon } from 'react-native-elements';
 import { Colors } from '../util/Values';
-import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import Swiper from 'react-native-swiper';
 
-let {height, width} = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
 export default class Onboarding extends React.Component {
@@ -83,7 +81,7 @@ export default class Onboarding extends React.Component {
       return 'Welcome to Jupiter, the savings account with a difference. We’re here to help you make the most of your money, by letting you build healthy saving habits and be rewarded along the way.';
 
       case 1:
-      return 'Yep, it\’s that easy. Once you add money in your Jupiter account, you start earning interest immediately. From your very first R1, straight up earnings.';
+      return 'Yep, it’s that easy. Once you add money in your Jupiter account, you start earning interest immediately. From your very first R1, straight up earnings.';
 
       case 2:
       return 'You always have access to your money, so you can withdraw funds at any time. Perfect for that little (or huge) unplanned expense.';
@@ -182,7 +180,7 @@ const styles = StyleSheet.create({
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
     fontSize: 19,
-    color: 'white',
+    color: Colors.WHITE,
   },
   buttonStyle: {
     borderRadius: 10,

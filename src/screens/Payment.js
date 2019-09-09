@@ -3,9 +3,9 @@ import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Clipboar
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Endpoints, Colors } from '../util/Values';
-import { Button, Icon, Input } from 'react-native-elements';
+import { Icon } from 'react-native-elements';
 import { LinearGradient } from 'expo-linear-gradient';
-import Toast, {DURATION} from 'react-native-easy-toast';
+import Toast from 'react-native-easy-toast';
 import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
 
 export default class Payment extends React.Component {
@@ -158,7 +158,7 @@ export default class Payment extends React.Component {
               </TouchableOpacity>
             </LinearGradient>
             <TouchableOpacity style={styles.alreadyPaidButton} onPress={this.onPressAlreadyPaid}>
-              <Text style={styles.alreadyPaidButtonText}>I'VE ALREADY PAID</Text>
+              <Text style={styles.alreadyPaidButtonText}>I&apos;VE ALREADY PAID</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -241,15 +241,10 @@ const styles = StyleSheet.create({
   header: {
     width: '100%',
     height: 50,
-    backgroundColor: 'white',
+    backgroundColor: Colors.WHITE,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 5,
-  },
-  headerTitle: {
-    marginLeft: -5,
-    fontFamily: 'poppins-semibold',
-    fontSize: 22,
   },
   contentWrapper: {
     flex: 1,
@@ -305,7 +300,7 @@ const styles = StyleSheet.create({
   paymentLink: {
     fontFamily: 'poppins-semibold',
     fontSize: 14,
-    color: 'white',
+    color: Colors.WHITE,
     textAlign: 'center',
   },
   alreadyPaidButton: {
@@ -350,7 +345,7 @@ const styles = StyleSheet.create({
     marginLeft: 5,
   },
   boxShadow: {
-    shadowColor: 'red',
+    shadowColor: Colors.RED,
     shadowOffset: { width: 0, height: 1000 },
     shadowOpacity: 0.1,
     shadowRadius: 500,
@@ -359,7 +354,7 @@ const styles = StyleSheet.create({
   copyIcon: {
     width: 22,
     height: 22,
-    tintColor: 'white',
+    tintColor: Colors.WHITE,
   },
   dialogWrapper: {
     width: '80%',

@@ -1,11 +1,12 @@
 import React from 'react';
-import * as Font from 'expo-font';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, ScrollView, KeyboardAvoidingView, ActivityIndicator } from 'react-native';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Button, Icon, Input } from 'react-native-elements';
 import { Colors, Endpoints } from '../util/Values';
 import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
+
+const white = '#fff';
 
 export default class SetPassword extends React.Component {
 
@@ -322,7 +323,7 @@ export default class SetPassword extends React.Component {
                 />
                 {
                   this.state.errors && this.state.errors.passwordConfirm ?
-                  <Text style={styles.errorMessage}>Passwords don't match</Text>
+                  <Text style={styles.errorMessage}>Passwords don&apos;t match</Text>
                   : null
                 }
             </View>
@@ -415,7 +416,7 @@ const styles = StyleSheet.create({
   header: {
     width: '100%',
     minHeight: 50,
-    backgroundColor: 'white',
+    backgroundColor: white,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 5,
@@ -455,7 +456,7 @@ const styles = StyleSheet.create({
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
     fontSize: 19,
-    color: 'white',
+    color: white,
   },
   buttonStyle: {
     borderRadius: 10,
@@ -493,7 +494,7 @@ const styles = StyleSheet.create({
   containerStyle: {
     borderWidth: 1,
     borderRadius: 5,
-    backgroundColor: 'white',
+    backgroundColor: white,
     borderColor: Colors.GRAY,
     marginBottom: 20,
     minHeight: 50,
@@ -523,7 +524,7 @@ const styles = StyleSheet.create({
   },
   dialogWrapper: {
     minHeight: 310,
-    backgroundColor: 'white',
+    backgroundColor: white,
     borderRadius: 10,
     paddingHorizontal: 20,
     paddingTop: 20,

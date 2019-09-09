@@ -1,12 +1,10 @@
 import React from 'react';
 import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Dimensions } from 'react-native';
-import { NavigationUtil } from '../util/NavigationUtil';
-import { LoggingUtil } from '../util/LoggingUtil';
-import { Endpoints, Colors } from '../util/Values';
-import { Button, Icon, Input } from 'react-native-elements';
+import { Colors } from '../util/Values';
+import { Icon } from 'react-native-elements';
 import { LinearGradient } from 'expo-linear-gradient';
 
-let {height, width} = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 export default class PendingRegistrationSteps extends React.Component {
 

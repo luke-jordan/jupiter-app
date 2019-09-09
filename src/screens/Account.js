@@ -1,17 +1,16 @@
 import React from 'react';
-import * as Font from 'expo-font';
 import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Dimensions } from 'react-native';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
-import { Endpoints } from '../util/Values';
 import NavigationBar from '../elements/NavigationBar';
-import { Icon, Input, Button } from 'react-native-elements';
+import { Icon, Button } from 'react-native-elements';
 import { Colors } from '../util/Values';
 import VersionCheck from 'react-native-version-check-expo';
 
-let {height, width} = Dimensions.get('window');
+let { height, width } = Dimensions.get('window');
 // const FONT_UNIT = 0.01 * width;
 const PROFILE_PIC_SIZE = 0.13 * width;
+const COLOR_WHITE = '#fff';
 
 export default class Account extends React.Component {
 
@@ -26,6 +25,7 @@ export default class Account extends React.Component {
   }
 
   async componentDidMount() {
+    LoggingUtil.logEvent('USER_ENTERED_ACCOUNT_SCREEN');
     let info = await AsyncStorage.getItem('userInfo');
     if (!info) {
       NavigationUtil.logout(this.props.navigation);
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
   header: {
     width: '100%',
     height: height / 11,
-    backgroundColor: 'white',
+    backgroundColor: COLOR_WHITE,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
     fontSize: 19,
-    color: 'white',
+    color: COLOR_WHITE,
   },
   buttonStyle: {
     borderRadius: 10,
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
   },
   buttonLine: {
     height: height * 0.075,
-    backgroundColor: 'white',
+    backgroundColor: COLOR_WHITE,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
   profilePicText: {
     fontFamily: 'poppins-semibold',
     fontSize: 18,
-    color: 'white',
+    color: COLOR_WHITE,
   },
   accountInfo: {
     flex: 1,

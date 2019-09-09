@@ -1,11 +1,10 @@
 import React from 'react';
-import * as Font from 'expo-font';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, ScrollView } from 'react-native';
-import { NavigationUtil } from '../util/NavigationUtil';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { LoggingUtil } from '../util/LoggingUtil';
-import { Endpoints } from '../util/Values';
 import { Icon } from 'react-native-elements';
 import { Colors } from '../util/Values';
+
+const COLOR_WHITE = '#fff';
 
 export default class PrivacyPolicy extends React.Component {
 
@@ -17,7 +16,7 @@ export default class PrivacyPolicy extends React.Component {
   }
 
   async componentDidMount() {
-
+    LoggingUtil.logEvent('USER_OPENED_PRIVACY_POLICY');
   }
 
   onPressBack = () => {
@@ -88,7 +87,7 @@ const styles = StyleSheet.create({
   header: {
     width: '100%',
     height: 50,
-    backgroundColor: 'white',
+    backgroundColor: COLOR_WHITE,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 5,
