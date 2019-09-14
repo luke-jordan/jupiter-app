@@ -1,11 +1,11 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Linking, Clipboard, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Image, Text, TouchableOpacity, Linking, Clipboard, ActivityIndicator, AppState } from 'react-native';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Endpoints, Colors } from '../util/Values';
-import { Button, Icon, Input } from 'react-native-elements';
+import { Button } from 'react-native-elements';
 import { LinearGradient } from 'expo-linear-gradient';
-import Toast, {DURATION} from 'react-native-easy-toast';
+import Toast from 'react-native-easy-toast';
 import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
 
 export default class CheckingForPayment extends React.Component {
@@ -23,6 +23,7 @@ export default class CheckingForPayment extends React.Component {
   }
 
   async componentDidMount() {
+    LoggingUtil.logEvent('USER_ENTERED_CHECKING_FOR_PAYMENT');
     let params = this.props.navigation.state.params;
     if (params) {
       this.setState({
@@ -208,12 +209,12 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: 'poppins-semibold',
     fontSize: 14,
-    color: 'white',
+    color: Colors.WHITE,
   },
   copyIcon: {
     width: 22,
     height: 22,
-    tintColor: 'white',
+    tintColor: Colors.WHITE,
     alignSelf: 'flex-end',
   },
   orView: {
@@ -241,7 +242,7 @@ const styles = StyleSheet.create({
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
     fontSize: 17,
-    color: 'white',
+    color: Colors.WHITE,
   },
   buttonStyle: {
     borderRadius: 10,

@@ -1,12 +1,11 @@
 import React from 'react';
-import * as Font from 'expo-font';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
-import { NavigationUtil } from '../util/NavigationUtil';
+import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, ScrollView, KeyboardAvoidingView } from 'react-native';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Button, Icon, Input } from 'react-native-elements';
 import { Colors, Endpoints } from '../util/Values';
 import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
-var PhoneNumber = require( 'awesome-phonenumber' );
+
+// var PhoneNumber = require( 'awesome-phonenumber' );
 
 const emailRegex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 
@@ -403,15 +402,10 @@ const styles = StyleSheet.create({
   header: {
     width: '100%',
     height: 50,
-    backgroundColor: 'white',
+    backgroundColor: Colors.WHITE,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 5,
-  },
-  headerTitle: {
-    marginLeft: -5,
-    fontFamily: 'poppins-semibold',
-    fontSize: 22,
   },
   title: {
     fontFamily: 'poppins-semibold',
@@ -433,7 +427,7 @@ const styles = StyleSheet.create({
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
     fontSize: 19,
-    color: 'white',
+    color: Colors.WHITE,
   },
   buttonStyle: {
     borderRadius: 10,
@@ -471,7 +465,7 @@ const styles = StyleSheet.create({
   containerStyle: {
     borderWidth: 1,
     borderRadius: 5,
-    backgroundColor: 'white',
+    backgroundColor: Colors.WHITE,
     borderColor: Colors.GRAY,
     marginBottom: 20,
     minHeight: 50,
@@ -538,11 +532,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 10,
     right: 10,
-  },
-  buttonTitleStyle: {
-    fontFamily: 'poppins-semibold',
-    fontSize: 17,
-    color: 'white',
   },
   buttonStyle: {
     borderRadius: 10,

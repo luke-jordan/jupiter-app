@@ -1,10 +1,8 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, ImageBackground } from 'react-native';
+import { StyleSheet, View, Image, Text, ImageBackground } from 'react-native';
 import { Colors, Endpoints } from '../util/Values';
 import { Input, Button } from 'react-native-elements';
-import { LinearGradient } from 'expo-linear-gradient';
 import { LoggingUtil } from '../util/LoggingUtil';
-import { NavigationUtil } from '../util/NavigationUtil';
 
 export default class Login extends React.Component {
 
@@ -17,7 +15,7 @@ export default class Login extends React.Component {
   }
 
   async componentDidMount() {
-
+    LoggingUtil.logEvent('USER_ENTERED_LOGIN_SCREEN');
   }
 
   onPressLogin = async () => {
@@ -162,7 +160,7 @@ const styles = StyleSheet.create({
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
     fontSize: 19,
-    color: 'white',
+    color: Colors.WHITE,
   },
   buttonStyle: {
     borderRadius: 10,
@@ -202,7 +200,7 @@ const styles = StyleSheet.create({
   bottomText: {
     fontFamily: 'poppins-semibold',
     fontSize: 15,
-    color: 'white',
+    color: Colors.WHITE,
     marginTop: 15,
   },
 });

@@ -4,9 +4,9 @@ import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { MessagingUtil } from '../util/MessagingUtil';
 import { Endpoints, Colors } from '../util/Values';
-import { Button, Icon, Input } from 'react-native-elements';
+import { Button, Icon } from 'react-native-elements';
 
-let {height, width} = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
 export default class PaymentComplete extends React.Component {
@@ -229,13 +229,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: Colors.MEDIUM_GRAY,
   },
-  textAsButton: {
-    fontFamily: 'poppins-semibold',
-    color: Colors.PURPLE,
-    textDecorationLine: 'underline',
-    fontSize: 3.7 * FONT_UNIT,
-    marginBottom: 10,
-  },
+  // textAsButton: {
+  //   fontFamily: 'poppins-semibold',
+  //   color: Colors.PURPLE,
+  //   textDecorationLine: 'underline',
+  //   fontSize: 3.7 * FONT_UNIT,
+  //   marginBottom: 10,
+  // },
   separator: {
     height: 1,
     width: width * 0.8,
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
     fontSize: 19,
-    color: 'white',
+    color: Colors.WHITE,
   },
   buttonStyle: {
     borderRadius: 10,

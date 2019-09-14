@@ -1,8 +1,7 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, ImageBackground, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity } from 'react-native';
 import { Colors, Endpoints } from '../util/Values';
 import { Input, Button } from 'react-native-elements';
-import { LinearGradient } from 'expo-linear-gradient';
 import { NavigationUtil } from '../util/NavigationUtil';
 import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
 
@@ -277,7 +276,7 @@ export default class OTPVerification extends React.Component {
             end: { x: 1, y: 0.5 },
           }} />
         <View style={styles.signUpLink}>
-          <Text style={styles.noAccText}>Didn't receive the OTP pin?
+          <Text style={styles.noAccText}>Didn&apos;t receive the OTP pin?
             <Text style={styles.noAccButton} onPress={this.onPressResend}> Resend</Text>
           </Text>
           <Text style={styles.noAccText}>What is a one-time password?
@@ -371,7 +370,7 @@ const styles = StyleSheet.create({
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
     fontSize: 19,
-    color: 'white',
+    color: Colors.WHITE,
   },
   buttonStyle: {
     borderRadius: 10,
@@ -383,10 +382,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: '80%',
   },
-  textAsButton: {
-    fontFamily: 'poppins-semibold',
-    color: Colors.PURPLE,
-  },
+  // textAsButton: {
+  //   fontFamily: 'poppins-semibold',
+  //   color: Colors.PURPLE,
+  // },
   signUpLink: {
     alignItems: 'center',
     marginBottom: 10,
@@ -401,19 +400,6 @@ const styles = StyleSheet.create({
     color: Colors.PURPLE,
     fontWeight: 'bold',
   },
-  bottomView: {
-    width: '100%',
-    height: 75,
-    alignSelf: 'flex-end',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bottomText: {
-    fontFamily: 'poppins-semibold',
-    fontSize: 15,
-    color: 'white',
-    marginTop: 15,
-  },
   dialogWrapper: {
     width: '90%',
     alignItems: 'center',
@@ -421,7 +407,7 @@ const styles = StyleSheet.create({
   },
   helpDialog: {
     minHeight: 310,
-    backgroundColor: 'white',
+    backgroundColor: Colors.WHITE,
     borderRadius: 10,
     justifyContent: 'space-around',
     paddingHorizontal: 20,

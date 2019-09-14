@@ -43,7 +43,7 @@ export const NotificationsUtil = {
     if (notification.origin == "received") {
       //TODO
       //   if (ios) show in tray
-    } else if (notificaiton.origin == "selected") {
+    } else if (notification.origin == "selected") {
       NavigationUtil.navigateWithoutBackstack(navigation, 'Home');
     }
 

@@ -11,6 +11,7 @@ export const Colors = {
   RED : "#CE0D25",
   BACKGROUND_GRAY : "#F4F6F8",
   TRANSPARENT_BACKGROUND : "#212C3299",
+  WHITE : '#FFFFFF'
 };
 
 export const Sizes = {

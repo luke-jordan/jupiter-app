@@ -9,7 +9,7 @@
       "android",
       "web"
     ],
-    "version": "0.1.0",
+    "version": "0.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "splash": {
@@ -24,7 +24,11 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.jupitersave.app"
+    },
+    "android": {
+      "package": "come.jupitersave.app"
     },
     "hooks": {
       "postPublish": [

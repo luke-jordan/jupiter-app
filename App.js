@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Platform } from 'react-native';
+import { Platform } from 'react-native';
 import { createStackNavigator, createAppContainer } from 'react-navigation';
-import { StyleSheet, SafeAreaView, AsyncStorage, AppState } from 'react-native';
+import { StyleSheet, SafeAreaView, AppState } from 'react-native';
 import { LoggingUtil } from './src/util/LoggingUtil';
 import * as Sentry from 'sentry-expo';
 
