@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, ImageBackground, Dimensions, Animated, Easing, YellowBox, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Image, Text, AsyncStorage, Dimensions, Animated, Easing, YellowBox, TouchableOpacity } from 'react-native';
 import { Notifications } from 'expo';
 import * as Permissions from 'expo-permissions';
 import { Colors, Sizes, Endpoints } from '../util/Values';
@@ -24,7 +24,7 @@ YellowBox.ignoreWarnings([
   'Setting a timer',
 ]);
 
-let {height, width} = Dimensions.get('window');
+let { height, width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 const FETCH_DELAY = 15 * 60 * 1000; //15 minutes * 60 seconds * 1000 millis
 
@@ -66,11 +66,8 @@ export default class Home extends React.Component {
     };
   }
 
-  async componentWillMount() {
-    this.showInitialData();
-  }
-
   async componentDidMount() {
+    this.showInitialData();
     this.rotateCircle();
     this.checkIfUpdateNeeded();
   }

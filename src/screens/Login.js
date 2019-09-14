@@ -1,9 +1,8 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, ImageBackground } from 'react-native';
+import { StyleSheet, View, Image, Text, ImageBackground } from 'react-native';
 import { Colors, Endpoints } from '../util/Values';
 import { Input, Button } from 'react-native-elements';
 import { LoggingUtil } from '../util/LoggingUtil';
-// import { LinearGradient } from 'expo-linear-gradient';
 
 export default class Login extends React.Component {
 
