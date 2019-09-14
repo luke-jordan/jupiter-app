@@ -5,7 +5,6 @@ import { Icon } from 'react-native-elements';
 
 const NOTIFICATION_DOT_SIZE = 9;
 
-const white = '#fff';
 const bgColor = '#00000000';
 
 export default class NavigationBar extends React.Component {
@@ -101,7 +100,7 @@ const styles = StyleSheet.create({
   },
   visibleBar: {
     height: Sizes.VISIBLE_NAVIGATION_BAR_HEIGHT,
-    backgroundColor: white,
+    backgroundColor: Colors.WHITE,
     flexDirection: 'row',
   },
   boxShadow: {
@@ -125,7 +124,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: Colors.PURPLE,
-    borderColor: white,
+    borderColor: Colors.WHITE,
     borderWidth: 6,
     borderRadius: Sizes.NAVIGATION_BAR_HEIGHT / 2,
     elevation: 20,
@@ -153,6 +152,6 @@ const styles = StyleSheet.create({
   notificationDotCenter: {
     width: NOTIFICATION_DOT_SIZE / 4,
     height: NOTIFICATION_DOT_SIZE / 4,
-    backgroundColor: white,
+    backgroundColor: Colors.WHITE,
   },
 });

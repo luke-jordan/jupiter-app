@@ -9,8 +9,6 @@ import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog
 
 const emailRegex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 
-const COLOR_WHITE = '#fff';
-
 export default class Register extends React.Component {
 
   constructor(props) {
@@ -404,7 +402,7 @@ const styles = StyleSheet.create({
   header: {
     width: '100%',
     height: 50,
-    backgroundColor: COLOR_WHITE,
+    backgroundColor: Colors.WHITE,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 5,
@@ -429,7 +427,7 @@ const styles = StyleSheet.create({
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
     fontSize: 19,
-    color: COLOR_WHITE,
+    color: Colors.WHITE,
   },
   buttonStyle: {
     borderRadius: 10,
@@ -467,7 +465,7 @@ const styles = StyleSheet.create({
   containerStyle: {
     borderWidth: 1,
     borderRadius: 5,
-    backgroundColor: COLOR_WHITE,
+    backgroundColor: Colors.WHITE,
     borderColor: Colors.GRAY,
     marginBottom: 20,
     minHeight: 50,

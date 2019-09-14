@@ -10,8 +10,6 @@ import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog
 let {height, width} = Dimensions.get('window');
 const PROFILE_PIC_SIZE = 0.16 * width;
 
-const COLOR_WHITE = '#fff';
-
 export default class Profile extends React.Component {
 
   constructor(props) {
@@ -31,6 +29,7 @@ export default class Profile extends React.Component {
   }
 
   async componentDidMount() {
+    LoggingUtil.logEvent('USER_ENTERED_PROFILE_SCREEN');
     let info = await AsyncStorage.getItem('userInfo');
     if (!info) {
       NavigationUtil.logout(this.props.navigation);
@@ -194,7 +193,7 @@ const styles = StyleSheet.create({
   header: {
     width: '100%',
     height: 50,
-    backgroundColor: COLOR_WHITE,
+    backgroundColor: Colors.WHITE,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 5,
@@ -212,7 +211,7 @@ const styles = StyleSheet.create({
   },
   buttonLine: {
     height: height * 0.075,
-    backgroundColor: COLOR_WHITE,
+    backgroundColor: Colors.WHITE,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -241,7 +240,7 @@ const styles = StyleSheet.create({
   profilePicText: {
     fontFamily: 'poppins-semibold',
     fontSize: 20,
-    color: COLOR_WHITE,
+    color: Colors.WHITE,
   },
   editText: {
     marginTop: 5,
@@ -258,7 +257,7 @@ const styles = StyleSheet.create({
   profileInfo: {
     flex: 1,
     width: '88%',
-    backgroundColor: COLOR_WHITE,
+    backgroundColor: Colors.WHITE,
     borderRadius: 10,
     padding: 10,
   },
@@ -307,7 +306,7 @@ const styles = StyleSheet.create({
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
     fontSize: 19,
-    color: COLOR_WHITE,
+    color: Colors.WHITE,
   },
   buttonStyle: {
     borderRadius: 10,

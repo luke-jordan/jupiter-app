@@ -13,8 +13,8 @@ import { LoggingUtil } from '../util/LoggingUtil';
 import AnimatedNumber from '../elements/AnimatedNumber';
 import moment from 'moment';
 import { FlingGestureHandler, Directions, State } from 'react-native-gesture-handler';
-import VersionCheck from 'react-native-version-check-expo';
 import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
+// import VersionCheck from 'react-native-version-check-expo';
 
 /*
 This is here because currently long timers are not purely supported on Android.
@@ -24,7 +24,7 @@ YellowBox.ignoreWarnings([
   'Setting a timer',
 ]);
 
-let { height, width } = Dimensions.get('window');
+const { height, width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 const FETCH_DELAY = 15 * 60 * 1000; //15 minutes * 60 seconds * 1000 millis
 
@@ -97,9 +97,10 @@ export default class Home extends React.Component {
     }
   }
 
+  //TODO uncomment this when relevant
   async checkIfUpdateNeeded() {
-    let localVersion = VersionCheck.getCurrentVersion();
-    //TODO uncomment this when relevant
+    console.log('Would perform version check');
+    // let localVersion = VersionCheck.getCurrentVersion();
     // let remoteVersion = await VersionCheck.getLatestVersion();
     // if (this.needsUpdate(localVersion, remoteVersion)) {
     //   this.showUpdateDialog(true);

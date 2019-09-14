@@ -5,9 +5,8 @@ import { LoggingUtil } from '../util/LoggingUtil';
 import { Endpoints, Colors } from '../util/Values';
 import { Button, Input } from 'react-native-elements';
 
-let {height, width} = Dimensions.get('window');
+const { width} = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
-const COLOR_WHITE = '#fff';
 
 export default class ResetQuestions extends React.Component {
 
@@ -173,7 +172,7 @@ const styles = StyleSheet.create({
   },
   header: {
     width: '100%',
-    backgroundColor: COLOR_WHITE,
+    backgroundColor: Colors.WHITE,
     paddingTop: 30,
     paddingBottom: 15,
     paddingHorizontal: 10
@@ -195,7 +194,7 @@ const styles = StyleSheet.create({
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
     fontSize: 17,
-    color: COLOR_WHITE,
+    color: Colors.WHITE,
   },
   buttonStyle: {
     borderRadius: 10,
@@ -232,7 +231,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 10,
     borderColor: Colors.GRAY,
-    backgroundColor: COLOR_WHITE,
+    backgroundColor: Colors.WHITE,
     marginBottom: 20,
     minHeight: 50,
     alignItems: 'center',

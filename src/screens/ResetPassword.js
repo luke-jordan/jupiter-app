@@ -6,7 +6,6 @@ import { Button, Input } from 'react-native-elements';
 
 const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
-const COLOR_WHITE = '#fff';
 
 export default class ResetPassword extends React.Component {
 
@@ -154,7 +153,7 @@ const styles = StyleSheet.create({
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
     fontSize: 19,
-    color: COLOR_WHITE,
+    color: Colors.WHITE,
   },
   buttonStyle: {
     borderRadius: 10,

@@ -4,8 +4,6 @@ import { LoggingUtil } from '../util/LoggingUtil';
 import { Icon } from 'react-native-elements';
 import { Colors } from '../util/Values';
 
-const COLOR_WHITE = '#fff';
-
 export default class Terms extends React.Component {
 
   constructor(props) {
@@ -87,7 +85,7 @@ const styles = StyleSheet.create({
   header: {
     width: '100%',
     height: 50,
-    backgroundColor: COLOR_WHITE,
+    backgroundColor: Colors.WHITE,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 5,

@@ -7,7 +7,6 @@ import { Button } from 'react-native-elements';
 
 let { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
-const COLOR_WHITE = '#fff';
 
 export default class ResetComplete extends React.Component {
 
@@ -80,7 +79,7 @@ const styles = StyleSheet.create({
     fontFamily: 'poppins-semibold',
     fontSize: 17,
     paddingHorizontal: 30,
-    color: COLOR_WHITE,
+    color: Colors.WHITE,
   },
   buttonStyle: {
     borderRadius: 10,

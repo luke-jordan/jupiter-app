@@ -1,12 +1,10 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, ScrollView, KeyboardAvoidingView, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Image, Text, TouchableOpacity, ScrollView, KeyboardAvoidingView, ActivityIndicator } from 'react-native';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Button, Icon, Input } from 'react-native-elements';
 import { Colors, Endpoints } from '../util/Values';
 import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
-
-const white = '#fff';
 
 export default class SetPassword extends React.Component {
 
@@ -141,15 +139,15 @@ export default class SetPassword extends React.Component {
           checkingForCompletion: false,
         });
         if (resultJson.result.includes("SUCCESS")) {
-        //   LoggingUtil.logEvent("USER_PROFILE_PASSWORD_SUCCEEDED"); //TODO we should probably log another event here
+          LoggingUtil.logEvent('USER_PROFILE_PASSWORD_SUCCEEDED');
           NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'ResetComplete');
         } else {
-        //   LoggingUtil.logEvent("USER_PROFILE_PASSWORD_FAILED", {"reason" : "Result didn't include SUCCESS"}); //TODO we should probably log another event here
+          LoggingUtil.logEvent("USER_PROFILE_PASSWORD_FAILED", {"reason" : "Result didn't include SUCCESS"});
           this.showError();
         }
       } else {
         let resultText = await result.text();
-        // LoggingUtil.logEvent("USER_PROFILE_PASSWORD_FAILED", {"reason" : resultText}); //TODO we should probably log another event here
+        LoggingUtil.logEvent("USER_PROFILE_PASSWORD_FAILED", {"reason" : resultText});
         throw result;
       }
     } catch (error) {
@@ -416,7 +414,7 @@ const styles = StyleSheet.create({
   header: {
     width: '100%',
     minHeight: 50,
-    backgroundColor: white,
+    backgroundColor: Colors.WHITE,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 5,
@@ -456,7 +454,7 @@ const styles = StyleSheet.create({
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
     fontSize: 19,
-    color: white,
+    color: Colors.WHITE,
   },
   buttonStyle: {
     borderRadius: 10,
@@ -494,7 +492,7 @@ const styles = StyleSheet.create({
   containerStyle: {
     borderWidth: 1,
     borderRadius: 5,
-    backgroundColor: white,
+    backgroundColor: Colors.WHITE,
     borderColor: Colors.GRAY,
     marginBottom: 20,
     minHeight: 50,
@@ -524,7 +522,7 @@ const styles = StyleSheet.create({
   },
   dialogWrapper: {
     minHeight: 310,
-    backgroundColor: white,
+    backgroundColor: Colors.WHITE,
     borderRadius: 10,
     paddingHorizontal: 20,
     paddingTop: 20,

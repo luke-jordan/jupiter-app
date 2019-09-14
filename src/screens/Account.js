@@ -10,7 +10,6 @@ import VersionCheck from 'react-native-version-check-expo';
 let { height, width } = Dimensions.get('window');
 // const FONT_UNIT = 0.01 * width;
 const PROFILE_PIC_SIZE = 0.13 * width;
-const COLOR_WHITE = '#fff';
 
 export default class Account extends React.Component {
 
@@ -162,7 +161,7 @@ const styles = StyleSheet.create({
   header: {
     width: '100%',
     height: height / 11,
-    backgroundColor: COLOR_WHITE,
+    backgroundColor: Colors.WHITE,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -183,7 +182,7 @@ const styles = StyleSheet.create({
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
     fontSize: 19,
-    color: COLOR_WHITE,
+    color: Colors.WHITE,
   },
   buttonStyle: {
     borderRadius: 10,
@@ -208,7 +207,7 @@ const styles = StyleSheet.create({
   },
   buttonLine: {
     height: height * 0.075,
-    backgroundColor: COLOR_WHITE,
+    backgroundColor: Colors.WHITE,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -243,7 +242,7 @@ const styles = StyleSheet.create({
   profilePicText: {
     fontFamily: 'poppins-semibold',
     fontSize: 18,
-    color: COLOR_WHITE,
+    color: Colors.WHITE,
   },
   accountInfo: {
     flex: 1,
