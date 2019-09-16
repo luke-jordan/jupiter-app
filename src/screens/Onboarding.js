@@ -113,7 +113,7 @@ export default class Onboarding extends React.Component {
             color={Colors.PURPLE}
           />
         </TouchableOpacity>
-        <Swiper style={styles.wrapper}
+        <Swiper containerStyle={styles.wrapper}
           ref={(ref) => {this.swiperRef = ref;}}
           onIndexChanged={(index) => this.onIndexChanged(index)}
           loop={false} index={this.state.currentTab}
