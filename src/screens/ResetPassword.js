@@ -1,8 +1,8 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, Platform, Dimensions } from 'react-native';
+import { StyleSheet, View, Image, Text, AsyncStorage, Platform, Dimensions, TouchableOpacity } from 'react-native';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Endpoints, Colors } from '../util/Values';
-import { Button, Input } from 'react-native-elements';
+import { Button, Input, Icon } from 'react-native-elements';
 
 const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
@@ -20,6 +20,10 @@ export default class ResetPassword extends React.Component {
 
   async componentDidMount() {
     LoggingUtil.logEvent('USER_INITIATED_PWORD_RESET_ON_OTP');
+  }
+
+  onPressBack = () => {
+    this.props.navigation.goBack();
   }
 
   onPressReset = async () => {
@@ -64,6 +68,16 @@ export default class ResetPassword extends React.Component {
   render() {
     return (
       <View style={styles.container} contentContainerStyle={styles.container} behavior="position" keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.headerButton} onPress={this.onPressBack} >
+            <Icon
+              name='chevron-left'
+              type='evilicon'
+              size={45}
+              color={Colors.MEDIUM_GRAY}
+            />
+          </TouchableOpacity>
+        </View>
         <Image style={styles.image} source={require('../../assets/lock.png')} resizeMode="contain"/>
         <Text style={styles.title}>Reset Password</Text>
         <Text style={styles.description}>We’ll send you a code to reset your password.</Text>
@@ -105,7 +119,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     paddingHorizontal: 20,
-    marginTop: 40,
+    marginTop: 20,
   },
   image: {
     height: '15%',
@@ -174,5 +188,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: -15, //this is valid because of the exact alignment of other elements - do not reuse in other components
     marginBottom: 20,
+  },
+  header: {
+    width: '100%',
+    height: 50,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: -20,
   },
 });

@@ -443,7 +443,7 @@ const styles = StyleSheet.create({
   profileField: {
     flex: 1,
     justifyContent: 'center',
-    marginBottom: 10,
+    marginBottom: 5,
   },
   profileFieldTitle: {
     fontFamily: 'poppins-semibold',
