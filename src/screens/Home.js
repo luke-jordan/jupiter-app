@@ -340,10 +340,10 @@ export default class Home extends React.Component {
   getMessageCardIcon(iconType) {
     switch (iconType) {
       case "BOOST_ROCKET":
-      return require('../../assets/notification.png'); //TODO set the proper icon
+      return require('../../assets/rocket.png');
 
       case "UNLOCKED":
-      return require('../../assets/notification.png'); //TODO set the proper icon
+      return require('../../assets/unlocked.png');
 
       default:
       return require('../../assets/notification.png');
@@ -390,7 +390,7 @@ export default class Home extends React.Component {
                 <Text style={isEmphasis ? styles.messageCardTitleEmphasis : styles.messageCardTitle}>{messageDetails.title}</Text>
                   {
                     isEmphasis ?
-                    <Image style={styles.messageCardIcon} source={this.getMessageCardIcon(messageDetails.display.iconType)}/>
+                    <Image style={styles.messageCardIconEmphasis} source={this.getMessageCardIcon(messageDetails.display.iconType)}/>
                     : null
                   }
               </View>
@@ -1076,6 +1076,12 @@ const styles = StyleSheet.create({
   },
   messageCardIcon: {
     marginHorizontal: 10,
+  },
+  messageCardIconEmphasis: {
+    marginHorizontal: 10,
+    position: 'absolute',
+    top: -10,
+    right: -10,
   },
   messageCardTitleEmphasis: {
     fontFamily: 'poppins-semibold',
