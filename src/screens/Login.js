@@ -4,6 +4,11 @@ import { Colors, Endpoints } from '../util/Values';
 import { Input, Button } from 'react-native-elements';
 import { LoggingUtil } from '../util/LoggingUtil';
 
+const stdHeaders = {
+  'Content-Type': 'application/json',
+  'Accept': 'application/json'
+};
+
 export default class Login extends React.Component {
 
   constructor(props) {
@@ -11,6 +16,7 @@ export default class Login extends React.Component {
     this.state = {
       userId: "someone@jupitersave.com",
       password: "holy_CHRYSALIS_hatching9531",
+      passwordError: false
     };
   }
 
@@ -18,32 +24,65 @@ export default class Login extends React.Component {
     LoggingUtil.logEvent('USER_ENTERED_LOGIN_SCREEN');
   }
 
+  initiateLogin = async () => {
+    const result = await fetch(Endpoints.AUTH + 'login', {
+      headers: stdHeaders,
+      method: 'POST',
+      body: JSON.stringify({
+        phoneOrEmail: this.state.userId,
+        password: this.state.password
+      })
+    });
+
+    if (result.ok) {
+      let resultJson = await result.json();
+      await this.generateOtpAndMove(resultJson.systemWideUserId);
+    } else {
+      let resultJson = await result.json();
+      console.log('Error result: ', resultJson);
+      if (Array.isArray(resultJson)) {
+        this.setState({ 
+          loading: false,
+          passwordError: resultJson.indexOf('PASSWORD_ERROR') > -1
+        });
+      } else {
+        this.setState({ loading: false });
+        // todo: display proper error with contact us
+      }
+    }
+  }
+
+  generateOtpAndMove = async () => {
+    let result = await fetch(Endpoints.AUTH + 'otp/generate', {
+      headers: stdHeaders,
+      method: 'POST',
+      body: JSON.stringify({
+        phoneOrEmail: this.state.userId,
+        'type': 'LOGIN',
+      }),
+    });
+
+    if (result.ok) {
+      const resultJson = await result.json();
+      console.info('OTP channel: ', resultJson);
+      this.setState({loading: true});
+      this.props.navigation.navigate('OTPVerification', {
+        userId: this.state.userId,
+        password: this.state.password,
+        channel: resultJson.channel,
+        redirection: 'Login',
+      });
+    } else {
+      throw result;
+    }
+  };
+
   onPressLogin = async () => {
     // LoggingUtil.logEvent("Pressed Login");
     if (this.state.loading) return;
     this.setState({loading: true});
     try {
-      let result = await fetch(Endpoints.AUTH + 'otp/generate', {
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        method: 'POST',
-        body: JSON.stringify({
-          "phoneOrEmail": this.state.userId,
-          "type": "LOGIN",
-        }),
-      });
-      if (result.ok) {
-        this.setState({loading: false});
-        this.props.navigation.navigate('OTPVerification', {
-          userId: this.state.userId,
-          password: this.state.password,
-          redirection: 'Login',
-        });
-      } else {
-        throw result;
-      }
+      await this.initiateLogin();
     } catch (error) {
       console.log("error!", error);
       this.setState({loading: false});
@@ -69,7 +108,7 @@ export default class Login extends React.Component {
           <Image style={styles.headerImage} source={require('../../assets/group_16.png')}/>
         </View>
         <View style={styles.mainContent}>
-          <Text style={styles.labelStyle}>Enter your ID/Phone Number or Email Address*</Text>
+          <Text style={styles.labelStyle}>Enter your phone number or email*</Text>
           <Input
             value={this.state.userId}
             onChangeText={(text) => this.setState({userId: text})}
@@ -89,6 +128,11 @@ export default class Login extends React.Component {
           <Text style={styles.textAsButton} onPress={this.onPressForgotPassword}>
             Forgot Password?
           </Text>
+          {
+            this.state.passwordError ? 
+            <Text style={styles.redText}>Sorry, we couldn&apos;t match that phone/email and password. Please try again.</Text>
+            : null
+          }
         </View>
         <Button
           title="LOGIN"
@@ -203,4 +247,10 @@ const styles = StyleSheet.create({
     color: Colors.WHITE,
     marginTop: 15,
   },
+  redText: {
+    fontFamily: 'poppins-semibold',
+    color: Colors.RED,
+    textAlign: 'center',
+    marginTop: 25,
+  }
 });

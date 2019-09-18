@@ -10,22 +10,32 @@ export default class OTPVerification extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      phoneNumber: "********87",
+      channel: 'UNKNOWN',
       pin: [null, null, null, null],
       loading: false,
       dialogVisible: false,
       otpMethod: "phone",
       otpError: false,
       passwordError: false,
+      header: 'Please enter the one time pin sent to you'
     };
   }
 
   async componentDidMount() {
     //TODO show phone / email in this.state.otpMethod properly according to the backend response
+    const channel = this.props.navigation.getParam('channel');
+    console.info('OTP started, with channel received: ', channel);
+    if (channel === 'EMAIL' || channel === 'PHONE') {
+      this.setState({ 
+        otpMethod: channel.toLowerCase(),
+        header: `Please enter the one time pin sent to your ${channel.toLowerCase()}`
+      });
+    }
   }
 
-  async handleLogin(userId, password) {
+  async handleLogin(userId) {
     try {
+      console.info('About to do login, without password, works?');
       let result = await fetch(Endpoints.AUTH + 'login', {
         headers: {
           'Content-Type': 'application/json',
@@ -34,7 +44,6 @@ export default class OTPVerification extends React.Component {
         method: 'POST',
         body: JSON.stringify({
           "phoneOrEmail": userId,
-          "password": password,
           "otp": this.state.pin.join(""),
         }),
       });
@@ -106,10 +115,9 @@ export default class OTPVerification extends React.Component {
     if (this.state.loading) return;
     this.setState({loading: true});
     let userId = this.props.navigation.getParam("userId");
-    let password = this.props.navigation.getParam("password");
     let redirection = this.props.navigation.getParam("redirection");
     if (redirection.includes('Login')) {
-      this.handleLogin(userId, password);
+      this.handleLogin(userId);
     } else if (redirection.includes('Reset')) {
       this.handlePassReset(userId);
     } else {
@@ -121,7 +129,6 @@ export default class OTPVerification extends React.Component {
     if (this.state.loading) return;
     this.setState({loading: true});
     let userId = this.props.navigation.getParam("userId");
-    let password = this.props.navigation.getParam("password");
     let redirection = this.props.navigation.getParam("redirection");
     let type = "LOGIN";
     if (redirection.includes('Reset')) {
@@ -209,7 +216,7 @@ export default class OTPVerification extends React.Component {
           <Image style={styles.headerImage} source={require('../../assets/otp_phone_illi.png')}/>
         </View>
         <View style={styles.mainContent}>
-          <Text style={styles.labelStyle}>Please enter the one time pin sent to your {this.state.otpMethod}</Text>
+          <Text style={styles.labelStyle}>{this.state.header}</Text>
           <View style={styles.pinInputs}>
             <Input
               ref={ref => this.inputRefs0 = ref}
@@ -255,11 +262,6 @@ export default class OTPVerification extends React.Component {
           {
             this.state.otpError ?
             <Text style={styles.redText}>The OTP you entered is not valid.</Text>
-            : null
-          }
-          {
-            this.state.passwordError ?
-            <Text style={styles.redText}>The password you entered is not valid.</Text>
             : null
           }
         </View>
