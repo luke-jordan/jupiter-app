@@ -4,6 +4,9 @@ import { Colors, Endpoints } from '../util/Values';
 import { Input, Button } from 'react-native-elements';
 import { LoggingUtil } from '../util/LoggingUtil';
 
+import isEmail from 'validator/lib/isEmail';
+import isMobilePhone from 'validator/lib/isMobilePhone';
+
 const stdHeaders = {
   'Content-Type': 'application/json',
   'Accept': 'application/json'
@@ -11,11 +14,17 @@ const stdHeaders = {
 
 export default class Login extends React.Component {
 
+  /*
+        userId: "someone@jupitersave.com",
+      password: "holy_CHRYSALIS_hatching9531",
+  */
+
   constructor(props) {
     super(props);
     this.state = {
-      userId: "someone@jupitersave.com",
-      password: "holy_CHRYSALIS_hatching9531",
+      userId: "0813074085",
+      validationError: false,
+      password: "GardensCafe4325!",
       passwordError: false
     };
   }
@@ -25,30 +34,28 @@ export default class Login extends React.Component {
   }
 
   initiateLogin = async () => {
-    const result = await fetch(Endpoints.AUTH + 'login', {
+    const loginOptions = {
       headers: stdHeaders,
       method: 'POST',
       body: JSON.stringify({
         phoneOrEmail: this.state.userId,
         password: this.state.password
       })
-    });
+    };
 
+    const result = await fetch(Endpoints.AUTH + 'login', loginOptions);
+    
     if (result.ok) {
       let resultJson = await result.json();
       await this.generateOtpAndMove(resultJson.systemWideUserId);
+    } else if (result.status == 403) {
+      this.setState({ 
+        loading: false,
+        passwordError: true
+      });
     } else {
-      let resultJson = await result.json();
-      console.log('Error result: ', resultJson);
-      if (Array.isArray(resultJson)) {
-        this.setState({ 
-          loading: false,
-          passwordError: resultJson.indexOf('PASSWORD_ERROR') > -1
-        });
-      } else {
         this.setState({ loading: false });
         // todo: display proper error with contact us
-      }
     }
   }
 
@@ -64,22 +71,45 @@ export default class Login extends React.Component {
 
     if (result.ok) {
       const resultJson = await result.json();
-      console.info('OTP channel: ', resultJson);
-      this.setState({loading: true});
+      this.setState({ loading: true });
       this.props.navigation.navigate('OTPVerification', {
         userId: this.state.userId,
         password: this.state.password,
         channel: resultJson.channel,
         redirection: 'Login',
       });
+      this.setState({ loading: false }); // in case we come back (leaving true above in case slowness in nav)
     } else {
       throw result;
     }
   };
 
+  checkValidEmailPhone = (text) => {
+    const isInputEmail = isEmail(text);
+    if (isInputEmail) {
+      return true;
+    }
+
+    const isInputPhone = isMobilePhone(text);
+    if (isInputPhone) {
+      return true;
+    }
+
+    return false;
+  }
+
   onPressLogin = async () => {
-    // LoggingUtil.logEvent("Pressed Login");
     if (this.state.loading) return;
+    // Just to clear this so user can always see it is happening
+    this.setState({ validationError: false });
+
+    const isValid = this.checkValidEmailPhone(this.state.userId);
+    if (!isValid) {
+      console.log('ERROR! Halted submission');
+      this.setState({ validationError: true });
+      return;
+    }
+
     this.setState({loading: true});
     try {
       await this.initiateLogin();
@@ -116,6 +146,11 @@ export default class Login extends React.Component {
             inputStyle={styles.inputStyle}
             containerStyle={styles.containerStyle}
           />
+          {
+            this.state.validationError ?
+            <Text style={styles.validationErrorText}>Please enter a valid email or phone number</Text> 
+            : null
+          }
           <Text style={styles.labelStyle}>Password*</Text>
           <Input
             secureTextEntry={true}
@@ -130,7 +165,7 @@ export default class Login extends React.Component {
           </Text>
           {
             this.state.passwordError ? 
-            <Text style={styles.redText}>Sorry, we couldn&apos;t match that phone/email and password. Please try again.</Text>
+            <Text style={styles.accessErrorText}>Sorry, we couldn&apos;t match that phone/email and password. Please try again.</Text>
             : null
           }
         </View>
@@ -247,7 +282,12 @@ const styles = StyleSheet.create({
     color: Colors.WHITE,
     marginTop: 15,
   },
-  redText: {
+  validationErrorText: {
+    fontFamily: 'poppins-semibold',
+    color: Colors.RED,
+    textAlign: 'left'
+  },
+  accessErrorText: {
     fontFamily: 'poppins-semibold',
     color: Colors.RED,
     textAlign: 'center',

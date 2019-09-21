@@ -1,13 +1,10 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, ScrollView, KeyboardAvoidingView } from 'react-native';
+import { StyleSheet, View, Image, Text, TouchableOpacity, ScrollView, KeyboardAvoidingView } from 'react-native';
 import { LoggingUtil } from '../util/LoggingUtil';
+import { ValidationUtil } from '../util/ValidationUtil';
 import { Button, Icon, Input } from 'react-native-elements';
 import { Colors, Endpoints } from '../util/Values';
 import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
-
-// var PhoneNumber = require( 'awesome-phonenumber' );
-
-const emailRegex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 
 export default class Register extends React.Component {
 
@@ -25,10 +22,11 @@ export default class Register extends React.Component {
         lastName: false,
         idNumber: false,
         userId: false,
+        phoneEmailValidation: false,
         general: false,
       },
-      generalErrorText: "There is a problem with your request",
-      defaultGeneralErrorText: "There is a problem with your request",
+      generalErrorText: "Sorry, there's an error with one or more input above, please check and resubmit",
+      defaultGeneralErrorText: "Sorry, there's an error with one or more input above, please check and resubmit",
       dialogVisible: false,
     };
   }
@@ -87,9 +85,12 @@ export default class Register extends React.Component {
     this.props.navigation.navigate('Terms');
   }
 
+  // note : for some strange deep RN weirdness, this has to be async
   validateInput = async () => {
     let hasErrors = false;
     let errors = Object.assign({}, this.state.errors);
+    
+    // check for non-null
     if (this.state.firstName.length < 1) {
       hasErrors = true;
       errors.firstName = true;
@@ -102,38 +103,39 @@ export default class Register extends React.Component {
       hasErrors = true;
       errors.idNumber = true;
     }
-    if (this.state.userId.length > 0) {
-      if (this.state.userId.includes("@")) {
-        if (!emailRegex.test(this.state.userId.toLowerCase())) {
-          hasErrors = true;
-          errors.email = true;
-        }
-      // } else {
-      //   let phoneInput = this.state.userId;
-      //   var number = new PhoneNumber(phoneInput);
-      //   if (!number.isValid()) {
-      //     hasErrors = true;
-      //     errors.phone = true;
-      //   }
+    
+    // check for phone email is non nulll
+    if (this.state.userId.length < 1) {
+      hasErrors = true;
+      errors.phoneEmailValidation = true;
+    } else {
+      if (!ValidationUtil.isValidEmailPhone(this.state.userId)) {
+        hasErrors = true;
+        errors.phoneEmailValidation = true;
       }
     }
+
     if (hasErrors) {
       await this.setState({
         errors: errors,
       });
       return false;
     }
+
     return true;
   }
 
   onPressRegister = async () => {
     if (this.state.loading) return;
     this.setState({loading: true});
+
+    this.clearError(); // so prior ones are no longer around
     let validation = await this.validateInput();
     if (!validation) {
       this.showError();
       return;
     }
+    
     try {
       let result = await fetch(Endpoints.AUTH + 'register/profile', {
         headers: {
@@ -183,6 +185,10 @@ export default class Register extends React.Component {
             errors.userId = true;
             errors.email = conflict.messageToUser;
           }
+          if (conflict.errorField.includes("PHONE_NUMBER")) {
+            errors.userId = true;
+            errors.phone = conflict.messageToUser;
+          }
         }
         this.setState({
           loading: false,
@@ -203,6 +209,12 @@ export default class Register extends React.Component {
       errors: errors,
       generalErrorText: errorText ? errorText : this.state.defaultGeneralErrorText,
     });
+  }
+
+  clearError() {
+    let errors = Object.assign({}, this.state.errors);
+    Object.keys(errors).forEach((key) => errors[key] = false);
+    this.setState({ errors });
   }
 
   onHideDialog = () => {
@@ -302,25 +314,30 @@ export default class Register extends React.Component {
                   containerStyle={styles.containerStyle}
                 />
                 {
+                  this.state.errors && this.state.errors.phoneEmailValidation ?
+                  <Text style={styles.errorMessage}>Please enter a valid email address or cellphone number</Text>
+                  : null
+                }
+                {
                   this.state.errors && this.state.errors.email ?
                   <Text style={styles.errorMessage}>{this.state.errors.email === true ? "Please enter a valid email address" : this.state.errors.email}</Text>
                   : null
                 }
                 {
                   this.state.errors && this.state.errors.phone ?
-                  <Text style={styles.errorMessage}>Please enter a valid phone number (e.g. +27123456)</Text>
+                  <Text style={styles.errorMessage}>{this.state.errors.email === true ? "Please enter a valid cellphone numebr" : this.state.errors.email}</Text>
                   : null
                 }
             </View>
+            <Text style={styles.disclaimer}>Continuing means you’ve read and agreed to Jupiter’s{" "}
+              <Text style={styles.disclaimerButton} onPress={this.onPressTerms}>T’C & C’s.</Text>
+            </Text>
           </ScrollView>
           {
             this.state.errors && this.state.errors.general ?
             <Text style={styles.errorMessage}>{this.state.generalErrorText}</Text>
             : null
           }
-          <Text style={styles.disclaimer}>Continuing means you’ve read and agreed to Jupiter’s{" "}
-            <Text style={styles.disclaimerButton} onPress={this.onPressTerms}>T’C & C’s.</Text>
-          </Text>
           <Button
             title="CONTINUE"
             loading={this.state.loading}
@@ -394,7 +411,7 @@ const styles = StyleSheet.create({
   },
   contentWrapper: {
     flex: 1,
-    backgroundColor: Colors.BACKGROUND_GRAY,
+    backgroundColor: Colors.WHITE,
     width: '100%',
     alignItems: 'center',
     marginBottom: 15,
@@ -416,7 +433,7 @@ const styles = StyleSheet.create({
   mainContent: {
     width: '100%',
     justifyContent: 'space-around',
-    backgroundColor: Colors.BACKGROUND_GRAY,
+    backgroundColor: Colors.WHITE,
   },
   scrollView: {
     flex: 1,
