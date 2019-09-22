@@ -48,7 +48,7 @@ export default class Account extends React.Component {
   }
 
   onPressWithdraw = () => {
-
+    this.props.navigation.navigate('WithdrawStep1');
   }
 
   onPressTerms = () => {

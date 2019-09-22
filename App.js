@@ -28,6 +28,9 @@ import PendingRegistrationSteps from './src/screens/PendingRegistrationSteps';
 import ResetPassword from './src/screens/ResetPassword';
 import ResetQuestions from './src/screens/ResetQuestions';
 import ResetComplete from './src/screens/ResetComplete';
+import WithdrawStep1 from './src/screens/WithdrawStep1';
+import WithdrawStep2 from './src/screens/WithdrawStep2';
+import WithdrawalComplete from './src/screens/WithdrawalComplete';
 
 const AppContainer = createAppContainer(
   createStackNavigator(
@@ -55,6 +58,9 @@ const AppContainer = createAppContainer(
       ResetPassword: { screen: ResetPassword },
       ResetQuestions: { screen: ResetQuestions },
       ResetComplete: { screen: ResetComplete },
+      WithdrawStep1: { screen: WithdrawStep1 },
+      WithdrawStep2: { screen: WithdrawStep2 },
+      WithdrawalComplete: { screen: WithdrawalComplete },
     },
     { initialRouteName: "Splash", headerMode: 'none' }
   )
