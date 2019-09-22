@@ -3,6 +3,7 @@ import { StyleSheet, View, Image, Text, ImageBackground } from 'react-native';
 import { Colors, Endpoints } from '../util/Values';
 import { Input, Button } from 'react-native-elements';
 import { LoggingUtil } from '../util/LoggingUtil';
+import { ValidationUtil } from '../util/ValidationUtil';
 
 import isEmail from 'validator/lib/isEmail';
 import isMobilePhone from 'validator/lib/isMobilePhone';
@@ -14,17 +15,12 @@ const stdHeaders = {
 
 export default class Login extends React.Component {
 
-  /*
-        userId: "someone@jupitersave.com",
-      password: "holy_CHRYSALIS_hatching9531",
-  */
-
   constructor(props) {
     super(props);
     this.state = {
-      userId: "0813074085",
+      userId: "someone@jupitersave.com",
       validationError: false,
-      password: "GardensCafe4325!",
+      password: "holy_CHRYSALIS_hatching9531",
       passwordError: false
     };
   }
@@ -84,26 +80,12 @@ export default class Login extends React.Component {
     }
   };
 
-  checkValidEmailPhone = (text) => {
-    const isInputEmail = isEmail(text);
-    if (isInputEmail) {
-      return true;
-    }
-
-    const isInputPhone = isMobilePhone(text);
-    if (isInputPhone) {
-      return true;
-    }
-
-    return false;
-  }
-
   onPressLogin = async () => {
     if (this.state.loading) return;
     // Just to clear this so user can always see it is happening
     this.setState({ validationError: false });
 
-    const isValid = this.checkValidEmailPhone(this.state.userId);
+    const isValid = ValidationUtil.checkValidEmailPhone(this.state.userId);
     if (!isValid) {
       console.log('ERROR! Halted submission');
       this.setState({ validationError: true });
