@@ -14,7 +14,7 @@ export default class Register extends React.Component {
       loading: false,
       firstName: "test",
       lastName: "test",
-      idNumber: "000000001",
+      idNumber: "0000000000001",
       userId: "testemail01@test.tst",
       referralCode: "",
       errors: {
@@ -104,7 +104,7 @@ export default class Register extends React.Component {
       errors.idNumber = true;
     }
     
-    // check for phone email is non nulll
+    // check for phone email is non null & is valid
     if (this.state.userId.length < 1) {
       hasErrors = true;
       errors.phoneEmailValidation = true;
@@ -113,6 +113,12 @@ export default class Register extends React.Component {
         hasErrors = true;
         errors.phoneEmailValidation = true;
       }
+    }
+
+    // since SA ID numbers are easy to check for basic validity, do so
+    if (!ValidationUtil.isValidId(this.state.idNumber)) {
+      hasErrors = true;
+      errors.idNumber = true;
     }
 
     if (hasErrors) {
@@ -325,7 +331,7 @@ export default class Register extends React.Component {
                 }
                 {
                   this.state.errors && this.state.errors.phone ?
-                  <Text style={styles.errorMessage}>{this.state.errors.email === true ? "Please enter a valid cellphone numebr" : this.state.errors.email}</Text>
+                  <Text style={styles.errorMessage}>{this.state.errors.phone === true ? "Please enter a valid cellphone numebr" : this.state.errors.phone}</Text>
                   : null
                 }
             </View>
