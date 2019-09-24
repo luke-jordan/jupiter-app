@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Clipboard, AppState, Linking, ActivityIndicator, BackHandler } from 'react-native';
+import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Clipboard, AppState, Linking, ActivityIndicator, BackHandler, Dimensions } from 'react-native';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Endpoints, Colors } from '../util/Values';
@@ -7,6 +7,8 @@ import { Icon } from 'react-native-elements';
 import { LinearGradient } from 'expo-linear-gradient';
 import Toast from 'react-native-easy-toast';
 import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
+
+let { width, height } = Dimensions.get('window');
 
 export default class Payment extends React.Component {
 
@@ -23,6 +25,7 @@ export default class Payment extends React.Component {
   }
 
   async componentDidMount() {
+    console.log(height);
     AppState.addEventListener('change', this.handleAppStateChange);
     this.backHandler = BackHandler.addEventListener('hardwareBackPress', this.handleHardwareBackPress);
     let params = this.props.navigation.state.params;
@@ -162,55 +165,59 @@ export default class Payment extends React.Component {
             </TouchableOpacity>
           </View>
         </View>
-        <View style={[styles.footer, styles.boxShadow]}>
-          <Text style={styles.footerTitle}>THE EASIEST WAY TO PAY:</Text>
-          <Image style={styles.shield} source={require('../../assets/shield.png')}/>
-          <View style={styles.footerItem}>
-            <Icon
-              name='check'
-              type='feather'
-              size={19}
-              color={Colors.PURPLE}
-            />
-            <Text style={styles.footerItemText}>No registration or app download required</Text>
+        {
+          height > 500 ?
+          <View style={[styles.footer, styles.boxShadow]}>
+            <Text style={styles.footerTitle}>THE EASIEST WAY TO PAY:</Text>
+            <Image style={styles.shield} source={require('../../assets/shield.png')}/>
+            <View style={styles.footerItem}>
+              <Icon
+                name='check'
+                type='feather'
+                size={19}
+                color={Colors.PURPLE}
+              />
+              <Text style={styles.footerItemText}>No registration or app download required</Text>
+            </View>
+            <View style={styles.footerItem}>
+              <Icon
+                name='check'
+                type='feather'
+                size={19}
+                color={Colors.PURPLE}
+              />
+              <Text style={styles.footerItemText}>Payments completed in seconds</Text>
+            </View>
+            <View style={styles.footerItem}>
+              <Icon
+                name='check'
+                type='feather'
+                size={19}
+                color={Colors.PURPLE}
+              />
+              <Text style={styles.footerItemText}>No proof of payment necessary</Text>
+            </View>
+            <View style={styles.footerItem}>
+              <Icon
+                name='check'
+                type='feather'
+                size={19}
+                color={Colors.PURPLE}
+              />
+              <Text style={styles.footerItemText}><Text style={styles.bold}>No</Text> banking login details stored</Text>
+            </View>
+            <View style={styles.footerItem}>
+              <Icon
+                name='check'
+                type='feather'
+                size={19}
+                color={Colors.PURPLE}
+              />
+              <Text style={styles.footerItemText}>Safe and secure</Text>
+            </View>
           </View>
-          <View style={styles.footerItem}>
-            <Icon
-              name='check'
-              type='feather'
-              size={19}
-              color={Colors.PURPLE}
-            />
-            <Text style={styles.footerItemText}>Payments completed in seconds</Text>
-          </View>
-          <View style={styles.footerItem}>
-            <Icon
-              name='check'
-              type='feather'
-              size={19}
-              color={Colors.PURPLE}
-            />
-            <Text style={styles.footerItemText}>No proof of payment necessary</Text>
-          </View>
-          <View style={styles.footerItem}>
-            <Icon
-              name='check'
-              type='feather'
-              size={19}
-              color={Colors.PURPLE}
-            />
-            <Text style={styles.footerItemText}><Text style={styles.bold}>No</Text> banking login details stored</Text>
-          </View>
-          <View style={styles.footerItem}>
-            <Icon
-              name='check'
-              type='feather'
-              size={19}
-              color={Colors.PURPLE}
-            />
-            <Text style={styles.footerItemText}>Safe and secure</Text>
-          </View>
-        </View>
+          : null
+        }
         <Toast ref="toast" opacity={1} style={styles.toast}/>
 
         <Dialog
