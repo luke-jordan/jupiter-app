@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, TouchableOpacity, ScrollView, KeyboardAvoidingView } from 'react-native';
+import { StyleSheet, View, Image, Text, TouchableOpacity, ScrollView, KeyboardAvoidingView, Keyboard } from 'react-native';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { ValidationUtil } from '../util/ValidationUtil';
 import { Button, Icon, Input } from 'react-native-elements';
@@ -89,7 +89,7 @@ export default class Register extends React.Component {
   validateInput = async () => {
     let hasErrors = false;
     let errors = Object.assign({}, this.state.errors);
-    
+
     // check for non-null
     if (this.state.firstName.length < 1) {
       hasErrors = true;
@@ -103,7 +103,7 @@ export default class Register extends React.Component {
       hasErrors = true;
       errors.idNumber = true;
     }
-    
+
     // check for phone email is non null & is valid
     if (this.state.userId.length < 1) {
       hasErrors = true;
@@ -132,6 +132,7 @@ export default class Register extends React.Component {
   }
 
   onPressRegister = async () => {
+    Keyboard.dismiss();
     if (this.state.loading) return;
     this.setState({loading: true});
 
@@ -141,7 +142,7 @@ export default class Register extends React.Component {
       this.showError();
       return;
     }
-    
+
     try {
       let result = await fetch(Endpoints.AUTH + 'register/profile', {
         headers: {

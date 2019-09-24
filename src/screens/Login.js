@@ -40,12 +40,12 @@ export default class Login extends React.Component {
     };
 
     const result = await fetch(Endpoints.AUTH + 'login', loginOptions);
-    
+
     if (result.ok) {
       let resultJson = await result.json();
       await this.generateOtpAndMove(resultJson.systemWideUserId);
     } else if (result.status == 403) {
-      this.setState({ 
+      this.setState({
         loading: false,
         passwordError: true
       });
@@ -85,7 +85,7 @@ export default class Login extends React.Component {
     // Just to clear this so user can always see it is happening
     this.setState({ validationError: false });
 
-    const isValid = ValidationUtil.checkValidEmailPhone(this.state.userId);
+    const isValid = ValidationUtil.isValidEmailPhone(this.state.userId);
     if (!isValid) {
       console.log('ERROR! Halted submission');
       this.setState({ validationError: true });
@@ -130,7 +130,7 @@ export default class Login extends React.Component {
           />
           {
             this.state.validationError ?
-            <Text style={styles.validationErrorText}>Please enter a valid email or phone number</Text> 
+            <Text style={styles.validationErrorText}>Please enter a valid email or phone number</Text>
             : null
           }
           <Text style={styles.labelStyle}>Password*</Text>
@@ -146,7 +146,7 @@ export default class Login extends React.Component {
             Forgot Password?
           </Text>
           {
-            this.state.passwordError ? 
+            this.state.passwordError ?
             <Text style={styles.accessErrorText}>Sorry, we couldn&apos;t match that phone/email and password. Please try again.</Text>
             : null
           }
