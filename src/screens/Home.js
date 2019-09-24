@@ -497,7 +497,9 @@ export default class Home extends React.Component {
   }
 
   getFormattedValue(value) {
-    return (value / this.getDivisor(this.state.unit)).toFixed(2);
+    let result = (value / this.getDivisor(this.state.unit)).toFixed(2);
+    result = result.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","); //I don't understand how this works. It's a plain copy paste which allows comma separators
+    return result;
   }
 
   onPressPlayLater = () => {
