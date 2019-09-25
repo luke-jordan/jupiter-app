@@ -1,23 +1,32 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { LoggingUtil } from '../util/LoggingUtil';
-import { Image, Text, AsyncStorage, TouchableOpacity } from 'react-native';
+import { Image, Text, AsyncStorage, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { Endpoints, Colors } from '../util/Values';
 import { Button, Icon, Input } from 'react-native-elements';
 import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
+import moment from 'moment';
 
 export default class Withdraw extends React.Component {
 
   constructor(props) {
     super(props);
+    let bank = this.props.navigation.getParam("bank");
+    let accountHolder = this.props.navigation.getParam("accountHolder");
+    let accountNumber = this.props.navigation.getParam("accountNumber");
+    let data = this.props.navigation.getParam("initiateResponseData");
     this.state = {
+      bank: bank,
+      accountNumber: accountNumber,
+      accountHolder: accountHolder,
       currency: "R",
       amountToWithdraw: parseFloat(50).toFixed(2),
-      bank: "FNB",
-      accountNumber: "34567889900",
       balance: 0,
       dialogVisible: false,
+      cardTitle: data.cardTitle,
+      cardBody: data.cardBody,
+      withdrawLoading: false,
     };
   }
 
@@ -32,8 +41,8 @@ export default class Withdraw extends React.Component {
       this.setState({
         balance: info.balance.currentBalance.amount,
         unit: info.balance.currentBalance.unit,
-        // token: info.token,
-        // accountId: info.balance.accountId[0],
+        accountId: info.balance.accountId[0],
+        token: info.token,
       });
     }
   }
@@ -43,7 +52,7 @@ export default class Withdraw extends React.Component {
   }
 
   onPressWithdraw = () => {
-    this.setState({dialogVisible: true});
+    this.initiateWithdrawal();
   }
 
   onChangeAmount = (text) => {
@@ -97,12 +106,99 @@ export default class Withdraw extends React.Component {
 
   onPressWithdrawNow = () => {
     this.onCloseDialog();
-    this.props.navigation.navigate("WithdrawalComplete", { amount: this.state.amountToWithdraw });
+    this.finishWithdrawal(true);
   }
 
   onPressCancelWithdraw = () => {
     this.onCloseDialog();
-    this.props.navigation.navigate("Home");
+    this.finishWithdrawal(false);
+  }
+
+  initiateWithdrawal = async () => {
+    if (this.state.loading) return;
+    this.setState({loading: true});
+
+    try {
+      let result = await fetch(Endpoints.CORE + 'withdrawal/amount', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer ' + this.state.token,
+        },
+        method: 'POST',
+        body: JSON.stringify({
+          "accountId": this.state.accountId,
+          "amount": this.state.amountToWithdraw * 10000, //multiplying by 100 to get cents and again by 100 to get hundreth cent
+          "unit": "HUNDREDTH_CENT",
+          "currency": "ZAR" //TODO implement for handling other currencies
+        }),
+      });
+      if (result.ok) {
+        let resultJson = await result.json();
+        this.setState({
+          dialogVisible: true,
+          loading: false,
+          transactionId: resultJson.transactionId,
+          delayOffer: resultJson.delayOffer,
+        });
+        //TODO use the result json to set up the popup
+      } else {
+        let resultText = await result.text();
+        console.log("resultText:", resultText);
+        throw result;
+      }
+    } catch (error) {
+      console.log("error!", error);
+      this.setState({loading: false});
+      this.showError(error);
+    }
+  }
+
+  finishWithdrawal = async (isWithdrawing) => {
+    if (this.state.withdrawLoading) return;
+    this.setState({withdrawLoading: true});
+
+    try {
+      let result = await fetch(Endpoints.CORE + 'withdrawal/decision', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer ' + this.state.token,
+        },
+        method: 'POST',
+        body: JSON.stringify({
+          "transactionId": this.state.transactionId,
+          "userDecision": isWithdrawing ? "WITHDRAW" : "CANCEL",
+        }),
+      });
+      if (result.ok) {
+        let resultJson = await result.json();
+        this.setState({withdrawLoading: false});
+        if (isWithdrawing) {
+          this.props.navigation.navigate("WithdrawalComplete", { amount: this.state.amountToWithdraw });
+        } else {
+          this.props.navigation.navigate("Home");
+        }
+      } else {
+        let resultText = await result.text();
+        console.log("resultText:", resultText);
+        throw result;
+      }
+    } catch (error) {
+      console.log("error!", error);
+      this.setState({withdrawLoading: false});
+      this.showError(error);
+    }
+  }
+
+  showError(error) {
+
+  }
+
+  getBoostAmount = () => {
+    let amount = this.state.delayOffer.boostAmount;
+    let parts = amount.split("::");
+    return (parts[0] / this.getDivisor(parts[1])).toFixed(2); // + " " + parts[2];
   }
 
   render() {
@@ -148,8 +244,8 @@ export default class Withdraw extends React.Component {
             <View style={styles.bottomBoxImageWrapper}>
               <Image style={styles.bottomBoxImage} source={require('../../assets/bulb.png')} />
             </View>
-            <Text style={styles.bottomBoxTitle}>Did you know?</Text>
-            <Text style={styles.bottomBoxText}>Over the next two years you could accumulate xx% interest. Why not delay your withdraw to keep these savings and earn more for your future!</Text>
+            <Text style={styles.bottomBoxTitle}>{this.state.cardTitle}</Text>
+            <Text style={styles.bottomBoxText}>{this.state.cardBody}</Text>
           </View>
         </View>
         <Button
@@ -177,16 +273,24 @@ export default class Withdraw extends React.Component {
         >
           <DialogContent style={styles.dialogContent}>
             <View style={styles.dialogTitleWrapper}>
-              <Text style={styles.dialogTitle}>Delay your withdrawal to earn a boost of:</Text>
+              <Text style={styles.dialogTitle}>{this.state.delayOffer ? "Delay your withdrawal to earn a boost of:" : "Are you sure?"}</Text>
             </View>
-            <View style={styles.dialogBoostView}>
-              <Image style={styles.dialogBoostImage} source={require('../../assets/gift.png')} />
-              <View style={styles.dialogBoostTextWrapper}>
-                <Text style={styles.dialogBoostSuperscript}>R</Text>
-                <Text style={styles.dialogBoostText}>35.00</Text>
+            {
+              this.state.delayOffer ?
+              <View style={styles.dialogBoostView}>
+                <Image style={styles.dialogBoostImage} source={require('../../assets/gift.png')} />
+                <View style={styles.dialogBoostTextWrapper}>
+                  <Text style={styles.dialogBoostSuperscript}>R</Text>
+                  <Text style={styles.dialogBoostText}>{this.getBoostAmount()}</Text>
+                </View>
               </View>
-            </View>
-            <Text style={styles.dialogDescription}>Simply delay your withdrawal until xx date to earn this boost.</Text>
+              : null
+            }
+            {
+              this.state.delayOffer ?
+              <Text style={styles.dialogDescription}>Simply delay your withdrawal until {moment(this.state.delayOffer.requiredDelay).format("Do MMMM YYYY, HH:mm:ss")} to earn this boost.</Text>
+              : null
+            }
             <Button
               title="CANCEL WITHDRAW"
               titleStyle={styles.buttonTitleStyle}
@@ -202,6 +306,21 @@ export default class Withdraw extends React.Component {
             <TouchableOpacity style={styles.closeDialog} onPress={this.onCloseDialog} >
               <Image source={require('../../assets/close.png')}/>
             </TouchableOpacity>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          visible={this.state.withdrawLoading}
+          dialogStyle={styles.dialogStyle}
+          dialogAnimation={new SlideAnimation({
+            slideFrom: 'bottom',
+          })}
+          onTouchOutside={() => {}}
+          onHardwareBackPress={() => {return true;}}
+        >
+          <DialogContent style={styles.finalDialogWrapper}>
+            <ActivityIndicator size="large" color={Colors.PURPLE} />
+            <Text style={styles.finalDialogText}>Please wait...</Text>
           </DialogContent>
         </Dialog>
       </View>
@@ -418,5 +537,20 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.PURPLE,
     textDecorationLine: 'underline',
+  },
+  finalDialogWrapper: {
+    width: '80%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 200,
+    paddingBottom: 0,
+  },
+  finalDialogText: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 17,
+    color: Colors.DARK_GRAY,
+    marginTop: 10,
+    marginHorizontal: 30,
+    textAlign: 'center',
   },
 });
