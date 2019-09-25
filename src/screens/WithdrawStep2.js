@@ -174,8 +174,9 @@ export default class Withdraw extends React.Component {
       if (result.ok) {
         let resultJson = await result.json();
         this.setState({withdrawLoading: false});
+        console.log(resultJson);
         if (isWithdrawing) {
-          this.props.navigation.navigate("WithdrawalComplete", { amount: this.state.amountToWithdraw });
+          this.props.navigation.navigate("WithdrawalComplete", { amount: this.state.amountToWithdraw, token: this.state.token });
         } else {
           this.props.navigation.navigate("Home");
         }

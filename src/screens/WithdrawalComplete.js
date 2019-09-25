@@ -16,11 +16,17 @@ export default class WithdrawalComplete extends React.Component {
     let amount = this.props.navigation.getParam("amount");
     this.state = {
       amount: amount,
+      loading: false,
+      fetchingProfile: true,
+      userInfo: null,
     };
   }
 
   async componentDidMount() {
     this.backHandler = BackHandler.addEventListener('hardwareBackPress', this.handleHardwareBackPress);
+
+    this.fetchProfile(this.props.navigation.getParam("token"));
+
   }
 
   componentWillUnmount() {
@@ -33,8 +39,45 @@ export default class WithdrawalComplete extends React.Component {
     return false;
   }
 
+  async fetchProfile(token) {
+    this.setState({
+      fetchingProfile: true,
+    });
+    try {
+      if (!token) {
+        NavigationUtil.logout(this.props.navigation);
+      }
+      let result = await fetch(Endpoints.AUTH + 'profile/fetch', {
+        headers: {
+          'Authorization': 'Bearer ' + token,
+        },
+        method: 'GET',
+      });
+      if (result.ok) {
+        let resultJson = await result.json();
+        AsyncStorage.setItem('userInfo', JSON.stringify(resultJson));
+        this.setState({
+          userInfo: resultJson,
+          fetchingProfile: false,
+        });
+      } else {
+        throw result;
+      }
+    } catch (error) {
+      console.log("error!", error.status);
+      this.setState({fetchingProfile: false});
+    }
+  }
+
   onPressDone = (attempts) => {
-    NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home');
+    if (!attempts) attempts = 0;
+    this.setState({loading: true});
+    if (this.state.fetchingProfile && attempts < 10) {
+      setTimeout(() => {this.onPressDone()}, 1000);
+    } else {
+      this.setState({loading: false});
+      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', { userInfo: this.state.userInfo });
+    }
   }
 
   render() {
