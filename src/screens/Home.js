@@ -1002,8 +1002,8 @@ const styles = StyleSheet.create({
   },
   animatedViewCircle: {
     position: 'absolute',
-    width: width,
-    height: width,
+    width: width * 1.1,
+    height: width * 1.1,
   },
   coloredCircle: {
     position: 'absolute',
