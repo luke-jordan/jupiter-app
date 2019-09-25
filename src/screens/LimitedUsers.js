@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, Dimensions, KeyboardAvoidingView, Platform } from 'react-native';
+import { StyleSheet, View, Image, Text, Dimensions, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import { Button, Input } from 'react-native-elements';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Colors, Endpoints } from '../util/Values';
@@ -36,6 +36,7 @@ export default class LimitedUsers extends React.Component {
 
   onPressContinue = async () => {
     if (this.state.loading) return;
+    Keyboard.dismiss();
     if (this.state.notifyMode) {
       LoggingUtil.logEvent("USER_HAS_NO_REFERRAL_CODE");
       this.addUserToWaitingList();
@@ -134,7 +135,7 @@ export default class LimitedUsers extends React.Component {
           />
           {
             this.state.hasError ?
-            <Text style={styles.errorMessage}>Please enter a valid referral code</Text>
+            <Text style={styles.errorMessage}>{this.state.notifyMode ? "Please enter a valid email address" : "Please enter a valid referral code"}</Text>
             : null
           }
         </View>
