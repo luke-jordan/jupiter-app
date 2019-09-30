@@ -78,10 +78,11 @@ export default class PaymentComplete extends React.Component {
       });
       if (result.ok) {
         let resultJson = await result.json();
-        AsyncStorage.setItem('userInfo', JSON.stringify(resultJson));
-        this.setState({
-          userInfo: resultJson,
-          fetchingProfile: false,
+        AsyncStorage.setItem('userInfo', JSON.stringify(resultJson)).then(result => {
+          this.setState({
+            userInfo: resultJson,
+            fetchingProfile: false,
+          });
         });
       } else {
         throw result;
@@ -96,7 +97,7 @@ export default class PaymentComplete extends React.Component {
     if (!attempts) attempts = 0;
     this.setState({loading: true});
     if (this.state.fetchingProfile && attempts < 10) {
-      setTimeout(() => {this.onPressDone()}, 1000);
+      setTimeout(() => {this.onPressDone(attempts)}, 1000);
     } else {
       this.setState({loading: false});
       NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', { userInfo: this.state.userInfo });
