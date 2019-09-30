@@ -26,7 +26,7 @@ export default class OTPVerification extends React.Component {
     const channel = this.props.navigation.getParam('channel');
     console.info('OTP started, with channel received: ', channel);
     if (channel === 'EMAIL' || channel === 'PHONE') {
-      this.setState({ 
+      this.setState({
         otpMethod: channel.toLowerCase(),
         header: `Please enter the one time pin sent to your ${channel.toLowerCase()}`
       });
@@ -88,7 +88,11 @@ export default class OTPVerification extends React.Component {
       if (result.ok) {
         let resultJson = await result.json();
         this.setState({loading: false});
-        NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'ResetQuestions', { questions: resultJson });
+        if (resultJson.flags && resultJson.flags.includes("CAN_SKIP_QUESTIONS")) {
+          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'SetPassword', { systemWideUserId: resultJson.systemWideUserId, isReset: true });
+        } else {
+          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'ResetQuestions', { questions: resultJson });
+        }
       } else {
         let resultJson = await result.json();
         if (Array.isArray(resultJson)) {

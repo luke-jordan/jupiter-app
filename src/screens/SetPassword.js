@@ -121,7 +121,7 @@ export default class SetPassword extends React.Component {
 
   handleResetPassword = async () => {
     try {
-      let result = await fetch(Endpoints.AUTH + 'password/set', {
+      let result = await fetch(Endpoints.AUTH + 'password/reset/complete', {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
