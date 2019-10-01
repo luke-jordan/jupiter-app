@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, Dimensions, Animated, Easing, YellowBox, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Image, Text, AsyncStorage, Dimensions, Animated, Easing, YellowBox, TouchableOpacity, Linking } from 'react-native';
 import { Notifications } from 'expo';
 import * as Permissions from 'expo-permissions';
 import { Colors, Sizes, Endpoints } from '../util/Values';
@@ -14,7 +14,7 @@ import AnimatedNumber from '../elements/AnimatedNumber';
 import moment from 'moment';
 import { FlingGestureHandler, Directions, State } from 'react-native-gesture-handler';
 import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
-// import VersionCheck from 'react-native-version-check-expo';
+import VersionCheck from 'react-native-version-check-expo';
 
 /*
 This is here because currently long timers are not purely supported on Android.
@@ -97,25 +97,26 @@ export default class Home extends React.Component {
     }
   }
 
-  //TODO uncomment this when relevant
   async checkIfUpdateNeeded() {
-    console.log('Would perform version check');
-    // let localVersion = VersionCheck.getCurrentVersion();
-    // let remoteVersion = await VersionCheck.getLatestVersion();
-    // if (this.needsUpdate(localVersion, remoteVersion)) {
-    //   this.showUpdateDialog(true);
-    // }
-    // this.showUpdateDialog(false);
+    let localVersion = VersionCheck.getCurrentVersion();
+    let remoteVersion = await VersionCheck.getLatestVersion();
+
+    const updateStatus = this.needsUpdate(localVersion, remoteVersion);
+    if (updateStatus == 2) {
+      this.showUpdateDialog(true);
+    } else if (updateStatus == 1) {
+      this.showUpdateDialog(false);
+    }
   }
 
   needsUpdate(localVersion, remoteVersion) {
     let localParts = localVersion.split('.');
     if (!remoteVersion) return false;
     let remoteParts = remoteVersion.split('.');
-    if (localParts[0] < remoteParts[0]) return true;
-    if (localParts[1] < remoteParts[1]) return true;
-    if (localParts[2] < remoteParts[2]) return true;
-    return false;
+    if (localParts[0] < remoteParts[0]) return 2;
+    if (localParts[1] < remoteParts[1]) return 2;
+    if (localParts[2] < remoteParts[2]) return 1;
+    return 0;
   }
 
   async showUpdateDialog(required){
@@ -134,8 +135,9 @@ export default class Home extends React.Component {
     return true;
   }
 
-  onPressUpdate = () => {
-    //TODO handle update
+  onPressUpdate = async () => {
+    let link = await VersionCheck.getStoreUrl();
+    Linking.openURL(link);
     this.onCloseDialog();
   }
 
