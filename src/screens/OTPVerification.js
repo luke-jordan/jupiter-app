@@ -76,9 +76,29 @@ export default class OTPVerification extends React.Component {
 
   }
 
-  async handlePassReset(userId) {
+  async handlePassReset(userId, systemWideUserId) {
     try {
-      let result = await fetch(Endpoints.AUTH + 'password/reset/obtainqs?phoneOrEmail=' + userId + '&otp=' + this.state.pin.join(""), {
+      let otpResult = await fetch(Endpoints.AUTH + 'otp/verify', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        method: 'POST',
+        body: JSON.stringify({
+          "systemWideUserId": systemWideUserId,
+          "otp": this.state.pin.join(""),
+        }),
+      });
+      if (otpResult.ok) {
+        let otpResultJson = await otpResult.json();
+        if (!otpResultJson.verified) {
+          throw otpResult;
+        }
+      } else {
+        throw otpResult;
+      }
+
+      let result = await fetch(Endpoints.AUTH + 'password/reset/obtainqs?phoneOrEmail=' + userId, {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
@@ -123,7 +143,8 @@ export default class OTPVerification extends React.Component {
     if (redirection.includes('Login')) {
       this.handleLogin(userId);
     } else if (redirection.includes('Reset')) {
-      this.handlePassReset(userId);
+      let systemWideUserId = this.props.navigation.getParam("systemWideUserId");
+      this.handlePassReset(userId, systemWideUserId);
     } else {
       this.setState({loading: false});
     }

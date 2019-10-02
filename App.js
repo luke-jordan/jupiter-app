@@ -31,6 +31,7 @@ import ResetComplete from './src/screens/ResetComplete';
 import WithdrawStep1 from './src/screens/WithdrawStep1';
 import WithdrawStep2 from './src/screens/WithdrawStep2';
 import WithdrawalComplete from './src/screens/WithdrawalComplete';
+import ChangePassword from './src/screens/ChangePassword';
 
 const AppContainer = createAppContainer(
   createStackNavigator(
@@ -61,6 +62,7 @@ const AppContainer = createAppContainer(
       WithdrawStep1: { screen: WithdrawStep1 },
       WithdrawStep2: { screen: WithdrawStep2 },
       WithdrawalComplete: { screen: WithdrawalComplete },
+      ChangePassword: { screen: ChangePassword },
     },
     { initialRouteName: "Splash", headerMode: 'none' }
   )

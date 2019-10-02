@@ -43,8 +43,10 @@ export default class ResetPassword extends React.Component {
       });
       if (result.ok) {
         this.setState({loading: false});
+        let resultJson = await result.json();
         this.props.navigation.navigate('OTPVerification', {
           userId: this.state.userInput,
+          systemWideUserId: resultJson.systemWideUserId,
           redirection: 'Reset',
         });
       } else {

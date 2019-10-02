@@ -35,12 +35,14 @@ export default class Profile extends React.Component {
       NavigationUtil.logout(this.props.navigation);
     } else {
       info = JSON.parse(info);
+      console.log(info);
       this.setState({
         firstName: info.profile.personalName,
         lastName: info.profile.familyName,
         idNumber: info.profile.nationalId,
         email: info.profile.email,
         initials: info.profile.personalName[0] + info.profile.familyName[0],
+        systemWideUserId: info.systemWideUserId,
       });
     }
   }
@@ -50,7 +52,9 @@ export default class Profile extends React.Component {
   }
 
   onPressChangePassword = () => {
-
+    this.props.navigation.navigate("ChangePassword", {
+      systemWideUserId: this.state.systemWideUserId,
+    });
   }
 
   onPressEditPic = () => {

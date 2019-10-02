@@ -18,8 +18,10 @@ export default class Login extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      // userId: "testemail01@test.tst",
       userId: "someone@jupitersave.com",
       validationError: false,
+      // password: "аА@123456",
       password: "holy_CHRYSALIS_hatching9531",
       passwordError: false
     };
@@ -50,6 +52,8 @@ export default class Login extends React.Component {
         passwordError: true
       });
     } else {
+      let resultJson = await result.json();
+      console.log(resultJson);
         this.setState({ loading: false });
         // todo: display proper error with contact us
     }
@@ -91,7 +95,6 @@ export default class Login extends React.Component {
       this.setState({ validationError: true });
       return;
     }
-
     this.setState({loading: true});
     try {
       await this.initiateLogin();
