@@ -5,17 +5,21 @@ import { LoggingUtil } from '../util/LoggingUtil';
 import { Button, Icon, Input } from 'react-native-elements';
 import { Colors, Endpoints } from '../util/Values';
 import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
+import Toast from 'react-native-easy-toast';
+
 
 export default class ChangePassword extends React.Component {
 
   constructor(props) {
     super(props);
     this.state = {
+      token: this.props.navigation.state.params.token,
       systemWideUserId: this.props.navigation.state.params.systemWideUserId,
       loading: false,
       generatePasswordLoading: false,
-      password: "",
-      passwordConfirm: "",
+      oldPassword: "holy_CHRYSALIS_hatching9531",
+      password: "holy_CHRYSALIS_hatching95312",
+      passwordConfirm: "holy_CHRYSALIS_hatching95312",
       errors: {
         password: false,
         passwordConfirm: false,
@@ -77,6 +81,14 @@ export default class ChangePassword extends React.Component {
     //   hasErrors = true;
     //   errors.password = true;
     // }
+    if (this.state.oldPassword.length == 0) {
+      hasErrors = true;
+      errors.oldPassword = true;
+    }
+    if (this.state.password.length == 0) {
+      hasErrors = true;
+      errors.password = true;
+    }
     if (this.state.password != this.state.passwordConfirm) {
       hasErrors = true;
       errors.password = false;
@@ -110,7 +122,8 @@ export default class ChangePassword extends React.Component {
       let result = await fetch(Endpoints.AUTH + 'password/reset/complete', {
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'Authorization': 'Bearer ' + this.state.token,
         },
         method: 'POST',
         body: JSON.stringify({
@@ -125,9 +138,11 @@ export default class ChangePassword extends React.Component {
           checkingForCompletion: false,
         });
         //TODO redirect to where necessary
+        this.refs.toast.show('Your password has been changed!');
         NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'ResetComplete');
       } else {
         let resultText = await result.text();
+        console.log(resultText);
         throw result;
       }
     } catch (error) {
@@ -327,10 +342,11 @@ export default class ChangePassword extends React.Component {
         >
           <DialogContent style={styles.checkingDialogWrapper}>
             <ActivityIndicator size="large" color={Colors.PURPLE} />
-            <Text style={styles.checkingDialogText}>"Changing your password..."</Text>
+            <Text style={styles.checkingDialogText}>Changing your password...</Text>
           </DialogContent>
         </Dialog>
 
+        <Toast ref="toast" opacity={1} style={styles.toast}/>
       </KeyboardAvoidingView>
     );
   }
@@ -497,6 +513,11 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginHorizontal: 30,
     textAlign: 'center',
+  },
+  toast: {
+    backgroundColor: Colors.DARK_GRAY,
+    width: '60%',
+    alignItems: 'center',
   },
 
 });

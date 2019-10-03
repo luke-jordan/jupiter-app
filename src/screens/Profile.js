@@ -43,6 +43,7 @@ export default class Profile extends React.Component {
         email: info.profile.email,
         initials: info.profile.personalName[0] + info.profile.familyName[0],
         systemWideUserId: info.systemWideUserId,
+        token: info.token,
       });
     }
   }
@@ -54,6 +55,7 @@ export default class Profile extends React.Component {
   onPressChangePassword = () => {
     this.props.navigation.navigate("ChangePassword", {
       systemWideUserId: this.state.systemWideUserId,
+      token: this.state.token,
     });
   }
 
