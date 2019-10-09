@@ -116,6 +116,10 @@ export default class Login extends React.Component {
     this.props.navigation.navigate('ResetPassword');
   }
 
+  onPressSupport = () => {
+    this.props.navigation.navigate('Support');
+  }
+
   render() {
     return (
       <View style={styles.container}>
@@ -147,6 +151,9 @@ export default class Login extends React.Component {
           />
           <Text style={styles.textAsButton} onPress={this.onPressForgotPassword}>
             Forgot Password?
+          </Text>
+          <Text style={styles.textAsButton} onPress={this.onPressSupport}>
+            Can't access your account?
           </Text>
           {
             this.state.passwordError ?
@@ -238,6 +245,7 @@ const styles = StyleSheet.create({
     width: '80%',
   },
   textAsButton: {
+    marginVertical: 5,
     fontFamily: 'poppins-semibold',
     color: Colors.PURPLE,
   },

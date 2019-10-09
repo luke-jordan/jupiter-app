@@ -60,7 +60,7 @@ export default class Account extends React.Component {
   }
 
   onPressSupport = () => {
-
+    this.props.navigation.navigate('Support');
   }
 
   renderProfilePicture() {
