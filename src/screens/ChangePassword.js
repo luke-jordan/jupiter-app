@@ -17,9 +17,9 @@ export default class ChangePassword extends React.Component {
       systemWideUserId: this.props.navigation.state.params.systemWideUserId,
       loading: false,
       generatePasswordLoading: false,
-      oldPassword: "holy_CHRYSALIS_hatching9531",
-      password: "holy_CHRYSALIS_hatching95312",
-      passwordConfirm: "holy_CHRYSALIS_hatching95312",
+      oldPassword: "",
+      password: "",
+      passwordConfirm: "",
       errors: {
         password: false,
         passwordConfirm: false,
@@ -119,7 +119,7 @@ export default class ChangePassword extends React.Component {
 
   handleChangePassword = async () => {
     try {
-      let result = await fetch(Endpoints.AUTH + 'password/reset/complete', {
+      let result = await fetch(Endpoints.AUTH + 'password/change', {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -127,7 +127,6 @@ export default class ChangePassword extends React.Component {
         },
         method: 'POST',
         body: JSON.stringify({
-          systemWideUserId: this.state.systemWideUserId,
           oldPassword: this.state.oldPassword,
           newPassword: this.state.password,
         }),
