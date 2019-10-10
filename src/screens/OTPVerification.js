@@ -50,12 +50,11 @@ export default class OTPVerification extends React.Component {
       if (result.ok) {
         let resultJson = await result.json();
         this.setState({loading: false});
-        // console.log("result:", resultJson);
-        if (resultJson.onboardStepsComplete.includes("ALL")) {
-          AsyncStorage.setItem('userInfo', JSON.stringify(resultJson));
-          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', { userInfo: resultJson });
-        } else {
+        if (resultJson && resultJson.onboardStepsRemaining && resultJson.onboardStepsRemaining.includes("ADD_CASH")) {
           NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'PendingRegistrationSteps', { userInfo: resultJson });
+        } else {
+          AsyncStorage.setItem('userInfo', JSON.stringify(resultJson));
+          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', { userInfo: resultJson });          
         }
       } else {
         let resultJson = await result.json();

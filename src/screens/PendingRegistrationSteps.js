@@ -16,15 +16,16 @@ export default class PendingRegistrationSteps extends React.Component {
   }
 
   async componentDidMount() {
-    console.log(this.props);
+
   }
 
   onPressAddCash = () => {
+    let userInfo = this.props.navigation.getParam("userInfo");
     this.props.navigation.navigate("AddCash", {
       isOnboarding: true,
-      // systemWideUserId: resultJson.systemWideUserId,
-      // token: resultJson.token,
-      // accountId: resultJson.accountId[0],
+      systemWideUserId: userInfo.systemWideUserId,
+      token: userInfo.token,
+      accountId: userInfo.balance.accountId[0],
     });
 
   }
