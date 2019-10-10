@@ -74,7 +74,7 @@ export default class App extends React.Component {
 
   componentDidMount() {
     Sentry.init({
-      dsn: 'https://00d51de1c629418ab759202582b78a3c@sentry.io/1546052',
+      dsn: 'https://10565b8e18354b6ebd0a767b7a0e1f19@sentry.io/1546052',
       enableInExpoDevelopment: true,
       debug: true
     });
