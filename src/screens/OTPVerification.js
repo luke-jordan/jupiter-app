@@ -1,8 +1,7 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, ImageBackground, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity } from 'react-native';
 import { Colors, Endpoints } from '../util/Values';
 import { Input, Button } from 'react-native-elements';
-import { LinearGradient } from 'expo-linear-gradient';
 import { NavigationUtil } from '../util/NavigationUtil';
 import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
 
@@ -11,19 +10,32 @@ export default class OTPVerification extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      phoneNumber: "********87",
+      channel: 'UNKNOWN',
       pin: [null, null, null, null],
       loading: false,
       dialogVisible: false,
+      otpMethod: "phone",
+      otpError: false,
+      passwordError: false,
+      header: 'Please enter the one time pin sent to you'
     };
   }
 
   async componentDidMount() {
-
+    //TODO show phone / email in this.state.otpMethod properly according to the backend response
+    const channel = this.props.navigation.getParam('channel');
+    console.info('OTP started, with channel received: ', channel);
+    if (channel === 'EMAIL' || channel === 'PHONE') {
+      this.setState({
+        otpMethod: channel.toLowerCase(),
+        header: `Please enter the one time pin sent to your ${channel.toLowerCase()}`
+      });
+    }
   }
 
-  async handleLogin(userId, password) {
+  async handleLogin(userId) {
     try {
+      console.info('About to do login, without password, works?');
       let result = await fetch(Endpoints.AUTH + 'login', {
         headers: {
           'Content-Type': 'application/json',
@@ -32,22 +44,29 @@ export default class OTPVerification extends React.Component {
         method: 'POST',
         body: JSON.stringify({
           "phoneOrEmail": userId,
-          "password": password,
           "otp": this.state.pin.join(""),
         }),
       });
       if (result.ok) {
         let resultJson = await result.json();
         this.setState({loading: false});
-        // console.log("result:", resultJson);
-        if (resultJson.onboardStepsComplete.includes("ALL")) {
-          AsyncStorage.setItem('userInfo', JSON.stringify(resultJson));
-          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', { userInfo: resultJson });
-        } else {
+        if (resultJson && resultJson.onboardStepsRemaining && resultJson.onboardStepsRemaining.includes("ADD_CASH")) {
           NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'PendingRegistrationSteps', { userInfo: resultJson });
+        } else {
+          AsyncStorage.setItem('userInfo', JSON.stringify(resultJson));
+          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', { userInfo: resultJson });          
         }
       } else {
-        throw result;
+        let resultJson = await result.json();
+        if (Array.isArray(resultJson)) {
+          this.setState({
+            loading: false,
+            otpError: resultJson.indexOf("OTP_ERROR") > -1,
+            passwordError: resultJson.indexOf("PASSWORD_ERROR") > -1,
+          });
+        } else {
+          this.setState({loading: false});
+        }
       }
     } catch (error) {
       console.log("error!", await error.text());
@@ -56,9 +75,29 @@ export default class OTPVerification extends React.Component {
 
   }
 
-  async handlePassReset(userId) {
+  async handlePassReset(userId, systemWideUserId) {
     try {
-      let result = await fetch(Endpoints.AUTH + 'password/reset/obtainqs?phoneOrEmail=' + userId + '&otp=' + this.state.pin.join(""), {
+      let otpResult = await fetch(Endpoints.AUTH + 'otp/verify', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        method: 'POST',
+        body: JSON.stringify({
+          "systemWideUserId": systemWideUserId,
+          "otp": this.state.pin.join(""),
+        }),
+      });
+      if (otpResult.ok) {
+        let otpResultJson = await otpResult.json();
+        if (!otpResultJson.verified) {
+          throw otpResult;
+        }
+      } else {
+        throw otpResult;
+      }
+
+      let result = await fetch(Endpoints.AUTH + 'password/reset/obtainqs?phoneOrEmail=' + userId, {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
@@ -68,9 +107,25 @@ export default class OTPVerification extends React.Component {
       if (result.ok) {
         let resultJson = await result.json();
         this.setState({loading: false});
-        NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'ResetQuestions', { questions: resultJson });
+        if (resultJson.flags && resultJson.flags.includes("CAN_SKIP_QUESTIONS")) {
+          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'SetPassword', { systemWideUserId: resultJson.systemWideUserId, isReset: true });
+        } else {
+          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'ResetQuestions', { questions: resultJson });
+        }
       } else {
-        throw result;
+        let resultJson = await result.json();
+        if (Array.isArray(resultJson)) {
+          this.setState({
+            loading: false,
+            otpError: resultJson.indexOf("OTP_ERROR") > -1,
+            passwordError: resultJson.indexOf("PASSWORD_ERROR") > -1,
+          });
+        } else {
+          this.setState({
+            loading: false,
+            otpError: true
+          });
+        }
       }
     } catch (error) {
       console.log("error!", await error.text());
@@ -83,12 +138,12 @@ export default class OTPVerification extends React.Component {
     if (this.state.loading) return;
     this.setState({loading: true});
     let userId = this.props.navigation.getParam("userId");
-    let password = this.props.navigation.getParam("password");
     let redirection = this.props.navigation.getParam("redirection");
     if (redirection.includes('Login')) {
-      this.handleLogin(userId, password);
+      this.handleLogin(userId);
     } else if (redirection.includes('Reset')) {
-      this.handlePassReset(userId);
+      let systemWideUserId = this.props.navigation.getParam("systemWideUserId");
+      this.handlePassReset(userId, systemWideUserId);
     } else {
       this.setState({loading: false});
     }
@@ -98,7 +153,6 @@ export default class OTPVerification extends React.Component {
     if (this.state.loading) return;
     this.setState({loading: true});
     let userId = this.props.navigation.getParam("userId");
-    let password = this.props.navigation.getParam("password");
     let redirection = this.props.navigation.getParam("redirection");
     let type = "LOGIN";
     if (redirection.includes('Reset')) {
@@ -152,6 +206,8 @@ export default class OTPVerification extends React.Component {
     if (num >= 0 && num <= 9) {
       pin[index] = text[text.length - 1];
       this.setState({
+        otpError: false,
+        passwordError: false,
         pin,
       });
     }
@@ -184,8 +240,7 @@ export default class OTPVerification extends React.Component {
           <Image style={styles.headerImage} source={require('../../assets/otp_phone_illi.png')}/>
         </View>
         <View style={styles.mainContent}>
-          <Text style={styles.labelStyle}>Please enter the OTP pin sent to:</Text>
-          <Text style={styles.otpText}>{this.state.phoneNumber}</Text>
+          <Text style={styles.labelStyle}>{this.state.header}</Text>
           <View style={styles.pinInputs}>
             <Input
               ref={ref => this.inputRefs0 = ref}
@@ -228,6 +283,11 @@ export default class OTPVerification extends React.Component {
               containerStyle={styles.containerStyle}
             />
           </View>
+          {
+            this.state.otpError ?
+            <Text style={styles.redText}>The OTP you entered is not valid.</Text>
+            : null
+          }
         </View>
         <Button
           title="CONTINUE"
@@ -242,7 +302,7 @@ export default class OTPVerification extends React.Component {
             end: { x: 1, y: 0.5 },
           }} />
         <View style={styles.signUpLink}>
-          <Text style={styles.noAccText}>Didn't receive the OTP pin?
+          <Text style={styles.noAccText}>Didn&apos;t receive the OTP pin?
             <Text style={styles.noAccButton} onPress={this.onPressResend}> Resend</Text>
           </Text>
           <Text style={styles.noAccText}>What is a one-time password?
@@ -292,7 +352,7 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
   mainContent: {
-    flex: 1,
+    flex: 2,
     width: '90%',
     minHeight: 100,
     justifyContent: 'center',
@@ -323,7 +383,6 @@ const styles = StyleSheet.create({
   labelStyle: {
     fontSize: 24,
     fontFamily: 'poppins-regular',
-    marginVertical: 5,
     marginBottom: 10,
     marginHorizontal: 20,
     textAlign: 'center',
@@ -337,7 +396,7 @@ const styles = StyleSheet.create({
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
     fontSize: 19,
-    color: 'white',
+    color: Colors.WHITE,
   },
   buttonStyle: {
     borderRadius: 10,
@@ -349,10 +408,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: '80%',
   },
-  textAsButton: {
-    fontFamily: 'poppins-semibold',
-    color: Colors.PURPLE,
-  },
+  // textAsButton: {
+  //   fontFamily: 'poppins-semibold',
+  //   color: Colors.PURPLE,
+  // },
   signUpLink: {
     alignItems: 'center',
     marginBottom: 10,
@@ -367,19 +426,6 @@ const styles = StyleSheet.create({
     color: Colors.PURPLE,
     fontWeight: 'bold',
   },
-  bottomView: {
-    width: '100%',
-    height: 75,
-    alignSelf: 'flex-end',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bottomText: {
-    fontFamily: 'poppins-semibold',
-    fontSize: 15,
-    color: 'white',
-    marginTop: 15,
-  },
   dialogWrapper: {
     width: '90%',
     alignItems: 'center',
@@ -387,7 +433,7 @@ const styles = StyleSheet.create({
   },
   helpDialog: {
     minHeight: 310,
-    backgroundColor: 'white',
+    backgroundColor: Colors.WHITE,
     borderRadius: 10,
     justifyContent: 'space-around',
     paddingHorizontal: 20,
@@ -415,5 +461,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 20,
     right: 20,
+  },
+  redText: {
+    fontFamily: 'poppins-semibold',
+    color: Colors.RED,
+    textAlign: 'center',
+    marginTop: 25,
   },
 });

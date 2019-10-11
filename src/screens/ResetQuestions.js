@@ -1,11 +1,11 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, ScrollView, Platform, Dimensions } from 'react-native';
+import { StyleSheet, View, Text, AsyncStorage, ScrollView, Dimensions } from 'react-native';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Endpoints, Colors } from '../util/Values';
-import { Button, Icon, Input } from 'react-native-elements';
+import { Button, Input } from 'react-native-elements';
 
-let {height, width} = Dimensions.get('window');
+const { width} = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
 export default class ResetQuestions extends React.Component {
@@ -23,6 +23,7 @@ export default class ResetQuestions extends React.Component {
   }
 
   async componentDidMount() {
+    LoggingUtil.logEvent('USER_ENTERED_PWORD_RESET_QS');
     let questions = this.props.navigation.getParam('questions');
 
     let answers = this.state.answers;
@@ -121,6 +122,10 @@ export default class ResetQuestions extends React.Component {
     );
   }
 
+  onPressLogin = () => {
+    NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Login');
+  }
+
   render() {
     return (
       <View style={styles.container}>
@@ -140,6 +145,7 @@ export default class ResetQuestions extends React.Component {
             <Text style={styles.errorMessage}>Some of your answers might be incorrect.</Text>
             : null
           }
+        <Text style={styles.goback} onPress={this.onPressLogin}>Go to Login</Text>
         <Button
           title="CONTINUE"
           loading={this.state.loading}
@@ -166,11 +172,10 @@ const styles = StyleSheet.create({
   },
   header: {
     width: '100%',
-    backgroundColor: 'white',
+    backgroundColor: Colors.WHITE,
     paddingTop: 30,
     paddingBottom: 15,
-    paddingHorizontal: 10,
-    backgroundColor: 'white',
+    paddingHorizontal: 10
   },
   headerTitle: {
     fontFamily: 'poppins-semibold',
@@ -189,7 +194,7 @@ const styles = StyleSheet.create({
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
     fontSize: 17,
-    color: 'white',
+    color: Colors.WHITE,
   },
   buttonStyle: {
     borderRadius: 10,
@@ -226,7 +231,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 10,
     borderColor: Colors.GRAY,
-    backgroundColor: 'white',
+    backgroundColor: Colors.WHITE,
     marginBottom: 20,
     minHeight: 50,
     alignItems: 'center',
@@ -241,5 +246,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: -15, //this is valid because of the exact alignment of other elements - do not reuse in other components
     marginBottom: 20,
+  },
+  goback: {
+    color: Colors.PURPLE,
+    fontFamily: 'poppins-semibold',
+    fontSize: 14,
   },
 });

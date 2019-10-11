@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Platform } from 'react-native';
+import { Platform } from 'react-native';
 import { createStackNavigator, createAppContainer } from 'react-navigation';
-import { StyleSheet, SafeAreaView, AsyncStorage, AppState } from 'react-native';
+import { StyleSheet, SafeAreaView, AppState } from 'react-native';
 import { LoggingUtil } from './src/util/LoggingUtil';
+import * as Sentry from 'sentry-expo';
 
 import Splash from './src/screens/Splash';
 import Login from './src/screens/Login';
@@ -27,6 +28,11 @@ import PendingRegistrationSteps from './src/screens/PendingRegistrationSteps';
 import ResetPassword from './src/screens/ResetPassword';
 import ResetQuestions from './src/screens/ResetQuestions';
 import ResetComplete from './src/screens/ResetComplete';
+import WithdrawStep1 from './src/screens/WithdrawStep1';
+import WithdrawStep2 from './src/screens/WithdrawStep2';
+import WithdrawalComplete from './src/screens/WithdrawalComplete';
+import ChangePassword from './src/screens/ChangePassword';
+import Support from './src/screens/Support';
 
 const AppContainer = createAppContainer(
   createStackNavigator(
@@ -54,6 +60,11 @@ const AppContainer = createAppContainer(
       ResetPassword: { screen: ResetPassword },
       ResetQuestions: { screen: ResetQuestions },
       ResetComplete: { screen: ResetComplete },
+      WithdrawStep1: { screen: WithdrawStep1 },
+      WithdrawStep2: { screen: WithdrawStep2 },
+      WithdrawalComplete: { screen: WithdrawalComplete },
+      ChangePassword: { screen: ChangePassword },
+      Support: { screen: Support },
     },
     { initialRouteName: "Splash", headerMode: 'none' }
   )
@@ -62,6 +73,11 @@ const AppContainer = createAppContainer(
 export default class App extends React.Component {
 
   componentDidMount() {
+    Sentry.init({
+      dsn: 'https://10565b8e18354b6ebd0a767b7a0e1f19@sentry.io/1546052',
+      enableInExpoDevelopment: true,
+      debug: true
+    });
     AppState.addEventListener('change', this.handleAppStateChange);
   }
 

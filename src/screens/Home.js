@@ -1,19 +1,20 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, ImageBackground, Dimensions, Animated, Easing, YellowBox, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Image, Text, AsyncStorage, Dimensions, Animated, Easing, YellowBox, TouchableOpacity, Linking } from 'react-native';
 import { Notifications } from 'expo';
 import * as Permissions from 'expo-permissions';
 import { Colors, Sizes, Endpoints } from '../util/Values';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Icon, Button } from 'react-native-elements';
 import NavigationBar from '../elements/NavigationBar';
-import { NotificationsUtil } from './src/util/NotificationsUtil';
+import { NotificationsUtil } from '../util/NotificationsUtil';
+import { MessagingUtil } from '../util/MessagingUtil';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import AnimatedNumber from '../elements/AnimatedNumber';
 import moment from 'moment';
 import { FlingGestureHandler, Directions, State } from 'react-native-gesture-handler';
-import VersionCheck from 'react-native-version-check-expo';
 import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
+import VersionCheck from 'react-native-version-check-expo';
 
 /*
 This is here because currently long timers are not purely supported on Android.
@@ -23,15 +24,18 @@ YellowBox.ignoreWarnings([
   'Setting a timer',
 ]);
 
-let {height, width} = Dimensions.get('window');
+const { height, width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 const FETCH_DELAY = 15 * 60 * 1000; //15 minutes * 60 seconds * 1000 millis
 
 const CIRCLE_ROTATION_DURATION = 6000;
+const CIRCLE_SCALE_DURATION = 200;
 
 const DEFAULT_BALANCE_ANIMATION_INTERVAL = 14;
 const DEFAULT_BALANCE_ANIMATION_DURATION = 5000;
 const DEFAULT_BALANCE_ANIMATION_STEP_SIZE = 50;
+
+const COLOR_WHITE = '#fff';
 
 export default class Home extends React.Component {
 
@@ -43,7 +47,12 @@ export default class Home extends React.Component {
       balance: 0,
       // expectedToAdd: "100.00",
       rotation: new Animated.Value(0),
-      hasMessage: true,
+      gameRotation: new Animated.Value(0),
+      circleScale: new Animated.Value(0),
+      hasMessage: false,
+      messageDetails: null,
+      hasGameModal: false,
+      gameModalDetails: null,
       loading: false,
       balanceAnimationInterval: DEFAULT_BALANCE_ANIMATION_INTERVAL,
       balanceAnimationStepSize: DEFAULT_BALANCE_ANIMATION_STEP_SIZE,
@@ -52,35 +61,62 @@ export default class Home extends React.Component {
       secondaryBalanceAnimationStarted: false,
       updateRequiredDialogVisible: false,
       updateAvailableDialogVisible: false,
+      tapScreenGameMode: false,
+      chaseArrowGameMode: false,
     };
   }
 
-  async componentWillMount() {
-    this.showInitialData();
-  }
-
   async componentDidMount() {
+    this.showInitialData();
     this.rotateCircle();
     this.checkIfUpdateNeeded();
   }
 
+  async fetchMessagesIfNeeded() {
+    let gameId = await MessagingUtil.getGameId();
+    if (gameId) {
+      let game = await MessagingUtil.getGame(gameId);
+      if (game) this.showGame(game);
+    } else {
+      let data = await MessagingUtil.fetchMessagesAndGetTop(this.state.token);
+      if (data) this.showGame(data);
+    }
+  }
+
+  async showGame(game) {
+    if (game.display.type.includes("CARD")) {
+      this.setState({
+        hasMessage: true,
+        messageDetails: game,
+      });
+    } else if (game.display.type.includes("MODAL")) {
+      this.setState({
+        hasGameModal: true,
+        gameModalDetails: game,
+      });
+    }
+  }
+
   async checkIfUpdateNeeded() {
     let localVersion = VersionCheck.getCurrentVersion();
-    // let remoteVersion = await VersionCheck.getLatestVersion();
-    // if (this.needsUpdate(localVersion, remoteVersion)) {
-    //   this.showUpdateDialog(true);
-    // }
-    // this.showUpdateDialog(false);
+    let remoteVersion = await VersionCheck.getLatestVersion();
+
+    const updateStatus = this.needsUpdate(localVersion, remoteVersion);
+    if (updateStatus == 2) {
+      this.showUpdateDialog(true);
+    } else if (updateStatus == 1) {
+      this.showUpdateDialog(false);
+    }
   }
 
   needsUpdate(localVersion, remoteVersion) {
     let localParts = localVersion.split('.');
     if (!remoteVersion) return false;
     let remoteParts = remoteVersion.split('.');
-    if (localParts[0] < remoteParts[0]) return true;
-    if (localParts[1] < remoteParts[1]) return true;
-    if (localParts[2] < remoteParts[2]) return true;
-    return false;
+    if (localParts[0] < remoteParts[0]) return 2;
+    if (localParts[1] < remoteParts[1]) return 2;
+    if (localParts[2] < remoteParts[2]) return 1;
+    return 0;
   }
 
   async showUpdateDialog(required){
@@ -99,8 +135,9 @@ export default class Home extends React.Component {
     return true;
   }
 
-  onPressUpdate = () => {
-    //TODO handle update
+  onPressUpdate = async () => {
+    let link = await VersionCheck.getStoreUrl();
+    Linking.openURL(link);
     this.onCloseDialog();
   }
 
@@ -123,6 +160,7 @@ export default class Home extends React.Component {
     LoggingUtil.logEvent("USER_ENTERED_SCREEN", {"screen_name": "Home"});
     this.animateBalance(info.balance);
     this.fetchUpdates();
+    this.fetchMessagesIfNeeded();
   }
 
   async handleNotificationsModule() {
@@ -131,7 +169,7 @@ export default class Home extends React.Component {
   }
 
   handleNotification = (notification) => {
-    NotificationsUtil.handleNotification(notification); //TODO handle the result
+    NotificationsUtil.handleNotification(this.props.navigation, notification);
   };
 
   registerForPushNotifications = async () => {
@@ -228,11 +266,12 @@ export default class Home extends React.Component {
   }
 
   rotateCircle() {
+    let rotationDuration = CIRCLE_ROTATION_DURATION;
     Animated.timing(
       this.state.rotation,
       {
         toValue: 1,
-        duration: CIRCLE_ROTATION_DURATION,
+        duration: rotationDuration,
         easing: Easing.linear,
       }
     ).start(() => {
@@ -243,13 +282,98 @@ export default class Home extends React.Component {
     });
   }
 
+  rotateGameCircle(arrowSpeedMultiplier) {
+    let rotationDuration = CIRCLE_ROTATION_DURATION / arrowSpeedMultiplier;
+    console.log(rotationDuration);
+    Animated.timing(
+      this.state.gameRotation,
+      {
+        toValue: 1,
+        duration: rotationDuration,
+        easing: Easing.linear,
+      }
+    ).start(() => {
+      if (this.state.chaseArrowGameMode) {
+        this.setState({
+          gameRotation: new Animated.Value(0),
+        });
+        this.rotateGameCircle(arrowSpeedMultiplier);
+      }
+    });
+  }
+
+  scaleCircle() {
+    Animated.timing(
+      this.state.circleScale,
+      {
+        toValue: 1,
+        duration: CIRCLE_SCALE_DURATION,
+        easing: Easing.linear,
+      }
+    ).start(() => {
+      this.setState({
+        circleScale: new Animated.Value(0),
+      });
+    });
+  }
+
   onFlingMessage(event) {
     this.setState({
       hasMessage: false,
     });
+    MessagingUtil.dismissedGame(this.state.token);
+    AsyncStorage.removeItem("gameId");
+    AsyncStorage.removeItem("currentGames");
+  }
+
+  getMessageCardButtonText(action) {
+    switch (action) {
+      case "ADD_CASH":
+      return "ADD CASH";
+
+      case "VIEW_HISTORY":
+      return "VIEW HISTORY";
+
+      default:
+      return "";
+    }
+  }
+
+  getMessageCardIcon(iconType) {
+    switch (iconType) {
+      case "BOOST_ROCKET":
+      return require('../../assets/rocket.png');
+
+      case "UNLOCKED":
+      return require('../../assets/unlocked.png');
+
+      default:
+      return require('../../assets/notification.png');
+    }
+  }
+
+  onPressModalAction = (action) => {
+    switch (action) {
+      case "ADD_CASH":
+      this.props.navigation.navigate('AddCash');
+      break;
+
+      case "VIEW_HISTORY":
+      //TODO navigate to history when available
+      break;
+
+      default:
+      break;
+    }
   }
 
   renderMessageCard() {
+    let messageDetails = this.state.messageDetails;
+    if (!messageDetails) {
+      return null;
+    }
+    let isEmphasis = messageDetails.display.titleType && messageDetails.display.titleType.includes("EMPHASIS");
+    let messageActionText = this.getMessageCardButtonText(messageDetails.actionToTake);
     return (
       <FlingGestureHandler
             direction={Directions.DOWN}
@@ -259,20 +383,33 @@ export default class Home extends React.Component {
               }
             }}>
             <View style={styles.messageCard}>
-              <View style={styles.messageCardHeader}>
-                <Image style={styles.messageCardIcon} source={require('../../assets/notification.png')}/>
-                <Text style={styles.messageCardTitle}>Watch your savings grow</Text>
+              <View style={isEmphasis ? styles.messageCardHeaderEmphasis : styles.messageCardHeader}>
+                {
+                  !isEmphasis ?
+                  <Image style={styles.messageCardIcon} source={this.getMessageCardIcon(messageDetails.display.iconType)}/>
+                  : null
+                }
+                <Text style={isEmphasis ? styles.messageCardTitleEmphasis : styles.messageCardTitle}>{messageDetails.title}</Text>
+                  {
+                    isEmphasis ?
+                    <Image style={styles.messageCardIconEmphasis} source={this.getMessageCardIcon(messageDetails.display.iconType)}/>
+                    : null
+                  }
               </View>
-              <Text style={styles.messageCardText}>Since July 2019 you have earned <Text style={styles.messageCardBold}>R40.57</Text> in interest! Keep adding cash to your Pluto account to earn more each month for nothing.</Text>
-                <View style={styles.messageCardButton}>
-                  <Text style={styles.messageCardButtonText}>SEE HISTORY</Text>
+              <Text style={styles.messageCardText}>{messageDetails.body}</Text>
+              {
+                messageActionText && messageActionText.length > 0 ?
+                <TouchableOpacity style={styles.messageCardButton} onPress={() => this.onPressModalAction(messageDetails.actionToTake)}>
+                  <Text style={styles.messageCardButtonText}>{messageActionText}</Text>
                     <Icon
                       name='chevron-right'
                       type='evilicon'
                       size={30}
                       color={Colors.PURPLE}
                     />
-                </View>
+                </TouchableOpacity>
+                : null
+              }
             </View>
         </FlingGestureHandler>
     );
@@ -362,7 +499,231 @@ export default class Home extends React.Component {
   }
 
   getFormattedValue(value) {
-    return (value / this.getDivisor(this.state.unit)).toFixed(2);
+    let result = (value / this.getDivisor(this.state.unit)).toFixed(2);
+    result = result.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","); //I don't understand how this works. It's a plain copy paste which allows comma separators
+    return result;
+  }
+
+  onPressPlayLater = () => {
+    this.setState({
+      hasGameModal: false,
+    });
+    //TODO show gameDetails.actionContext.gameParams.waitMessage maybe?
+  }
+
+  onPressStartGame = () => {
+    let game = this.state.gameModalDetails;
+    console.log(game);
+    this.setState({
+      hasGameModal: false,
+    });
+    if (game.actionContext.gameParams.gameType.includes("TAP_SCREEN")) {
+      this.setState({
+        tapScreenGameMode: true,
+        tapScreenGameTimer: game.actionContext.gameParams.timeLimitSeconds
+      });
+      this.tapScreenGameTaps = 0;
+      setTimeout(() => {this.handleTapScreenGameEnd()}, game.actionContext.gameParams.timeLimitSeconds * 1000);
+      setTimeout(() => {this.decrementTapScreenGameTimer()}, 1000);
+    } else if (game.actionContext.gameParams.gameType.includes("CHASE_ARROW")) {
+      this.setState({
+        chaseArrowGameMode: true,
+        chaseArrowGameTimer: game.actionContext.gameParams.timeLimitSeconds,
+        // "arrowFuzziness": "10%",
+        gameRotation: new Animated.Value(0),
+      });
+      this.chaseArrowGameTaps = 0;
+      let arrowSpeedMultiplier = game.actionContext.gameParams.arrowSpeedMultiplier;
+      this.rotateGameCircle(arrowSpeedMultiplier);
+      setTimeout(() => {this.handleChaseArrrowGameEnd()}, game.actionContext.gameParams.timeLimitSeconds * 1000);
+      setTimeout(() => {this.decrementChaseArrowGameTimer()}, 1000);
+    }
+  }
+
+  decrementTapScreenGameTimer = () => {
+    setTimeout(() => {this.decrementTapScreenGameTimer()}, 1000);
+    this.setState({tapScreenGameTimer: this.state.tapScreenGameTimer - 1});
+  }
+
+  handleTapScreenGameEnd = async () => {
+    this.setState({tapScreenGameMode: false});
+
+    let nextStepId = this.state.gameModalDetails.actionContext.gameParams.finishedMessage;
+    MessagingUtil.setGameId(nextStepId);
+    let nextStep = await MessagingUtil.getGame(nextStepId);
+    if (nextStep) this.showGame(nextStep);
+    MessagingUtil.sendTapGameResults(this.tapScreenGameTaps, this.state.token);
+  }
+
+  decrementChaseArrowGameTimer = () => {
+    setTimeout(() => {this.decrementChaseArrowGameTimer()}, 1000);
+    this.setState({chaseArrowGameTimer: this.state.chaseArrowGameTimer - 1});
+  }
+
+  handleChaseArrrowGameEnd = async () => {
+    this.setState({chaseArrowGameMode: false});
+
+    let nextStepId = this.state.gameModalDetails.actionContext.gameParams.finishedMessage;
+    MessagingUtil.setGameId(nextStepId);
+    let nextStep = await MessagingUtil.getGame(nextStepId);
+    if (nextStep) this.showGame(nextStep);
+    MessagingUtil.sendTapGameResults(this.chaseArrowGameTaps, this.state.token);
+  }
+
+  onPressTapScreenGame = () => {
+    this.tapScreenGameTaps = this.tapScreenGameTaps + 1;
+    this.scaleCircle();
+    this.forceUpdate();
+  }
+
+  onPressArrow = () => {
+    if (this.state.chaseArrowGameMode) {
+      this.chaseArrowGameTaps = this.chaseArrowGameTaps + 1;
+      this.scaleCircle();
+      this.forceUpdate();
+    }
+  }
+
+  onCloseGameDialog = () => {
+    this.setState({
+      hasGameModal: false,
+    });
+    MessagingUtil.dismissedGame(this.state.token);
+    AsyncStorage.removeItem("gameId");
+    AsyncStorage.removeItem("currentGames");
+  }
+
+  getGameDetailsBody(body) {
+    let taps = 0;
+    if (this.tapScreenGameTaps && this.tapScreenGameTaps > 0) taps = this.tapScreenGameTaps;
+    else if (this.chaseArrowGameTaps && this.chaseArrowGameTaps > 0) taps = this.chaseArrowGameTaps;
+    if (body.includes("#{numberUserTaps}")) {
+      body = body.replace("#{numberUserTaps}", taps);
+    }
+    return body;
+  }
+
+  onPressViewOtherBoosts = () => {
+    this.onCloseGameDialog();
+    this.props.navigation.navigate('Boosts');
+  }
+
+  renderGameDialog() {
+    let gameDetails = this.state.gameModalDetails;
+    if (!gameDetails) return null;
+
+    if (gameDetails.actionContext.gameParams) {
+      return this.renderGameStartDialog(gameDetails);
+    } else {
+      return this.renderGameEndDialog(gameDetails);
+    }
+  }
+
+  renderGameEndDialog(gameDetails) {
+    //TODO set the proper image for the image
+    return (
+      <DialogContent style={styles.gameDialog}>
+        <Text style={styles.helpTitle}>{gameDetails.title}</Text>
+        <Text style={styles.gameInfoBody}>
+          {this.getGameDetailsBody(gameDetails.body)}
+        </Text>
+        <Button
+          title="DONE"
+          titleStyle={styles.buttonTitleStyle}
+          buttonStyle={styles.buttonStyle}
+          containerStyle={styles.buttonContainerStyle}
+          onPress={this.onCloseGameDialog}
+          linearGradientProps={{
+            colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+            start: { x: 0, y: 0.5 },
+            end: { x: 1, y: 0.5 },
+          }}/>
+        <Text style={styles.gamePlayLater} onPress={this.onPressPlayLater} onPress={this.onPressViewOtherBoosts}>View other boosts</Text>
+        <TouchableOpacity style={styles.closeDialog} onPress={this.onCloseGameDialog} >
+          <Image source={require('../../assets/close.png')}/>
+        </TouchableOpacity>
+      </DialogContent>
+    );
+  }
+
+  renderGameStartDialog(gameDetails) {
+    //TODO set the proper image for gameInstructionsImage
+    return (
+      <DialogContent style={styles.gameDialog}>
+        <Text style={styles.helpTitle}>{gameDetails.title}</Text>
+        <Text style={styles.gameInfoBody}>
+          {this.getGameDetailsBody(gameDetails.body)}
+        </Text>
+        <View style={styles.gameInstructions}>
+          <View style={styles.gameInstructionsRow}>
+            <Image style={styles.gameInstructionsImage} resizeMode='contain' source={require('../../assets/clock.png')}/>
+            <Text style={styles.gameInstructionsText}>{gameDetails.actionContext.gameParams.instructionBand}</Text>
+          </View>
+        </View>
+        <Button
+          title="START GAME"
+          titleStyle={styles.buttonTitleStyle}
+          buttonStyle={styles.buttonStyle}
+          containerStyle={styles.buttonContainerStyle}
+          onPress={this.onPressStartGame}
+          linearGradientProps={{
+            colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+            start: { x: 0, y: 0.5 },
+            end: { x: 1, y: 0.5 },
+          }}/>
+        <Text style={styles.gamePlayLater} onPress={this.onPressPlayLater} onPress={this.onPressPlayLater}>Play Later</Text>
+      </DialogContent>
+    );
+  }
+
+  renderBalance() {
+    if (!this.state.initialBalanceAnimationStarted) return null;
+    return (
+      <View style={styles.balanceWrapper}>
+        <Text style={styles.currency}>{this.state.currency}</Text>
+        {
+          this.state.initialBalanceAnimationStarted && !this.state.initialBalanceAnimationFinished ?
+          <AnimatedNumber style={styles.balance}
+            initial={this.state.lastShownBalance} target={this.state.balance}
+            formatting={(value) => this.getFormattedValue(value)}
+            stepSize={this.state.balanceAnimationStepSize}
+            duration={this.state.balanceAnimationDuration}
+            onAnimationProgress={(value) => {this.onProgressBalanceAnimation(value)}}
+            onAnimationFinished={() => {this.onFinishBalanceAnimation(true)}}
+            />
+          : null
+        }
+        {
+          this.state.initialBalanceAnimationFinished && this.state.secondaryBalanceAnimationStarted ?
+          <AnimatedNumber style={styles.balance}
+            initial={this.state.lastShownBalance} target={this.state.balance}
+            formatting={(value) => this.getFormattedValue(value)}
+            stepSize={this.state.balanceAnimationStepSize}
+            duration={this.state.balanceAnimationDuration}
+            onAnimationProgress={(value) => {this.onProgressBalanceAnimation(value)}}
+            onAnimationFinished={() => {this.onFinishBalanceAnimation(false)}}
+            />
+          : null
+        }
+      </View>
+    )
+  }
+
+  renderTapCounter() {
+    let taps = 0, timer = 0;
+    if (this.state.tapScreenGameMode) {
+      taps = this.tapScreenGameTaps ? this.tapScreenGameTaps : 0;
+      timer = this.state.tapScreenGameTimer ? this.state.tapScreenGameTimer : 0;
+    } else if (this.state.chaseArrowGameMode) {
+      taps = this.chaseArrowGameTaps ? this.chaseArrowGameTaps : 0;
+      timer = this.state.chaseArrowGameTimer ? this.state.chaseArrowGameTimer : 0;
+    }
+    return (
+      <View style={styles.tapCounterWrapper}>
+        <Text style={styles.balance}>{taps}</Text>
+        <Text style={styles.timerStyle}>{timer} {timer == 1 ? " second" : " seconds"} left</Text>
+      </View>
+    )
   }
 
   render() {
@@ -370,12 +731,23 @@ export default class Home extends React.Component {
       inputRange: [0, 1],
       outputRange: ['0deg', '360deg']
     });
+    const gameCircleRotation = this.state.gameRotation.interpolate({
+      inputRange: [0, 1],
+      outputRange: ['0deg', '360deg']
+    });
+    let circleScale = 1;
+    if (this.state.tapScreenGameMode || this.state.chaseArrowGameMode) {
+      circleScale = this.state.circleScale.interpolate({
+        inputRange: [0, 1],
+        outputRange: [1, 1.04]
+      });
+    }
     return (
       <View style={styles.container}>
         <View style={styles.gradientWrapper}>
           <LinearGradient colors={[Colors.LIGHT_BLUE, Colors.PURPLE]} style={styles.gradientContainer}>
             <View style={styles.backgroundLinesWrapper}>
-              <Image style={styles.backgroundLines} source={require('../../assets/group_3.png')} resizeMode="contain"/>
+              <Image style={styles.backgroundLines} source={require('../../assets/stars.png')} resizeMode="contain"/>
             </View>
             <View style={this.state.hasMessage ? styles.headerWithMessage : styles.header}>
               {
@@ -389,39 +761,30 @@ export default class Home extends React.Component {
                 <Image style={styles.coloredCircle} source={require('../../assets/oval.png')}/>
                 {/*
                   <Animated.Image style={[styles.coloredCircle, {transform: [{rotate: circleRotation}]}]} source={require('../../assets/oval.png')}/>
+
                 */}
-                <Animated.Image style={[styles.whiteCircle, {transform: [{rotate: circleRotation}]}]} source={require('../../assets/arrow_circle.png')}/>
+                {
+                  this.state.chaseArrowGameMode ?
+                  <Animated.View style={[styles.whiteCircle, {transform: [{rotate: gameCircleRotation}, {scale: circleScale}]}]}>
+                    <Image source={require('../../assets/circle.png')} style={styles.animatedViewCircle} resizeMode="cover"/>
+                    <TouchableOpacity activeOpacity={1} style={styles.animatedViewArrow} onPress={this.onPressArrow}>
+                      <Image source={require('../../assets/arrow.png')}/>
+                    </TouchableOpacity>
+                  </Animated.View>
+                  :
+                  <Animated.View style={[styles.whiteCircle, {transform: [{rotate: circleRotation}, {scale: circleScale}]}]}>
+                    <Image source={require('../../assets/circle.png')} style={styles.animatedViewCircle} resizeMode="cover"/>
+                    <View style={styles.animatedViewArrow}>
+                      <Image source={require('../../assets/arrow.png')}/>
+                    </View>
+                  </Animated.View>
+                }
               </View>
               {
-                this.state.initialBalanceAnimationStarted ?
-                <View style={styles.balanceWrapper}>
-                  <Text style={styles.currency}>{this.state.currency}</Text>
-                  {
-                    this.state.initialBalanceAnimationStarted && !this.state.initialBalanceAnimationFinished ?
-                    <AnimatedNumber style={styles.balance}
-                      initial={this.state.lastShownBalance} target={this.state.balance}
-                      formatting={(value) => this.getFormattedValue(value)}
-                      stepSize={this.state.balanceAnimationStepSize}
-                      duration={this.state.balanceAnimationDuration}
-                      onAnimationProgress={(value) => {this.onProgressBalanceAnimation(value)}}
-                      onAnimationFinished={() => {this.onFinishBalanceAnimation(true)}}
-                      />
-                    : null
-                  }
-                  {
-                    this.state.initialBalanceAnimationFinished && this.state.secondaryBalanceAnimationStarted ?
-                    <AnimatedNumber style={styles.balance}
-                      initial={this.state.lastShownBalance} target={this.state.balance}
-                      formatting={(value) => this.getFormattedValue(value)}
-                      stepSize={this.state.balanceAnimationStepSize}
-                      duration={this.state.balanceAnimationDuration}
-                      onAnimationProgress={(value) => {this.onProgressBalanceAnimation(value)}}
-                      onAnimationFinished={() => {this.onFinishBalanceAnimation(false)}}
-                      />
-                    : null
-                  }
-                </View>
-                : null
+                this.state.tapScreenGameMode || this.state.chaseArrowGameMode ?
+                this.renderTapCounter()
+                :
+                this.renderBalance()
               }
               {/*<View style={styles.endOfMonthBalanceWrapper}>
                 <Text style={styles.endOfMonthBalance}>+R{this.state.expectedToAdd}</Text>
@@ -444,17 +807,30 @@ export default class Home extends React.Component {
         </View>
 
         <Dialog
+          visible={this.state.hasGameModal}
+          dialogStyle={styles.dialogWrapper}
+          dialogAnimation={new SlideAnimation({
+            slideFrom: 'top',
+          })}
+          onHardwareBackPress={this.onCloseGameDialog}
+        >
+          {
+            this.renderGameDialog()
+          }
+        </Dialog>
+
+
+        <Dialog
           visible={this.state.updateRequiredDialogVisible}
           dialogStyle={styles.dialogWrapper}
           dialogAnimation={new SlideAnimation({
             slideFrom: 'bottom',
           })}
-          onTouchOutside={this.onCloseDialog}
         >
           <DialogContent style={styles.helpDialog}>
             <Text style={styles.helpTitle}>Update Required</Text>
             <Text style={styles.helpContent}>
-              We've made some big changes to the app,(more than usual). Please update to activate the new features. This version will no longer be supported in the future.
+              We&apos;ve made some big changes to the app,(more than usual). Please update to activate the new features. This version will no longer be supported in the future.
             </Text>
             <View style={styles.dialogBottomRight}>
               <Button
@@ -484,7 +860,7 @@ export default class Home extends React.Component {
           <DialogContent style={styles.helpDialog}>
             <Text style={styles.helpTitle}>New Features!</Text>
             <Text style={styles.helpContent}>
-              We've made some changes to the app. Please update to activate the new features.
+              We&apos;ve made some changes to the app. Please update to activate the new features.
             </Text>
             {/*
             <Text style={styles.helpContent}>
@@ -532,6 +908,13 @@ export default class Home extends React.Component {
             </TouchableOpacity>
           </DialogContent>
         </Dialog>
+
+        {
+          this.state.tapScreenGameMode ?
+          <TouchableOpacity style={styles.tapScreenGameWrapper} onPress={this.onPressTapScreenGame}>
+          </TouchableOpacity>
+          : null
+        }
       </View>
     );
   }
@@ -540,6 +923,13 @@ export default class Home extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  tapScreenGameWrapper: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
   gradientWrapper: {
     flex: 1,
@@ -576,12 +966,12 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   helloText: {
-    color: 'white',
+    color: COLOR_WHITE,
     fontSize: 28,
     fontFamily: 'poppins-regular',
   },
   helloTextWithMessage: {
-    color: 'white',
+    color: COLOR_WHITE,
     fontSize: 24,
     fontFamily: 'poppins-regular',
   },
@@ -602,9 +992,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   whiteCircle: {
-    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
     width: width,
     height: width,
+  },
+  animatedViewArrow: {
+    position: 'absolute',
+    left: '10%',
+    top: '71.8%',
+  },
+  animatedViewCircle: {
+    position: 'absolute',
+    width: width * 1.1,
+    height: width * 1.1,
   },
   coloredCircle: {
     position: 'absolute',
@@ -614,53 +1015,84 @@ const styles = StyleSheet.create({
   balanceWrapper: {
     flexDirection: 'row',
   },
+  tapCounterWrapper: {
+    alignItems: 'center',
+  },
   balance: {
-    color: 'white',
+    color: COLOR_WHITE,
     fontSize: 13 * FONT_UNIT,
     fontFamily: 'poppins-semibold',
     lineHeight: 70,
   },
+  timerStyle: {
+    color: COLOR_WHITE,
+    fontSize: 5 * FONT_UNIT,
+    fontFamily: 'poppins-semibold',
+    lineHeight: 50,
+  },
   currency: {
-    color: 'white',
+    color: COLOR_WHITE,
     fontSize: 6.5 * FONT_UNIT,
     fontFamily: 'poppins-semibold',
     textAlignVertical: 'top',
     marginRight: 2,
     lineHeight: 40,
   },
-  endOfMonthBalanceWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 25,
-    marginLeft: 10,
-    marginBottom: -10,
-  },
-  endOfMonthBalance: {
-    color: 'white',
-    fontSize: 7.5 * FONT_UNIT,
-    fontFamily: 'poppins-semibold',
-  },
-  endOfMonthDesc: {
-    color: Colors.GRAY,
-    fontSize: 5 * FONT_UNIT,
-    fontFamily: 'poppins-regular',
-  },
+  // endOfMonthBalanceWrapper: {
+  //   flexDirection: 'row',
+  //   alignItems: 'center',
+  //   marginTop: 25,
+  //   marginLeft: 10,
+  //   marginBottom: -10,
+  // },
+  // endOfMonthBalance: {
+  //   color: COLOR_WHITE,
+  //   fontSize: 7.5 * FONT_UNIT,
+  //   fontFamily: 'poppins-semibold',
+  // },
+  // endOfMonthDesc: {
+  //   color: Colors.GRAY,
+  //   fontSize: 5 * FONT_UNIT,
+  //   fontFamily: 'poppins-regular',
+  // },
   messageCard: {
     minHeight: height * 0.23,
     width: '95%',
-    backgroundColor: 'white',
+    backgroundColor: COLOR_WHITE,
     marginBottom: - (Sizes.NAVIGATION_BAR_HEIGHT - Sizes.VISIBLE_NAVIGATION_BAR_HEIGHT),
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    padding: 15,
+  },
+  messageCardHeaderEmphasis: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+    backgroundColor: Colors.LIGHT_BLUE,
+    borderTopLeftRadius: 5,
+    borderTopRightRadius: 5,
   },
   messageCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
+    padding: 15,
   },
   messageCardIcon: {
-    marginRight: 10,
+    marginHorizontal: 10,
+  },
+  messageCardIconEmphasis: {
+    marginHorizontal: 10,
+    position: 'absolute',
+    top: -10,
+    right: -10,
+  },
+  messageCardTitleEmphasis: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 3.7 * FONT_UNIT,
+    color: COLOR_WHITE,
+    paddingVertical: 10,
+    marginLeft: 10,
   },
   messageCardTitle: {
     fontFamily: 'poppins-semibold',
@@ -669,6 +1101,8 @@ const styles = StyleSheet.create({
   messageCardText: {
     fontFamily: 'poppins-regular',
     fontSize: 3.2 * FONT_UNIT,
+    paddingHorizontal: 15,
+    paddingTop: 5,
   },
   messageCardBold: {
     fontFamily: 'poppins-semibold',
@@ -677,6 +1111,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
+    paddingVertical: 10,
   },
   messageCardButtonText: {
     fontFamily: 'poppins-semibold',
@@ -688,10 +1123,58 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  gameDialog: {
+    width: '90%',
+    minHeight: 380,
+    backgroundColor: COLOR_WHITE,
+    borderRadius: 10,
+    justifyContent: 'space-around',
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    paddingTop: 10,
+  },
+  gameInfoBody: {
+    color: Colors.MEDIUM_GRAY,
+    fontFamily: 'poppins-regular',
+    fontSize: 15,
+    lineHeight: 20,
+    textAlign: 'center',
+  },
+  gameInstructions: {
+    backgroundColor: Colors.PURPLE_TRANSPARENT,
+    borderRadius: 20,
+    minHeight: 30,
+    alignItems: 'center',
+    width: '100%',
+    marginVertical: 10,
+  },
+  gameInstructionsRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 10,
+  },
+  gameInstructionsImage: {
+    flex: 1,
+  },
+  gameInstructionsText: {
+    flex: 5,
+    color: Colors.PURPLE,
+    fontFamily: 'poppins-semibold',
+    fontSize: 13,
+    textAlignVertical: 'center',
+    marginLeft: 5,
+  },
+  gamePlayLater: {
+    marginTop: -10,
+    color: Colors.PURPLE,
+    fontFamily: 'poppins-semibold',
+    fontSize: 16,
+    textAlign: 'center',
+    textDecorationLine: 'underline',
+  },
   helpDialog: {
     width: '90%',
     minHeight: 340,
-    backgroundColor: 'white',
+    backgroundColor: COLOR_WHITE,
     borderRadius: 10,
     justifyContent: 'space-around',
     paddingHorizontal: 20,
@@ -732,7 +1215,7 @@ const styles = StyleSheet.create({
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
     fontSize: 19,
-    color: 'white',
+    color: COLOR_WHITE,
     marginHorizontal: 15,
   },
   buttonStyle: {

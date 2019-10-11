@@ -1,6 +1,7 @@
 export const Colors = {
   BLACK : "#000000",
   PURPLE : "#5353A1",
+  PURPLE_TRANSPARENT : "#5353A122",
   LIGHT_BLUE : "#35BAD5",
   GRAY : "#D8D8D8",
   DARK_GRAY : "#4D565B",
@@ -10,6 +11,7 @@ export const Colors = {
   RED : "#CE0D25",
   BACKGROUND_GRAY : "#F4F6F8",
   TRANSPARENT_BACKGROUND : "#212C3299",
+  WHITE : '#FFFFFF'
 };
 
 export const Sizes = {

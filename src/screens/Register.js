@@ -1,14 +1,10 @@
 import React from 'react';
-import * as Font from 'expo-font';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
-import { NavigationUtil } from '../util/NavigationUtil';
+import { StyleSheet, View, Image, Text, TouchableOpacity, ScrollView, KeyboardAvoidingView, Keyboard } from 'react-native';
 import { LoggingUtil } from '../util/LoggingUtil';
+import { ValidationUtil } from '../util/ValidationUtil';
 import { Button, Icon, Input } from 'react-native-elements';
 import { Colors, Endpoints } from '../util/Values';
 import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
-var PhoneNumber = require( 'awesome-phonenumber' );
-
-const emailRegex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 
 export default class Register extends React.Component {
 
@@ -18,18 +14,19 @@ export default class Register extends React.Component {
       loading: false,
       firstName: "test",
       lastName: "test",
-      idNumber: "000000056",
-      userId: "+359886405663",
+      idNumber: "0000000000001",
+      userId: "testemail01@test.tst",
       referralCode: "",
       errors: {
         firstName: false,
         lastName: false,
         idNumber: false,
         userId: false,
+        phoneEmailValidation: false,
         general: false,
       },
-      generalErrorText: "There is a problem with your request",
-      defaultGeneralErrorText: "There is a problem with your request",
+      generalErrorText: "Sorry, there's an error with one or more input above, please check and resubmit",
+      defaultGeneralErrorText: "Sorry, there's an error with one or more input above, please check and resubmit",
       dialogVisible: false,
     };
   }
@@ -88,9 +85,12 @@ export default class Register extends React.Component {
     this.props.navigation.navigate('Terms');
   }
 
+  // note : for some strange deep RN weirdness, this has to be async
   validateInput = async () => {
     let hasErrors = false;
     let errors = Object.assign({}, this.state.errors);
+
+    // check for non-null
     if (this.state.firstName.length < 1) {
       hasErrors = true;
       errors.firstName = true;
@@ -103,38 +103,46 @@ export default class Register extends React.Component {
       hasErrors = true;
       errors.idNumber = true;
     }
-    if (this.state.userId.length > 0) {
-      if (this.state.userId.includes("@")) {
-        if (!emailRegex.test(this.state.userId.toLowerCase())) {
-          hasErrors = true;
-          errors.email = true;
-        }
-      // } else {
-      //   let phoneInput = this.state.userId;
-      //   var number = new PhoneNumber(phoneInput);
-      //   if (!number.isValid()) {
-      //     hasErrors = true;
-      //     errors.phone = true;
-      //   }
+
+    // check for phone email is non null & is valid
+    if (this.state.userId.length < 1) {
+      hasErrors = true;
+      errors.phoneEmailValidation = true;
+    } else {
+      if (!ValidationUtil.isValidEmailPhone(this.state.userId)) {
+        hasErrors = true;
+        errors.phoneEmailValidation = true;
       }
     }
+
+    // since SA ID numbers are easy to check for basic validity, do so
+    if (!ValidationUtil.isValidId(this.state.idNumber)) {
+      hasErrors = true;
+      errors.idNumber = true;
+    }
+
     if (hasErrors) {
       await this.setState({
         errors: errors,
       });
       return false;
     }
+
     return true;
   }
 
   onPressRegister = async () => {
+    Keyboard.dismiss();
     if (this.state.loading) return;
     this.setState({loading: true});
+
+    this.clearError(); // so prior ones are no longer around
     let validation = await this.validateInput();
     if (!validation) {
       this.showError();
       return;
     }
+
     try {
       let result = await fetch(Endpoints.AUTH + 'register/profile', {
         headers: {
@@ -170,19 +178,29 @@ export default class Register extends React.Component {
         let resultJson = await result.json();
         LoggingUtil.logEvent("USER_PROFILE_REGISTER_FAILED", {"reason": resultJson.errorField});
         let errors = Object.assign({}, this.state.errors);
-        if (resultJson.errorField.includes("NATIONAL_ID")) {
-          this.setState({
-            dialogVisible: true,
-          });
-          errors.idNumber = true;
+        if (!resultJson.conflicts) {
+          throw null;
         }
-        if (resultJson.errorField.includes("EMAIL")) {
-          errors.userId = true;
+        for (let conflict of resultJson.conflicts) {
+          if (conflict.errorField.includes("NATIONAL_ID")) {
+            this.setState({
+              dialogVisible: true,
+            });
+            errors.idNumber = conflict.messageToUser;
+          }
+          if (conflict.errorField.includes("EMAIL_ADDRESS")) {
+            errors.userId = true;
+            errors.email = conflict.messageToUser;
+          }
+          if (conflict.errorField.includes("PHONE_NUMBER")) {
+            errors.userId = true;
+            errors.phone = conflict.messageToUser;
+          }
         }
         this.setState({
+          loading: false,
           errors: errors,
         });
-        throw resultJson.messageToUser;
       }
     } catch (error) {
       console.log("error!", error);
@@ -198,6 +216,12 @@ export default class Register extends React.Component {
       errors: errors,
       generalErrorText: errorText ? errorText : this.state.defaultGeneralErrorText,
     });
+  }
+
+  clearError() {
+    let errors = Object.assign({}, this.state.errors);
+    Object.keys(errors).forEach((key) => errors[key] = false);
+    this.setState({ errors });
   }
 
   onHideDialog = () => {
@@ -236,8 +260,8 @@ export default class Register extends React.Component {
           </TouchableOpacity>
         </View>
         <View style={styles.contentWrapper}>
-          <Text style={styles.title}>Let’s create your Jupiter account</Text>
           <ScrollView style={styles.scrollView} contentContainerStyle={styles.mainContent}>
+            <Text style={styles.title}>Let’s create your Jupiter account</Text>
             <View style={styles.profileField}>
               <Text style={styles.profileFieldTitle}>First Name*</Text>
                 <Input
@@ -282,7 +306,7 @@ export default class Register extends React.Component {
                 />
                 {
                   this.state.errors && this.state.errors.idNumber ?
-                  <Text style={styles.errorMessage}>Please enter a valid ID number</Text>
+                  <Text style={styles.errorMessage}>{this.state.errors.idNumber === true ? "Please enter a valid ID number" : this.state.errors.idNumber}</Text>
                   : null
                 }
             </View>
@@ -297,25 +321,30 @@ export default class Register extends React.Component {
                   containerStyle={styles.containerStyle}
                 />
                 {
+                  this.state.errors && this.state.errors.phoneEmailValidation ?
+                  <Text style={styles.errorMessage}>Please enter a valid email address or cellphone number</Text>
+                  : null
+                }
+                {
                   this.state.errors && this.state.errors.email ?
-                  <Text style={styles.errorMessage}>Please enter a valid email address</Text>
+                  <Text style={styles.errorMessage}>{this.state.errors.email === true ? "Please enter a valid email address" : this.state.errors.email}</Text>
                   : null
                 }
                 {
                   this.state.errors && this.state.errors.phone ?
-                  <Text style={styles.errorMessage}>Please enter a valid phone number (e.g. +27123456)</Text>
+                  <Text style={styles.errorMessage}>{this.state.errors.phone === true ? "Please enter a valid cellphone numebr" : this.state.errors.phone}</Text>
                   : null
                 }
             </View>
+            <Text style={styles.disclaimer}>Continuing means you’ve read and agreed to Jupiter’s{" "}
+              <Text style={styles.disclaimerButton} onPress={this.onPressTerms}>T’C & C’s.</Text>
+            </Text>
           </ScrollView>
           {
             this.state.errors && this.state.errors.general ?
             <Text style={styles.errorMessage}>{this.state.generalErrorText}</Text>
             : null
           }
-          <Text style={styles.disclaimer}>Continuing means you’ve read and agreed to Jupiter’s{" "}
-            <Text style={styles.disclaimerButton} onPress={this.onPressTerms}>T’C & C’s.</Text>
-          </Text>
           <Button
             title="CONTINUE"
             loading={this.state.loading}
@@ -389,33 +418,29 @@ const styles = StyleSheet.create({
   },
   contentWrapper: {
     flex: 1,
-    backgroundColor: Colors.BACKGROUND_GRAY,
+    backgroundColor: Colors.WHITE,
     width: '100%',
     alignItems: 'center',
+    marginBottom: 15,
   },
   header: {
     width: '100%',
     height: 50,
-    backgroundColor: 'white',
+    backgroundColor: Colors.WHITE,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 5,
-  },
-  headerTitle: {
-    marginLeft: -5,
-    fontFamily: 'poppins-semibold',
-    fontSize: 22,
   },
   title: {
     fontFamily: 'poppins-semibold',
     fontSize: 27,
     color: Colors.DARK_GRAY,
-    marginLeft: 15,
+    marginBottom: 15,
   },
   mainContent: {
     width: '100%',
     justifyContent: 'space-around',
-    backgroundColor: Colors.BACKGROUND_GRAY,
+    backgroundColor: Colors.WHITE,
   },
   scrollView: {
     flex: 1,
@@ -426,7 +451,7 @@ const styles = StyleSheet.create({
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
     fontSize: 19,
-    color: 'white',
+    color: Colors.WHITE,
   },
   buttonStyle: {
     borderRadius: 10,
@@ -442,7 +467,7 @@ const styles = StyleSheet.create({
   profileField: {
     flex: 1,
     justifyContent: 'center',
-    marginBottom: 10,
+    marginBottom: 5,
   },
   profileFieldTitle: {
     fontFamily: 'poppins-semibold',
@@ -464,7 +489,7 @@ const styles = StyleSheet.create({
   containerStyle: {
     borderWidth: 1,
     borderRadius: 5,
-    backgroundColor: 'white',
+    backgroundColor: Colors.WHITE,
     borderColor: Colors.GRAY,
     marginBottom: 20,
     minHeight: 50,
@@ -477,6 +502,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: -15, //this is valid because of the exact alignment of other elements - do not reuse in other components
     marginBottom: 20,
+    width: '90%',
   },
   redText: {
     color: Colors.RED,
@@ -530,11 +556,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 10,
     right: 10,
-  },
-  buttonTitleStyle: {
-    fontFamily: 'poppins-semibold',
-    fontSize: 17,
-    color: 'white',
   },
   buttonStyle: {
     borderRadius: 10,

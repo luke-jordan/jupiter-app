@@ -1,12 +1,9 @@
 import React from 'react';
-import * as Font from 'expo-font';
-import { StyleSheet, View, Image, Text, AsyncStorage, Dimensions } from 'react-native';
-import { NavigationUtil } from '../util/NavigationUtil';
+import { StyleSheet, View, Image, Text, Dimensions } from 'react-native';
 import { LoggingUtil } from '../util/LoggingUtil';
-import { Endpoints } from '../util/Values';
 import NavigationBar from '../elements/NavigationBar';
 
-let {height, width} = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
 export default class Boosts extends React.Component {
@@ -19,7 +16,7 @@ export default class Boosts extends React.Component {
   }
 
   async componentDidMount() {
-
+    LoggingUtil.logEvent('USER_ENTERED_BOOST_LIST');
   }
 
   render() {

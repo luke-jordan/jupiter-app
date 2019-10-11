@@ -1,12 +1,14 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Linking, Clipboard, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Image, Text, TouchableOpacity, Linking, Clipboard, ActivityIndicator, AppState, ImageBackground, Animated, Easing } from 'react-native';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Endpoints, Colors } from '../util/Values';
-import { Button, Icon, Input } from 'react-native-elements';
+import { Button } from 'react-native-elements';
 import { LinearGradient } from 'expo-linear-gradient';
-import Toast, {DURATION} from 'react-native-easy-toast';
+import Toast from 'react-native-easy-toast';
 import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
+
+const HOURGLASS_ROTATION_DURATION = 10000;
 
 export default class CheckingForPayment extends React.Component {
 
@@ -19,10 +21,13 @@ export default class CheckingForPayment extends React.Component {
       isOnboarding: false,
       loading: false,
       checkingForPayment: false,
+      rotation: new Animated.Value(0),
     };
   }
 
   async componentDidMount() {
+    this.rotateHourglass();
+    LoggingUtil.logEvent('USER_ENTERED_CHECKING_FOR_PAYMENT');
     let params = this.props.navigation.state.params;
     if (params) {
       this.setState({
@@ -33,6 +38,23 @@ export default class CheckingForPayment extends React.Component {
         amountAdded: params.amountAdded,
       });
     }
+  }
+
+  async rotateHourglass() {
+    let rotationDuration = HOURGLASS_ROTATION_DURATION;
+    Animated.timing(
+      this.state.rotation,
+      {
+        toValue: 1,
+        duration: rotationDuration,
+        easing: Easing.linear,
+      }
+    ).start(() => {
+      this.setState({
+        rotation: new Animated.Value(0),
+      });
+      this.rotateHourglass();
+    });
   }
 
   onPressCopy = () => {
@@ -96,11 +118,17 @@ export default class CheckingForPayment extends React.Component {
   }
 
   render() {
+    const hourglassRotation = this.state.rotation.interpolate({
+      inputRange: [0, 1],
+      outputRange: ['0deg', '360deg']
+    });
     return (
       <View style={styles.container}>
         <View style={styles.mainContent}>
           <View style={styles.section}>
-            <Image style={styles.clock} source={require('../../assets/clock.png')}/>
+            <ImageBackground style={styles.hourglassBackground} source={require('../../assets/hourglass_path.png')}>
+              <Animated.Image style={[styles.hourglass, {transform: [{rotate: hourglassRotation}]}]} source={require('../../assets/hourglass.png')}/>
+            </ImageBackground>
             <Text style={styles.title}>Checking for payment</Text>
             <Text style={styles.description}>Sorry we seem to be having some trouble finding your payment.</Text>
           </View>
@@ -174,8 +202,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  clock: {
-
+  hourglass: {
+    marginTop: 10,
+  },
+  hourglassBackground: {
+    width: 120,
+    height: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
     fontFamily: 'poppins-semibold',
@@ -208,12 +242,12 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: 'poppins-semibold',
     fontSize: 14,
-    color: 'white',
+    color: Colors.WHITE,
   },
   copyIcon: {
     width: 22,
     height: 22,
-    tintColor: 'white',
+    tintColor: Colors.WHITE,
     alignSelf: 'flex-end',
   },
   orView: {
@@ -241,7 +275,7 @@ const styles = StyleSheet.create({
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
     fontSize: 17,
-    color: 'white',
+    color: Colors.WHITE,
   },
   buttonStyle: {
     borderRadius: 10,

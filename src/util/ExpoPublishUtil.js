@@ -1,3 +1,6 @@
+import Expo from 'expo';
+import { Platform } from 'react-native';
+
 let isReloading = false;
 export async function reloadIfUpdateAvailable () {
   const {id,sdkVersion,revisionId} = Expo.Constants.manifest;

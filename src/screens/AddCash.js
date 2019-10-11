@@ -1,7 +1,9 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, ScrollView } from 'react-native';
+import { StyleSheet, View, Text, AsyncStorage, TouchableOpacity, ScrollView } from 'react-native';
+import { NavigationUtil } from '../util/NavigationUtil';
 import { Colors, Endpoints } from '../util/Values';
 import { Icon, Input, Button } from 'react-native-elements';
+import { LoggingUtil } from '../util/LoggingUtil';
 
 export default class AddCash extends React.Component {
 
@@ -219,14 +221,14 @@ const styles = StyleSheet.create({
   },
   headerWrapper: {
     width: '100%',
-    backgroundColor: 'white',
+    backgroundColor: Colors.WHITE,
     alignItems: 'center',
     paddingHorizontal: 5,
   },
   header: {
     width: '100%',
     height: 50,
-    backgroundColor: 'white',
+    backgroundColor: Colors.WHITE,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 5,
@@ -255,7 +257,7 @@ const styles = StyleSheet.create({
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
     fontSize: 17,
-    color: 'white',
+    color: Colors.WHITE,
   },
   buttonStyle: {
     borderRadius: 10,
@@ -292,7 +294,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     width: '90%',
     height: 70,
-    backgroundColor: 'white',
+    backgroundColor: Colors.WHITE,
     borderWidth: 1,
     borderColor: Colors.PURPLE,
     borderRadius: 20,
@@ -310,7 +312,7 @@ const styles = StyleSheet.create({
   },
   currencyLabel: {
     fontFamily: 'poppins-regular',
-    color: 'white',
+    color: Colors.WHITE,
     fontSize: 24,
   },
   inputContainerStyle: {

@@ -1,12 +1,10 @@
 import React from 'react';
-import * as Font from 'expo-font';
-import { StyleSheet, View, Image, Text, AsyncStorage, Dimensions, TouchableOpacity } from 'react-native';
-import { NavigationUtil } from '../util/NavigationUtil';
+import { StyleSheet, View, Image, Text, Dimensions, TouchableOpacity } from 'react-native';
 import { LoggingUtil } from '../util/LoggingUtil';
-import { Endpoints, Colors } from '../util/Values';
-import { Button, Icon } from 'react-native-elements';
+import { Colors } from '../util/Values';
+import { Icon } from 'react-native-elements';
 
-let {height, width} = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
 export default class ThankYou extends React.Component {
@@ -19,7 +17,7 @@ export default class ThankYou extends React.Component {
   }
 
   async componentDidMount() {
-
+    LoggingUtil.logEvent('USER_FINISHED_ADDING_NAME_LIST');
   }
 
   onPressIntro = () => {

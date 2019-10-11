@@ -1,11 +1,11 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Dimensions } from 'react-native';
+import { StyleSheet, View, Image, Text, Dimensions } from 'react-native';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
-import { Endpoints, Colors } from '../util/Values';
-import { Button, Icon, Input } from 'react-native-elements';
+import { Colors } from '../util/Values';
+import { Button } from 'react-native-elements';
 
-let {height, width} = Dimensions.get('window');
+let { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
 export default class ResetComplete extends React.Component {
@@ -18,7 +18,7 @@ export default class ResetComplete extends React.Component {
   }
 
   async componentDidMount() {
-
+    LoggingUtil.logEvent('USER_FINISHED_PWORD_RESET');
   }
 
   onPressLogin = () => {
@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
     fontFamily: 'poppins-semibold',
     fontSize: 17,
     paddingHorizontal: 30,
-    color: 'white',
+    color: Colors.WHITE,
   },
   buttonStyle: {
     borderRadius: 10,

@@ -1,6 +1,5 @@
 import React from 'react';
-import * as Font from 'expo-font';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { StyleSheet, View, Image, Text, TouchableOpacity, ScrollView, KeyboardAvoidingView, ActivityIndicator } from 'react-native';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Button, Icon, Input } from 'react-native-elements';
@@ -23,6 +22,10 @@ export default class SetPassword extends React.Component {
       },
       dialogVisible: false,
       generatedPassword: "",
+      passwordErrorMessage: "Please enter a valid password",
+      defaultPasswordErrorMessage: "Please enter a valid password",
+      generalErrorText: "There is a problem with your request",
+      checkingForCompletion: false,
     };
   }
 
@@ -80,12 +83,13 @@ export default class SetPassword extends React.Component {
   validateInput = async () => {
     let hasErrors = false;
     let errors = Object.assign({}, this.state.errors);
-    if (this.state.password.length < 8) {
+    // if (this.state.password.length < 8) {
+    //   hasErrors = true;
+    //   errors.password = true;
+    // }
+    if (this.state.password != this.state.passwordConfirm) {
       hasErrors = true;
-      errors.password = true;
-    }
-    if (this.state.passwordConfirm.length < 8 || this.state.password != this.state.passwordConfirm) {
-      hasErrors = true;
+      errors.password = false;
       errors.passwordConfirm = true;
     }
     if (hasErrors) {
@@ -99,7 +103,10 @@ export default class SetPassword extends React.Component {
 
   onPressContinue = async () => {
     if (this.state.loading) return;
-    this.setState({loading: true});
+    this.setState({
+      checkingForCompletion: true,
+      loading: true,
+    });
     let validation = await this.validateInput();
     if (!validation) {
       this.showError();
@@ -114,7 +121,7 @@ export default class SetPassword extends React.Component {
 
   handleResetPassword = async () => {
     try {
-      let result = await fetch(Endpoints.AUTH + 'password/set', {
+      let result = await fetch(Endpoints.AUTH + 'password/reset/complete', {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
@@ -126,18 +133,13 @@ export default class SetPassword extends React.Component {
         }),
       });
       if (result.ok) {
-        let resultJson = await result.json();
-        this.setState({loading: false});
-        if (resultJson.result.includes("SUCCESS")) {
-        //   LoggingUtil.logEvent("USER_PROFILE_PASSWORD_SUCCEEDED"); //TODO we should probably log another event here
-          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'ResetComplete');
-        } else {
-        //   LoggingUtil.logEvent("USER_PROFILE_PASSWORD_FAILED", {"reason" : "Result didn't include SUCCESS"}); //TODO we should probably log another event here
-          this.showError();
-        }
+        this.setState({
+          loading: false,
+          checkingForCompletion: false,
+        });
+        NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'ResetComplete');
       } else {
         let resultText = await result.text();
-        // LoggingUtil.logEvent("USER_PROFILE_PASSWORD_FAILED", {"reason" : resultText}); //TODO we should probably log another event here
         throw result;
       }
     } catch (error) {
@@ -164,7 +166,10 @@ export default class SetPassword extends React.Component {
       });
       if (result.ok) {
         let resultJson = await result.json();
-        this.setState({loading: false});
+        this.setState({
+          loading: false,
+          checkingForCompletion: false,
+        });
         if (resultJson.result.includes("SUCCESS")) {
           LoggingUtil.logEvent("USER_PROFILE_PASSWORD_SUCCEEDED");
           this.props.navigation.navigate("AddCash", {
@@ -174,28 +179,39 @@ export default class SetPassword extends React.Component {
             accountId: resultJson.accountId[0],
           });
         } else {
-          LoggingUtil.logEvent("USER_PROFILE_PASSWORD_FAILED", {"reason" : "Result didn't include SUCCESS"});
-          this.showError();
+          console.log(resultJson);
+          LoggingUtil.logEvent("USER_PROFILE_PASSWORD_FAILED", {"reason": resultJson.message});
+          this.showError(resultJson.message);
         }
       } else {
-        let resultText = await result.text();
-        LoggingUtil.logEvent("USER_PROFILE_PASSWORD_FAILED", {"reason" : resultText});
-        throw result;
+        let resultJson = await result.json();
+        console.log(resultJson);
+        LoggingUtil.logEvent("USER_PROFILE_PASSWORD_FAILED", {"reason" : resultJson.errors.toString()});
+        let responseErrors = resultJson.errors;
+        responseErrors.unshift("Your password must:");
+        let errorsString = responseErrors.join("\n- ");
+        this.showError(errorsString);
       }
     } catch (error) {
       console.log("error!", error);
-      this.showError();
+      this.showError(error);
     }
   }
 
-  showError() {
+  showError(errorText) {
     let errors = Object.assign({}, this.state.errors);
     errors.general = true;
+    if (errorText) {
+      errors.password = true;
+    }
     this.setState({
+      checkingForCompletion: false,
       loading: false,
       errors: errors,
+      passwordErrorMessage: errorText ? errorText : this.state.defaultPasswordErrorMessage,
     });
   }
+
 
   onPressGeneratePassword = async () => {
     if (this.state.generatePasswordLoading) return;
@@ -280,7 +296,7 @@ export default class SetPassword extends React.Component {
                 />
                 {
                   this.state.errors && this.state.errors.password ?
-                  <Text style={styles.errorMessage}>Please enter a valid password</Text>
+                  <Text style={styles.errorMessage}>{this.state.passwordErrorMessage}</Text>
                   : null
                 }
             </View>
@@ -297,14 +313,14 @@ export default class SetPassword extends React.Component {
                 />
                 {
                   this.state.errors && this.state.errors.passwordConfirm ?
-                  <Text style={styles.errorMessage}>Passwords don't match</Text>
+                  <Text style={styles.errorMessage}>Passwords don&apos;t match</Text>
                   : null
                 }
             </View>
           </ScrollView>
           {
             this.state.errors && this.state.errors.general ?
-            <Text style={styles.errorMessage}>There is a problem with your request</Text>
+            <Text style={styles.errorMessage}>{this.state.generalErrorText}</Text>
             : null
           }
           <Text style={styles.generatePassword} onPress={this.onPressGeneratePassword}>Help me generate a password</Text>
@@ -356,6 +372,22 @@ export default class SetPassword extends React.Component {
             </TouchableOpacity>
           </DialogContent>
         </Dialog>
+
+        <Dialog
+          visible={this.state.checkingForCompletion}
+          dialogStyle={styles.dialogStyle}
+          dialogAnimation={new SlideAnimation({
+            slideFrom: 'bottom',
+          })}
+          onTouchOutside={() => {}}
+          onHardwareBackPress={() => {this.setState({checkingForCompletion: false}); return true;}}
+        >
+          <DialogContent style={styles.checkingDialogWrapper}>
+            <ActivityIndicator size="large" color={Colors.PURPLE} />
+            <Text style={styles.checkingDialogText}>{this.state.isReset ? "Resetting your password..." : "We are creating your account..."}</Text>
+          </DialogContent>
+        </Dialog>
+
       </KeyboardAvoidingView>
     );
   }
@@ -374,7 +406,7 @@ const styles = StyleSheet.create({
   header: {
     width: '100%',
     minHeight: 50,
-    backgroundColor: 'white',
+    backgroundColor: Colors.WHITE,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 5,
@@ -414,7 +446,7 @@ const styles = StyleSheet.create({
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
     fontSize: 19,
-    color: 'white',
+    color: Colors.WHITE,
   },
   buttonStyle: {
     borderRadius: 10,
@@ -452,7 +484,7 @@ const styles = StyleSheet.create({
   containerStyle: {
     borderWidth: 1,
     borderRadius: 5,
-    backgroundColor: 'white',
+    backgroundColor: Colors.WHITE,
     borderColor: Colors.GRAY,
     marginBottom: 20,
     minHeight: 50,
@@ -482,7 +514,7 @@ const styles = StyleSheet.create({
   },
   dialogWrapper: {
     minHeight: 310,
-    backgroundColor: 'white',
+    backgroundColor: Colors.WHITE,
     borderRadius: 10,
     paddingHorizontal: 20,
     paddingTop: 20,
@@ -507,4 +539,21 @@ const styles = StyleSheet.create({
     paddingLeft: 10,
     textAlignVertical: 'center',
   },
+
+  checkingDialogWrapper: {
+    width: '80%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 200,
+    paddingBottom: 0,
+  },
+  checkingDialogText: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 17,
+    color: Colors.DARK_GRAY,
+    marginTop: 10,
+    marginHorizontal: 30,
+    textAlign: 'center',
+  },
+
 });

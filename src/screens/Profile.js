@@ -1,10 +1,9 @@
 import React from 'react';
-import * as Font from 'expo-font';
 import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Dimensions } from 'react-native';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Endpoints } from '../util/Values';
-import { Button, Icon } from 'react-native-elements';
+import { Input, Button, Icon } from 'react-native-elements';
 import { Colors } from '../util/Values';
 import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
 
@@ -22,6 +21,7 @@ export default class Profile extends React.Component {
       lastName: "",
       idNumber: "",
       email: "",
+      phoneNumber: "",
       initials: "",
       dialogVisible: false,
       chooseFromLibraryLoading: false,
@@ -30,17 +30,24 @@ export default class Profile extends React.Component {
   }
 
   async componentDidMount() {
+    LoggingUtil.logEvent('USER_ENTERED_PROFILE_SCREEN');
     let info = await AsyncStorage.getItem('userInfo');
     if (!info) {
       NavigationUtil.logout(this.props.navigation);
     } else {
       info = JSON.parse(info);
+      console.log(info);
       this.setState({
         firstName: info.profile.personalName,
         lastName: info.profile.familyName,
         idNumber: info.profile.nationalId,
         email: info.profile.email,
+        phoneNumber: info.profile.phoneNumber,
+        tempEmail: info.profile.email,
+        tempPhoneNumber: info.profile.phoneNumber,
         initials: info.profile.personalName[0] + info.profile.familyName[0],
+        systemWideUserId: info.systemWideUserId,
+        token: info.token,
       });
     }
   }
@@ -50,7 +57,10 @@ export default class Profile extends React.Component {
   }
 
   onPressChangePassword = () => {
-
+    this.props.navigation.navigate("ChangePassword", {
+      systemWideUserId: this.state.systemWideUserId,
+      token: this.state.token,
+    });
   }
 
   onPressEditPic = () => {
@@ -86,6 +96,10 @@ export default class Profile extends React.Component {
     if (this.state.chooseFromLibraryLoading) return;
   }
 
+  onPressSupport = () => {
+    this.props.navigation.navigate('Support');
+  }
+
   render() {
     return (
       <View style={styles.container}>
@@ -103,31 +117,79 @@ export default class Profile extends React.Component {
         <View style={styles.mainContent}>
           <View style={styles.picWrapper}>
             {this.renderProfilePicture()}
-            <Text style={styles.editText} onPress={this.onPressEditPic}>edit</Text>
+            {
+              /*
+              Uncomment this once we want to implement the edit picture feature
+              <Text style={styles.editText} onPress={this.onPressEditPic}>edit</Text>
+              */
+            }
           </View>
           <View style={styles.profileInfoWrapper}>
             <View style={styles.profileInfo}>
               <View style={styles.profileField}>
-                <Text style={styles.profileFieldTitle}>First Name</Text>
-                <Text style={styles.profileFieldValue}>{this.state.firstName}</Text>
+                <Input
+                  label="First Name*"
+                  editable={false}
+                  value={this.state.firstName}
+                  onChangeText={(text) => {this.setState({firstName: text})}}
+                  labelStyle={styles.profileFieldTitle}
+                  inputContainerStyle={styles.inputContainerStyle}
+                  inputStyle={[styles.profileFieldValue, this.state.errors && this.state.errors.firstName ? styles.redText : null]}
+                  containerStyle={styles.containerStyle}
+                />
               </View>
               <View style={styles.separator}/>
               <View style={styles.profileField}>
-                <Text style={styles.profileFieldTitle}>Last Name</Text>
-                <Text style={styles.profileFieldValue}>{this.state.lastName}</Text>
+                <Input
+                  label="Last Name*"
+                  editable={false}
+                  value={this.state.lastName}
+                  onChangeText={(text) => {this.setState({lastName: text})}}
+                  labelStyle={styles.profileFieldTitle}
+                  inputContainerStyle={styles.inputContainerStyle}
+                  inputStyle={[styles.profileFieldValue, this.state.errors && this.state.errors.lastName ? styles.redText : null]}
+                  containerStyle={styles.containerStyle}
+                />
               </View>
               <View style={styles.separator}/>
               <View style={styles.profileField}>
-                <Text style={styles.profileFieldTitle}>ID Number</Text>
-                <Text style={styles.profileFieldValue}>{this.state.idNumber}</Text>
+                <Input
+                  label="ID Number*"
+                  editable={false}
+                  value={this.state.idNumber}
+                  onChangeText={(text) => {this.setState({idNumber: text})}}
+                  labelStyle={styles.profileFieldTitle}
+                  inputContainerStyle={styles.inputContainerStyle}
+                  inputStyle={[styles.profileFieldValue, this.state.errors && this.state.errors.idNumber ? styles.redText : null]}
+                  containerStyle={styles.containerStyle}
+                />
               </View>
               <View style={styles.separator}/>
               <View style={styles.profileField}>
-                <Text style={styles.profileFieldTitle}>Email Address</Text>
-                <Text style={styles.profileFieldValue}>{this.state.email}</Text>
+                <Input
+                  label="Email Address"
+                  value={this.state.tempEmail}
+                  onChangeText={(text) => {this.setState({tempEmail: text})}}
+                  labelStyle={styles.profileFieldTitle}
+                  inputContainerStyle={styles.inputContainerStyle}
+                  inputStyle={[styles.profileFieldValue, this.state.errors && this.state.errors.email ? styles.redText : null]}
+                  containerStyle={styles.containerStyle}
+                />
+              </View>
+              <View style={styles.separator}/>
+              <View style={styles.profileField}>
+                <Input
+                  label="Phone Number"
+                  value={this.state.tempPhoneNumber}
+                  onChangeText={(text) => {this.setState({tempPhoneNumber: text})}}
+                  labelStyle={styles.profileFieldTitle}
+                  inputContainerStyle={styles.inputContainerStyle}
+                  inputStyle={[styles.profileFieldValue, this.state.errors && this.state.errors.phoneNumber ? styles.redText : null]}
+                  containerStyle={styles.containerStyle}
+                />
               </View>
             </View>
-            <Text style={styles.disclaimer}>In order to update any of the above information please email <Text style={styles.disclaimerBold}>xxxx@jupiter.com</Text></Text>
+            <Text style={styles.disclaimer} onPress={this.onPressSupport}>*In order to update any of the those fields please contact us <Text style={styles.disclaimerBold}>using the support form.</Text></Text>
           </View>
           <TouchableOpacity style={styles.buttonLine} onPress={this.onPressChangePassword}>
             <Text style={styles.buttonLineText}>Change Password</Text>
@@ -193,7 +255,7 @@ const styles = StyleSheet.create({
   header: {
     width: '100%',
     height: 50,
-    backgroundColor: 'white',
+    backgroundColor: Colors.WHITE,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 5,
@@ -211,7 +273,7 @@ const styles = StyleSheet.create({
   },
   buttonLine: {
     height: height * 0.075,
-    backgroundColor: 'white',
+    backgroundColor: Colors.WHITE,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -240,7 +302,7 @@ const styles = StyleSheet.create({
   profilePicText: {
     fontFamily: 'poppins-semibold',
     fontSize: 20,
-    color: 'white',
+    color: Colors.WHITE,
   },
   editText: {
     marginTop: 5,
@@ -257,7 +319,7 @@ const styles = StyleSheet.create({
   profileInfo: {
     flex: 1,
     width: '88%',
-    backgroundColor: 'white',
+    backgroundColor: Colors.WHITE,
     borderRadius: 10,
     padding: 10,
   },
@@ -270,6 +332,7 @@ const styles = StyleSheet.create({
   },
   disclaimerBold: {
     fontFamily: 'poppins-semibold',
+    textDecorationLine: 'underline',
   },
   profileField: {
     flex: 1,
@@ -279,6 +342,7 @@ const styles = StyleSheet.create({
     fontFamily: 'poppins-semibold',
     color: Colors.MEDIUM_GRAY,
     fontSize: 12,
+    marginTop: 5,
   },
   profileFieldValue: {
     fontFamily: 'poppins-regular',
@@ -306,7 +370,7 @@ const styles = StyleSheet.create({
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
     fontSize: 19,
-    color: 'white',
+    color: Colors.WHITE,
   },
   buttonStyle: {
     borderRadius: 10,
@@ -329,5 +393,15 @@ const styles = StyleSheet.create({
     color: Colors.PURPLE,
     fontSize: 15,
     fontFamily: 'poppins-semibold',
+  },
+  inputContainerStyle :{
+    borderBottomWidth: 0,
+  },
+  containerStyle: {
+    paddingLeft: 0,
+    paddingRight: 0,
+  },
+  redText: {
+    color: Colors.RED,
   },
 });

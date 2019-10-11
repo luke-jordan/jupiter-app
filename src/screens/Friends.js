@@ -1,14 +1,13 @@
 import React from 'react';
-import * as Font from 'expo-font';
 import { StyleSheet, View, Image, Text, AsyncStorage, Dimensions, Clipboard, TouchableOpacity, Share } from 'react-native';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
-import { Endpoints, Colors } from '../util/Values';
+import { Colors } from '../util/Values';
 import NavigationBar from '../elements/NavigationBar';
-import { Input, Button } from 'react-native-elements';
-import Toast, {DURATION} from 'react-native-easy-toast';
+import { Button } from 'react-native-elements';
+import Toast from 'react-native-easy-toast';
 
-let {height, width} = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
 export default class Friends extends React.Component {
@@ -22,6 +21,7 @@ export default class Friends extends React.Component {
   }
 
   async componentDidMount() {
+    LoggingUtil.logEvent('USER_ENTERED_FRIENDS_SCREEN');
     let info = await AsyncStorage.getItem('userInfo');
     if (!info) {
       NavigationUtil.logout(this.props.navigation);
@@ -41,6 +41,7 @@ export default class Friends extends React.Component {
       const result = await Share.share({
         message: `I’d love for you to join me as a friend on the Jupiter app. Jupiter makes saving at good rates, with no lock up, easy and enticing for everyone! As friends we can earn extra rewards and encourage each other to save more! Just use my referral code ${this.state.shareCode} to sign up. Download here: ${this.state.shareLink}`,
       });
+      console.log('Result of share: ', result);
       LoggingUtil.logEvent("USER_SHARED_REFERRAL_CODE");
     } catch (error) {
       //handle somehow?
@@ -152,7 +153,7 @@ const styles = StyleSheet.create({
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
     fontSize: 5 * FONT_UNIT,
-    color: 'white',
+    color: Colors.WHITE,
   },
   buttonStyle: {
     borderRadius: 10,
