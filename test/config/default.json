@@ -1,12 +1,9 @@
 {
     "appium": {
+        "host": "localhost",
         "port": 4723,
         "capabilities": {
-            "platformName": "android",
-            "deviceName": "emulator-5554",
-            "app": "/home/frtnx/TRON/stress-tests/Jupiter-a1de8efef35e43c8ae2b0307af6adaeb-signed.apk",
-            "automationName": "UiAutomator2",
-            "appWaitForLaunch": false
+            "platformName": "android"
         }
     }
 }

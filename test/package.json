@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --timeout 180000 ."
+    "test": "mocha --timeout 180000 .",
+    "appium-bundle": "npm-bundle; zip -r JupiterUITestSuite.zip *.tgz"
   },
   "keywords": [],
   "author": "",
@@ -21,5 +22,12 @@
     "chai-as-promised": "^7.1.1",
     "sinon": "^7.4.2",
     "sinon-chai": "^3.3.0"
-  }
+  },
+  "bundledDependencies": [
+    "config",
+    "mocha",
+    "niceware",
+    "owasp-password-strength-test",
+    "webdriverio"
+  ]
 }
