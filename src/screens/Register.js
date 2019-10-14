@@ -243,7 +243,7 @@ export default class Register extends React.Component {
 
   onPressContactUs = () => {
     this.onHideDialog();
-    //TODO
+    this.props.navigation.navigate('Support');
   }
 
   render() {
