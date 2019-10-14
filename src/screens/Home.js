@@ -156,7 +156,7 @@ export default class Home extends React.Component {
       firstName: info.profile.personalName,
     });
     this.handleNotificationsModule();
-    LoggingUtil.setUserId(info.systemWideUserId); //TODO
+    LoggingUtil.setUserId(info.systemWideUserId);
     LoggingUtil.logEvent("USER_ENTERED_SCREEN", {"screen_name": "Home"});
     this.animateBalance(info.balance);
     this.fetchUpdates();
@@ -620,7 +620,6 @@ export default class Home extends React.Component {
   }
 
   renderGameEndDialog(gameDetails) {
-    //TODO set the proper image for the image
     return (
       <DialogContent style={styles.gameDialog}>
         <Text style={styles.helpTitle}>{gameDetails.title}</Text>
@@ -647,7 +646,6 @@ export default class Home extends React.Component {
   }
 
   renderGameStartDialog(gameDetails) {
-    //TODO set the proper image for gameInstructionsImage
     return (
       <DialogContent style={styles.gameDialog}>
         <Text style={styles.helpTitle}>{gameDetails.title}</Text>

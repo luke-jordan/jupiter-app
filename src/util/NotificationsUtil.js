@@ -19,8 +19,7 @@ export const NotificationsUtil = {
       });
       if (result.ok) {
         let resultJson = await result.json();
-        // console.log(resultJson);
-        if (resultJson.result && resultJson.result.includes("SUCCESS")) { //TODO check if this actually includes it
+        if (resultJson.result && resultJson.result.includes("SUCCESS")) {
           return true;
         }
         return false;
