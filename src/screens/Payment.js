@@ -96,10 +96,12 @@ export default class Payment extends React.Component {
             amountAdded: this.state.amountAdded,
           });
         } else {
+          LoggingUtil.logEvent('PAYMENT_FAILED_UNKNOWN', { "serverResponse" : JSON.stringify(result) });
           //failed
           //TODO redirect to failed screen
         }
       } else {
+        LoggingUtil.logEvent('PAYMENT_FAILED_UNKNOWN', { "serverResponse" : JSON.stringify(result) });
         throw result;
       }
     } catch (error) {
