@@ -3,15 +3,7 @@
         "host": "localhost",
         "port": 4723,
         "capabilities": {
-<<<<<<< HEAD
-            "platformName": "android",
-            "deviceName": "emulator-5554",
-            "app": "/home/frtnx/Downloads/Jupiter-e76d6d7b1cfd44ea98e628d28c7b7f85-signed.apk",
-            "automationName": "UiAutomator2",
-            "appWaitForLaunch": false
-=======
             "platformName": "android"
->>>>>>> parent of e6d69fb... Revert "Updated appium ui-tests"
         }
     }
 }
