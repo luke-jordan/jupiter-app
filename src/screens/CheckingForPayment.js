@@ -147,6 +147,8 @@ export default class CheckingForPayment extends React.Component {
           <View style={styles.section}>
             <Text style={styles.explanation}>If you’ve already paid, tap the button below and we’ll check again.</Text>
             <Button
+              testID='payment-check-paid'
+              accessibilityLabel='payment-check-paid'
               title="I'VE ALREADY PAID"
               loading={this.state.loading}
               titleStyle={styles.buttonTitleStyle}

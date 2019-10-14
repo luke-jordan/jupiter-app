@@ -286,6 +286,8 @@ export default class SetPassword extends React.Component {
             <View style={styles.profileField}>
               <Text style={styles.profileFieldTitle}>{this.state.isReset ? "New Password*" : "Your Password*"}</Text>
                 <Input
+                  testID='set-password-input-1'
+                  accessibilityLabel='set-password-input-1'
                   value={this.state.password}
                   secureTextEntry={true}
                   onChangeText={(text) => this.onEditField(text, "password")}
@@ -303,6 +305,8 @@ export default class SetPassword extends React.Component {
             <View style={styles.profileField}>
               <Text style={styles.profileFieldTitle}>{this.state.isReset ? "Retype New Password*" : "Retype Password*"}</Text>
                 <Input
+                  testID='set-password-input-2'
+                  accessibilityLabel='set-password-input-2'
                   value={this.state.passwordConfirm}
                   secureTextEntry={true}
                   onChangeText={(text) => this.onEditField(text, "passwordConfirm")}
@@ -323,8 +327,10 @@ export default class SetPassword extends React.Component {
             <Text style={styles.errorMessage}>{this.state.generalErrorText}</Text>
             : null
           }
-          <Text style={styles.generatePassword} onPress={this.onPressGeneratePassword}>Help me generate a password</Text>
+          <Text testID='set-password-generate' accessibilityLabel='set-password-generate' style={styles.generatePassword} onPress={this.onPressGeneratePassword}>Help me generate a password</Text>
           <Button
+            testID='set-password-continue-btn'
+            accessibilityLabel='set-password-continue-btn'
             title="CONTINUE"
             loading={this.state.loading}
             titleStyle={styles.buttonTitleStyle}
@@ -354,6 +360,8 @@ export default class SetPassword extends React.Component {
                 <Text style={styles.profileFieldTitle}>Password</Text>
                 <Text style={[styles.containerStyle, styles.generatedPasswordStyle]}>{this.state.generatedPassword}</Text>
                 <Button
+                  testID='set-password-gen-btn'
+                  accessibilityLabel='set-password-gen-btn'
                   title="USE THIS PASSWORD"
                   loading={this.state.generatePasswordLoading}
                   titleStyle={styles.buttonTitleStyle}

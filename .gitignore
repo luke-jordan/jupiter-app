@@ -62,3 +62,7 @@ typings/
 
 # VSCode settings
 .vscode/
+
+# Test related files
+./test/node_modules
+./test/package-lock.json
