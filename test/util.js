@@ -46,7 +46,6 @@ module.exports.generatePassword = () => {
     return password;
 };
 
-<<<<<<< HEAD
 module.exports.testProps = (id) => ({ id: id, accessabilityLabel: id });
 
 module.exports.assembleXPath = (elementType, accessabilityId) => {
@@ -58,6 +57,3 @@ module.exports.assembleXPath = (elementType, accessabilityId) => {
             return `//android.view.ViewGroup[@content-desc="${accessabilityId}"]/android.view.View`
     }
 };
-=======
-module.exports.testProps = (id) => ({ id: id, accessabilityLabel: id });
->>>>>>> parent of e6d69fb... Revert "Updated appium ui-tests"
