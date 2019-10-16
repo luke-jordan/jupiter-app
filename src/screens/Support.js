@@ -43,9 +43,8 @@ export default class Support extends React.Component {
       if (result.ok) {
         this.setState({loading: false});
         let resultJson = await result.json();
-        console.log(resultJson);
-        if (resultJson.result.includes("SUCCESS")) {
-          this.props.navigaton.navigate("SupportRequestSent");
+        if (resultJson.result.includes("SENT")) {
+          this.props.navigation.navigate("SupportRequestSent");
         } else {
           this.showError();
         }
