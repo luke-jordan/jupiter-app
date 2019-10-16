@@ -1,0 +1,40 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      java: corretto11
+  pre_build:
+    commands:
+      - echo Cleaning up previous builds
+      - sudo rm /home/ubuntu/expo-apps/* -f
+      - echo 'Cleaned up previous builds'
+      - curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
+      - sudo apt install nodejs
+      - sudo npm install -g expo-cli
+      - sudo npm install -g turtle-cli --unsafe-perm=turtle
+      - git clone https://github.com/luke-jordan/jupiter-app
+      - cd jupiter-app
+      - git checkout appium-test
+      - git pull origin appium-test
+      - echo 'Updated repository'
+      - npm install
+      - expo login
+      - expo fetch:android:keystore
+  build:
+    commands:
+      - echo Build started on `date`
+      - sudo turtle build:android --keystore-path /home/ubuntu/jupiter-app/Jupiter.jks
+      - python3 upload_apk.py
+      - cd test
+      - npm run-script appium-bundle
+      - python3 upload_tests.py
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo 'Cleaning up ephemeral test files'
+      - rm -r JupiterUITestSuite.zip 
+      - rm -r ui-test-1.0.0.tgz
+artifacts:
+  files:
+    - target/messageUtil-1.0.jar
