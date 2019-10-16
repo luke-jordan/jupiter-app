@@ -33,6 +33,7 @@ import WithdrawStep2 from './src/screens/WithdrawStep2';
 import WithdrawalComplete from './src/screens/WithdrawalComplete';
 import ChangePassword from './src/screens/ChangePassword';
 import Support from './src/screens/Support';
+import SupportRequestSent from './src/screens/SupportRequestSent';
 
 const AppContainer = createAppContainer(
   createStackNavigator(
@@ -65,6 +66,7 @@ const AppContainer = createAppContainer(
       WithdrawalComplete: { screen: WithdrawalComplete },
       ChangePassword: { screen: ChangePassword },
       Support: { screen: Support },
+      SupportRequestSent: { screen: SupportRequestSent },
     },
     { initialRouteName: "Splash", headerMode: 'none' }
   )

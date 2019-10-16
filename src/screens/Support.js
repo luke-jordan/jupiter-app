@@ -29,15 +29,15 @@ export default class Support extends React.Component {
     if (this.state.loading) return;
     this.setState({loading: true});
     try {
-      let result = await fetch(Endpoints.AUTH + 'support', {
+      let result = await fetch(Endpoints.AUTH + 'ineedhelp', {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
         method: 'POST',
         body: JSON.stringify({
-          "userContact": this.state.userContact,
-          "supportRequestBody": this.state.requestBody,
+          "contactDetail": this.state.userContact,
+          "messageDetails": this.state.requestBody,
         }),
       });
       if (result.ok) {
@@ -45,7 +45,7 @@ export default class Support extends React.Component {
         let resultJson = await result.json();
         console.log(resultJson);
         if (resultJson.result.includes("SUCCESS")) {
-          //TODO show success, block fields, show go back button - maybe in a dialog, maybe separate screen?
+          this.props.navigaton.navigate("SupportRequestSent");
         } else {
           this.showError();
         }
