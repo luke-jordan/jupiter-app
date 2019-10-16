@@ -2,9 +2,9 @@
   "expoServerPort": 19000,
   "expoServerNgrokUrl": "https://th-tqz.anonymous.jupiter.exp.direct",
   "packagerNgrokUrl": "https://packager.th-tqz.anonymous.jupiter.exp.direct",
-  "ngrokPid": 20380,
-  "packagerPort": 19001,
-  "packagerPid": 23240,
+  "ngrokPid": 16416,
+  "packagerPort": null,
+  "packagerPid": null,
   "webpackServerPort": null,
   "devToolsPort": 19002
 }
