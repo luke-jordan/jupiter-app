@@ -8,27 +8,23 @@ phases:
       java: openjdk8
   pre_build:
     commands:
-      - git clone https://github.com/luke-jordan/jupiter-app
-      - cd jupiter-app
-      - git checkout appium-test
-      - git pull origin appium-test
-      - echo 'Updated repository'
       - curl -sL https://deb.nodesource.com/setup_12.x | bash -
       - apt install nodejs
       - npm install -g expo-cli
       - npm install -g turtle-cli --unsafe-perm=true
+      - git clone https://github.com/luke-jordan/jupiter-app
+      - cd jupiter-app
+      - git checkout appium-test
+      - git pull origin appium-test
       - npm install
       - expo login -u $EXPO_USERNAME -p $EXPO_PASSWORD
       - expo fetch:android:keystore
   build:
     commands:
-      - echo Build started on `date`
       - turtle build:android -t apk --keystore-path ./Jupiter.jks --keystore-alias $EXPO_ANDROID_KEYSTORE_ALIAS --username $EXPO_USERNAME --password $EXPO_PASSWORD
       - cd test
   post_build:
     commands:
-      - echo Build completed on `date`
-      - ls
       - npm install
       - npm install -g npm-bundle
       - npm run-script appium-bundle
