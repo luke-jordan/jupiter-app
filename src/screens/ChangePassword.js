@@ -136,7 +136,6 @@ export default class ChangePassword extends React.Component {
           loading: false,
           checkingForCompletion: false,
         });
-        //TODO redirect to where necessary
         this.refs.toast.show('Your password has been changed!');
         NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'ResetComplete');
       } else {

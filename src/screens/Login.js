@@ -47,15 +47,17 @@ export default class Login extends React.Component {
       let resultJson = await result.json();
       await this.generateOtpAndMove(resultJson.systemWideUserId);
     } else if (result.status == 403) {
+      LoggingUtil.logEvent('LOGIN_FAILED_403');
       this.setState({
         loading: false,
         passwordError: true
       });
     } else {
       let resultJson = await result.json();
+      LoggingUtil.logEvent('LOGIN_FAILED_UNKNOWN', { "serverResponse" : JSON.stringify(resultJson) });
       console.log(resultJson);
-        this.setState({ loading: false });
-        // todo: display proper error with contact us
+      this.setState({ loading: false });
+      // todo: display proper error with contact us
     }
   }
 
@@ -80,6 +82,7 @@ export default class Login extends React.Component {
       });
       this.setState({ loading: false }); // in case we come back (leaving true above in case slowness in nav)
     } else {
+      LoggingUtil.logEvent('GENERATE_OTP_FAILED', { "serverResponse" : JSON.stringify(result) });
       throw result;
     }
   };

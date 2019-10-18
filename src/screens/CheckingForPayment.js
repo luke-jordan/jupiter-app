@@ -95,6 +95,7 @@ export default class CheckingForPayment extends React.Component {
         } else if (resultJson.result.includes("PAYMENT_PENDING")) {
           //do nothing, already on the page
         } else {
+          LoggingUtil.logEvent('PAYMENT_FAILED_UNKNOWN', { "serverResponse" : JSON.stringify(result) });
           //failed
           //TODO redirect to failed screen
         }
@@ -102,6 +103,7 @@ export default class CheckingForPayment extends React.Component {
         throw result;
       }
     } catch (error) {
+      LoggingUtil.logEvent('PAYMENT_FAILED_UNKNOWN', { "serverResponse" : JSON.stringify(result) });
       console.log("error!", error.status);
       this.setState({checkingForPayment: false, loading: false});
     }

@@ -97,7 +97,7 @@ export default class PaymentComplete extends React.Component {
     if (!attempts) attempts = 0;
     this.setState({loading: true});
     if (this.state.fetchingProfile && attempts < 10) {
-      setTimeout(() => {this.onPressDone(attempts)}, 1000);
+      setTimeout(() => {this.onPressDone(attempts + 1)}, 1000);
     } else {
       this.setState({loading: false});
       NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', { userInfo: this.state.userInfo });

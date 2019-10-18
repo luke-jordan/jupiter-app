@@ -243,7 +243,7 @@ export default class Register extends React.Component {
 
   onPressContactUs = () => {
     this.onHideDialog();
-    //TODO
+    this.props.navigation.navigate('Support');
   }
 
   render() {
@@ -347,6 +347,7 @@ export default class Register extends React.Component {
             <Text style={styles.disclaimer}>Continuing means you’ve read and agreed to Jupiter’s{" "}
               <Text style={styles.disclaimerButton} onPress={this.onPressTerms}>T’C & C’s.</Text>
             </Text>
+            <Text style={[styles.disclaimer, styles.disclaimerButton, {marginTop: 10}]} onPress={this.onPressContactUs}>Need help?</Text>
           </ScrollView>
           {
             this.state.errors && this.state.errors.general ?

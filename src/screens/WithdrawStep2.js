@@ -141,7 +141,6 @@ export default class Withdraw extends React.Component {
           transactionId: resultJson.transactionId,
           delayOffer: resultJson.delayOffer,
         });
-        //TODO use the result json to set up the popup
       } else {
         let resultText = await result.text();
         console.log("resultText:", resultText);

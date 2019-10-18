@@ -167,27 +167,43 @@ export default class Profile extends React.Component {
               <View style={styles.separator}/>
               <View style={styles.profileField}>
                 <Input
-                  label="Email Address"
+                  label="Email Address / Phone Number*"
+                  editable={false}
                   value={this.state.tempEmail}
                   onChangeText={(text) => {this.setState({tempEmail: text})}}
                   labelStyle={styles.profileFieldTitle}
                   inputContainerStyle={styles.inputContainerStyle}
-                  inputStyle={[styles.profileFieldValue, this.state.errors && this.state.errors.email ? styles.redText : null]}
+                  inputStyle={[styles.profileFieldValue, this.state.errors && this.state.errors.idNumber ? styles.redText : null]}
                   containerStyle={styles.containerStyle}
                 />
               </View>
-              <View style={styles.separator}/>
-              <View style={styles.profileField}>
-                <Input
-                  label="Phone Number"
-                  value={this.state.tempPhoneNumber}
-                  onChangeText={(text) => {this.setState({tempPhoneNumber: text})}}
-                  labelStyle={styles.profileFieldTitle}
-                  inputContainerStyle={styles.inputContainerStyle}
-                  inputStyle={[styles.profileFieldValue, this.state.errors && this.state.errors.phoneNumber ? styles.redText : null]}
-                  containerStyle={styles.containerStyle}
-                />
-              </View>
+              {
+                /*
+                <View style={styles.profileField}>
+                  <Input
+                    label="Email Address"
+                    value={this.state.tempEmail}
+                    onChangeText={(text) => {this.setState({tempEmail: text})}}
+                    labelStyle={styles.profileFieldTitle}
+                    inputContainerStyle={styles.inputContainerStyle}
+                    inputStyle={[styles.profileFieldValue, this.state.errors && this.state.errors.email ? styles.redText : null]}
+                    containerStyle={styles.containerStyle}
+                  />
+                </View>
+                <View style={styles.separator}/>
+                <View style={styles.profileField}>
+                  <Input
+                    label="Phone Number"
+                    value={this.state.tempPhoneNumber}
+                    onChangeText={(text) => {this.setState({tempPhoneNumber: text})}}
+                    labelStyle={styles.profileFieldTitle}
+                    inputContainerStyle={styles.inputContainerStyle}
+                    inputStyle={[styles.profileFieldValue, this.state.errors && this.state.errors.phoneNumber ? styles.redText : null]}
+                    containerStyle={styles.containerStyle}
+                  />
+                </View>
+                */
+              }
             </View>
             <Text style={styles.disclaimer} onPress={this.onPressSupport}>*In order to update any of the those fields please contact us <Text style={styles.disclaimerBold}>using the support form.</Text></Text>
           </View>
