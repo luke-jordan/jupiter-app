@@ -16,10 +16,8 @@ class AppiumTest(unittest.TestCase):
             command_executor='http://127.0.0.1:4723/wd/hub',
             desired_capabilities={
                 'platformName': 'Android',
-                'app': '/home/frtnx/Downloads/Jupiter-58ce6941062f478b86190108b51a088b-signed.apk',
-                'deviceName': 'emulator-5554',
                 'automationName': 'UiAutomator2',
-                'appWaitForLaunch': False,
+                'appWaitForLaunch': False
             })
 
     def tearDown(self):
