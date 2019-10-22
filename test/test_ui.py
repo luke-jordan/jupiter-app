@@ -15,16 +15,30 @@ class AppiumTest(unittest.TestCase):
         self.driver = webdriver.Remote(
             command_executor='http://127.0.0.1:4723/wd/hub',
             desired_capabilities={
-                'platformName': 'Android'
+                'platformName': 'Android',
+                'app': '/home/frtnx/Downloads/Jupiter-58ce6941062f478b86190108b51a088b-signed.apk',
+                'deviceName': 'emulator-5554',
+                'automationName': 'UiAutomator2',
+                'appWaitForLaunch': False,
             })
 
     def tearDown(self):
         self.driver.quit()
 
     def test_registration_flow(self):
-        time.sleep(10)
+        settings = self.driver.get_settings()
+        print('Found settings: %s' % settings)
 
-        nxt = self.driver.find_element_by_xpath('//*[@text="NEXT"]')
+        time.sleep(15)
+
+        try:
+            nxt = self.driver.find_element_by_xpath('//*[@text="NEXT"]')
+            print('Got nxt?: %s' % nxt)
+        except Exception as e:
+            print(e)
+            nxt = self.driver.find_element_by_xpath('//*[@content-desc="onboarding-button"]')
+            
+        print('Got nxt eventually?: %s' % nxt)
         nxt.click()
         nxt.click()
         nxt.click()
@@ -45,35 +59,52 @@ class AppiumTest(unittest.TestCase):
         ################################### Fill in email field #####################################
         #############################################################################################
 
-        email_field = self.driver.find_element_by_xpath('/hierarchy/android.widget.FrameLayout/' + 
-            'android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/' + 
-            'android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/' + 
-            'android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup/' + 
-            'android.view.ViewGroup/android.view.ViewGroup[2]/android.widget.ScrollView/' + 
-            'android.view.ViewGroup/android.view.ViewGroup[4]/android.view.ViewGroup/' + 
-            'android.widget.EditText'
-        )
+        try:
+            # scrolls to bottom of page
+            origin_el = self.driver.find_element_by_accessibility_id('register-id-number')
+            destination_el = self.driver.find_element_by_accessibility_id('register-last-name')
+            self.driver.scroll(origin_el, destination_el)
+
+            email_field = self.driver.find_element_by_accessibility_id('register-email-or-phone')
+            if not email_field:
+                email_field = self.driver.find_element_by_xpath('//*[@content-desc="register-email-or-phone"]')
+        except Exception as e:
+            print(e)
+            email_field = self.driver.find_element_by_xpath('/hierarchy/android.widget.FrameLayout/' +
+                'android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/' + 
+                'android.widget.FrameLayout/android.widget.FrameLayout/android.view.ViewGroup/' + 
+                'android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup/' + 
+                'android.view.ViewGroup/android.view.ViewGroup[2]/android.widget.ScrollView/' + 
+                'android.view.ViewGroup/android.view.ViewGroup[4]/android.view.ViewGroup/' + 
+                'android.widget.EditText'
+            )
+
         email_field.click()
         for char in range(25):
             self.driver.press_keycode(67)
         time.sleep(1)
         email_field.send_keys('testemail%s@test.tst' % random.randint(1000, 100000))
+        self.driver.press_keycode(4)
 
         #############################################################################################
         ##################################### Fill in national id ###################################
         #############################################################################################
 
-        national_id_field = self.driver.find_element_by_xpath('/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/' + 
-            'android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/' + 
-            'android.widget.FrameLayout/android.view.ViewGroup/android.view.ViewGroup/' + 
-            'android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup/' + 
-            'android.view.ViewGroup[2]/android.widget.ScrollView/android.view.ViewGroup/' + 
-            'android.view.ViewGroup[2]/android.view.ViewGroup/android.widget.EditText'
-        )
-        print('Got id field: %s' % national_id_field)
-        national_id_field.click()
-        print('Got id field: %s' % national_id_field)
+        try:
+            national_id_field = self.driver.find_element_by_accessibility_id('register-id-number')
+            if not national_id_field:
+                national_id_field = self.driver.find_element_by_xpath('//*[@content-desc="rregister-id-number"]')
+        except Exception as e:
+            print(e)
+            national_id_field = self.driver.find_element_by_xpath('/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/' + 
+                'android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/' + 
+                'android.widget.FrameLayout/android.view.ViewGroup/android.view.ViewGroup/' + 
+                'android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup/' + 
+                'android.view.ViewGroup[2]/android.widget.ScrollView/android.view.ViewGroup/' + 
+                'android.view.ViewGroup[3]/android.view.ViewGroup/android.widget.EditText'
+            )
 
+        national_id_field.click()
         for char in range(15):
             self.driver.press_keycode(67)
         time.sleep(1)
@@ -86,7 +117,7 @@ class AppiumTest(unittest.TestCase):
         cont = self.driver.find_element_by_xpath('//*[@text="CONTINUE"]')
         cont.click()
 
-        time.sleep(2)
+        time.sleep(3)
 
         #############################################################################################
         ##################################### Choose a password #####################################
@@ -158,7 +189,7 @@ class AppiumTest(unittest.TestCase):
         done_button.click()
 
         #############################################################################################
-        ################################### Handle payment page #####################################
+        ##################################### Handle login ##########################################
         #############################################################################################
 
         time.sleep(6)
