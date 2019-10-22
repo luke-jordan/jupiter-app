@@ -24,17 +24,25 @@ phases:
       - turtle build:android -t apk --keystore-path ./Jupiter.jks --keystore-alias $EXPO_ANDROID_KEYSTORE_ALIAS --username $EXPO_USERNAME --password $EXPO_PASSWORD
       - mv /root/expo-apps/* /root/expo-apps/Jupiter-latest.apk
       - ls /root/expo-apps/
-      - cd test
   post_build:
     commands:
-      - npm install
-      - npm install -g npm-bundle
-      - npm run-script appium-bundle
-      - ls
+      - apt install virtualenv -y
+      - virtualenv workspace
+      - mkdir workspace/tests
+      - mv test/test_ui.py workspace/tests/test_ui.py
+      - mv test/requirements.txt workspace/requirements.txt
+      - cd workspace
+      - ls tests/
+      - . bin/activate
+      - pip install pytest
+      - pip install Appium-Python-Client
+      - pip install random-password-generator
+      - pip wheel --wheel-dir wheelhouse -r requirements.txt
+      - zip -r test_bundle.zip tests/ wheelhouse/ requirements.txt
       - export TESTPATH=$PWD
       - echo $TESTPATH
 artifacts:
   files:
     - /root/expo-apps/*
-    - $TESTPATH/JupiterUITestSuite.zip
+    - $TESTPATH/test_bundle.zip
   discard-paths: yes
