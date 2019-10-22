@@ -147,27 +147,33 @@ class AppiumTest(unittest.TestCase):
         cont = self.driver.find_element_by_xpath('//*[@text="CONTINUE"]')
         cont.click()
 
-        time.sleep(6)
+        time.sleep(7)
 
         #############################################################################################
         ################################### Enter deposit amount ####################################
         #############################################################################################
 
-        # test_amount = str(round(random.uniform(1000, 10000), 2))
+        test_amount = str(round(random.uniform(100, 1000), 2))
 
-        # amount_field = self.driver.find_element_by_xpath('/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/' + 
-        #     'android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/' + 
-        #     'android.widget.FrameLayout/android.view.ViewGroup/android.view.ViewGroup/' + 
-        #     'android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup/android.widget.ScrollView/' + 
-        #     'android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup[2]/android.widget.EditText'
-        # )
-        # amount_field.click()
-        # for char in range(6):
-        #     self.driver.press_keycode(67)
-        # print('Created test deposit amount: %s' % test_amount)
-        # amount_field.send_keys(test_amount)
+        try:
+            amount_field = self.driver.find_element_by_accessibility_id('add-cash-input');
+            if not amount_field:
+                amount_field = self.driver.find_element_by_xpath('//*[@content-desc="add-cash-input"]')
+        except Exception as e:
+            print(e)
+            amount_field = self.driver.find_element_by_xpath('/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/' + 
+                'android.widget.FrameLayout/android.widget.FrameLayout/android.widget.FrameLayout/' + 
+                'android.widget.FrameLayout/android.view.ViewGroup/android.view.ViewGroup/' + 
+                'android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup/android.widget.ScrollView/' + 
+                'android.view.ViewGroup/android.view.ViewGroup/android.view.ViewGroup[2]/android.widget.EditText'
+            )
 
-        # self.driver.press_keycode(4)
+        amount_field.click()
+        for char in range(77):
+            self.driver.press_keycode(67)
+        amount_field.send_keys(test_amount)
+
+        self.driver.press_keycode(4)
 
         next_payment = self.driver.find_element_by_xpath('//*[@text="NEXT: PAYMENT"]')
         next_payment.click()
