@@ -14,8 +14,8 @@ phases:
       - npm install -g turtle-cli --unsafe-perm=true
       - git clone https://github.com/luke-jordan/jupiter-app
       - cd jupiter-app
-      - git checkout appium-test
-      - git pull origin appium-test
+      - git checkout staging
+      - git pull origin staging
       - npm install
       - expo login -u $EXPO_USERNAME -p $EXPO_PASSWORD
       - expo fetch:android:keystore
