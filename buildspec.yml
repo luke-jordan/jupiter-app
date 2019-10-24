@@ -1,0 +1,48 @@
+version: 0.2
+
+env:
+  git-credential-helper: yes
+phases:
+  install:
+    runtime-versions:
+      java: openjdk8
+  pre_build:
+    commands:
+      - curl -sL https://deb.nodesource.com/setup_12.x | bash -
+      - apt install nodejs
+      - npm install -g expo-cli
+      - npm install -g turtle-cli --unsafe-perm=true
+      - git clone https://github.com/luke-jordan/jupiter-app
+      - cd jupiter-app
+      - git checkout staging
+      - git pull origin staging
+      - npm install
+      - expo login -u $EXPO_USERNAME -p $EXPO_PASSWORD
+      - expo fetch:android:keystore
+  build:
+    commands:
+      - turtle build:android -t apk --keystore-path ./Jupiter.jks --keystore-alias $EXPO_ANDROID_KEYSTORE_ALIAS --username $EXPO_USERNAME --password $EXPO_PASSWORD
+      - mv /root/expo-apps/* /root/expo-apps/Jupiter-latest.apk
+      - ls /root/expo-apps/
+  post_build:
+    commands:
+      - apt install virtualenv -y
+      - virtualenv workspace
+      - mkdir workspace/tests
+      - mv test/test_ui.py workspace/tests/test_ui.py
+      - mv test/requirements.txt workspace/requirements.txt
+      - cd workspace
+      - ls tests/
+      - . bin/activate
+      - pip install pytest
+      - pip install Appium-Python-Client
+      - pip install random-password-generator
+      - pip wheel --wheel-dir wheelhouse -r requirements.txt
+      - zip -r test_bundle.zip tests/ wheelhouse/ requirements.txt
+      - export TESTPATH=$PWD
+      - echo $TESTPATH
+artifacts:
+  files:
+    - /root/expo-apps/*
+    - $TESTPATH/test_bundle.zip
+  discard-paths: yes

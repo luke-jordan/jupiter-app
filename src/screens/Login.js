@@ -18,8 +18,10 @@ export default class Login extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      // userId: "testemail01@test.tst",
       userId: "someone@jupitersave.com",
       validationError: false,
+      // password: "аА@123456",
       password: "holy_CHRYSALIS_hatching9531",
       passwordError: false
     };
@@ -45,13 +47,17 @@ export default class Login extends React.Component {
       let resultJson = await result.json();
       await this.generateOtpAndMove(resultJson.systemWideUserId);
     } else if (result.status == 403) {
+      LoggingUtil.logEvent('LOGIN_FAILED_403');
       this.setState({
         loading: false,
         passwordError: true
       });
     } else {
-        this.setState({ loading: false });
-        // todo: display proper error with contact us
+      let resultJson = await result.json();
+      LoggingUtil.logEvent('LOGIN_FAILED_UNKNOWN', { "serverResponse" : JSON.stringify(resultJson) });
+      console.log(resultJson);
+      this.setState({ loading: false });
+      // todo: display proper error with contact us
     }
   }
 
@@ -76,6 +82,7 @@ export default class Login extends React.Component {
       });
       this.setState({ loading: false }); // in case we come back (leaving true above in case slowness in nav)
     } else {
+      LoggingUtil.logEvent('GENERATE_OTP_FAILED', { "serverResponse" : JSON.stringify(result) });
       throw result;
     }
   };
@@ -91,7 +98,6 @@ export default class Login extends React.Component {
       this.setState({ validationError: true });
       return;
     }
-
     this.setState({loading: true});
     try {
       await this.initiateLogin();
@@ -113,6 +119,10 @@ export default class Login extends React.Component {
     this.props.navigation.navigate('ResetPassword');
   }
 
+  onPressSupport = () => {
+    this.props.navigation.navigate('Support');
+  }
+
   render() {
     return (
       <View style={styles.container}>
@@ -122,6 +132,8 @@ export default class Login extends React.Component {
         <View style={styles.mainContent}>
           <Text style={styles.labelStyle}>Enter your phone number or email*</Text>
           <Input
+            testID='login-phone-or-email'
+            accessibilityLabel='login-phone-or-email'
             value={this.state.userId}
             onChangeText={(text) => this.setState({userId: text})}
             inputContainerStyle={styles.inputContainerStyle}
@@ -135,6 +147,8 @@ export default class Login extends React.Component {
           }
           <Text style={styles.labelStyle}>Password*</Text>
           <Input
+            testID='login-password'
+            accessibilityLabel='login-password'
             secureTextEntry={true}
             value={this.state.password}
             onChangeText={(text) => this.setState({password: text})}
@@ -145,6 +159,9 @@ export default class Login extends React.Component {
           <Text style={styles.textAsButton} onPress={this.onPressForgotPassword}>
             Forgot Password?
           </Text>
+          <Text style={styles.textAsButton} onPress={this.onPressSupport}>
+            Can't access your account?
+          </Text>
           {
             this.state.passwordError ?
             <Text style={styles.accessErrorText}>Sorry, we couldn&apos;t match that phone/email and password. Please try again.</Text>
@@ -152,6 +169,8 @@ export default class Login extends React.Component {
           }
         </View>
         <Button
+          testID='login-btn'
+          accessibilityLabel='login-btn'
           title="LOGIN"
           loading={this.state.loading}
           titleStyle={styles.buttonTitleStyle}
@@ -235,6 +254,7 @@ const styles = StyleSheet.create({
     width: '80%',
   },
   textAsButton: {
+    marginVertical: 5,
     fontFamily: 'poppins-semibold',
     color: Colors.PURPLE,
   },

@@ -1,0 +1,10 @@
+{
+    "appium": {
+        "host": "localhost",
+        "port": 4723,
+        "capabilities": {
+            "platformName": "android"
+        }
+    }
+}
+

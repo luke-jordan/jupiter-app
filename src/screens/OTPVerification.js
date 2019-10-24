@@ -50,12 +50,11 @@ export default class OTPVerification extends React.Component {
       if (result.ok) {
         let resultJson = await result.json();
         this.setState({loading: false});
-        // console.log("result:", resultJson);
-        if (resultJson.onboardStepsComplete.includes("ALL")) {
-          AsyncStorage.setItem('userInfo', JSON.stringify(resultJson));
-          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', { userInfo: resultJson });
-        } else {
+        if (resultJson && resultJson.onboardStepsRemaining && resultJson.onboardStepsRemaining.includes("ADD_CASH")) {
           NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'PendingRegistrationSteps', { userInfo: resultJson });
+        } else {
+          AsyncStorage.setItem('userInfo', JSON.stringify(resultJson));
+          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', { userInfo: resultJson });          
         }
       } else {
         let resultJson = await result.json();
@@ -76,9 +75,29 @@ export default class OTPVerification extends React.Component {
 
   }
 
-  async handlePassReset(userId) {
+  async handlePassReset(userId, systemWideUserId) {
     try {
-      let result = await fetch(Endpoints.AUTH + 'password/reset/obtainqs?phoneOrEmail=' + userId + '&otp=' + this.state.pin.join(""), {
+      let otpResult = await fetch(Endpoints.AUTH + 'otp/verify', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        method: 'POST',
+        body: JSON.stringify({
+          "systemWideUserId": systemWideUserId,
+          "otp": this.state.pin.join(""),
+        }),
+      });
+      if (otpResult.ok) {
+        let otpResultJson = await otpResult.json();
+        if (!otpResultJson.verified) {
+          throw otpResult;
+        }
+      } else {
+        throw otpResult;
+      }
+
+      let result = await fetch(Endpoints.AUTH + 'password/reset/obtainqs?phoneOrEmail=' + userId, {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
@@ -123,7 +142,8 @@ export default class OTPVerification extends React.Component {
     if (redirection.includes('Login')) {
       this.handleLogin(userId);
     } else if (redirection.includes('Reset')) {
-      this.handlePassReset(userId);
+      let systemWideUserId = this.props.navigation.getParam("systemWideUserId");
+      this.handlePassReset(userId, systemWideUserId);
     } else {
       this.setState({loading: false});
     }
@@ -223,6 +243,8 @@ export default class OTPVerification extends React.Component {
           <Text style={styles.labelStyle}>{this.state.header}</Text>
           <View style={styles.pinInputs}>
             <Input
+              testID='otp-index-1'
+              accessibilityLabel='otp-index-1'
               ref={ref => this.inputRefs0 = ref}
               keyboardType='numeric'
               secureTextEntry={true}
@@ -233,6 +255,8 @@ export default class OTPVerification extends React.Component {
               containerStyle={styles.containerStyle}
             />
             <Input
+              testID='otp-index-2'
+              accessibilityLabel='otp-index-2'
               ref={ref => this.inputRefs1 = ref}
               keyboardType='numeric'
               secureTextEntry={true}
@@ -243,6 +267,8 @@ export default class OTPVerification extends React.Component {
               containerStyle={styles.containerStyle}
             />
             <Input
+              testID='otp-index-3'
+              accessibilityLabel='otp-index-3'
               ref={ref => this.inputRefs2 = ref}
               keyboardType='numeric'
               secureTextEntry={true}
@@ -253,6 +279,8 @@ export default class OTPVerification extends React.Component {
               containerStyle={styles.containerStyle}
             />
             <Input
+              testID='otp-index-4'
+              accessibilityLabel='otp-index-4'
               ref={ref => this.inputRefs3 = ref}
               keyboardType='numeric'
               secureTextEntry={true}
@@ -270,6 +298,8 @@ export default class OTPVerification extends React.Component {
           }
         </View>
         <Button
+          testID='otp-continue-btn'
+          accessibilityLabel='otp-continue-btn'
           title="CONTINUE"
           loading={this.state.loading}
           titleStyle={styles.buttonTitleStyle}

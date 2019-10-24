@@ -123,6 +123,8 @@ export default class Onboarding extends React.Component {
         </Swiper>
         <View style={styles.nextButtonWrapper}>
           <Button
+            testID='onboarding-button'
+            accessibilityLabel='onboarding-button'
             title={this.state.currentTab == 3 ? "START SAVING" : "NEXT"}
             loading={this.state.loading}
             titleStyle={styles.buttonTitleStyle}

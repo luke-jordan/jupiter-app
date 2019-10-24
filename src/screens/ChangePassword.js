@@ -5,14 +5,19 @@ import { LoggingUtil } from '../util/LoggingUtil';
 import { Button, Icon, Input } from 'react-native-elements';
 import { Colors, Endpoints } from '../util/Values';
 import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
+import Toast from 'react-native-easy-toast';
 
-export default class SetPassword extends React.Component {
+
+export default class ChangePassword extends React.Component {
 
   constructor(props) {
     super(props);
     this.state = {
+      token: this.props.navigation.state.params.token,
+      systemWideUserId: this.props.navigation.state.params.systemWideUserId,
       loading: false,
       generatePasswordLoading: false,
+      oldPassword: "",
       password: "",
       passwordConfirm: "",
       errors: {
@@ -22,24 +27,13 @@ export default class SetPassword extends React.Component {
       },
       dialogVisible: false,
       generatedPassword: "",
+      oldPasswordErrorMessage: "Your password is not valid",
+      defaultOldPasswordErrorMessage: "Your password is not valid",
       passwordErrorMessage: "Please enter a valid password",
       defaultPasswordErrorMessage: "Please enter a valid password",
       generalErrorText: "There is a problem with your request",
       checkingForCompletion: false,
     };
-  }
-
-  async componentDidMount() {
-    let params = this.props.navigation.state.params;
-    if (params) {
-      this.setState({
-        systemWideUserId: params.systemWideUserId,
-        clientId: params.clientId,
-        defaultFloatId: params.defaultFloatId,
-        defaultCurrency: params.defaultCurrency,
-        isReset: params.isReset,
-      });
-    }
   }
 
   onPressBack = () => {
@@ -87,6 +81,14 @@ export default class SetPassword extends React.Component {
     //   hasErrors = true;
     //   errors.password = true;
     // }
+    if (this.state.oldPassword.length == 0) {
+      hasErrors = true;
+      errors.oldPassword = true;
+    }
+    if (this.state.password.length == 0) {
+      hasErrors = true;
+      errors.password = true;
+    }
     if (this.state.password != this.state.passwordConfirm) {
       hasErrors = true;
       errors.password = false;
@@ -112,23 +114,20 @@ export default class SetPassword extends React.Component {
       this.showError();
       return;
     }
-    if (this.state.isReset) {
-      this.handleResetPassword();
-    } else {
-      this.handleRegisterPassword();
-    }
+    this.handleChangePassword();
   }
 
-  handleResetPassword = async () => {
+  handleChangePassword = async () => {
     try {
-      let result = await fetch(Endpoints.AUTH + 'password/reset/complete', {
+      let result = await fetch(Endpoints.AUTH + 'password/change', {
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'Authorization': 'Bearer ' + this.state.token,
         },
         method: 'POST',
         body: JSON.stringify({
-          systemWideUserId: this.state.systemWideUserId,
+          oldPassword: this.state.oldPassword,
           newPassword: this.state.password,
         }),
       });
@@ -137,9 +136,11 @@ export default class SetPassword extends React.Component {
           loading: false,
           checkingForCompletion: false,
         });
+        this.refs.toast.show('Your password has been changed!');
         NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'ResetComplete');
       } else {
         let resultText = await result.text();
+        console.log(resultText);
         throw result;
       }
     } catch (error) {
@@ -148,62 +149,9 @@ export default class SetPassword extends React.Component {
     }
   }
 
-  handleRegisterPassword = async () => {
-    try {
-      let result = await fetch(Endpoints.AUTH + 'register/password', {
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        method: 'POST',
-        body: JSON.stringify({
-          systemWideUserId: this.state.systemWideUserId,
-          password: this.state.password,
-          clientId: this.state.clientId,
-          floatId: this.state.defaultFloatId,
-          currency: this.state.defaultCurrency,
-        }),
-      });
-      if (result.ok) {
-        let resultJson = await result.json();
-        this.setState({
-          loading: false,
-          checkingForCompletion: false,
-        });
-        if (resultJson.result.includes("SUCCESS")) {
-          LoggingUtil.logEvent("USER_PROFILE_PASSWORD_SUCCEEDED");
-          this.props.navigation.navigate("AddCash", {
-            isOnboarding: true,
-            systemWideUserId: resultJson.systemWideUserId,
-            token: resultJson.token,
-            accountId: resultJson.accountId[0],
-          });
-        } else {
-          console.log(resultJson);
-          LoggingUtil.logEvent("USER_PROFILE_PASSWORD_FAILED", {"reason": resultJson.message});
-          this.showError(resultJson.message);
-        }
-      } else {
-        let resultJson = await result.json();
-        console.log(resultJson);
-        LoggingUtil.logEvent("USER_PROFILE_PASSWORD_FAILED", {"reason" : resultJson.errors.toString()});
-        let responseErrors = resultJson.errors;
-        responseErrors.unshift("Your password must:");
-        let errorsString = responseErrors.join("\n- ");
-        this.showError(errorsString);
-      }
-    } catch (error) {
-      console.log("error!", error);
-      this.showError(error);
-    }
-  }
-
   showError(errorText) {
     let errors = Object.assign({}, this.state.errors);
     errors.general = true;
-    if (errorText) {
-      errors.password = true;
-    }
     this.setState({
       checkingForCompletion: false,
       loading: false,
@@ -262,32 +210,38 @@ export default class SetPassword extends React.Component {
     return (
       <KeyboardAvoidingView style={styles.container} contentContainerStyle={styles.container} behavior="padding">
         <View style={styles.header}>
-          {
-            this.state.isReset ?
-            <Text style={styles.resetTitle}>Reset password</Text>
-            :
-            <TouchableOpacity style={styles.headerButton} onPress={this.onPressBack} >
-              <Icon
-                name='chevron-left'
-                type='evilicon'
-                size={45}
-                color={Colors.MEDIUM_GRAY}
-              />
-            </TouchableOpacity>
-          }
+          <TouchableOpacity style={styles.headerButton} onPress={this.onPressBack} >
+            <Icon
+              name='chevron-left'
+              type='evilicon'
+              size={45}
+              color={Colors.MEDIUM_GRAY}
+            />
+          </TouchableOpacity>
+          <Text style={styles.resetTitle}>Change password</Text>
         </View>
         <View style={styles.contentWrapper}>
-          {
-            this.state.isReset ?
-            null :
-            <Text style={styles.title}>Set a password</Text>
-          }
           <ScrollView style={styles.scrollView} contentContainerStyle={styles.mainContent}>
             <View style={styles.profileField}>
-              <Text style={styles.profileFieldTitle}>{this.state.isReset ? "New Password*" : "Your Password*"}</Text>
+              <Text style={styles.profileFieldTitle}>Old Password*</Text>
                 <Input
-                  testID='set-password-input-1'
-                  accessibilityLabel='set-password-input-1'
+                  value={this.state.oldPassword}
+                  secureTextEntry={true}
+                  onChangeText={(text) => this.onEditField(text, "oldPassword")}
+                  onEndEditing={() => this.onEndEditing("oldPassword")}
+                  inputContainerStyle={styles.inputContainerStyle}
+                  inputStyle={[styles.inputStyle, this.state.errors && this.state.errors.oldPassword ? styles.redText : null]}
+                  containerStyle={styles.containerStyle}
+                />
+                {
+                  this.state.errors && this.state.errors.password ?
+                  <Text style={styles.errorMessage}>{this.state.oldPasswordErrorMessage}</Text>
+                  : null
+                }
+            </View>
+            <View style={styles.profileField}>
+              <Text style={styles.profileFieldTitle}>New Password*</Text>
+                <Input
                   value={this.state.password}
                   secureTextEntry={true}
                   onChangeText={(text) => this.onEditField(text, "password")}
@@ -303,10 +257,8 @@ export default class SetPassword extends React.Component {
                 }
             </View>
             <View style={styles.profileField}>
-              <Text style={styles.profileFieldTitle}>{this.state.isReset ? "Retype New Password*" : "Retype Password*"}</Text>
+              <Text style={styles.profileFieldTitle}>Retype New Password*</Text>
                 <Input
-                  testID='set-password-input-2'
-                  accessibilityLabel='set-password-input-2'
                   value={this.state.passwordConfirm}
                   secureTextEntry={true}
                   onChangeText={(text) => this.onEditField(text, "passwordConfirm")}
@@ -327,10 +279,8 @@ export default class SetPassword extends React.Component {
             <Text style={styles.errorMessage}>{this.state.generalErrorText}</Text>
             : null
           }
-          <Text testID='set-password-generate' accessibilityLabel='set-password-generate' style={styles.generatePassword} onPress={this.onPressGeneratePassword}>Help me generate a password</Text>
+          <Text style={styles.generatePassword} onPress={this.onPressGeneratePassword}>Help me generate a password</Text>
           <Button
-            testID='set-password-continue-btn'
-            accessibilityLabel='set-password-continue-btn'
             title="CONTINUE"
             loading={this.state.loading}
             titleStyle={styles.buttonTitleStyle}
@@ -360,8 +310,6 @@ export default class SetPassword extends React.Component {
                 <Text style={styles.profileFieldTitle}>Password</Text>
                 <Text style={[styles.containerStyle, styles.generatedPasswordStyle]}>{this.state.generatedPassword}</Text>
                 <Button
-                  testID='set-password-gen-btn'
-                  accessibilityLabel='set-password-gen-btn'
                   title="USE THIS PASSWORD"
                   loading={this.state.generatePasswordLoading}
                   titleStyle={styles.buttonTitleStyle}
@@ -392,10 +340,11 @@ export default class SetPassword extends React.Component {
         >
           <DialogContent style={styles.checkingDialogWrapper}>
             <ActivityIndicator size="large" color={Colors.PURPLE} />
-            <Text style={styles.checkingDialogText}>{this.state.isReset ? "Resetting your password..." : "We are creating your account..."}</Text>
+            <Text style={styles.checkingDialogText}>Changing your password...</Text>
           </DialogContent>
         </Dialog>
 
+        <Toast ref="toast" opacity={1} style={styles.toast}/>
       </KeyboardAvoidingView>
     );
   }
@@ -562,6 +511,11 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginHorizontal: 30,
     textAlign: 'center',
+  },
+  toast: {
+    backgroundColor: Colors.DARK_GRAY,
+    width: '60%',
+    alignItems: 'center',
   },
 
 });

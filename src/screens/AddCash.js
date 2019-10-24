@@ -87,6 +87,7 @@ export default class AddCash extends React.Component {
         throw result;
       }
     } catch (error) {
+      LoggingUtil.logEvent('ADD_CASH_FAILED_UNKNOWN', { "serverResponse" : JSON.stringify(result) });
       console.log("error!", error);
       this.setState({loading: false});
       // this.showError();
@@ -184,6 +185,8 @@ export default class AddCash extends React.Component {
               <Text style={styles.currencyLabel}>{this.state.currency}</Text>
             </View>
             <Input
+              testID='add-cash-input'
+              accessibilityLabel='add-cash-input'
               keyboardType='numeric'
               ref={(ref) => {this.amountInputRef = ref;}}
               value={this.state.amountToAdd}
@@ -197,6 +200,8 @@ export default class AddCash extends React.Component {
           <Text style={styles.makeSureDisclaimer}>Please make sure you have added the correct amount as this transaction cannot be reversed.</Text>
         </ScrollView>
         <Button
+          testID='add-cash-next-btn'
+          accessibilityLabel='add-cash-next-btn'
           title="NEXT: PAYMENT"
           loading={this.state.loading}
           titleStyle={styles.buttonTitleStyle}

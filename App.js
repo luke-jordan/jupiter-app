@@ -31,6 +31,9 @@ import ResetComplete from './src/screens/ResetComplete';
 import WithdrawStep1 from './src/screens/WithdrawStep1';
 import WithdrawStep2 from './src/screens/WithdrawStep2';
 import WithdrawalComplete from './src/screens/WithdrawalComplete';
+import ChangePassword from './src/screens/ChangePassword';
+import Support from './src/screens/Support';
+import SupportRequestSent from './src/screens/SupportRequestSent';
 
 const AppContainer = createAppContainer(
   createStackNavigator(
@@ -61,6 +64,9 @@ const AppContainer = createAppContainer(
       WithdrawStep1: { screen: WithdrawStep1 },
       WithdrawStep2: { screen: WithdrawStep2 },
       WithdrawalComplete: { screen: WithdrawalComplete },
+      ChangePassword: { screen: ChangePassword },
+      Support: { screen: Support },
+      SupportRequestSent: { screen: SupportRequestSent },
     },
     { initialRouteName: "Splash", headerMode: 'none' }
   )
@@ -70,7 +76,7 @@ export default class App extends React.Component {
 
   componentDidMount() {
     Sentry.init({
-      dsn: 'https://00d51de1c629418ab759202582b78a3c@sentry.io/1546052',
+      dsn: 'https://10565b8e18354b6ebd0a767b7a0e1f19@sentry.io/1546052',
       enableInExpoDevelopment: true,
       debug: true
     });

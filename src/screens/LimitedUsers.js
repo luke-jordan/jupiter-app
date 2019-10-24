@@ -141,6 +141,8 @@ export default class LimitedUsers extends React.Component {
         </View>
         <View style={styles.nextButtonWrapper}>
           <Button
+            testID='limited-users-button'
+            accessibilityLabel='limited-users-button'
             title={this.state.notifyMode ? "NOTIFY ME" : "CONTINUE"}
             loading={this.state.loading}
             titleStyle={styles.buttonTitleStyle}
@@ -153,7 +155,7 @@ export default class LimitedUsers extends React.Component {
               end: { x: 1, y: 0.5 },
             }} />
         </View>
-        <Text style={styles.haveAnAccountText}>Already have an account?<Text style={styles.textAsButton} onPress={this.onPressLogin}> Log in</Text></Text>
+        <Text style={styles.haveAnAccountText}>Already have an account?<Text testID='limited-users-login' accessibilityLabel='limited-users-login'style={styles.textAsButton} onPress={this.onPressLogin}> Log in</Text></Text>
       </KeyboardAvoidingView>
     );
   }

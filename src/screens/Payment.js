@@ -96,10 +96,12 @@ export default class Payment extends React.Component {
             amountAdded: this.state.amountAdded,
           });
         } else {
+          LoggingUtil.logEvent('PAYMENT_FAILED_UNKNOWN', { "serverResponse" : JSON.stringify(result) });
           //failed
           //TODO redirect to failed screen
         }
       } else {
+        LoggingUtil.logEvent('PAYMENT_FAILED_UNKNOWN', { "serverResponse" : JSON.stringify(result) });
         throw result;
       }
     } catch (error) {
@@ -160,7 +162,7 @@ export default class Payment extends React.Component {
                 <Image style={styles.copyIcon} source={require('../../assets/copy.png')} resizeMode="contain"/>
               </TouchableOpacity>
             </LinearGradient>
-            <TouchableOpacity style={styles.alreadyPaidButton} onPress={this.onPressAlreadyPaid}>
+            <TouchableOpacity testID='payment-already-paid' accessibilityLabel='payment-already-paid' style={styles.alreadyPaidButton} onPress={this.onPressAlreadyPaid}>
               <Text style={styles.alreadyPaidButtonText}>I&apos;VE ALREADY PAID</Text>
             </TouchableOpacity>
           </View>
