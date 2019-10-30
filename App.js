@@ -4,6 +4,7 @@ import { createStackNavigator, createAppContainer } from 'react-navigation';
 import { StyleSheet, SafeAreaView, AppState } from 'react-native';
 import { LoggingUtil } from './src/util/LoggingUtil';
 import * as Sentry from 'sentry-expo';
+import { Endpoints } from './src/util/Values';
 
 import Splash from './src/screens/Splash';
 import Login from './src/screens/Login';
@@ -76,7 +77,7 @@ export default class App extends React.Component {
 
   componentDidMount() {
     Sentry.init({
-      dsn: 'https://10565b8e18354b6ebd0a767b7a0e1f19@sentry.io/1546052',
+      dsn: Endpoints.SENTRY,
       enableInExpoDevelopment: true,
       debug: true
     });
