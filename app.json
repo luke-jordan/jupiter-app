@@ -28,7 +28,7 @@
       "bundleIdentifier": "com.jupitersave.app"
     },
     "android": {
-      "package": "come.jupitersave.app",
+      "package": "com.jupitersave.app",
       "permissions": []
     },
     "hooks": {
