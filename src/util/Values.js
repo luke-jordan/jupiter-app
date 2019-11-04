@@ -27,8 +27,8 @@ export const Endpoints = isMaster ? {
   //MASTER
   AUTH : "https://master-auth.jupiterapp.net/",
   CORE : "https://master.jupiterapp.net",
-  SENTRY : "https://10565b8e18354b6ebd0a767b7a0e1f19@sentry.io/1546052",
-  AMPLITUDE : "80b9b8a9b4bf0b6c4bdff7782cf85af2",
+  SENTRY : "https://db1d92497e7f4c9ba161dedad72db0ac@sentry.io/1803441",
+  AMPLITUDE : "1ffeafa710818ebcbf1942bf26620f49",
 } : {
   //STAGING
   AUTH : "https://staging-auth.jupiterapp.net/",
