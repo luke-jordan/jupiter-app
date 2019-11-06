@@ -35,6 +35,7 @@ import WithdrawalComplete from './src/screens/WithdrawalComplete';
 import ChangePassword from './src/screens/ChangePassword';
 import Support from './src/screens/Support';
 import SupportRequestSent from './src/screens/SupportRequestSent';
+import History from './src/screens/History';
 
 const AppContainer = createAppContainer(
   createStackNavigator(
@@ -68,6 +69,7 @@ const AppContainer = createAppContainer(
       ChangePassword: { screen: ChangePassword },
       Support: { screen: Support },
       SupportRequestSent: { screen: SupportRequestSent },
+      History: { screen: History },
     },
     { initialRouteName: "Splash", headerMode: 'none' }
   )
