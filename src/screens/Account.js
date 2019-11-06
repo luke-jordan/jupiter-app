@@ -47,6 +47,10 @@ export default class Account extends React.Component {
     this.props.navigation.navigate('Profile');
   }
 
+  onPressHistory = () => {
+    this.props.navigation.navigate('History');
+  }
+
   onPressWithdraw = () => {
     this.props.navigation.navigate('WithdrawStep1');
   }
@@ -102,6 +106,15 @@ export default class Account extends React.Component {
             </TouchableOpacity>
             <TouchableOpacity style={styles.buttonLine} onPress={this.onPressWithdraw}>
               <Text style={styles.buttonLineText}>Withdraw Cash</Text>
+              <Icon
+                name='chevron-right'
+                type='evilicon'
+                size={50}
+                color={Colors.MEDIUM_GRAY}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.buttonLine} onPress={this.onPressHistory}>
+              <Text style={styles.buttonLineText}>History</Text>
               <Icon
                 name='chevron-right'
                 type='evilicon'
