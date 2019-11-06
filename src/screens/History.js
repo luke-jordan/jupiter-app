@@ -42,9 +42,11 @@ export default class History extends React.Component {
       });
       if (result.ok) {
         let resultJson = await result.json();
-        console.log(resultJson);
+        let balance = resultJson.userBalance.currentBalance;
         this.setState({
-          // history: resultJson,
+          totalSavings: this.getCurrencySymbol(balance.currency) + this.getFormattedBalance(balance.amount, balance.unit),
+          monthlyInterest: resultJson.accruedInterest,
+          history: resultJson.userHistory,
           loading: false,
         });
       } else {
@@ -67,7 +69,7 @@ export default class History extends React.Component {
     );
   }
 
-  renderDayInfo(dayData) {
+  renderDayInfo(dayData, parentIndex) {
     let header = dayData[0];
     dayData.shift();
     let dayRender = [];
@@ -80,7 +82,7 @@ export default class History extends React.Component {
     }
     dayRender.pop();
     return (
-      <View style={styles.dayInfo}>
+      <View style={styles.dayInfo} key={parentIndex}>
         {
           this.renderDayHeader(header)
         }
@@ -95,11 +97,11 @@ export default class History extends React.Component {
 
   getItemIcon(type) {
     switch (type) {
-      case "deposit":
+      case "USER_SAVING_EVENT":
       return require('../../assets/add.png');
-      case "withdrawal":
+      case "WITHDRAWAL":
       return require('../../assets/withdrawal.png');
-      case "interest":
+      case "INTEREST":
       return require('../../assets/interest.png');
       default:
       return require('../../assets/interest.png');
@@ -108,30 +110,105 @@ export default class History extends React.Component {
 
   getItemTitle(type) {
     switch (type) {
-      case "deposit":
+      case "USER_SAVING_EVENT":
       return "Cash Added";
-      case "withdrawal":
+      case "WITHDRAWAL":
       return "Withdrawal";
-      case "interest":
+      case "INTEREST":
       return "Interest";
       default:
       return "";
     }
   }
 
+  getItemAmount(amount, unit, currency) {
+    //TODO handle currency
+    let currencySymbol = this.getCurrencySymbol(currency);
+    let sign = amount > 0 ? "+" : "-";
+    return sign + currencySymbol + this.getFormattedBalance(amount, unit);
+  }
+
+  getCurrencySymbol(currencyName) {
+    //todo improve this to handle more currencies
+    switch (currencyName) {
+      case "ZAR":
+      return "R";
+
+      default:
+      return "?";
+    }
+  }
+
+  getFormattedBalance(balance, unit) {
+    if (balance < 0) balance *= -1;
+    return (balance / this.getDivisor(unit)).toFixed(2);
+  }
+
+  getDivisor(unit) {
+    switch(unit) {
+      case "MILLIONTH_CENT":
+      return 100000000;
+
+      case "TEN_THOUSANDTH_CENT":
+      return 1000000;
+
+      case "THOUSANDTH_CENT":
+      return 100000;
+
+      case "HUNDREDTH_CENT":
+      return 10000;
+
+      case "WHOLE_CENT":
+      return 100;
+
+      case "WHOLE_CURRENCY":
+      return 1;
+
+      default:
+      return 1;
+    }
+  }
+
+
   renderHistoryElement(element, index) {
     return (
       <View style={styles.historyItem} key={index ? index : null}>
-        <Image style={styles.historyItemIcon} source={this.getItemIcon(element.type)}/>
+        <Image style={styles.historyItemIcon} source={this.getItemIcon(element.details.transactionType)}/>
         <View style={styles.historyItemInfo}>
-          <Text style={styles.historyTitle}>{this.getItemTitle(element.type)}</Text>
+          <Text style={styles.historyTitle}>{this.getItemTitle(element.details.transactionType)}</Text>
           {
             element.desc ?
-            <Text style={styles.historyDesc}>{element.desc}</Text>
+            <Text style={styles.historyDesc}>{element.details.humanReference}</Text>
             : null
           }
         </View>
-        <Text style={styles.historyAmount}>{element.amount}</Text>
+        <Text style={styles.historyAmount}>{this.getItemAmount(element.details.amount, element.details.unit, element.details.currency)}</Text>
+      </View>
+    );
+  }
+
+  renderHistory() {
+    let history = this.state.history.sort((a, b) => a.timestamp < b.timestamp ? 1 : -1);
+    let currentDate;
+    let currentDay = [], renderInfo = [];
+    for (let record of history) {
+      if (currentDay.length == 0) {
+        currentDate = moment(record.timestamp);
+        currentDay.push(currentDate);
+      }
+      if (moment(record.timestamp).isSame(currentDate, 'day')) {
+        currentDay.push(record);
+      } else {
+        renderInfo.push(currentDay);
+        currentDay = [];
+      }
+    }
+
+    return (
+      <View style={{width: '100%'}}>
+        {
+          renderInfo.map((item, index) => this.renderDayInfo(item, index))
+        }
       </View>
     );
   }
@@ -170,15 +247,9 @@ export default class History extends React.Component {
 
             </View>
             <ScrollView style={styles.scrollView} contentContainerStyle={styles.mainContent}>
-              {this.renderDayInfo([
-                moment(),
-                {"amount": "+R300.00", "type": "deposit", "desc": "LJORDAN12-00023"},
-                {"amount": "-R100.00", "type": "withdrawal", "desc": "LJORDAN12-00095"}
-              ])}
-              {this.renderDayInfo([
-                moment().subtract(1, 'days'),
-                {"amount": "+R20.00", "type": "interest"}
-              ])}
+              {
+                this.renderHistory()
+              }
             </ScrollView>
           </View>
         }
