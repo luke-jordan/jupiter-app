@@ -11,8 +11,6 @@ export default class History extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      totalSavings: "R2,200.40",
-      monthlyInterest: "R50.40",
       loading: true,
     };
   }
@@ -112,17 +110,36 @@ export default class History extends React.Component {
     switch (type) {
       case "USER_SAVING_EVENT":
       return "Cash Added";
+
       case "WITHDRAWAL":
       return "Withdrawal";
+
       case "INTEREST":
       return "Interest";
+
+      case "USER_REGISTERED":
+      return "Registered your account";
+
+      case "PASSWORD_SET":
+      return "Set your password";
+
+      case "ID_VERIFIED":
+      return "ID number verified";
+
+      case "PASSWORD_CHANGED":
+      return "Changed your password";
+
+      case "PROFILE_UPDATED":
+      return "Changed your profile details";
+
       default:
+      let result = type.split("_").map((word) => { return word.toLowerCase();}).join(" ");
+      result = result.charAt(0).toUpperCase() + result.substr(1);
       return "";
     }
   }
 
   getItemAmount(amount, unit, currency) {
-    //TODO handle currency
     let currencySymbol = this.getCurrencySymbol(currency);
     let sign = amount > 0 ? "+" : "-";
     return sign + currencySymbol + this.getFormattedBalance(amount, unit);
@@ -171,46 +188,65 @@ export default class History extends React.Component {
 
 
   renderHistoryElement(element, index) {
+    let type = "";
+    if (element.type == "HISTORY") {
+      type = element.details.eventType;
+    } else if (element.type == "TRANSACTION") {
+      type = element.details.transactionType;
+    }
     return (
       <View style={styles.historyItem} key={index ? index : null}>
-        <Image style={styles.historyItemIcon} source={this.getItemIcon(element.details.transactionType)}/>
+        <Image style={styles.historyItemIcon} source={this.getItemIcon(type)}/>
         <View style={styles.historyItemInfo}>
-          <Text style={styles.historyTitle}>{this.getItemTitle(element.details.transactionType)}</Text>
+          <Text style={styles.historyTitle}>{this.getItemTitle(type)}</Text>
           {
             element.desc ?
             <Text style={styles.historyDesc}>{element.details.humanReference}</Text>
             : null
           }
         </View>
-        <Text style={styles.historyAmount}>{this.getItemAmount(element.details.amount, element.details.unit, element.details.currency)}</Text>
+        {
+          element.type == "TRANSACTION" ?
+          <Text style={styles.historyAmount}>{this.getItemAmount(element.details.amount, element.details.unit, element.details.currency)}</Text>
+          : null
+        }
       </View>
     );
   }
 
   renderHistory() {
-    let history = this.state.history.sort((a, b) => a.timestamp < b.timestamp ? 1 : -1);
-    let currentDate;
-    let currentDay = [], renderInfo = [];
-    for (let record of history) {
-      if (currentDay.length == 0) {
-        currentDate = moment(record.timestamp);
-        currentDay.push(currentDate);
-      }
-      if (moment(record.timestamp).isSame(currentDate, 'day')) {
-        currentDay.push(record);
-      } else {
-        renderInfo.push(currentDay);
-        currentDay = [];
-      }
-    }
-
-    return (
-      <View style={{width: '100%'}}>
-        {
-          renderInfo.map((item, index) => this.renderDayInfo(item, index))
+    if (this.state.history && this.state.history.length > 0) {
+      let history = this.state.history.sort((a, b) => a.timestamp < b.timestamp ? 1 : -1);
+      let currentDate;
+      let currentDay = [], renderInfo = [];
+      for (let record of history) {
+        if (currentDay.length == 0) {
+          currentDate = moment(record.timestamp);
+          currentDay.push(currentDate);
         }
-      </View>
-    );
+        if (moment(record.timestamp).isSame(currentDate, 'day')) {
+          currentDay.push(record);
+        } else {
+          renderInfo.push(currentDay);
+          currentDay = [];
+        }
+      }
+      renderInfo.push(currentDay);
+
+      return (
+        <View style={{width: '100%'}}>
+          {
+            renderInfo.map((item, index) => this.renderDayInfo(item, index))
+          }
+        </View>
+      );
+    } else {
+      return (
+        <View style={styles.placeholder}>
+          <Text style={styles.placeholderText}>No results!</Text>
+        </View>
+      );
+    }
   }
 
   render() {
@@ -364,5 +400,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 5,
     marginVertical: 10,
+  },
+  placeholder: {
+    paddingVertical: 50,
+  },
+  placeholderText: {
+    alignSelf: 'center',
+    fontFamily: 'poppins-regular',
   },
 });
