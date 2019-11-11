@@ -11,9 +11,13 @@ export const Colors = {
   LIGHT_GRAY : "#EDEDF5",
   YELLOW : "#FBC943",
   RED : "#CE0D25",
+  LIGHT_RED : "#FA7459",
   BACKGROUND_GRAY : "#F4F6F8",
   TRANSPARENT_BACKGROUND : "#212C3299",
-  WHITE : '#FFFFFF'
+  WHITE : '#FFFFFF',
+  SKY_BLUE : '#EAF8FA',
+  GREEN : "#149570",
+
 };
 
 export const Sizes = {

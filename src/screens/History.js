@@ -54,7 +54,6 @@ export default class History extends React.Component {
       console.log("error!", error.status);
       this.setState({loading: false});
     }
-
   }
 
   onPressBack = () => {
