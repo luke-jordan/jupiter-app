@@ -30,6 +30,7 @@ export const NavigationUtil = {
     AsyncStorage.removeItem("lastShownBalance");
     AsyncStorage.removeItem("gameId");
     AsyncStorage.removeItem("currentGames");
+    AsyncStorage.removeItem("userHistory");
     LoggingUtil.clearUserProperties();
     NavigationUtil.navigateWithoutBackstack(navigation, 'Login');
   }

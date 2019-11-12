@@ -27,6 +27,19 @@ export default class History extends React.Component {
     await this.setState({
       token: token,
     });
+
+
+    let history = await AsyncStorage.getItem('userHistory');
+    if (history) {
+      history = JSON.parse(history);
+      let balance = history.userBalance.currentBalance;
+      this.setState({
+        totalSavings: this.getCurrencySymbol(balance.currency) + this.getFormattedBalance(balance.amount, balance.unit),
+        monthlyInterest: history.accruedInterest,
+        history: history.userHistory,
+        loading: false,
+      });
+    }
     this.fetchHistory(token);
   }
 
@@ -47,6 +60,7 @@ export default class History extends React.Component {
           history: resultJson.userHistory,
           loading: false,
         });
+        AsyncStorage.setItem("userHistory", JSON.stringify(resultJson));
       } else {
         throw result;
       }
