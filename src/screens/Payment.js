@@ -9,6 +9,7 @@ import Toast from 'react-native-easy-toast';
 import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
 
 let { width, height } = Dimensions.get('window');
+const FONT_UNIT = 0.01 * width;
 
 export default class Payment extends React.Component {
 
@@ -308,7 +309,7 @@ const styles = StyleSheet.create({
   },
   paymentLink: {
     fontFamily: 'poppins-semibold',
-    fontSize: 14,
+    fontSize: FONT_UNIT * 3,
     color: Colors.WHITE,
     textAlign: 'center',
   },

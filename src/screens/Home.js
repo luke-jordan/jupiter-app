@@ -359,7 +359,7 @@ export default class Home extends React.Component {
       break;
 
       case "VIEW_HISTORY":
-      //TODO navigate to history when available
+      this.props.navigation.navigate('History');
       break;
 
       default:
