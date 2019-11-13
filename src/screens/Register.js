@@ -265,6 +265,8 @@ export default class Register extends React.Component {
             <View style={styles.profileField}>
               <Text style={styles.profileFieldTitle}>First Name*</Text>
                 <Input
+                  testID='register-first-name'
+                  accessibilityLabel='register-first-name'
                   value={this.state.firstName}
                   onChangeText={(text) => this.onEditField(text, "firstName")}
                   onEndEditing={() => this.onEndEditing("firstName")}
@@ -281,6 +283,8 @@ export default class Register extends React.Component {
             <View style={styles.profileField}>
               <Text style={styles.profileFieldTitle}>Last Name*</Text>
                 <Input
+                  testID='register-last-name'
+                  accessibilityLabel='register-last-name'
                   value={this.state.lastName}
                   onChangeText={(text) => this.onEditField(text, "lastName")}
                   onEndEditing={() => this.onEndEditing("lastName")}
@@ -297,6 +301,8 @@ export default class Register extends React.Component {
             <View style={styles.profileField}>
               <Text style={styles.profileFieldTitle}>ID Number*</Text>
                 <Input
+                  testID='register-id-number'
+                  accessibilityLabel='register-id-number'
                   value={this.state.idNumber}
                   onChangeText={(text) => this.onEditField(text, "idNumber")}
                   onEndEditing={() => this.onEndEditing("idNumber")}
@@ -313,6 +319,8 @@ export default class Register extends React.Component {
             <View style={styles.profileField}>
               <Text style={styles.profileFieldTitle}>Email Address or Phone number</Text>
                 <Input
+                  testID='register-email-or-phone'
+                  accessibilityLabel='register-email-or-phone'                  
                   value={this.state.userId}
                   onChangeText={(text) => this.onEditField(text, "userId")}
                   onEndEditing={() => this.onEndEditing("userId")}
@@ -347,6 +355,8 @@ export default class Register extends React.Component {
             : null
           }
           <Button
+            testID='register-continue-btn'
+            accessibilityLabel='register-continue-btn'
             title="CONTINUE"
             loading={this.state.loading}
             titleStyle={styles.buttonTitleStyle}
@@ -375,6 +385,8 @@ export default class Register extends React.Component {
               <Text style={styles.helpContent}>An account with this <Text style={styles.bold}>ID number</Text> has already been created.</Text>
               <Text style={styles.explanation}>Log in to your account</Text>
               <Button
+                testID='register-login'
+                accessibilityLabel='register-login'
                 title="LOG IN"
                 loading={this.state.loginLoading}
                 titleStyle={styles.buttonTitleStyle}
@@ -388,6 +400,8 @@ export default class Register extends React.Component {
                 }} />
               <Text style={styles.explanation}>Forgot your password?</Text>
               <Button
+                testID='register-reset-password'
+                accessibilityLabel='register-reset-password'
                 title="RESET PASSWORD"
                 loading={this.state.resetPasswordLoading}
                 titleStyle={styles.buttonTitleStyle}

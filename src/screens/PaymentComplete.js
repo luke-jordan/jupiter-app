@@ -164,6 +164,8 @@ export default class PaymentComplete extends React.Component {
           <View style={styles.separator} />
         </View>
         <Button
+          testID='paymnent-complete-done-btn'
+          accessibilityLabel='paymnent-complete-done-btn'
           title="DONE"
           loading={this.state.loading}
           titleStyle={styles.buttonTitleStyle}

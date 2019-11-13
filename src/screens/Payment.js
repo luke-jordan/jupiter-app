@@ -163,7 +163,7 @@ export default class Payment extends React.Component {
                 <Image style={styles.copyIcon} source={require('../../assets/copy.png')} resizeMode="contain"/>
               </TouchableOpacity>
             </LinearGradient>
-            <TouchableOpacity style={styles.alreadyPaidButton} onPress={this.onPressAlreadyPaid}>
+            <TouchableOpacity testID='payment-already-paid' accessibilityLabel='payment-already-paid' style={styles.alreadyPaidButton} onPress={this.onPressAlreadyPaid}>
               <Text style={styles.alreadyPaidButtonText}>I&apos;VE ALREADY PAID</Text>
             </TouchableOpacity>
           </View>
