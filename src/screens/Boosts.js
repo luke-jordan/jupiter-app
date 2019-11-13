@@ -31,7 +31,28 @@ export default class Boosts extends React.Component {
     await this.setState({
       token: token,
     });
+
+    let boosts = await AsyncStorage.getItem('userBoosts');
+    if (boosts) {
+      boosts = JSON.parse(boosts);
+      this.setState({
+        boosts: boosts,
+        loading: false,
+      });
+    }
     this.fetchBoosts(token);
+  }
+
+  sortBoosts = (boosts) => {
+    return boosts.sort((a, b) => {
+      if (a.boostStatus != b.boostStatus) {
+        if (a.boostStatus == "REDEEMED" || a.boostStatus == "EXPIRED") return 1;
+        else return -1;
+      } else {
+        if (moment(a.endTime).isAfter(moment(b.endTime))) return -1;
+        else return 1;
+      }
+    });
   }
 
   fetchBoosts = async (token) => {
@@ -44,10 +65,12 @@ export default class Boosts extends React.Component {
       });
       if (result.ok) {
         let resultJson = await result.json();
+        let boosts = this.sortBoosts(resultJson);
         this.setState({
-          boosts: resultJson,
+          boosts: boosts,
           loading: false,
         });
+        AsyncStorage.setItem("userBoosts", JSON.stringify(boosts));
       } else {
         throw result;
       }
@@ -84,6 +107,10 @@ export default class Boosts extends React.Component {
     }
   }
 
+  isBoostExpiringSoon(endTime) {
+    return moment(endTime).isBefore(moment().add(1, 'days'));
+  }
+
   getAdditionalLabelRow(boostDetails) {
     if (boostDetails.boostStatus == "REDEEMED") {
       return <Text style={styles.boostClaimed}>Boost Claimed: </Text>;
@@ -91,7 +118,7 @@ export default class Boosts extends React.Component {
     if (boostDetails.boostStatus == "EXPIRED") {
       return <Text style={styles.boostExpired}>Boost Expired.</Text>;
     }
-    if (moment(boostDetails.endTime).isBefore(moment().add(1, 'days'))) {
+    if (this.isBoostExpiringSoon(boostDetails.endTime)) {
       return <Text style={styles.boostExpiring}>Expiring soon</Text>;
     }
   }
@@ -145,9 +172,21 @@ export default class Boosts extends React.Component {
     this.props.navigation.navigate('Friends');
   }
 
+  getHighlightBorder(boostDetails) {
+    if (boostDetails.boostStatus != "REDEEMED" && boostDetails.boostStatus != "EXPIRED" && this.isBoostExpiringSoon(boostDetails.endTime)) {
+      return styles.purpleBorder;
+    }
+    return null;
+  }
+
+  getCardOpacity(boostStatus) {
+    if (boostStatus == "EXPIRED") return 0.6;
+    return 1;
+  }
+
   renderBoostCard(boostDetails, index) {
     return (
-      <View style={[styles.boostCard, styles.boxShadow]} key={index}>
+      <View opacity={this.getCardOpacity(boostDetails.boostStatus)} style={[styles.boostCard, styles.boxShadow, this.getHighlightBorder(boostDetails)]} key={index}>
         <View style={styles.boostTopRow}>
           <Text style={styles.boostTitle}>{boostDetails.label}</Text>
           <View style={styles.boostIconWrapper}>
@@ -376,5 +415,9 @@ const styles = StyleSheet.create({
     fontFamily: 'poppins-semibold',
     fontSize: 13,
     color: Colors.LIGHT_RED,
+  },
+  purpleBorder: {
+    borderWidth: 1,
+    borderColor: Colors.PURPLE,
   },
 });

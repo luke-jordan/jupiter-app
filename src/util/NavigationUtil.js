@@ -31,6 +31,7 @@ export const NavigationUtil = {
     AsyncStorage.removeItem("gameId");
     AsyncStorage.removeItem("currentGames");
     AsyncStorage.removeItem("userHistory");
+    AsyncStorage.removeItem("userBoosts");
     LoggingUtil.clearUserProperties();
     NavigationUtil.navigateWithoutBackstack(navigation, 'Login');
   }
