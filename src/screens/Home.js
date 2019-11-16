@@ -98,14 +98,18 @@ export default class Home extends React.Component {
   }
 
   async checkIfUpdateNeeded() {
-    let localVersion = VersionCheck.getCurrentVersion();
-    let remoteVersion = await VersionCheck.getLatestVersion();
+    try {
+      let localVersion = VersionCheck.getCurrentVersion();
+      let remoteVersion = await VersionCheck.getLatestVersion();
 
-    const updateStatus = this.needsUpdate(localVersion, remoteVersion);
-    if (updateStatus == 2) {
-      this.showUpdateDialog(true);
-    } else if (updateStatus == 1) {
-      this.showUpdateDialog(false);
+      const updateStatus = this.needsUpdate(localVersion, remoteVersion);
+      if (updateStatus == 2) {
+        this.showUpdateDialog(true);
+      } else if (updateStatus == 1) {
+        this.showUpdateDialog(false);
+      }
+    } catch (err) {
+      LoggingUtil.logError(err);
     }
   }
 
@@ -173,19 +177,24 @@ export default class Home extends React.Component {
   };
 
   registerForPushNotifications = async () => {
-    const { status: existingStatus } = await Permissions.getAsync(Permissions.NOTIFICATIONS);
-    let finalStatus = existingStatus;
+    try {
+      const { status: existingStatus } = await Permissions.getAsync(Permissions.NOTIFICATIONS);
+      let finalStatus = existingStatus;
 
-    if (existingStatus !== 'granted') {
-      const { status } = await Permissions.askAsync(Permissions.NOTIFICATIONS);
-      finalStatus = status;
-    }
-    if (finalStatus !== 'granted') {
-      return;
-    }
+      if (existingStatus !== 'granted') {
+        const { status } = await Permissions.askAsync(Permissions.NOTIFICATIONS);
+        finalStatus = status;
+      }
+      if (finalStatus !== 'granted') {
+        return;
+      }
 
-    let token = await Notifications.getExpoPushTokenAsync();
-    NotificationsUtil.uploadTokenToServer(token, this.state.token);
+      let token = await Notifications.getExpoPushTokenAsync();
+      NotificationsUtil.uploadTokenToServer(token, this.state.token);
+    } catch (err) {
+      err.message = `Push notification registration error: ${err.message}`;
+      LoggingUtil.logError(err);
+    }
   }
 
   fetchUpdates = async () => {

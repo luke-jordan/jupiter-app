@@ -1,4 +1,5 @@
 import * as Amplitude from 'expo-analytics-amplitude';
+import * as Sentry from 'sentry-expo';
 import { Endpoints } from '../util/Values';
 
 export const LoggingUtil = {
@@ -18,6 +19,10 @@ export const LoggingUtil = {
     } else {
       Amplitude.logEvent(event);
     }
+  },
+
+  logError(error) {
+    Sentry.captureException(error);
   },
 
   clearUserProperties() {
