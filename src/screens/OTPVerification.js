@@ -243,6 +243,8 @@ export default class OTPVerification extends React.Component {
           <Text style={styles.labelStyle}>{this.state.header}</Text>
           <View style={styles.pinInputs}>
             <Input
+              testID='otp-index-1'
+              accessibilityLabel='otp-index-1'
               ref={ref => this.inputRefs0 = ref}
               keyboardType='numeric'
               secureTextEntry={true}
@@ -253,6 +255,8 @@ export default class OTPVerification extends React.Component {
               containerStyle={styles.containerStyle}
             />
             <Input
+              testID='otp-index-2'
+              accessibilityLabel='otp-index-2'
               ref={ref => this.inputRefs1 = ref}
               keyboardType='numeric'
               secureTextEntry={true}
@@ -263,6 +267,8 @@ export default class OTPVerification extends React.Component {
               containerStyle={styles.containerStyle}
             />
             <Input
+              testID='otp-index-3'
+              accessibilityLabel='otp-index-3'
               ref={ref => this.inputRefs2 = ref}
               keyboardType='numeric'
               secureTextEntry={true}
@@ -273,6 +279,8 @@ export default class OTPVerification extends React.Component {
               containerStyle={styles.containerStyle}
             />
             <Input
+              testID='otp-index-4'
+              accessibilityLabel='otp-index-4'
               ref={ref => this.inputRefs3 = ref}
               keyboardType='numeric'
               secureTextEntry={true}
@@ -290,6 +298,8 @@ export default class OTPVerification extends React.Component {
           }
         </View>
         <Button
+          testID='otp-continue-btn'
+          accessibilityLabel='otp-continue-btn'
           title="CONTINUE"
           loading={this.state.loading}
           titleStyle={styles.buttonTitleStyle}

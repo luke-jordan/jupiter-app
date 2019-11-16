@@ -132,6 +132,8 @@ export default class Login extends React.Component {
         <View style={styles.mainContent}>
           <Text style={styles.labelStyle}>Enter your phone number or email*</Text>
           <Input
+            testID='login-phone-or-email'
+            accessibilityLabel='login-phone-or-email'
             value={this.state.userId}
             onChangeText={(text) => this.setState({userId: text})}
             inputContainerStyle={styles.inputContainerStyle}
@@ -145,6 +147,8 @@ export default class Login extends React.Component {
           }
           <Text style={styles.labelStyle}>Password*</Text>
           <Input
+            testID='login-password'
+            accessibilityLabel='login-password'
             secureTextEntry={true}
             value={this.state.password}
             onChangeText={(text) => this.setState({password: text})}
@@ -165,6 +169,8 @@ export default class Login extends React.Component {
           }
         </View>
         <Button
+          testID='login-btn'
+          accessibilityLabel='login-btn'
           title="LOGIN"
           loading={this.state.loading}
           titleStyle={styles.buttonTitleStyle}
