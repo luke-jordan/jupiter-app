@@ -209,6 +209,7 @@ export default class Home extends React.Component {
       });
       if (result.ok) {
         let resultJson = await result.json();
+        this.storeUpdatedBalance(resultJson);
         this.setState({
           endOfDayBalance: resultJson.balanceEndOfToday.amount
         });
@@ -220,6 +221,19 @@ export default class Home extends React.Component {
       this.setState({loading: false});
     }
     setTimeout(() => {this.fetchUpdates()}, FETCH_DELAY);
+  }
+
+  async storeUpdatedBalance(response) {
+    let info = await AsyncStorage.getItem('userInfo');
+    if (!info) {
+      NavigationUtil.logout(this.props.navigation);
+    } else {
+      info = JSON.parse(info);
+    }
+    if (response) {
+      info.balance = response;
+      AsyncStorage.setItem('userInfo', JSON.stringify(info));
+    }
   }
 
   async animateBalance(balance) {
