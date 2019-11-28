@@ -40,3 +40,15 @@ export const Endpoints = isMaster ? {
   SENTRY : "https://10565b8e18354b6ebd0a767b7a0e1f19@sentry.io/1546052",
   AMPLITUDE : "80b9b8a9b4bf0b6c4bdff7782cf85af2",
 }
+
+export const Defaults = isMaster ? {
+  // MASTER
+  LOGIN: '',
+  PASS: '',
+  REFERRAL: ''
+} : {
+  // STAGING
+  LOGIN:'someone@jupitersave.com',
+  PASS: 'holy_CHRYSALIS_hatching9531',
+  REFERRAL: 'LETMEIN'
+}

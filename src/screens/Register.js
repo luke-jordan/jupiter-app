@@ -12,10 +12,10 @@ export default class Register extends React.Component {
     super(props);
     this.state = {
       loading: false,
-      firstName: "test",
-      lastName: "test",
-      idNumber: "0000000000001",
-      userId: "testemail01@test.tst",
+      firstName: "",
+      lastName: "",
+      idNumber: "",
+      userId: "",
       referralCode: "",
       errors: {
         firstName: false,
