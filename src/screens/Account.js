@@ -142,7 +142,7 @@ export default class Account extends React.Component {
             </TouchableOpacity>
           </View>
           <View style={styles.versionLine}>
-            <Text style={styles.versionText}>Version {VersionCheck.getCurrentVersion()} {VersionCheck.getCurrentBuildNumber() ? `(${VersionCheck.getCurrentBuildNumber()})` : ""}</Text>
+            <Text style={styles.versionText}>Version {VersionCheck.getCurrentVersion()}</Text>
             <Text style={styles.versionText} onPress={this.onPressSupport}>Contact Support</Text>
           </View>
           <Button

@@ -1,12 +1,9 @@
 import React from 'react';
 import { StyleSheet, View, Image, Text, ImageBackground } from 'react-native';
-import { Colors, Endpoints } from '../util/Values';
+import { Colors, Endpoints, Defaults } from '../util/Values';
 import { Input, Button } from 'react-native-elements';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { ValidationUtil } from '../util/ValidationUtil';
-
-import isEmail from 'validator/lib/isEmail';
-import isMobilePhone from 'validator/lib/isMobilePhone';
 
 const stdHeaders = {
   'Content-Type': 'application/json',
@@ -19,10 +16,10 @@ export default class Login extends React.Component {
     super(props);
     this.state = {
       // userId: "testemail01@test.tst",
-      userId: "someone@jupitersave.com",
+      userId: Defaults.LOGIN,
       validationError: false,
       // password: "аА@123456",
-      password: "holy_CHRYSALIS_hatching9531",
+      password: Defaults.PASS,
       passwordError: false
     };
   }

@@ -40,6 +40,7 @@ export default class AddCash extends React.Component {
           unit: info.balance.currentBalance.unit,
           token: info.token,
           accountId: info.balance.accountId[0],
+          comparatorRates: info.balance.comparatorRates,
         });
       }
     }
@@ -166,6 +167,39 @@ export default class AddCash extends React.Component {
     }
   }
 
+  getBankRate(bank) {
+    let result = 0, bankThreshold = -1;
+    let relevantAmount = parseInt(this.state.amountToAdd) + parseInt(this.getFormattedBalance(this.state.balance));
+    for (let key in bank) {
+      if (key == "label") continue;
+
+      let keyInt = parseInt(key);
+      if (relevantAmount > keyInt && keyInt > bankThreshold) {
+        result = bank[key];
+        bankThreshold = keyInt;
+      }
+    }
+    return parseFloat(result / 100).toFixed(2);
+   }
+
+   getReferenceRate() {  
+    if (this.state.comparatorRates && this.state.comparatorRates.referenceRate) {
+      return parseFloat(this.state.comparatorRates.referenceRate / 100).toFixed(2);
+    }
+
+    return "";
+   }
+
+  renderBankLine(item, index) {
+    let bank = this.state.comparatorRates.rates[item];
+    return (
+      <View style={styles.rateLine} key={index}>
+        <Text style={styles.rateComparisonBank}>{bank.label}</Text>
+        <Text style={styles.rateComparisonBank}>{this.getBankRate(bank)}%</Text>
+      </View>
+    );
+  }
+
   render() {
     return (
       <View style={styles.container}>
@@ -197,7 +231,25 @@ export default class AddCash extends React.Component {
               containerStyle={styles.containerStyle}
             />
           </View>
-          <Text style={styles.makeSureDisclaimer}>Please make sure you have added the correct amount as this transaction cannot be reversed.</Text>
+          {
+            this.state.comparatorRates ?
+            <View style={styles.rateComparison}>
+              <Text style={styles.rateComparisonTitle}>Compare our interest rate</Text>
+              <View style={styles.rateComparisonBox}>
+                <View style={styles.rateLine}>
+                  <Text style={styles.rateComparisonJupiter}>Jupiter Savings</Text>
+                  <Text style={styles.rateComparisonJupiter}>{this.getReferenceRate()}%</Text>
+                </View>
+                <View style={styles.rateComparisonSeparator} />
+                {
+                  this.state.comparatorRates.rates ?
+                  Object.keys(this.state.comparatorRates.rates).map((item, index) => this.renderBankLine(item, index))
+                  : null
+                }
+              </View>
+            </View>
+            : null
+          }
         </ScrollView>
         <Button
           testID='add-cash-next-btn'
@@ -342,5 +394,43 @@ const styles = StyleSheet.create({
     marginTop: 10,
     lineHeight: 17,
     color: Colors.MEDIUM_GRAY,
+  },
+  rateComparison: {
+    width: '90%',
+    marginVertical: 30,
+  },
+  rateComparisonTitle: {
+    fontFamily: 'poppins-semibold',
+    color: Colors.DARK_GRAY,
+    fontSize: 16,
+    marginBottom: 10,
+  },
+  rateComparisonBox: {
+    width: '100%',
+    backgroundColor: 'white',
+    borderRadius: 20,
+    paddingVertical: 20,
+  },
+  rateLine: {
+    marginHorizontal: 20,
+    marginVertical: 2,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  rateComparisonSeparator: {
+    width: '100%',
+    height: 1,
+    backgroundColor: Colors.GRAY,
+    marginVertical: 15,
+  },
+  rateComparisonJupiter: {
+    fontFamily: 'poppins-semibold',
+    color: Colors.PURPLE,
+    fontSize: 16,
+  },
+  rateComparisonBank: {
+    fontFamily: 'poppins-regular',
+    color: Colors.MEDIUM_GRAY,
+    fontSize: 14,
   },
 });

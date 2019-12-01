@@ -10,8 +10,9 @@ export default class PendingRegistrationSteps extends React.Component {
 
   constructor(props) {
     super(props);
+    let userInfo = this.props.navigation.getParam("userInfo");
     this.state = {
-
+      firstName: userInfo.profile.personalName,
     };
   }
 
@@ -38,7 +39,7 @@ export default class PendingRegistrationSteps extends React.Component {
         </View>
         <View style={styles.mainContent}>
           <View style={styles.topSection}>
-            <Text style={styles.title}>Hello, Luke</Text>
+            <Text style={styles.title}>Hello, {this.state.firstName}</Text>
             <Text style={styles.description}>You’re on your way to becoming a smart saver. We just need the following before activating your account:</Text>
           </View>
           <View style={styles.midSection}>

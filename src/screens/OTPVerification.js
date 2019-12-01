@@ -54,7 +54,7 @@ export default class OTPVerification extends React.Component {
           NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'PendingRegistrationSteps', { userInfo: resultJson });
         } else {
           AsyncStorage.setItem('userInfo', JSON.stringify(resultJson));
-          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', { userInfo: resultJson });          
+          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', { userInfo: resultJson });
         }
       } else {
         let resultJson = await result.json();
@@ -202,30 +202,38 @@ export default class OTPVerification extends React.Component {
 
   onChangePinField = (text, index) => {
     let pin = this.state.pin;
-    let num = parseInt(text[text.length - 1]);
-    if (num >= 0 && num <= 9) {
-      pin[index] = text[text.length - 1];
-      this.setState({
-        otpError: false,
-        passwordError: false,
-        pin,
-      });
+    let deletion = text.length == 0;
+    if (deletion) {
+      pin[index] = null;
+    } else {
+      let num = parseInt(text[text.length - 1]);
+      if (num >= 0 && num <= 9) {
+        pin[index] = text[text.length - 1];
+      }
     }
+    this.setState({
+      otpError: false,
+      passwordError: false,
+      pin,
+    });
     switch (index) {
       case 0:
-      this.inputRefs1.focus();
+      if (!deletion) this.inputRefs1.focus();
       break;
 
       case 1:
-      this.inputRefs2.focus();
+      if (deletion) this.inputRefs0.focus();
+      else this.inputRefs2.focus();
       break;
 
       case 2:
-      this.inputRefs3.focus();
+      if (deletion) this.inputRefs1.focus();
+      else this.inputRefs3.focus();
       break;
 
       case 3:
-      this.inputRefs3.blur();
+      if (deletion) this.inputRefs2.focus();
+      else this.inputRefs3.blur();
       break;
 
       default:
