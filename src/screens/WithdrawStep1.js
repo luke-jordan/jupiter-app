@@ -12,9 +12,9 @@ export default class Withdraw extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      accountHolder: "test",
-      bank: "FNB",
-      accountNumber: "12345678",
+      accountHolder: "",
+      bank: "",
+      accountNumber: "",
       loading: false,
       errors: null,
     };

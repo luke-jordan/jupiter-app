@@ -182,6 +182,14 @@ export default class AddCash extends React.Component {
     return parseFloat(result / 100).toFixed(2);
    }
 
+   getReferenceRate() {  
+    if (this.state.comparatorRates && this.state.comparatorRates.referenceRate) {
+      return parseFloat(this.state.comparatorRates.referenceRate / 100).toFixed(2);
+    }
+
+    return "";
+   }
+
   renderBankLine(item, index) {
     let bank = this.state.comparatorRates.rates[item];
     return (
@@ -230,7 +238,7 @@ export default class AddCash extends React.Component {
               <View style={styles.rateComparisonBox}>
                 <View style={styles.rateLine}>
                   <Text style={styles.rateComparisonJupiter}>Jupiter Savings</Text>
-                  <Text style={styles.rateComparisonJupiter}>{this.state.comparatorRates ? this.state.comparatorRates.referenceRate : ""}%</Text>
+                  <Text style={styles.rateComparisonJupiter}>{this.getReferenceRate()}%</Text>
                 </View>
                 <View style={styles.rateComparisonSeparator} />
                 {
