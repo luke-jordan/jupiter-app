@@ -62,3 +62,10 @@ typings/
 
 # VSCode settings
 .vscode/
+
+# Expo build settings
+.expo/
+
+# Test related files
+./test/node_modules
+./test/package-lock.json

@@ -1,11 +1,10 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
-import { NavigationUtil } from '../util/NavigationUtil';
+import { StyleSheet, View, Image, Text, AsyncStorage, Platform, Dimensions, TouchableOpacity } from 'react-native';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Endpoints, Colors } from '../util/Values';
-import { Button, Icon, Input } from 'react-native-elements';
+import { Button, Input, Icon } from 'react-native-elements';
 
-let {height, width} = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
 export default class ResetPassword extends React.Component {
@@ -20,7 +19,11 @@ export default class ResetPassword extends React.Component {
   }
 
   async componentDidMount() {
+    LoggingUtil.logEvent('USER_INITIATED_PWORD_RESET_ON_OTP');
+  }
 
+  onPressBack = () => {
+    this.props.navigation.goBack();
   }
 
   onPressReset = async () => {
@@ -40,15 +43,19 @@ export default class ResetPassword extends React.Component {
       });
       if (result.ok) {
         this.setState({loading: false});
+        let resultJson = await result.json();
         this.props.navigation.navigate('OTPVerification', {
           userId: this.state.userInput,
+          systemWideUserId: resultJson.systemWideUserId,
           redirection: 'Reset',
         });
       } else {
+        let resultText = await result.text();
+        console.log(resultText);
         throw result;
       }
     } catch (error) {
-      console.log("error!", error);
+      // console.log("error!", error);
       this.showError();
     }
   }
@@ -63,9 +70,19 @@ export default class ResetPassword extends React.Component {
   render() {
     return (
       <View style={styles.container} contentContainerStyle={styles.container} behavior="position" keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.headerButton} onPress={this.onPressBack} >
+            <Icon
+              name='chevron-left'
+              type='evilicon'
+              size={45}
+              color={Colors.MEDIUM_GRAY}
+            />
+          </TouchableOpacity>
+        </View>
         <Image style={styles.image} source={require('../../assets/lock.png')} resizeMode="contain"/>
         <Text style={styles.title}>Reset Password</Text>
-        <Text style={styles.description}>We’ll send you a link to reset your password.</Text>
+        <Text style={styles.description}>We’ll send you a code to reset your password.</Text>
         <View style={styles.inputWrapper}>
           <Text style={styles.labelStyle}>Enter your phone number or email address*</Text>
           <Input
@@ -104,7 +121,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     paddingHorizontal: 20,
-    marginTop: 40,
+    marginTop: 20,
   },
   image: {
     height: '15%',
@@ -152,7 +169,7 @@ const styles = StyleSheet.create({
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
     fontSize: 19,
-    color: 'white',
+    color: Colors.WHITE,
   },
   buttonStyle: {
     borderRadius: 10,
@@ -173,5 +190,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: -15, //this is valid because of the exact alignment of other elements - do not reuse in other components
     marginBottom: 20,
+  },
+  header: {
+    width: '100%',
+    height: 50,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: -20,
   },
 });

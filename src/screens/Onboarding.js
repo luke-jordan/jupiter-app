@@ -1,14 +1,12 @@
 import React from 'react';
-import * as Font from 'expo-font';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Dimensions } from 'react-native';
+import { StyleSheet, View, Image, Text, TouchableOpacity, Dimensions } from 'react-native';
 // import { reloadIfUpdateAvailable } from '../util/ExpoPublishUtil';
 import { Button, Icon } from 'react-native-elements';
 import { Colors } from '../util/Values';
-import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import Swiper from 'react-native-swiper';
 
-let {height, width} = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
 export default class Onboarding extends React.Component {
@@ -48,7 +46,7 @@ export default class Onboarding extends React.Component {
   getTabTitle = (index) => {
     switch (index) {
       case 0:
-      return "A new way to save";
+      return "A new way to grow";
 
       case 1:
       return "Add money, earn interest";
@@ -80,16 +78,16 @@ export default class Onboarding extends React.Component {
   getTabText = (index) => {
     switch (index) {
       case 0:
-      return 'Welcome to Jupiter, the savings account with a difference. We’re here to help you make the most of your money, by letting you build good habits and be rewarded along the way.';
+      return 'Welcome to Jupiter, the savings account with a difference. We’re here to help you make the most of your money, by letting you build healthy saving habits and be rewarded along the way.';
 
       case 1:
-      return 'Yep, it\’s that easy. Once you add money in your Jupiter account, you start earning interest immediately. No limits or hidden fees, just straight up earnings.';
+      return 'Yep, it’s that easy. Once you add money in your Jupiter account, you start earning interest immediately. From your very first R1, straight up earnings.';
 
       case 2:
       return 'You always have access to your money, so you can withdraw funds at any time. Perfect for that little (or huge) unplanned expense.';
 
       case 3:
-      return 'Unlike most financial services, Jupiter exists to help you build good saving habits. So, every time you save, you get rewarded for it—just like that.';
+      return 'Get rewarded for saving, not spending. Jupiter exists to help you build good saving habits. So, every time you save, you get rewarded for it—just like that.';
     }
   }
 
@@ -115,7 +113,7 @@ export default class Onboarding extends React.Component {
             color={Colors.PURPLE}
           />
         </TouchableOpacity>
-        <Swiper style={styles.wrapper}
+        <Swiper containerStyle={styles.wrapper}
           ref={(ref) => {this.swiperRef = ref;}}
           onIndexChanged={(index) => this.onIndexChanged(index)}
           loop={false} index={this.state.currentTab}
@@ -125,6 +123,8 @@ export default class Onboarding extends React.Component {
         </Swiper>
         <View style={styles.nextButtonWrapper}>
           <Button
+            testID='onboarding-button'
+            accessibilityLabel='onboarding-button'
             title={this.state.currentTab == 3 ? "START SAVING" : "NEXT"}
             loading={this.state.loading}
             titleStyle={styles.buttonTitleStyle}
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
     fontSize: 19,
-    color: 'white',
+    color: Colors.WHITE,
   },
   buttonStyle: {
     borderRadius: 10,

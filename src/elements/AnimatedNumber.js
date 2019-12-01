@@ -1,6 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity } from 'react-native';
-import { Colors, Sizes } from '../util/Values';
+import { StyleSheet, View, Image, Text, TouchableOpacity } from 'react-native';
 import { Icon } from 'react-native-elements';
 import moment from 'moment';
 

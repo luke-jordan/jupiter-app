@@ -1,51 +1,103 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, ImageBackground } from 'react-native';
-import { Colors, Endpoints } from '../util/Values';
+import { StyleSheet, View, Image, Text, ImageBackground } from 'react-native';
+import { Colors, Endpoints, Defaults } from '../util/Values';
 import { Input, Button } from 'react-native-elements';
-import { LinearGradient } from 'expo-linear-gradient';
 import { LoggingUtil } from '../util/LoggingUtil';
-import { NavigationUtil } from '../util/NavigationUtil';
+import { ValidationUtil } from '../util/ValidationUtil';
+
+const stdHeaders = {
+  'Content-Type': 'application/json',
+  'Accept': 'application/json'
+};
 
 export default class Login extends React.Component {
 
   constructor(props) {
     super(props);
     this.state = {
-      userId: "someone@jupitersave.com",
-      password: "holy_CHRYSALIS_hatching9531",
+      // userId: "testemail01@test.tst",
+      userId: Defaults.LOGIN,
+      validationError: false,
+      // password: "аА@123456",
+      password: Defaults.PASS,
+      passwordError: false
     };
   }
 
   async componentDidMount() {
-
+    LoggingUtil.logEvent('USER_ENTERED_LOGIN_SCREEN');
   }
 
+  initiateLogin = async () => {
+    const loginOptions = {
+      headers: stdHeaders,
+      method: 'POST',
+      body: JSON.stringify({
+        phoneOrEmail: this.state.userId,
+        password: this.state.password
+      })
+    };
+
+    const result = await fetch(Endpoints.AUTH + 'login', loginOptions);
+
+    if (result.ok) {
+      let resultJson = await result.json();
+      await this.generateOtpAndMove(resultJson.systemWideUserId);
+    } else if (result.status == 403) {
+      LoggingUtil.logEvent('LOGIN_FAILED_403');
+      this.setState({
+        loading: false,
+        passwordError: true
+      });
+    } else {
+      let resultJson = await result.json();
+      LoggingUtil.logEvent('LOGIN_FAILED_UNKNOWN', { "serverResponse" : JSON.stringify(resultJson) });
+      console.log(resultJson);
+      this.setState({ loading: false });
+      // todo: display proper error with contact us
+    }
+  }
+
+  generateOtpAndMove = async () => {
+    let result = await fetch(Endpoints.AUTH + 'otp/generate', {
+      headers: stdHeaders,
+      method: 'POST',
+      body: JSON.stringify({
+        phoneOrEmail: this.state.userId,
+        'type': 'LOGIN',
+      }),
+    });
+
+    if (result.ok) {
+      const resultJson = await result.json();
+      this.setState({ loading: true });
+      this.props.navigation.navigate('OTPVerification', {
+        userId: this.state.userId,
+        password: this.state.password,
+        channel: resultJson.channel,
+        redirection: 'Login',
+      });
+      this.setState({ loading: false }); // in case we come back (leaving true above in case slowness in nav)
+    } else {
+      LoggingUtil.logEvent('GENERATE_OTP_FAILED', { "serverResponse" : JSON.stringify(result) });
+      throw result;
+    }
+  };
+
   onPressLogin = async () => {
-    // LoggingUtil.logEvent("Pressed Login");
     if (this.state.loading) return;
+    // Just to clear this so user can always see it is happening
+    this.setState({ validationError: false });
+
+    const isValid = ValidationUtil.isValidEmailPhone(this.state.userId);
+    if (!isValid) {
+      console.log('ERROR! Halted submission');
+      this.setState({ validationError: true });
+      return;
+    }
     this.setState({loading: true});
     try {
-      let result = await fetch(Endpoints.AUTH + 'otp/generate', {
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        method: 'POST',
-        body: JSON.stringify({
-          "phoneOrEmail": this.state.userId,
-          "type": "LOGIN",
-        }),
-      });
-      if (result.ok) {
-        this.setState({loading: false});
-        this.props.navigation.navigate('OTPVerification', {
-          userId: this.state.userId,
-          password: this.state.password,
-          redirection: 'Login',
-        });
-      } else {
-        throw result;
-      }
+      await this.initiateLogin();
     } catch (error) {
       console.log("error!", error);
       this.setState({loading: false});
@@ -64,6 +116,10 @@ export default class Login extends React.Component {
     this.props.navigation.navigate('ResetPassword');
   }
 
+  onPressSupport = () => {
+    this.props.navigation.navigate('Support');
+  }
+
   render() {
     return (
       <View style={styles.container}>
@@ -71,16 +127,25 @@ export default class Login extends React.Component {
           <Image style={styles.headerImage} source={require('../../assets/group_16.png')}/>
         </View>
         <View style={styles.mainContent}>
-          <Text style={styles.labelStyle}>Enter your ID/Phone Number or Email Address*</Text>
+          <Text style={styles.labelStyle}>Enter your phone number or email*</Text>
           <Input
+            testID='login-phone-or-email'
+            accessibilityLabel='login-phone-or-email'
             value={this.state.userId}
             onChangeText={(text) => this.setState({userId: text})}
             inputContainerStyle={styles.inputContainerStyle}
             inputStyle={styles.inputStyle}
             containerStyle={styles.containerStyle}
           />
+          {
+            this.state.validationError ?
+            <Text style={styles.validationErrorText}>Please enter a valid email or phone number</Text>
+            : null
+          }
           <Text style={styles.labelStyle}>Password*</Text>
           <Input
+            testID='login-password'
+            accessibilityLabel='login-password'
             secureTextEntry={true}
             value={this.state.password}
             onChangeText={(text) => this.setState({password: text})}
@@ -91,8 +156,18 @@ export default class Login extends React.Component {
           <Text style={styles.textAsButton} onPress={this.onPressForgotPassword}>
             Forgot Password?
           </Text>
+          <Text style={styles.textAsButton} onPress={this.onPressSupport}>
+            Can't access your account?
+          </Text>
+          {
+            this.state.passwordError ?
+            <Text style={styles.accessErrorText}>Sorry, we couldn&apos;t match that phone/email and password. Please try again.</Text>
+            : null
+          }
         </View>
         <Button
+          testID='login-btn'
+          accessibilityLabel='login-btn'
           title="LOGIN"
           loading={this.state.loading}
           titleStyle={styles.buttonTitleStyle}
@@ -162,7 +237,7 @@ const styles = StyleSheet.create({
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
     fontSize: 19,
-    color: 'white',
+    color: Colors.WHITE,
   },
   buttonStyle: {
     borderRadius: 10,
@@ -176,6 +251,7 @@ const styles = StyleSheet.create({
     width: '80%',
   },
   textAsButton: {
+    marginVertical: 5,
     fontFamily: 'poppins-semibold',
     color: Colors.PURPLE,
   },
@@ -202,7 +278,18 @@ const styles = StyleSheet.create({
   bottomText: {
     fontFamily: 'poppins-semibold',
     fontSize: 15,
-    color: 'white',
+    color: Colors.WHITE,
     marginTop: 15,
   },
+  validationErrorText: {
+    fontFamily: 'poppins-semibold',
+    color: Colors.RED,
+    textAlign: 'left'
+  },
+  accessErrorText: {
+    fontFamily: 'poppins-semibold',
+    color: Colors.RED,
+    textAlign: 'center',
+    marginTop: 25,
+  }
 });

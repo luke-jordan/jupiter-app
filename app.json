@@ -3,13 +3,13 @@
     "name": "Jupiter",
     "slug": "Jupiter",
     "privacy": "public",
-    "sdkVersion": "34.0.0",
+    "sdkVersion": "35.0.0",
     "platforms": [
       "ios",
       "android",
       "web"
     ],
-    "version": "0.1.0",
+    "version": "0.0.5",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "splash": {
@@ -24,7 +24,25 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.jupitersave.app"
+    },
+    "android": {
+      "package": "com.jupitersave.app",
+      "versionCode": 5,
+      "permissions": []
+    },
+    "hooks": {
+      "postPublish": [
+        {
+          "file": "sentry-expo/upload-sourcemaps",
+          "config": {
+            "organization": "jupiter-70",
+            "project": "jupiter-70",
+            "authToken": "ad2f99cd1d5f47aaa368dd56e2f7a36e36488a47b26e4220a091a5ec0b39c27b"
+          }
+        }
+      ]
     }
   }
 }

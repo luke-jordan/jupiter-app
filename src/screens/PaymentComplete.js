@@ -2,10 +2,11 @@ import React from 'react';
 import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Dimensions, BackHandler } from 'react-native';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
+import { MessagingUtil } from '../util/MessagingUtil';
 import { Endpoints, Colors } from '../util/Values';
-import { Button, Icon, Input } from 'react-native-elements';
+import { Button, Icon } from 'react-native-elements';
 
-let {height, width} = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
 export default class PaymentComplete extends React.Component {
@@ -39,6 +40,8 @@ export default class PaymentComplete extends React.Component {
     }
 
     this.fetchProfile(params.token);
+
+    this.checkForActiveGame(params.token);
   }
 
   componentWillUnmount() {
@@ -49,6 +52,14 @@ export default class PaymentComplete extends React.Component {
     this.backHandler.remove();
     this.onPressDone();
     return false;
+  }
+
+  checkForActiveGame = async (token) => {
+    //TODO this should check for amounts
+    let game = await MessagingUtil.fetchMessagesAndGetTop(token);
+    if (game && game.actionToTake && game.actionToTake.includes("ADD_CASH")) {
+      MessagingUtil.setGameId(game.actionContext.msgOnSuccess);
+    }
   }
 
   async fetchProfile(token) {
@@ -67,10 +78,11 @@ export default class PaymentComplete extends React.Component {
       });
       if (result.ok) {
         let resultJson = await result.json();
-        AsyncStorage.setItem('userInfo', JSON.stringify(resultJson));
-        this.setState({
-          userInfo: resultJson,
-          fetchingProfile: false,
+        AsyncStorage.setItem('userInfo', JSON.stringify(resultJson)).then(result => {
+          this.setState({
+            userInfo: resultJson,
+            fetchingProfile: false,
+          });
         });
       } else {
         throw result;
@@ -85,7 +97,7 @@ export default class PaymentComplete extends React.Component {
     if (!attempts) attempts = 0;
     this.setState({loading: true});
     if (this.state.fetchingProfile && attempts < 10) {
-      setTimeout(() => {this.onPressDone()}, 1000);
+      setTimeout(() => {this.onPressDone(attempts + 1)}, 1000);
     } else {
       this.setState({loading: false});
       NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', { userInfo: this.state.userInfo });
@@ -152,6 +164,8 @@ export default class PaymentComplete extends React.Component {
           <View style={styles.separator} />
         </View>
         <Button
+          testID='paymnent-complete-done-btn'
+          accessibilityLabel='paymnent-complete-done-btn'
           title="DONE"
           loading={this.state.loading}
           titleStyle={styles.buttonTitleStyle}
@@ -218,13 +232,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: Colors.MEDIUM_GRAY,
   },
-  textAsButton: {
-    fontFamily: 'poppins-semibold',
-    color: Colors.PURPLE,
-    textDecorationLine: 'underline',
-    fontSize: 3.7 * FONT_UNIT,
-    marginBottom: 10,
-  },
+  // textAsButton: {
+  //   fontFamily: 'poppins-semibold',
+  //   color: Colors.PURPLE,
+  //   textDecorationLine: 'underline',
+  //   fontSize: 3.7 * FONT_UNIT,
+  //   marginBottom: 10,
+  // },
   separator: {
     height: 1,
     width: width * 0.8,
@@ -234,7 +248,7 @@ const styles = StyleSheet.create({
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
     fontSize: 19,
-    color: 'white',
+    color: Colors.WHITE,
   },
   buttonStyle: {
     borderRadius: 10,

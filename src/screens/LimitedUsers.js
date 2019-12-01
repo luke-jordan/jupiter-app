@@ -1,12 +1,10 @@
 import React from 'react';
-import * as Font from 'expo-font';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Dimensions, KeyboardAvoidingView, Platform } from 'react-native';
-import { Button, Icon, Input } from 'react-native-elements';
-import { NavigationUtil } from '../util/NavigationUtil';
+import { StyleSheet, View, Image, Text, Dimensions, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
+import { Button, Input } from 'react-native-elements';
 import { LoggingUtil } from '../util/LoggingUtil';
-import { Colors, Endpoints } from '../util/Values';
+import { Colors, Endpoints, Defaults } from '../util/Values';
 
-let {height, width} = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
 export default class LimitedUsers extends React.Component {
@@ -14,7 +12,7 @@ export default class LimitedUsers extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      userInput: "LETMEIN",
+      userInput: Defaults.REFERRAL,
       notifyMode: false,
       hasError: false,
     };
@@ -38,6 +36,7 @@ export default class LimitedUsers extends React.Component {
 
   onPressContinue = async () => {
     if (this.state.loading) return;
+    Keyboard.dismiss();
     if (this.state.notifyMode) {
       LoggingUtil.logEvent("USER_HAS_NO_REFERRAL_CODE");
       this.addUserToWaitingList();
@@ -50,19 +49,20 @@ export default class LimitedUsers extends React.Component {
     if (this.state.loading) return;
     this.setState({loading: true});
     try {
-      let result = await fetch(Endpoints.AUTH + 'list/add', {
+      const payload = {
+        phoneOrEmail: this.state.userInput,
+        countryCode3Letter: 'ZAF',
+        source: Platform.OS
+      };
+      let result = await fetch(Endpoints.AUTH + 'register/list', {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
         method: 'POST',
-        body: JSON.stringify({
-          "phoneOrEmail": this.state.userInput,
-        }),
+        body: JSON.stringify(payload),
       });
       if (result.ok) {
-        let resultJson = await result.json();
-        console.log(resultJson);
         this.setState({loading: false});
         this.props.navigation.navigate('ThankYou');
       } else {
@@ -135,12 +135,14 @@ export default class LimitedUsers extends React.Component {
           />
           {
             this.state.hasError ?
-            <Text style={styles.errorMessage}>Please enter a valid referral code</Text>
+            <Text style={styles.errorMessage}>{this.state.notifyMode ? "Please enter a valid email address" : "Please enter a valid referral code"}</Text>
             : null
           }
         </View>
         <View style={styles.nextButtonWrapper}>
           <Button
+            testID='limited-users-button'
+            accessibilityLabel='limited-users-button'
             title={this.state.notifyMode ? "NOTIFY ME" : "CONTINUE"}
             loading={this.state.loading}
             titleStyle={styles.buttonTitleStyle}
@@ -153,7 +155,7 @@ export default class LimitedUsers extends React.Component {
               end: { x: 1, y: 0.5 },
             }} />
         </View>
-        <Text style={styles.haveAnAccountText}>Already have an account?<Text style={styles.textAsButton} onPress={this.onPressLogin}> Log in</Text></Text>
+        <Text style={styles.haveAnAccountText}>Already have an account?<Text testID='limited-users-login' accessibilityLabel='limited-users-login'style={styles.textAsButton} onPress={this.onPressLogin}> Log in</Text></Text>
       </KeyboardAvoidingView>
     );
   }
@@ -231,7 +233,7 @@ const styles = StyleSheet.create({
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
     fontSize: 19,
-    color: 'white',
+    color: Colors.WHITE,
   },
   buttonStyle: {
     borderRadius: 10,

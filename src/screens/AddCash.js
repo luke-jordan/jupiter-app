@@ -1,7 +1,9 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, ScrollView } from 'react-native';
+import { StyleSheet, View, Text, AsyncStorage, TouchableOpacity, ScrollView } from 'react-native';
+import { NavigationUtil } from '../util/NavigationUtil';
 import { Colors, Endpoints } from '../util/Values';
 import { Icon, Input, Button } from 'react-native-elements';
+import { LoggingUtil } from '../util/LoggingUtil';
 
 export default class AddCash extends React.Component {
 
@@ -38,6 +40,7 @@ export default class AddCash extends React.Component {
           unit: info.balance.currentBalance.unit,
           token: info.token,
           accountId: info.balance.accountId[0],
+          comparatorRates: info.balance.comparatorRates,
         });
       }
     }
@@ -85,6 +88,7 @@ export default class AddCash extends React.Component {
         throw result;
       }
     } catch (error) {
+      LoggingUtil.logEvent('ADD_CASH_FAILED_UNKNOWN', { "serverResponse" : JSON.stringify(result) });
       console.log("error!", error);
       this.setState({loading: false});
       // this.showError();
@@ -163,6 +167,39 @@ export default class AddCash extends React.Component {
     }
   }
 
+  getBankRate(bank) {
+    let result = 0, bankThreshold = -1;
+    let relevantAmount = parseInt(this.state.amountToAdd) + parseInt(this.getFormattedBalance(this.state.balance));
+    for (let key in bank) {
+      if (key == "label") continue;
+
+      let keyInt = parseInt(key);
+      if (relevantAmount > keyInt && keyInt > bankThreshold) {
+        result = bank[key];
+        bankThreshold = keyInt;
+      }
+    }
+    return parseFloat(result / 100).toFixed(2);
+   }
+
+   getReferenceRate() {  
+    if (this.state.comparatorRates && this.state.comparatorRates.referenceRate) {
+      return parseFloat(this.state.comparatorRates.referenceRate / 100).toFixed(2);
+    }
+
+    return "";
+   }
+
+  renderBankLine(item, index) {
+    let bank = this.state.comparatorRates.rates[item];
+    return (
+      <View style={styles.rateLine} key={index}>
+        <Text style={styles.rateComparisonBank}>{bank.label}</Text>
+        <Text style={styles.rateComparisonBank}>{this.getBankRate(bank)}%</Text>
+      </View>
+    );
+  }
+
   render() {
     return (
       <View style={styles.container}>
@@ -182,6 +219,8 @@ export default class AddCash extends React.Component {
               <Text style={styles.currencyLabel}>{this.state.currency}</Text>
             </View>
             <Input
+              testID='add-cash-input'
+              accessibilityLabel='add-cash-input'
               keyboardType='numeric'
               ref={(ref) => {this.amountInputRef = ref;}}
               value={this.state.amountToAdd}
@@ -192,9 +231,29 @@ export default class AddCash extends React.Component {
               containerStyle={styles.containerStyle}
             />
           </View>
-          <Text style={styles.makeSureDisclaimer}>Please make sure you have added the correct amount as this transaction cannot be reversed.</Text>
+          {
+            this.state.comparatorRates ?
+            <View style={styles.rateComparison}>
+              <Text style={styles.rateComparisonTitle}>Compare our interest rate</Text>
+              <View style={styles.rateComparisonBox}>
+                <View style={styles.rateLine}>
+                  <Text style={styles.rateComparisonJupiter}>Jupiter Savings</Text>
+                  <Text style={styles.rateComparisonJupiter}>{this.getReferenceRate()}%</Text>
+                </View>
+                <View style={styles.rateComparisonSeparator} />
+                {
+                  this.state.comparatorRates.rates ?
+                  Object.keys(this.state.comparatorRates.rates).map((item, index) => this.renderBankLine(item, index))
+                  : null
+                }
+              </View>
+            </View>
+            : null
+          }
         </ScrollView>
         <Button
+          testID='add-cash-next-btn'
+          accessibilityLabel='add-cash-next-btn'
           title="NEXT: PAYMENT"
           loading={this.state.loading}
           titleStyle={styles.buttonTitleStyle}
@@ -219,14 +278,14 @@ const styles = StyleSheet.create({
   },
   headerWrapper: {
     width: '100%',
-    backgroundColor: 'white',
+    backgroundColor: Colors.WHITE,
     alignItems: 'center',
     paddingHorizontal: 5,
   },
   header: {
     width: '100%',
     height: 50,
-    backgroundColor: 'white',
+    backgroundColor: Colors.WHITE,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 5,
@@ -255,7 +314,7 @@ const styles = StyleSheet.create({
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
     fontSize: 17,
-    color: 'white',
+    color: Colors.WHITE,
   },
   buttonStyle: {
     borderRadius: 10,
@@ -292,7 +351,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     width: '90%',
     height: 70,
-    backgroundColor: 'white',
+    backgroundColor: Colors.WHITE,
     borderWidth: 1,
     borderColor: Colors.PURPLE,
     borderRadius: 20,
@@ -310,7 +369,7 @@ const styles = StyleSheet.create({
   },
   currencyLabel: {
     fontFamily: 'poppins-regular',
-    color: 'white',
+    color: Colors.WHITE,
     fontSize: 24,
   },
   inputContainerStyle: {
@@ -335,5 +394,43 @@ const styles = StyleSheet.create({
     marginTop: 10,
     lineHeight: 17,
     color: Colors.MEDIUM_GRAY,
+  },
+  rateComparison: {
+    width: '90%',
+    marginVertical: 30,
+  },
+  rateComparisonTitle: {
+    fontFamily: 'poppins-semibold',
+    color: Colors.DARK_GRAY,
+    fontSize: 16,
+    marginBottom: 10,
+  },
+  rateComparisonBox: {
+    width: '100%',
+    backgroundColor: 'white',
+    borderRadius: 20,
+    paddingVertical: 20,
+  },
+  rateLine: {
+    marginHorizontal: 20,
+    marginVertical: 2,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  rateComparisonSeparator: {
+    width: '100%',
+    height: 1,
+    backgroundColor: Colors.GRAY,
+    marginVertical: 15,
+  },
+  rateComparisonJupiter: {
+    fontFamily: 'poppins-semibold',
+    color: Colors.PURPLE,
+    fontSize: 16,
+  },
+  rateComparisonBank: {
+    fontFamily: 'poppins-regular',
+    color: Colors.MEDIUM_GRAY,
+    fontSize: 14,
   },
 });

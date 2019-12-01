@@ -1,9 +1,11 @@
 import * as Amplitude from 'expo-analytics-amplitude';
+import * as Sentry from 'sentry-expo';
+import { Endpoints } from '../util/Values';
 
 export const LoggingUtil = {
 
   initialize() {
-    Amplitude.initialize('80b9b8a9b4bf0b6c4bdff7782cf85af2');
+    Amplitude.initialize(Endpoints.AMPLITUDE);
     LoggingUtil.logEvent("USER_OPENED_APP");
   },
 
@@ -17,6 +19,10 @@ export const LoggingUtil = {
     } else {
       Amplitude.logEvent(event);
     }
+  },
+
+  logError(error) {
+    Sentry.captureException(error);
   },
 
   clearUserProperties() {

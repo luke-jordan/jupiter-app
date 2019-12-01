@@ -1,12 +1,15 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Clipboard, AppState, Linking, ActivityIndicator, BackHandler } from 'react-native';
+import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Clipboard, AppState, Linking, ActivityIndicator, BackHandler, Dimensions } from 'react-native';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Endpoints, Colors } from '../util/Values';
-import { Button, Icon, Input } from 'react-native-elements';
+import { Icon } from 'react-native-elements';
 import { LinearGradient } from 'expo-linear-gradient';
-import Toast, {DURATION} from 'react-native-easy-toast';
+import Toast from 'react-native-easy-toast';
 import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
+
+let { width, height } = Dimensions.get('window');
+const FONT_UNIT = 0.01 * width;
 
 export default class Payment extends React.Component {
 
@@ -23,6 +26,7 @@ export default class Payment extends React.Component {
   }
 
   async componentDidMount() {
+    console.log(height);
     AppState.addEventListener('change', this.handleAppStateChange);
     this.backHandler = BackHandler.addEventListener('hardwareBackPress', this.handleHardwareBackPress);
     let params = this.props.navigation.state.params;
@@ -93,10 +97,12 @@ export default class Payment extends React.Component {
             amountAdded: this.state.amountAdded,
           });
         } else {
+          LoggingUtil.logEvent('PAYMENT_FAILED_UNKNOWN', { "serverResponse" : JSON.stringify(result) });
           //failed
           //TODO redirect to failed screen
         }
       } else {
+        LoggingUtil.logEvent('PAYMENT_FAILED_UNKNOWN', { "serverResponse" : JSON.stringify(result) });
         throw result;
       }
     } catch (error) {
@@ -157,60 +163,64 @@ export default class Payment extends React.Component {
                 <Image style={styles.copyIcon} source={require('../../assets/copy.png')} resizeMode="contain"/>
               </TouchableOpacity>
             </LinearGradient>
-            <TouchableOpacity style={styles.alreadyPaidButton} onPress={this.onPressAlreadyPaid}>
-              <Text style={styles.alreadyPaidButtonText}>I'VE ALREADY PAID</Text>
+            <TouchableOpacity testID='payment-already-paid' accessibilityLabel='payment-already-paid' style={styles.alreadyPaidButton} onPress={this.onPressAlreadyPaid}>
+              <Text style={styles.alreadyPaidButtonText}>I&apos;VE ALREADY PAID</Text>
             </TouchableOpacity>
           </View>
         </View>
-        <View style={[styles.footer, styles.boxShadow]}>
-          <Text style={styles.footerTitle}>THE EASIEST WAY TO PAY:</Text>
-          <Image style={styles.shield} source={require('../../assets/shield.png')}/>
-          <View style={styles.footerItem}>
-            <Icon
-              name='check'
-              type='feather'
-              size={19}
-              color={Colors.PURPLE}
-            />
-            <Text style={styles.footerItemText}>No registration or app download required</Text>
+        {
+          height > 500 ?
+          <View style={[styles.footer, styles.boxShadow]}>
+            <Text style={styles.footerTitle}>THE EASIEST WAY TO PAY:</Text>
+            <Image style={styles.shield} source={require('../../assets/shield.png')}/>
+            <View style={styles.footerItem}>
+              <Icon
+                name='check'
+                type='feather'
+                size={19}
+                color={Colors.PURPLE}
+              />
+              <Text style={styles.footerItemText}>No registration or app download required</Text>
+            </View>
+            <View style={styles.footerItem}>
+              <Icon
+                name='check'
+                type='feather'
+                size={19}
+                color={Colors.PURPLE}
+              />
+              <Text style={styles.footerItemText}>Payments completed in seconds</Text>
+            </View>
+            <View style={styles.footerItem}>
+              <Icon
+                name='check'
+                type='feather'
+                size={19}
+                color={Colors.PURPLE}
+              />
+              <Text style={styles.footerItemText}>No proof of payment necessary</Text>
+            </View>
+            <View style={styles.footerItem}>
+              <Icon
+                name='check'
+                type='feather'
+                size={19}
+                color={Colors.PURPLE}
+              />
+              <Text style={styles.footerItemText}><Text style={styles.bold}>No</Text> banking login details stored</Text>
+            </View>
+            <View style={styles.footerItem}>
+              <Icon
+                name='check'
+                type='feather'
+                size={19}
+                color={Colors.PURPLE}
+              />
+              <Text style={styles.footerItemText}>Safe and secure</Text>
+            </View>
           </View>
-          <View style={styles.footerItem}>
-            <Icon
-              name='check'
-              type='feather'
-              size={19}
-              color={Colors.PURPLE}
-            />
-            <Text style={styles.footerItemText}>Payments completed in seconds</Text>
-          </View>
-          <View style={styles.footerItem}>
-            <Icon
-              name='check'
-              type='feather'
-              size={19}
-              color={Colors.PURPLE}
-            />
-            <Text style={styles.footerItemText}>No proof of payment necessary</Text>
-          </View>
-          <View style={styles.footerItem}>
-            <Icon
-              name='check'
-              type='feather'
-              size={19}
-              color={Colors.PURPLE}
-            />
-            <Text style={styles.footerItemText}><Text style={styles.bold}>No</Text> banking login details stored</Text>
-          </View>
-          <View style={styles.footerItem}>
-            <Icon
-              name='check'
-              type='feather'
-              size={19}
-              color={Colors.PURPLE}
-            />
-            <Text style={styles.footerItemText}>Safe and secure</Text>
-          </View>
-        </View>
+          : null
+        }
         <Toast ref="toast" opacity={1} style={styles.toast}/>
 
         <Dialog
@@ -241,15 +251,10 @@ const styles = StyleSheet.create({
   header: {
     width: '100%',
     height: 50,
-    backgroundColor: 'white',
+    backgroundColor: Colors.WHITE,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 5,
-  },
-  headerTitle: {
-    marginLeft: -5,
-    fontFamily: 'poppins-semibold',
-    fontSize: 22,
   },
   contentWrapper: {
     flex: 1,
@@ -304,8 +309,8 @@ const styles = StyleSheet.create({
   },
   paymentLink: {
     fontFamily: 'poppins-semibold',
-    fontSize: 14,
-    color: 'white',
+    fontSize: FONT_UNIT * 3,
+    color: Colors.WHITE,
     textAlign: 'center',
   },
   alreadyPaidButton: {
@@ -350,7 +355,7 @@ const styles = StyleSheet.create({
     marginLeft: 5,
   },
   boxShadow: {
-    shadowColor: 'red',
+    shadowColor: Colors.RED,
     shadowOffset: { width: 0, height: 1000 },
     shadowOpacity: 0.1,
     shadowRadius: 500,
@@ -359,7 +364,7 @@ const styles = StyleSheet.create({
   copyIcon: {
     width: 22,
     height: 22,
-    tintColor: 'white',
+    tintColor: Colors.WHITE,
   },
   dialogWrapper: {
     width: '80%',
