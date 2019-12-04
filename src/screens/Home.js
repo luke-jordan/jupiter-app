@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, Dimensions, Animated, Easing, YellowBox, TouchableOpacity, Linking } from 'react-native';
+import { StyleSheet, View, Image, Text, AsyncStorage, Dimensions, Animated, Easing, YellowBox, TouchableOpacity, Linking, Alert } from 'react-native';
 import { Notifications } from 'expo';
 import * as Permissions from 'expo-permissions';
 import { Colors, Sizes, Endpoints } from '../util/Values';
@@ -207,6 +207,11 @@ export default class Home extends React.Component {
         },
         method: 'GET',
       });
+
+      //Uncomment this to force MA-69 test case
+      // result.ok = false;
+      // result.status = 403;
+
       if (result.ok) {
         let resultJson = await result.json();
         this.storeUpdatedBalance(resultJson);
@@ -214,6 +219,16 @@ export default class Home extends React.Component {
           endOfDayBalance: resultJson.balanceEndOfToday.amount
         });
       } else {
+        if (result.status == 403) {
+          Alert.alert(
+            'Token expired',
+            'For your security, please login again',
+            [
+              { text: 'OK', onPress: () => {NavigationUtil.logout(this.props.navigation)} }
+            ],
+            { cancelable: false }
+          );
+        }
         throw result;
       }
     } catch (error) {
