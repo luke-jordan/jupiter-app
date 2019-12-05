@@ -78,7 +78,9 @@ export default class CheckingForPayment extends React.Component {
         let resultJson = await result.json();
         // console.log(resultJson);
         AppState.removeEventListener('change', this.handleAppStateChange);
-        this.backHandler.remove();
+        if (this.backHandler) {
+          this.backHandler.remove();
+        }
         this.setState({
           checkingForPayment: false,
           loading: false,
@@ -119,6 +121,18 @@ export default class CheckingForPayment extends React.Component {
     Linking.openURL(this.state.paymentLink);
   }
 
+  onPressEft = () => {
+    this.props.navigation.navigate('EFTPayment');
+  }
+
+  onPressCancel = () => {
+    //TODO ?
+  }
+
+  onPressContact = () => {
+    this.props.navigation.navigate('Support');
+  }
+
   render() {
     const hourglassRotation = this.state.rotation.interpolate({
       inputRange: [0, 1],
@@ -132,40 +146,45 @@ export default class CheckingForPayment extends React.Component {
               <Animated.Image style={[styles.hourglass, {transform: [{rotate: hourglassRotation}]}]} source={require('../../assets/hourglass.png')}/>
             </ImageBackground>
             <Text style={styles.title}>Checking for payment</Text>
-            <Text style={styles.description}>Sorry we seem to be having some trouble finding your payment.</Text>
-          </View>
-          <View style={styles.section}>
-            <Text style={styles.buttonDescription}>Please follow the link to pay via Ozow:</Text>
-            <LinearGradient start={[0, 0.5]} end={[1, 0.5]} colors={[Colors.LIGHT_BLUE, Colors.PURPLE]} style={styles.gradientStyle}>
-              <Text style={styles.paymentLink} onPress={this.onPressPaymentLink}>{this.state.paymentLink}</Text>
-              <TouchableOpacity onPress={this.onPressCopy}>
-                <Image style={styles.copyIcon} source={require('../../assets/copy.png')} resizeMode="contain"/>
-              </TouchableOpacity>
-            </LinearGradient>
-          </View>
-          <View style={styles.orView}>
-            <Text style={styles.orText}>-OR-</Text>
-          </View>
-          <View style={styles.section}>
-            <Text style={styles.explanation}>If you’ve already paid, tap the button below and we’ll check again.</Text>
+            <Text style={styles.description}>Sorry, we seem to be having some trouble finding your payment. Would you prefer to pay via manual EFT instead?</Text>
             <Button
-              testID='payment-check-paid'
-              accessibilityLabel='payment-check-paid'
-              title="I'VE ALREADY PAID"
+              title="PAY VIA EFT"
+              icon={ <Image source={require('../../assets/eft.png')} style={styles.eftIcon} /> }
               loading={this.state.loading}
               titleStyle={styles.buttonTitleStyle}
               buttonStyle={styles.buttonStyle}
               containerStyle={styles.buttonContainerStyle}
-              onPress={this.onPressAlreadyPaid}
+              onPress={this.onPressEft}
               linearGradientProps={{
                 colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
                 start: { x: 0, y: 0.5 },
                 end: { x: 1, y: 0.5 },
               }} />
           </View>
-        </View>
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Payment still not going through? <Text style={styles.footerLink}>Contact us</Text></Text>
+          <View style={styles.graySection}>
+            <View style={styles.graySubsection}>
+              <Text style={styles.buttonDescription}>Follow the link to retry with Ozow:</Text>
+              <View style={{flexDirection: 'row'}}>
+                <Text style={styles.paymentLink} onPress={this.onPressPaymentLink}>{this.state.paymentLink}</Text>
+                <TouchableOpacity onPress={this.onPressCopy}>
+                  <Image style={styles.copyIcon} source={require('../../assets/copy.png')} resizeMode="contain"/>
+                </TouchableOpacity>
+              </View>
+            </View>
+            <View style={styles.separator} />
+            <View style={styles.graySubsection}>
+              <Text style={styles.buttonDescription} onPress={this.onPressAlreadyPaid}>Refresh to check for payment</Text>
+            </View>
+            <View style={styles.separator} />
+            <View style={styles.graySubsection}>
+              <Text style={styles.buttonDescription} onPress={this.onPressCancel}>Cancel my payment</Text>
+            </View>
+            <View style={styles.separator} />
+            <View style={styles.graySubsection}>
+              <Text style={styles.buttonDescription} onPress={this.onPressContact}>Contact Us</Text>
+            </View>
+          </View>
+
         </View>
 
         <Dialog
@@ -214,6 +233,7 @@ const styles = StyleSheet.create({
     height: 60,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 20,
   },
   title: {
     fontFamily: 'poppins-semibold',
@@ -226,13 +246,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.MEDIUM_GRAY,
     textAlign: 'center',
-  },
-  buttonDescription: {
-    fontFamily: 'poppins-semibold',
-    fontSize: 15,
-    color: Colors.DARK_GRAY,
-    textAlign: 'center',
-    marginBottom: 3,
+    marginVertical: 10,
+    marginHorizontal: 20,
   },
   gradientStyle: {
     flexDirection: 'row',
@@ -243,15 +258,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   paymentLink: {
-    flex: 1,
     fontFamily: 'poppins-semibold',
     fontSize: 14,
-    color: Colors.WHITE,
+    marginRight: 12,
+    color: Colors.PURPLE,
   },
   copyIcon: {
     width: 22,
     height: 22,
-    tintColor: Colors.WHITE,
+    tintColor: Colors.PURPLE,
     alignSelf: 'flex-end',
   },
   orView: {
@@ -326,5 +341,30 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginHorizontal: 30,
     textAlign: 'center',
+  },
+  eftIcon: {
+    marginRight: 10,
+  },
+  graySection: {
+    backgroundColor: Colors.BACKGROUND_GRAY,
+    borderRadius: 15,
+  },
+  graySubsection: {
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  separator: {
+    height: 2,
+    backgroundColor: Colors.LIGHT_GRAY,
+  },
+  buttonDescription: {
+    width: '100%',
+    fontFamily: 'poppins-regular',
+    fontSize: 15,
+    color: Colors.MEDIUM_GRAY,
+    textAlign: 'center',
+    marginBottom: 3,
   },
 });
