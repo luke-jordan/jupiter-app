@@ -78,7 +78,7 @@ export default class LimitedUsers extends React.Component {
     if (this.state.loading) return;
     this.setState({loading: true});
     try {
-      let result = await fetch(Endpoints.AUTH + 'referral/verify', {
+      let result = await fetch(Endpoints.CORE + 'referral/verify', {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
