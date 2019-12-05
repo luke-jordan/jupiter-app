@@ -86,6 +86,7 @@ export default class LimitedUsers extends React.Component {
         method: 'POST',
         body: JSON.stringify({
           "referralCode": this.state.userInput,
+          "countryCode": "ZAF",
         }),
       });
       if (result.ok) {
