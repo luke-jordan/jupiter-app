@@ -126,7 +126,7 @@ export default class CheckingForPayment extends React.Component {
   }
 
   onPressCancel = () => {
-    //TODO ?
+    NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home');
   }
 
   onPressContact = () => {
