@@ -16,16 +16,16 @@ export const NavigationUtil = {
     navigation.dispatch(resetAction);
   },
 
-  // navigateWithHomeBackstack(navigation, screen, params) {
-  //   const resetAction = StackActions.reset({
-  //     index: 1,
-  //     actions: [
-  //       NavigationActions.navigate({ routeName: 'Home'}),
-  //       params ? NavigationActions.navigate({ routeName: screen, params: params}) : NavigationActions.navigate({ routeName: screen})
-  //     ]
-  //   });
-  //   navigation.dispatch(resetAction);
-  // },
+  navigateWithHomeBackstack(navigation, screen, params) {
+    const resetAction = StackActions.reset({
+      index: 1,
+      actions: [
+        NavigationActions.navigate({ routeName: 'Home'}),
+        params ? NavigationActions.navigate({ routeName: screen, params: params}) : NavigationActions.navigate({ routeName: screen})
+      ]
+    });
+    navigation.dispatch(resetAction);
+  },
 
   async cleanUpPushToken () {
     try {

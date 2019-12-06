@@ -37,6 +37,7 @@ import Support from './src/screens/Support';
 import SupportRequestSent from './src/screens/SupportRequestSent';
 import History from './src/screens/History';
 import FailedVerification from './src/screens/FailedVerification';
+import EFTPayment from './src/screens/EFTPayment';
 
 const AppContainer = createAppContainer(
   createStackNavigator(
@@ -72,6 +73,7 @@ const AppContainer = createAppContainer(
       SupportRequestSent: { screen: SupportRequestSent },
       History: { screen: History },
       FailedVerification: { screen: FailedVerification },
+      EFTPayment: { screen: EFTPayment },
     },
     { initialRouteName: "Splash", headerMode: 'none' }
   )
