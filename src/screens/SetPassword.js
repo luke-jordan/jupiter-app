@@ -170,6 +170,10 @@ export default class SetPassword extends React.Component {
           loading: false,
           checkingForCompletion: false,
         });
+        if (resultJson.kycStatus == "FAILED_VERIFICATION" || resultJson.kycStatus == "REVIEW_FAILED") {
+          this.props.navigation.navigate("FailedVerification");
+          return;
+        }
         if (resultJson.result.includes("SUCCESS")) {
           LoggingUtil.logEvent("USER_PROFILE_PASSWORD_SUCCEEDED");
           this.props.navigation.navigate("AddCash", {

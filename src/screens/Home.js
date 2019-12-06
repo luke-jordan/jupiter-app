@@ -159,6 +159,10 @@ export default class Home extends React.Component {
       token: info.token,
       firstName: info.profile.personalName,
     });
+    if (info.profile.kycStatus == "FAILED_VERIFICATION" || info.profile.kycStatus == "REVIEW_FAILED") {
+      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'FailedVerification', { "fromHome": true });
+      return;
+    }
     this.handleNotificationsModule();
     LoggingUtil.setUserId(info.systemWideUserId);
     LoggingUtil.logEvent("USER_ENTERED_SCREEN", {"screen_name": "Home"});

@@ -14,6 +14,8 @@ export default class Profile extends React.Component {
 
   constructor(props) {
     super(props);
+    let failedVerification = this.props.navigation.getParam("failedVerification");
+
     this.state = {
       profilePic: null,
       loading: false,
@@ -26,6 +28,7 @@ export default class Profile extends React.Component {
       dialogVisible: false,
       chooseFromLibraryLoading: false,
       takePhotoLoading: false,
+      failedVerification: failedVerification,
     };
   }
 
@@ -100,6 +103,10 @@ export default class Profile extends React.Component {
     this.props.navigation.navigate('Support');
   }
 
+  onPressSave = () => {
+    //TODO
+  }
+
   render() {
     return (
       <View style={styles.container}>
@@ -128,8 +135,8 @@ export default class Profile extends React.Component {
             <View style={styles.profileInfo}>
               <View style={styles.profileField}>
                 <Input
-                  label="First Name*"
-                  editable={false}
+                  label={"First Name" + (!this.state.failedVerification ? "*" : "")}
+                  editable={this.state.failedVerification}
                   value={this.state.firstName}
                   onChangeText={(text) => {this.setState({firstName: text})}}
                   labelStyle={styles.profileFieldTitle}
@@ -141,8 +148,8 @@ export default class Profile extends React.Component {
               <View style={styles.separator}/>
               <View style={styles.profileField}>
                 <Input
-                  label="Last Name*"
-                  editable={false}
+                  label={"Last Name" + (!this.state.failedVerification ? "*" : "")}
+                  editable={this.state.failedVerification}
                   value={this.state.lastName}
                   onChangeText={(text) => {this.setState({lastName: text})}}
                   labelStyle={styles.profileFieldTitle}
@@ -154,8 +161,8 @@ export default class Profile extends React.Component {
               <View style={styles.separator}/>
               <View style={styles.profileField}>
                 <Input
-                  label="ID Number*"
-                  editable={false}
+                  label={"ID Number" + (!this.state.failedVerification ? "*" : "")}
+                  editable={this.state.failedVerification}
                   value={this.state.idNumber}
                   onChangeText={(text) => {this.setState({idNumber: text})}}
                   labelStyle={styles.profileFieldTitle}
@@ -207,8 +214,8 @@ export default class Profile extends React.Component {
             </View>
             <Text style={styles.disclaimer} onPress={this.onPressSupport}>*In order to update any of the those fields please contact us <Text style={styles.disclaimerBold}>using the support form.</Text></Text>
           </View>
-          <TouchableOpacity style={styles.buttonLine} onPress={this.onPressChangePassword}>
-            <Text style={styles.buttonLineText}>Change Password</Text>
+          <TouchableOpacity style={styles.buttonLine} onPress={this.onPressSave}>
+            <Text style={styles.buttonLineText}>Save Changes</Text>
             <Icon
               name='chevron-right'
               type='evilicon'
@@ -216,6 +223,19 @@ export default class Profile extends React.Component {
               color={Colors.MEDIUM_GRAY}
             />
           </TouchableOpacity>
+          {
+            !this.state.failedVerification ?
+            <TouchableOpacity style={styles.buttonLine} onPress={this.onPressChangePassword}>
+              <Text style={styles.buttonLineText}>Change Password</Text>
+              <Icon
+                name='chevron-right'
+                type='evilicon'
+                size={50}
+                color={Colors.MEDIUM_GRAY}
+              />
+            </TouchableOpacity>
+            : null
+          }
         </View>
 
         <Dialog

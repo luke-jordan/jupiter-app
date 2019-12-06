@@ -30,17 +30,18 @@ export default class FailedVerification extends React.Component {
     this.props.navigation.navigate('Support');
   }
 
+  onPressEdit = () => {
+    let isFromHome = this.props.navigation.getParam("fromHome");
+    if (isFromHome) {
+      this.props.navigation.navigate("Profile", {"failedVerification": true});
+    } else {
+      this.props.navigation.goBack();
+    }
+  }
+
   render() {
     return (
       <View style={styles.container}>
-        <TouchableOpacity style={styles.closeButton} onPress={this.onPressEdit}>
-          <Icon
-            name='close'
-            type='evilicon'
-            size={30}
-            color={Colors.MEDIUM_GRAY}
-          />
-        </TouchableOpacity>
         <View style={styles.mainContent}>
           <View style={styles.top}>
             <LinearGradient start={[0, 0.5]} end={[1, 0.5]} colors={[Colors.LIGHT_BLUE, Colors.PURPLE]} style={styles.gradientStyle}>
