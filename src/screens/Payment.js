@@ -32,6 +32,7 @@ export default class Payment extends React.Component {
     let params = this.props.navigation.state.params;
     if (params) {
       this.setState({
+        humanReference: params.humanReference,
         paymentLink: params.urlToCompletePayment,
         accountTransactionId: params.accountTransactionId,
         token: params.token,

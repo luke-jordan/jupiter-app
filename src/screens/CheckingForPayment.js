@@ -122,7 +122,8 @@ export default class CheckingForPayment extends React.Component {
   }
 
   onPressEft = () => {
-    this.props.navigation.navigate('EFTPayment');
+    let humanReference = this.props.navigation.getParam("humanReference");
+    this.props.navigation.navigate('EFTPayment', { humanReference: humanReference });
   }
 
   onPressCancel = () => {
