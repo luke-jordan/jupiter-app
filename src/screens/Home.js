@@ -14,7 +14,7 @@ import AnimatedNumber from '../elements/AnimatedNumber';
 import moment from 'moment';
 import { FlingGestureHandler, Directions, State } from 'react-native-gesture-handler';
 import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
-import VersionCheck from 'react-native-version-check-expo';
+// import VersionCheck from 'react-native-version-check-expo';
 
 /*
 This is here because currently long timers are not purely supported on Android.
@@ -32,7 +32,7 @@ const CIRCLE_ROTATION_DURATION = 6000;
 const CIRCLE_SCALE_DURATION = 200;
 
 const DEFAULT_BALANCE_ANIMATION_INTERVAL = 14;
-const DEFAULT_BALANCE_ANIMATION_DURATION = 5000;
+const DEFAULT_BALANCE_ANIMATION_DURATION = 3500;
 const DEFAULT_BALANCE_ANIMATION_STEP_SIZE = 50;
 
 const COLOR_WHITE = '#fff';
@@ -69,7 +69,7 @@ export default class Home extends React.Component {
   async componentDidMount() {
     this.showInitialData();
     this.rotateCircle();
-    this.checkIfUpdateNeeded();
+    // this.checkIfUpdateNeeded();
   }
 
   async fetchMessagesIfNeeded() {
@@ -97,39 +97,46 @@ export default class Home extends React.Component {
     }
   }
 
-  async checkIfUpdateNeeded() {
-    try {
-      let localVersion = VersionCheck.getCurrentVersion();
-      let remoteVersion = await VersionCheck.getLatestVersion();
+  // removing until we have a public page
+  // async checkIfUpdateNeeded() {
+  //   try {
+  //     let localVersion = VersionCheck.getCurrentVersion();
+  //     let remoteVersion = await VersionCheck.getLatestVersion();
 
-      const updateStatus = this.needsUpdate(localVersion, remoteVersion);
-      if (updateStatus == 2) {
-        this.showUpdateDialog(true);
-      } else if (updateStatus == 1) {
-        this.showUpdateDialog(false);
-      }
-    } catch (err) {
-      LoggingUtil.logError(err);
-    }
-  }
+  //     const updateStatus = this.needsUpdate(localVersion, remoteVersion);
+  //     if (updateStatus == 2) {
+  //       this.showUpdateDialog(true);
+  //     } else if (updateStatus == 1) {
+  //       this.showUpdateDialog(false);
+  //     }
+  //   } catch (err) {
+  //     LoggingUtil.logError(err);
+  //   }
+  // }
 
-  needsUpdate(localVersion, remoteVersion) {
-    let localParts = localVersion.split('.');
-    if (!remoteVersion) return false;
-    let remoteParts = remoteVersion.split('.');
-    if (localParts[0] < remoteParts[0]) return 2;
-    if (localParts[1] < remoteParts[1]) return 2;
-    if (localParts[2] < remoteParts[2]) return 1;
-    return 0;
-  }
+  // needsUpdate(localVersion, remoteVersion) {
+  //   let localParts = localVersion.split('.');
+  //   if (!remoteVersion) return false;
+  //   let remoteParts = remoteVersion.split('.');
+  //   if (localParts[0] < remoteParts[0]) return 2;
+  //   if (localParts[1] < remoteParts[1]) return 2;
+  //   if (localParts[2] < remoteParts[2]) return 1;
+  //   return 0;
+  // }
 
-  async showUpdateDialog(required){
-    if (required) {
-      this.setState({updateRequiredDialogVisible: true});
-    } else {
-      this.setState({updateAvailableDialogVisible: true});
-    }
-  }
+  // async showUpdateDialog(required){
+  //   if (required) {
+  //     this.setState({updateRequiredDialogVisible: true});
+  //   } else {
+  //     this.setState({updateAvailableDialogVisible: true});
+  //   }
+  // }
+
+  // onPressUpdate = async () => {
+  //   let link = await VersionCheck.getStoreUrl();
+  //   Linking.openURL(link);
+  //   this.onCloseDialog();
+  // }
 
   onCloseDialog = () => {
     this.setState({
@@ -137,12 +144,6 @@ export default class Home extends React.Component {
       updateAvailableDialogVisible: false,
     });
     return true;
-  }
-
-  onPressUpdate = async () => {
-    let link = await VersionCheck.getStoreUrl();
-    Linking.openURL(link);
-    this.onCloseDialog();
   }
 
   async showInitialData() {
@@ -359,7 +360,7 @@ export default class Home extends React.Component {
     });
   }
 
-  onFlingMessage(event) {
+  onFlingMessage() {
     this.setState({
       hasMessage: false,
     });
@@ -375,6 +376,9 @@ export default class Home extends React.Component {
 
       case "VIEW_HISTORY":
       return "VIEW HISTORY";
+
+      case "VISIT_WEB":
+        return "FOLLOW LINK"
 
       default:
       return "";
@@ -403,6 +407,10 @@ export default class Home extends React.Component {
       case "VIEW_HISTORY":
       this.props.navigation.navigate('History');
       break;
+
+      case "VISIT_WEB":
+      Linking.openURL('https://jupitersave.com'); // TODO : make follow actual link
+      break
 
       default:
       break;

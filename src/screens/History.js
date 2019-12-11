@@ -213,7 +213,7 @@ export default class History extends React.Component {
         <View style={styles.historyItemInfo}>
           <Text style={styles.historyTitle}>{this.getItemTitle(type)}</Text>
           {
-            element.desc ?
+            element.details.humanReference ?
             <Text style={styles.historyDesc}>{element.details.humanReference}</Text>
             : null
           }

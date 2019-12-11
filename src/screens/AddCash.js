@@ -67,9 +67,9 @@ export default class AddCash extends React.Component {
         method: 'POST',
         body: JSON.stringify({
           "accountId": this.state.accountId,
-          "savedAmount": this.state.amountToAdd * 10000, //multiplying by 100 to get cents and again by 100 to get hundreth cent
-          "savedCurrency": "ZAR", //TODO implement for handling other currencies
-          "savedUnit": "HUNDREDTH_CENT"
+          "amount": this.state.amountToAdd * 10000, //multiplying by 100 to get cents and again by 100 to get hundreth cent
+          "currency": "ZAR", //TODO implement for handling other currencies
+          "unit": "HUNDREDTH_CENT"
         }),
       });
       if (result.ok) {
