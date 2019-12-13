@@ -106,7 +106,7 @@ export default class CheckingForPayment extends React.Component {
       }
     } catch (error) {
       LoggingUtil.logEvent('PAYMENT_FAILED_UNKNOWN', { "serverResponse" : JSON.stringify(result) });
-      console.log("error!", error.status);
+      // console.log("error!", JSONerror.status);
       this.setState({checkingForPayment: false, loading: false});
     }
   }

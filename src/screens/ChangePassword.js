@@ -144,7 +144,6 @@ export default class ChangePassword extends React.Component {
         throw result;
       }
     } catch (error) {
-      console.log("error!", error);
       this.showError();
     }
   }

@@ -107,7 +107,7 @@ export default class Payment extends React.Component {
         throw result;
       }
     } catch (error) {
-      console.log("error!", error.status);
+      // console.log("error!", error.status);
       this.setState({checkingForPayment: false});
     }
   }

@@ -90,7 +90,6 @@ export default class AddCash extends React.Component {
       }
     } catch (error) {
       LoggingUtil.logEvent('ADD_CASH_FAILED_UNKNOWN', { "serverResponse" : JSON.stringify(result) });
-      console.log("error!", error);
       this.setState({loading: false});
       // this.showError();
     }
