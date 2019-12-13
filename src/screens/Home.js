@@ -14,6 +14,8 @@ import AnimatedNumber from '../elements/AnimatedNumber';
 import moment from 'moment';
 import { FlingGestureHandler, Directions, State } from 'react-native-gesture-handler';
 import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
+import { NavigationEvents } from 'react-navigation';
+
 // import VersionCheck from 'react-native-version-check-expo';
 
 /*
@@ -26,7 +28,7 @@ YellowBox.ignoreWarnings([
 
 const { height, width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
-const FETCH_DELAY = 15 * 60 * 1000; //15 minutes * 60 seconds * 1000 millis
+const TIME_BETWEEN_FETCH = 10 * 1000; // don't fetch if time is between this (i.e., less than a minute)
 
 const CIRCLE_ROTATION_DURATION = 6000;
 const CIRCLE_SCALE_DURATION = 200;
@@ -45,7 +47,7 @@ export default class Home extends React.Component {
       firstName: "",
       currency: "R",
       balance: 0,
-      // expectedToAdd: "100.00",
+      // expectedToAdd: "100",
       rotation: new Animated.Value(0),
       gameRotation: new Animated.Value(0),
       circleScale: new Animated.Value(0),
@@ -63,10 +65,12 @@ export default class Home extends React.Component {
       updateAvailableDialogVisible: false,
       tapScreenGameMode: false,
       chaseArrowGameMode: false,
+      lastFetchTimeMillis: 0
     };
   }
 
   async componentDidMount() {
+    console.log("COMPONENT MOUNTED");
     this.showInitialData();
     this.rotateCircle();
     // this.checkIfUpdateNeeded();
@@ -202,16 +206,28 @@ export default class Home extends React.Component {
     }
   }
 
+  logUpdate = async () => {
+    const millisSinceLastFetch = moment().valueOf() - this.state.lastFetchTimeMillis;
+    console.log('Time since fetch: ', millisSinceLastFetch);
+    if (millisSinceLastFetch > TIME_BETWEEN_FETCH) {
+      console.log('Enough time elapsed, check for new balance');
+      await this.fetchUpdates();
+    }
+  }
+
   fetchUpdates = async () => {
+    console.log('Fetching updates, current state of loading: ', this.state.loading);
     if (this.state.loading) return;
     this.setState({loading: true});
     try {
+      console.log('Sending update request ....');
       let result = await fetch(Endpoints.CORE + 'balance', {
         headers: {
           'Authorization': 'Bearer ' + this.state.token,
         },
         method: 'GET',
       });
+      console.log('Fetched update request');
 
       //Uncomment this to force MA-69 test case
       // result.ok = false;
@@ -221,7 +237,9 @@ export default class Home extends React.Component {
         let resultJson = await result.json();
         this.storeUpdatedBalance(resultJson);
         this.setState({
-          endOfDayBalance: resultJson.balanceEndOfToday.amount
+          endOfDayBalance: resultJson.balanceEndOfToday.amount,
+          lastFetchTimeMillis: moment().valueOf(),
+          loading: false
         });
       } else {
         if (result.status == 403) {
@@ -240,7 +258,6 @@ export default class Home extends React.Component {
       console.log("error!", error.status);
       this.setState({loading: false});
     }
-    setTimeout(() => {this.fetchUpdates()}, FETCH_DELAY);
   }
 
   async storeUpdatedBalance(response) {
@@ -792,6 +809,8 @@ export default class Home extends React.Component {
     }
     return (
       <View style={styles.container}>
+        <NavigationEvents onDidFocus={() => this.logUpdate()} />
+
         <View style={styles.gradientWrapper}>
           <LinearGradient colors={[Colors.LIGHT_BLUE, Colors.PURPLE]} style={styles.gradientContainer}>
             <View style={styles.backgroundLinesWrapper}>

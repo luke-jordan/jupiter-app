@@ -12,7 +12,7 @@ export default class AddCash extends React.Component {
     this.state = {
       currency: "R",
       balance: 0,
-      amountToAdd: parseFloat(100).toFixed(2),
+      amountToAdd: parseFloat(100).toFixed(0),
       isOnboarding: false,
       loading: false,
     };
@@ -386,14 +386,6 @@ const styles = StyleSheet.create({
     minHeight: 50,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  makeSureDisclaimer: {
-    fontFamily: 'poppins-regular',
-    fontSize: 11.5,
-    width: '90%',
-    marginTop: 10,
-    lineHeight: 17,
-    color: Colors.MEDIUM_GRAY,
   },
   rateComparison: {
     width: '90%',

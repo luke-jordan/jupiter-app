@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Clipboard, AppState, Linking, ActivityIndicator, BackHandler, Dimensions } from 'react-native';
+import { StyleSheet, View, Image, Text, TouchableOpacity, Clipboard, AppState, Linking, ActivityIndicator, BackHandler, Dimensions, PixelRatio } from 'react-native';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Endpoints, Colors } from '../util/Values';
@@ -8,7 +8,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Toast from 'react-native-easy-toast';
 import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
 
-let { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
+
 const FONT_UNIT = 0.01 * width;
 
 export default class Payment extends React.Component {
@@ -26,7 +27,6 @@ export default class Payment extends React.Component {
   }
 
   async componentDidMount() {
-    console.log(height);
     AppState.addEventListener('change', this.handleAppStateChange);
     this.backHandler = BackHandler.addEventListener('hardwareBackPress', this.handleHardwareBackPress);
     let params = this.props.navigation.state.params;
@@ -156,7 +156,7 @@ export default class Payment extends React.Component {
           <View style={styles.mainContent}>
             <Text style={styles.secondaryTitle}>Pay with Ozow</Text>
             <Image style={styles.ozowLogo} source={require('../../assets/ozow_black.png')}/>
-            <Text style={styles.description}>We use <Text style={styles.bold}>Ozow</Text>, South Africa’s premium payment solution, to process all instant EFT payments and transfer cash directly to your Jupiter account. </Text>
+            <Text style={styles.description}>We use <Text style={styles.bold}>Ozow</Text>, SA&apos;s premium payment solution, to process instant EFTs and transfer cash directly to your Jupiter account. </Text>
             <Text style={styles.buttonDescription}>Tap the link to pay with Ozow:</Text>
             <LinearGradient start={[0, 0.5]} end={[1, 0.5]} colors={[Colors.LIGHT_BLUE, Colors.PURPLE]} style={[styles.buttonStyle]}>
               <Text style={styles.paymentLink} onPress={this.onPressPaymentLink}>{this.state.paymentLink}</Text>
@@ -170,7 +170,7 @@ export default class Payment extends React.Component {
           </View>
         </View>
         {
-          height > 500 ?
+          height > 600 ?
           <View style={[styles.footer, styles.boxShadow]}>
             <Text style={styles.footerTitle}>THE EASIEST WAY TO PAY:</Text>
             <Image style={styles.shield} source={require('../../assets/shield.png')}/>
@@ -191,15 +191,6 @@ export default class Payment extends React.Component {
                 color={Colors.PURPLE}
               />
               <Text style={styles.footerItemText}>Payments completed in seconds</Text>
-            </View>
-            <View style={styles.footerItem}>
-              <Icon
-                name='check'
-                type='feather'
-                size={19}
-                color={Colors.PURPLE}
-              />
-              <Text style={styles.footerItemText}>No proof of payment necessary</Text>
             </View>
             <View style={styles.footerItem}>
               <Icon
@@ -287,7 +278,7 @@ const styles = StyleSheet.create({
   },
   secondaryTitle: {
     fontFamily: 'poppins-semibold',
-    fontSize: 20,
+    fontSize: 18,
     color: Colors.DARK_GRAY,
   },
   ozowLogo: {
@@ -298,6 +289,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.MEDIUM_GRAY,
     textAlign: 'center',
+    paddingHorizontal: 7
   },
   bold: {
     fontFamily: 'poppins-semibold',
