@@ -27,11 +27,10 @@ export const NotificationsUtil = {
         return false;
       } else {
         let resultText = await result.text();
-        console.log("resultText:", resultText);
+        console.log("resultText:", JSON.stringify(resultText));
         throw result;
       }
     } catch (error) {
-      console.log("error!", error);
       return false;
     }
   },

@@ -69,7 +69,6 @@ export default class LimitedUsers extends React.Component {
         throw result;
       }
     } catch (error) {
-      console.log("error!", error);
       this.showError();
     }
   }
@@ -103,7 +102,6 @@ export default class LimitedUsers extends React.Component {
         throw result;
       }
     } catch (error) {
-      console.log("error!", error);
       this.showError();
     }
   }

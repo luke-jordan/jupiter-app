@@ -327,7 +327,7 @@ export default class Home extends React.Component {
 
   rotateGameCircle(arrowSpeedMultiplier) {
     let rotationDuration = CIRCLE_ROTATION_DURATION / arrowSpeedMultiplier;
-    console.log(rotationDuration);
+    // console.log(rotationDuration);
     Animated.timing(
       this.state.gameRotation,
       {
