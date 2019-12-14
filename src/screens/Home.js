@@ -19,7 +19,7 @@ import { NavigationEvents } from 'react-navigation';
 // import VersionCheck from 'react-native-version-check-expo';
 
 /*
-This is here because currently long timers are not purely supported on Android.
+This is here because currently long timers are not purely supported on Android. A long timer is used for the rest-of-day-animation
 We should continue to follow the support threads on this issue (visible in the error if you remove this ignore block)
 */
 YellowBox.ignoreWarnings([
@@ -33,9 +33,12 @@ const TIME_BETWEEN_FETCH = 10 * 1000; // don't fetch if time is between this (i.
 const CIRCLE_ROTATION_DURATION = 6000;
 const CIRCLE_SCALE_DURATION = 200;
 
+// depending on the phone, a shorter interval actually leads to a longer animation, because the animation can't
+// move as fast as desired (given calculations etc), especially at large balances
 const DEFAULT_BALANCE_ANIMATION_INTERVAL = 14;
-const DEFAULT_BALANCE_ANIMATION_DURATION = 3500;
+const DEFAULT_BALANCE_ANIMATION_DURATION = 3000;
 const DEFAULT_BALANCE_ANIMATION_STEP_SIZE = 50;
+const MAX_NUMBER_STEPS_ACCELERATED_ANIMATION = 30;
 
 const COLOR_WHITE = '#fff';
 
@@ -46,108 +49,78 @@ export default class Home extends React.Component {
     this.state = {
       firstName: "",
       currency: "R",
-      balance: 0,
+      loading: false,
+
+      // The state has crucial variables that control what the central balance displays, and how quickly it is
+      // animating towards its target or not. there are two kinds of animation of the balance,
+      // "accelerated" when the displayed balance needs to reach a much higher balance quickly, e.g.,
+      // when the app is loaded (so, from 0 to the current or last stored balance) and after the user
+      // has saved or a boost has been awarded, or similar. "Slow" is when the balance is stable and is just
+      // ticking upwards to its projected level at the end of the day (calculated by the server).
+      
+      // The AnimatedNumber component that handles the animation has four inputs: initial (where to start),
+      // target (where to reach), duration (how long to animate), and stepSize (how much to increment on each)
+      // tick. It will calculate how often to animate (tick up or down) based on the step size and duration.
+      
+      // Three numbers therefore control the animation: the current reference balance; the last shown balance;
+      // and the target balance for the end of the day:
+      
+      // ** The current reference balance (currentBalance) is the user's balance as of either the start of the day or the last 
+      // balance-related event (save, withdraw, boost award), whichever  is latest. The current reference balance always forms
+      // the initial balance for the slow animation. It is stored locally in userInfo.balance.currentBalance.
+      
+      // ** The last shown balance (lastShownBalance) is whatever is currently on the screen or was the last time the user was on 
+      // this screen. It serves as the "initial" point each time the balance is rendered
+      
+      // ** The target balance (endOfDayBalance) for the end of the day is where the server projects the user will be if they do not
+      // have any balance-related event, i.e., in steady state earning interest. In steady-state, the balance
+      // animation (in "slow"), animates to reach this number at the end of the day.
+
+      // The animation decision tree is therefore as follows: if the lastShownBalance is different from the currentBalance
+      // and is not between the currentBalance and the endOfDay balance, then initiate accelerated animation, to close the 
+      // gap between the lastShownBalance and the currentBalance within the default animation duration; else, initiate or continue 
+      // slow animation, to make the lastShownBalance converge to the endOfDay balance.
+
+      // Finally, there is one corner case where the current reference amount changes by less than the difference between
+      // it and the end of day target. This is only possible where the daily interest on an account is less than the amount
+      // of a potential save, which is a very very large account. Still, to accommodate it, when we fetch the balance from the
+      // server we do an additional check on whether the server's reference balance is different to the currentBalance, and if so,
+      // we set the currentBalance accordingly and we initiate accelerated animation.
+
+      currentBalance: 0,
+      lastShownBalance: 0,
+      endOfDayBalance: 0,
+      targetBalance: 0,
+
+      balanceAnimationInterval: DEFAULT_BALANCE_ANIMATION_INTERVAL,
+      balanceAnimationStepSize: DEFAULT_BALANCE_ANIMATION_STEP_SIZE,
+      balanceAnimationDuration: DEFAULT_BALANCE_ANIMATION_DURATION,
+      acceleratedBalanceAnimationStarted: false,
+      slowBalanceAnimationStarted: false,
+
       // expectedToAdd: "100",
       rotation: new Animated.Value(0),
       gameRotation: new Animated.Value(0),
       circleScale: new Animated.Value(0),
+
       hasMessage: false,
       messageDetails: null,
       hasGameModal: false,
       gameModalDetails: null,
-      loading: false,
-      balanceAnimationInterval: DEFAULT_BALANCE_ANIMATION_INTERVAL,
-      balanceAnimationStepSize: DEFAULT_BALANCE_ANIMATION_STEP_SIZE,
-      balanceAnimationDuration: DEFAULT_BALANCE_ANIMATION_DURATION,
-      initialBalanceAnimationStarted: false,
-      secondaryBalanceAnimationStarted: false,
       updateRequiredDialogVisible: false,
       updateAvailableDialogVisible: false,
       tapScreenGameMode: false,
       chaseArrowGameMode: false,
+      
       lastFetchTimeMillis: 0
     };
   }
 
   async componentDidMount() {
-    console.log("COMPONENT MOUNTED");
+    console.log('***** REMOUNTED ****');
     this.showInitialData();
     this.rotateCircle();
     // this.checkIfUpdateNeeded();
-  }
-
-  async fetchMessagesIfNeeded() {
-    let gameId = await MessagingUtil.getGameId();
-    if (gameId) {
-      let game = await MessagingUtil.getGame(gameId);
-      if (game) this.showGame(game);
-    } else {
-      let data = await MessagingUtil.fetchMessagesAndGetTop(this.state.token);
-      if (data) this.showGame(data);
-    }
-  }
-
-  async showGame(game) {
-    if (game.display.type.includes("CARD")) {
-      this.setState({
-        hasMessage: true,
-        messageDetails: game,
-      });
-    } else if (game.display.type.includes("MODAL")) {
-      this.setState({
-        hasGameModal: true,
-        gameModalDetails: game,
-      });
-    }
-  }
-
-  // removing until we have a public page
-  // async checkIfUpdateNeeded() {
-  //   try {
-  //     let localVersion = VersionCheck.getCurrentVersion();
-  //     let remoteVersion = await VersionCheck.getLatestVersion();
-
-  //     const updateStatus = this.needsUpdate(localVersion, remoteVersion);
-  //     if (updateStatus == 2) {
-  //       this.showUpdateDialog(true);
-  //     } else if (updateStatus == 1) {
-  //       this.showUpdateDialog(false);
-  //     }
-  //   } catch (err) {
-  //     LoggingUtil.logError(err);
-  //   }
-  // }
-
-  // needsUpdate(localVersion, remoteVersion) {
-  //   let localParts = localVersion.split('.');
-  //   if (!remoteVersion) return false;
-  //   let remoteParts = remoteVersion.split('.');
-  //   if (localParts[0] < remoteParts[0]) return 2;
-  //   if (localParts[1] < remoteParts[1]) return 2;
-  //   if (localParts[2] < remoteParts[2]) return 1;
-  //   return 0;
-  // }
-
-  // async showUpdateDialog(required){
-  //   if (required) {
-  //     this.setState({updateRequiredDialogVisible: true});
-  //   } else {
-  //     this.setState({updateAvailableDialogVisible: true});
-  //   }
-  // }
-
-  // onPressUpdate = async () => {
-  //   let link = await VersionCheck.getStoreUrl();
-  //   Linking.openURL(link);
-  //   this.onCloseDialog();
-  // }
-
-  onCloseDialog = () => {
-    this.setState({
-      updateRequiredDialogVisible: false,
-      updateAvailableDialogVisible: false,
-    });
-    return true;
   }
 
   async showInitialData() {
@@ -160,74 +133,134 @@ export default class Home extends React.Component {
         info = JSON.parse(info);
       }
     }
+
     await this.setState({
       token: info.token,
       firstName: info.profile.personalName,
     });
+
     if (info.profile.kycStatus == "FAILED_VERIFICATION" || info.profile.kycStatus == "REVIEW_FAILED") {
-      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'FailedVerification', { "fromHome": true });
+      // NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'FailedVerification', { "fromHome": true });
+      NavigationUtil.logout(this.props.navigation);
       return;
     }
+    
     this.handleNotificationsModule();
+
     LoggingUtil.setUserId(info.systemWideUserId);
     LoggingUtil.logEvent("USER_ENTERED_SCREEN", {"screen_name": "Home"});
-    this.animateBalance(info.balance);
-    this.fetchUpdates();
+    
+    this.setBalanceAnimationParameters(info.balance, true);
+    this.fetchCurrentBalanceFromServer();
     this.fetchMessagesIfNeeded();
   }
 
-  async handleNotificationsModule() {
-    this.registerForPushNotifications();
-    this._notificationSubscription = Notifications.addListener(this.handleNotification);
+  // when the component first loads, we animate from zero, so the stored last shown balance is disregarded
+  async setBalanceAnimationParameters(balanceInfo, showingInitialData) {
+    // console.log('Set balance animation parameters called');
+    let lastShownBalance = 0;
+    
+    if (!showingInitialData) {
+      let storedLastShownBalance = await AsyncStorage.getItem('lastShownBalance');
+      if (storedLastShownBalance) {
+        lastShownBalance = JSON.parse(storedLastShownBalance);
+      }
+    }
+
+    const currentBalance = balanceInfo.currentBalance.amount;
+    const endOfDayBalance = balanceInfo.balanceEndOfToday.amount;
+
+    this.setState({
+      lastShownBalance,
+      currentBalance,
+      endOfDayBalance,
+      unit: balanceInfo.currentBalance.unit,
+      currency: this.getCurrencySymbol(balanceInfo.currentBalance.currency),
+      balanceAnimationStepSize: Math.abs(balanceInfo.currentBalance.amount - lastShownBalance) / 50 // backup
+    });
+
+    // as in large comment at top, if last shown balance is not in between the current and projected, we accelerate.
+    // making this explicit and verbose as it is important and could get a little confusing, and the cost of false negatives is high
+    const isLastShownBtwCurrentAndEndDay = (lastShownBalance > currentBalance && lastShownBalance < endOfDayBalance) ||
+      (lastShownBalance < currentBalance && lastShownBalance > endOfDayBalance);
+    const shouldAccelerate = !(lastShownBalance == currentBalance || isLastShownBtwCurrentAndEndDay);
+
+    console.log(`Alright, current balance: ${currentBalance}, end of day balance: ${endOfDayBalance}, last shown: ${lastShownBalance}, should accelerate: ${shouldAccelerate}`);
+    
+    // due to extreme assymetry -- accidentally going fast has little to no negative effects, accidentally going slow means the 
+    // user might think their latest withdrawal/boost/save/etc is not being reflected -- we only turn on acceleration, we do not
+    // turn it off (turning off is done by end of animation method when acceleration has reached its target)
+    if (shouldAccelerate) {
+      this.playAcceleratedAnimation();
+    } 
+
+    // console.log(`Balance parameters set!: current: ${this.state.currentBalance}, last shown: ${this.state.lastShownBalance}, end day: ${this.state.endOfDayBalance}`);
   }
 
-  handleNotification = (notification) => {
-    NotificationsUtil.handleNotification(this.props.navigation, notification);
-  };
+  playAcceleratedAnimation () {
+    const balanceDiff = Math.abs(this.state.currentBalance - this.state.lastShownBalance);
+    console.log(`Balance difference: ${balanceDiff} and current unit: ${this.state.unit}`);
+    const numberSteps = Math.min(DEFAULT_BALANCE_ANIMATION_DURATION / DEFAULT_BALANCE_ANIMATION_INTERVAL, MAX_NUMBER_STEPS_ACCELERATED_ANIMATION);
+    const stepSize = balanceDiff / numberSteps;
+    console.log('Accelerated step size: ', stepSize, ' should produce ', numberSteps, ' steps');
+    // const stepSize = this.calculateStepSize(balanceDiff, DEFAULT_BALANCE_ANIMATION_DURATION);
+    
+    this.setState({ 
+      acceleratedBalanceAnimationStarted: true,
+      acceleratedBalanceAnimationFinished: false,
+      balanceAnimationDuration: DEFAULT_BALANCE_ANIMATION_DURATION,
+      balanceAnimationStepSize: stepSize
+    });
+  }
 
-  registerForPushNotifications = async () => {
-    try {
-      const { status: existingStatus } = await Permissions.getAsync(Permissions.NOTIFICATIONS);
-      let finalStatus = existingStatus;
+  calculateStepSize (balanceDiff, timeToComplete) {
+    const balanceDiffInCents = balanceDiff / this.getDivisor(this.state.unit) * 100; //get the amount to be earned in the period in cents
 
-      if (existingStatus !== 'granted') {
-        const { status } = await Permissions.askAsync(Permissions.NOTIFICATIONS);
-        finalStatus = status;
-      }
-      if (finalStatus !== 'granted') {
-        return;
-      }
+    let steps = balanceDiffInCents; //set a default amount of steps, equal to the amount of cents we want to increase
+    let stepSize = 0.01; // set a default count by to 1 cent per step
 
-      let token = await Notifications.getExpoPushTokenAsync();
-      NotificationsUtil.uploadTokenToServer(token, this.state.token);
-    } catch (err) {
-      err.message = `Push notification registration error: ${err.message}`;
-      LoggingUtil.logError(err);
+    //if there are too many steps, make them go twice as fast until we reach a good speed
+    //this way, if the amount to increase is way too big, we will be moving not by a cent every millisecond, but 2 cents per milli, etc.
+    while (steps > timeToComplete) {
+      steps /= 2;
+      stepSize *= 2;
+    }
+
+    return stepSize * this.getDivisor(this.state.unit);
+  }
+
+  playRestOfDayAnimation () {
+    console.log('Playing rest of day slow animation');
+
+    let currentBalance = this.state.currentBalance; // get balance as of right now
+    let endOfDayBalance = this.state.endOfDayBalance; //get end of day balance
+
+    if (currentBalance < endOfDayBalance) { //only keep going if we actually need to animate anything
+      const timeToEndOfDay = moment().endOf('day').valueOf() - moment().valueOf(); //get the time left until end of day in millis
+      // let timeToEndOfDay = moment().add(30, 'seconds').valueOf() - moment().valueOf(); //testing for 120 seconds
+      const balanceDiff = endOfDayBalance - currentBalance; //get the amount to be earned by the end of day in "huge numbers"
+
+      const stepSize = this.calculateStepSize(balanceDiff, timeToEndOfDay);
+
+      this.setState({
+        balanceAnimationStepSize: stepSize,
+        balanceAnimationDuration: timeToEndOfDay,
+        slowBalanceAnimationStarted: true,
+        acceleratedBalanceAnimationFinished: true,
+      });
     }
   }
 
-  logUpdate = async () => {
-    const millisSinceLastFetch = moment().valueOf() - this.state.lastFetchTimeMillis;
-    console.log('Time since fetch: ', millisSinceLastFetch);
-    if (millisSinceLastFetch > TIME_BETWEEN_FETCH) {
-      console.log('Enough time elapsed, check for new balance');
-      await this.fetchUpdates();
-    }
-  }
-
-  fetchUpdates = async () => {
-    console.log('Fetching updates, current state of loading: ', this.state.loading);
+  fetchCurrentBalanceFromServer = async () => {
     if (this.state.loading) return;
     this.setState({loading: true});
     try {
-      console.log('Sending update request ....');
       let result = await fetch(Endpoints.CORE + 'balance', {
         headers: {
           'Authorization': 'Bearer ' + this.state.token,
         },
         method: 'GET',
       });
-      console.log('Fetched update request');
 
       //Uncomment this to force MA-69 test case
       // result.ok = false;
@@ -235,12 +268,13 @@ export default class Home extends React.Component {
 
       if (result.ok) {
         let resultJson = await result.json();
-        this.storeUpdatedBalance(resultJson);
+        await this.storeUpdatedBalance(resultJson);
         this.setState({
-          endOfDayBalance: resultJson.balanceEndOfToday.amount,
           lastFetchTimeMillis: moment().valueOf(),
           loading: false
         });
+        // to make the wheel go to the right place
+        this.setBalanceAnimationParameters(resultJson, false);
       } else {
         if (result.status == 403) {
           Alert.alert(
@@ -269,24 +303,109 @@ export default class Home extends React.Component {
     }
     if (response) {
       info.balance = response;
-      AsyncStorage.setItem('userInfo', JSON.stringify(info));
+      await AsyncStorage.setItem('userInfo', JSON.stringify(info));
     }
   }
 
-  async animateBalance(balance) {
-    // let lastShownBalance = await AsyncStorage.getItem('lastShownBalance');
-    // if (lastShownBalance) lastShownBalance = JSON.parse(lastShownBalance);
-    // else lastShownBalance = 0;
-    let lastShownBalance = 0;
+  // todo : try make sure this isn't blocking (slows arrow on dev build)
+  async checkBalanceOnReload () {
+    // first we reload the balance from storage, in case it changed (e.g., by stashing after payment complete)
+    const info = await AsyncStorage.getItem('userInfo');
+    if (!info) {
+      // means something went wrong while on other screens or some backdoor attempt
+      NavigationUtil.logout(this.props.navigation);
+    }
+    
+    const { balance } = JSON.parse(info);
+    this.setBalanceAnimationParameters(balance, false);
+
+    const millisSinceLastFetch = moment().valueOf() - this.state.lastFetchTimeMillis;
+    console.log('Time since fetch: ', millisSinceLastFetch);
+    if (millisSinceLastFetch > TIME_BETWEEN_FETCH) {
+      console.log('Enough time elapsed, check for new balance');
+      await this.fetchCurrentBalanceFromServer();
+    }
+
+    // for testing
+    // console.log('Incrementing balance, from: ', this.state.currentBalance);
+    // const increment = 100 * 100 * 100;
+    // const mockHigherBalance = {
+    //   currentBalance: { 
+    //     amount: this.state.currentBalance + increment,
+    //     unit: 'HUNDREDTH_CENT',
+    //     currency: 'ZAR'
+    //   },
+    //   balanceEndOfToday: {
+    //     amount: this.state.endOfDayBalance + increment
+    //   }
+    // };
+    // this.setBalanceAnimationParameters(mockHigherBalance, false);
+  }
+
+  renderBalance() {
+    // console.log('Rendering balance, target: ', this.state.currentBalance);
+    // console.log('Rendering balance, step size: ', this.state.balanceAnimationStepSize, ' and target: ', this.state.currentBalance, ' and duration: ', this.state.balanceAnimationDuration);
+    if (!this.state.acceleratedBalanceAnimationStarted) return null;
+    return (
+      <View style={styles.balanceWrapper}>
+        <Text style={styles.currency}>{this.state.currency}</Text>
+        {
+          this.state.acceleratedBalanceAnimationStarted && !this.state.acceleratedBalanceAnimationFinished ?
+          <AnimatedNumber style={styles.balance}
+            initial={this.state.lastShownBalance} target={this.state.currentBalance}
+            formatting={(value) => this.getFormattedValue(value)}
+            stepSize={this.state.balanceAnimationStepSize}
+            duration={this.state.balanceAnimationDuration}
+            onAnimationProgress={(value) => {this.onProgressBalanceAnimation(value)}}
+            onAnimationFinished={() => {this.onFinishBalanceAnimation(true)}}
+            />
+          : null
+        }
+        {
+          this.state.acceleratedBalanceAnimationFinished && this.state.slowBalanceAnimationStarted ?
+          <AnimatedNumber style={styles.balance}
+            initial={this.state.lastShownBalance} target={this.state.endOfDayBalance}
+            formatting={(value) => this.getFormattedValue(value)}
+            stepSize={this.state.balanceAnimationStepSize}
+            duration={this.state.balanceAnimationDuration}
+            onAnimationProgress={(value) => {this.onProgressBalanceAnimation(value)}}
+            onAnimationFinished={() => {this.onFinishBalanceAnimation(false)}}
+            />
+          : null
+        }
+      </View>
+    )
+  }
+
+  async onFinishBalanceAnimation(hasBeenAccelerated) {
+    const finalBalance = hasBeenAccelerated ? this.state.currentBalance : this.state.endOfDayBalance;
+    await AsyncStorage.setItem('lastShownBalance', JSON.stringify(finalBalance));
     this.setState({
-      lastShownBalance: lastShownBalance,
-      balance: balance.currentBalance.amount,
-      endOfDayBalance: balance.balanceEndOfToday.amount,
-      unit: balance.currentBalance.unit,
-      currency: this.getCurrencySymbol(balance.currentBalance.currency),
-      balanceAnimationStepSize: Math.abs(balance.currentBalance.amount - lastShownBalance) / 50,
-      initialBalanceAnimationStarted: true,
+      lastShownBalance: finalBalance,
     });
+    if (hasBeenAccelerated) {
+      setTimeout(() => {
+        this.playRestOfDayAnimation();
+      }, 300);
+    }
+  }
+
+  async onProgressBalanceAnimation(value) {
+    this.setState({
+      lastShownBalance: value,
+    });
+    if (!this.state.lastSetStorage || moment().valueOf() - this.state.lastSetStorage.valueOf() > 15000) { //if the last time we saved it was more than 15 seconds ago, save it again
+      await AsyncStorage.setItem('lastShownBalance', JSON.stringify(value));
+      this.setState({
+        lastSetStorage: moment(),
+      });
+    }
+  }
+
+  getFormattedValue(value) {
+    let result = (value / this.getDivisor(this.state.unit)).toFixed(2);
+    result = result.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","); //I don't understand how this works. It's a plain copy paste which allows comma separators
+    return result;
   }
 
   getCurrencySymbol(currencyName) {
@@ -342,39 +461,49 @@ export default class Home extends React.Component {
     });
   }
 
-  rotateGameCircle(arrowSpeedMultiplier) {
-    let rotationDuration = CIRCLE_ROTATION_DURATION / arrowSpeedMultiplier;
-    // console.log(rotationDuration);
-    Animated.timing(
-      this.state.gameRotation,
-      {
-        toValue: 1,
-        duration: rotationDuration,
-        easing: Easing.linear,
-      }
-    ).start(() => {
-      if (this.state.chaseArrowGameMode) {
-        this.setState({
-          gameRotation: new Animated.Value(0),
-        });
-        this.rotateGameCircle(arrowSpeedMultiplier);
-      }
-    });
+  // ////////////////////////////////////////////////////////////////////////////////////
+  // ///////////////////  NOTIFICATION AND MESSAGE HANDLING /////////////////////////////
+  // ////////////////////////////////////////////////////////////////////////////////////
+
+  async handleNotificationsModule() {
+    this.registerForPushNotifications();
+    this._notificationSubscription = Notifications.addListener(this.handleNotification);
   }
 
-  scaleCircle() {
-    Animated.timing(
-      this.state.circleScale,
-      {
-        toValue: 1,
-        duration: CIRCLE_SCALE_DURATION,
-        easing: Easing.linear,
+  handleNotification = (notification) => {
+    NotificationsUtil.handleNotification(this.props.navigation, notification);
+  };
+
+  registerForPushNotifications = async () => {
+    try {
+      const { status: existingStatus } = await Permissions.getAsync(Permissions.NOTIFICATIONS);
+      let finalStatus = existingStatus;
+
+      if (existingStatus !== 'granted') {
+        const { status } = await Permissions.askAsync(Permissions.NOTIFICATIONS);
+        finalStatus = status;
       }
-    ).start(() => {
-      this.setState({
-        circleScale: new Animated.Value(0),
-      });
-    });
+      if (finalStatus !== 'granted') {
+        return;
+      }
+
+      let token = await Notifications.getExpoPushTokenAsync();
+      NotificationsUtil.uploadTokenToServer(token, this.state.token);
+    } catch (err) {
+      err.message = `Push notification registration error: ${err.message}`;
+      LoggingUtil.logError(err);
+    }
+  }
+
+  async fetchMessagesIfNeeded() {
+    let gameId = await MessagingUtil.getGameId();
+    if (gameId) {
+      let game = await MessagingUtil.getGame(gameId);
+      if (game) this.showGame(game);
+    } else {
+      let data = await MessagingUtil.fetchMessagesAndGetTop(this.state.token);
+      if (data) this.showGame(data);
+    }
   }
 
   onFlingMessage() {
@@ -413,6 +542,14 @@ export default class Home extends React.Component {
       default:
       return require('../../assets/notification.png');
     }
+  }
+
+  onCloseDialog = () => {
+    this.setState({
+      updateRequiredDialogVisible: false,
+      updateAvailableDialogVisible: false,
+    });
+    return true;
   }
 
   onPressModalAction = (action) => {
@@ -482,93 +619,57 @@ export default class Home extends React.Component {
     );
   }
 
-  async playNextAnimationPhase() {
-    let currentBalance = this.state.balance; //get balance as of right now
-    let endOfDayBalance = this.state.endOfDayBalance; //get end of day balance
+  // ////////////////////////////////////////////////////////////////////////////////////
+  // ///////////////////  GAME HANDLING /////////////////////////////////////////////////
+  // ////////////////////////////////////////////////////////////////////////////////////
 
-    if (currentBalance < endOfDayBalance) { //only keep going if we actually need to animate anything
-      let timeToEndOfDay = moment().endOf('day').valueOf() - moment().valueOf(); //get the time left until end of day in millis
-      // let timeToEndOfDay = moment().add(30, 'seconds').valueOf() - moment().valueOf(); //testing for 120 seconds
-      let balanceDiff = endOfDayBalance - currentBalance; //get the amount to be earned by the end of day in "huge numbers"
-      let balanceDiffInCents = balanceDiff / this.getDivisor(this.state.unit) * 100; //get the amount to be earned by the end of day in cents
-
-      let steps = balanceDiffInCents; //set a default amount of steps, equal to the amount of cents we want to increase
-      let stepSize = 0.01; //set a default count by to 1 cent per step
-
-      //if there are too many steps, make them go twice as fast until we reach a good speed
-      //this way, if the amount to increase is way too big, we will be moving not by a cent every millisecond, but 2 cents per milli, etc.
-      while (steps > timeToEndOfDay) {
-        steps /= 2;
-        stepSize *= 2;
-      }
-
+  async showGame(game) {
+    if (game.display.type.includes("CARD")) {
       this.setState({
-        balance: this.state.endOfDayBalance,
-        balanceAnimationStepSize: stepSize * this.getDivisor(this.state.unit),
-        balanceAnimationDuration: timeToEndOfDay,
-        secondaryBalanceAnimationStarted: true,
-        initialBalanceAnimationFinished: true,
+        hasMessage: true,
+        messageDetails: game,
+      });
+    } else if (game.display.type.includes("MODAL")) {
+      this.setState({
+        hasGameModal: true,
+        gameModalDetails: game,
       });
     }
   }
 
-  async onFinishBalanceAnimation(isInitial) {
-    AsyncStorage.setItem('lastShownBalance', JSON.stringify(this.state.balance));
-    this.setState({
-      lastShownBalance: this.state.balance,
-    });
-    if (isInitial) {
-      setTimeout(() => {
-        this.playNextAnimationPhase();
-      }, 300);
-    } else {
-      // this.setState({
-      //   secondaryBalanceAnimationStarted: false
-      // });
-      // this.fetchEndOfDayUpdate();
-    }
-  }
-
-  fetchEndOfDayUpdate = async () => {
-    try {
-      let result = await fetch(Endpoints.CORE + 'balance', {
-        headers: {
-          'Authorization': 'Bearer ' + this.state.token,
-        },
-        method: 'GET',
-      });
-      if (result.ok) {
-        let resultJson = await result.json();
+  rotateGameCircle(arrowSpeedMultiplier) {
+    let rotationDuration = CIRCLE_ROTATION_DURATION / arrowSpeedMultiplier;
+    // console.log(rotationDuration);
+    Animated.timing(
+      this.state.gameRotation,
+      {
+        toValue: 1,
+        duration: rotationDuration,
+        easing: Easing.linear,
+      }
+    ).start(() => {
+      if (this.state.chaseArrowGameMode) {
         this.setState({
-          secondaryBalanceAnimationStarted: true,
-          endOfDayBalance: resultJson.balanceEndOfToday.amount
+          gameRotation: new Animated.Value(0),
         });
-        this.playNextAnimationPhase();
-      } else {
-        throw result;
+        this.rotateGameCircle(arrowSpeedMultiplier);
       }
-    } catch (error) {
-      console.log("error!", error.status);
-      this.setState({loading: false});
-    }
-  }
-
-  async onProgressBalanceAnimation(value) {
-    this.setState({
-      lastShownBalance: this.state.balance,
     });
-    if (!this.state.lastSetStorage || moment().valueOf() - this.state.lastSetStorage.valueOf() > 15000) { //if the last time we saved it was more than 15 seconds ago, save it again
-      AsyncStorage.setItem('lastShownBalance', JSON.stringify(value));
-      this.setState({
-        lastSetStorage: moment(),
-      });
-    }
   }
 
-  getFormattedValue(value) {
-    let result = (value / this.getDivisor(this.state.unit)).toFixed(2);
-    result = result.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","); //I don't understand how this works. It's a plain copy paste which allows comma separators
-    return result;
+  scaleCircle() {
+    Animated.timing(
+      this.state.circleScale,
+      {
+        toValue: 1,
+        duration: CIRCLE_SCALE_DURATION,
+        easing: Easing.linear,
+      }
+    ).start(() => {
+      this.setState({
+        circleScale: new Animated.Value(0),
+      });
+    });
   }
 
   onPressPlayLater = () => {
@@ -741,39 +842,6 @@ export default class Home extends React.Component {
     );
   }
 
-  renderBalance() {
-    if (!this.state.initialBalanceAnimationStarted) return null;
-    return (
-      <View style={styles.balanceWrapper}>
-        <Text style={styles.currency}>{this.state.currency}</Text>
-        {
-          this.state.initialBalanceAnimationStarted && !this.state.initialBalanceAnimationFinished ?
-          <AnimatedNumber style={styles.balance}
-            initial={this.state.lastShownBalance} target={this.state.balance}
-            formatting={(value) => this.getFormattedValue(value)}
-            stepSize={this.state.balanceAnimationStepSize}
-            duration={this.state.balanceAnimationDuration}
-            onAnimationProgress={(value) => {this.onProgressBalanceAnimation(value)}}
-            onAnimationFinished={() => {this.onFinishBalanceAnimation(true)}}
-            />
-          : null
-        }
-        {
-          this.state.initialBalanceAnimationFinished && this.state.secondaryBalanceAnimationStarted ?
-          <AnimatedNumber style={styles.balance}
-            initial={this.state.lastShownBalance} target={this.state.balance}
-            formatting={(value) => this.getFormattedValue(value)}
-            stepSize={this.state.balanceAnimationStepSize}
-            duration={this.state.balanceAnimationDuration}
-            onAnimationProgress={(value) => {this.onProgressBalanceAnimation(value)}}
-            onAnimationFinished={() => {this.onFinishBalanceAnimation(false)}}
-            />
-          : null
-        }
-      </View>
-    )
-  }
-
   renderTapCounter() {
     let taps = 0, timer = 0;
     if (this.state.tapScreenGameMode) {
@@ -807,9 +875,10 @@ export default class Home extends React.Component {
         outputRange: [1, 1.04]
       });
     }
+
     return (
       <View style={styles.container}>
-        <NavigationEvents onDidFocus={() => this.logUpdate()} />
+        <NavigationEvents onDidFocus={() => this.checkBalanceOnReload()} />
 
         <View style={styles.gradientWrapper}>
           <LinearGradient colors={[Colors.LIGHT_BLUE, Colors.PURPLE]} style={styles.gradientContainer}>
@@ -1308,3 +1377,44 @@ const styles = StyleSheet.create({
     fontFamily: 'poppins-semibold',
   }
 });
+
+  // removing until we have a public page
+  // async checkIfUpdateNeeded() {
+  //   try {
+  //     let localVersion = VersionCheck.getCurrentVersion();
+  //     let remoteVersion = await VersionCheck.getLatestVersion();
+
+  //     const updateStatus = this.needsUpdate(localVersion, remoteVersion);
+  //     if (updateStatus == 2) {
+  //       this.showUpdateDialog(true);
+  //     } else if (updateStatus == 1) {
+  //       this.showUpdateDialog(false);
+  //     }
+  //   } catch (err) {
+  //     LoggingUtil.logError(err);
+  //   }
+  // }
+
+  // needsUpdate(localVersion, remoteVersion) {
+  //   let localParts = localVersion.split('.');
+  //   if (!remoteVersion) return false;
+  //   let remoteParts = remoteVersion.split('.');
+  //   if (localParts[0] < remoteParts[0]) return 2;
+  //   if (localParts[1] < remoteParts[1]) return 2;
+  //   if (localParts[2] < remoteParts[2]) return 1;
+  //   return 0;
+  // }
+
+  // async showUpdateDialog(required){
+  //   if (required) {
+  //     this.setState({updateRequiredDialogVisible: true});
+  //   } else {
+  //     this.setState({updateAvailableDialogVisible: true});
+  //   }
+  // }
+
+  // onPressUpdate = async () => {
+  //   let link = await VersionCheck.getStoreUrl();
+  //   Linking.openURL(link);
+  //   this.onCloseDialog();
+  // }
