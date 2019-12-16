@@ -23,7 +23,9 @@ export default class FailedVerification extends React.Component {
   }
 
   onPressEdit = () => {
-    this.props.navigation.goBack();
+    let isFromHome = this.props.navigation.getParam("fromHome");
+    if (isFromHome) this.props.navigation.goBack();
+    else this.props.navigation.pop(2);
   }
 
   onPressContactUs = () => {

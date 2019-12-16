@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Dimensions } from 'react-native';
+import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Endpoints } from '../util/Values';
@@ -103,8 +103,41 @@ export default class Profile extends React.Component {
     this.props.navigation.navigate('Support');
   }
 
-  onPressSave = () => {
-    //TODO
+  onPressSave = async () => {
+    if (this.state.loading) return;
+    this.setState({loading: true});
+    try {
+      const payload = {
+        personalName: this.state.firstName,
+        familyName: this.state.lastName,
+        nationalId: this.state.idNumber
+      };
+      let result = await fetch(Endpoints.AUTH + 'profile/edit', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        method: 'GET',
+        body: JSON.stringify(payload),
+      });
+      if (result.ok) {
+        let responseJson = await response.json();
+        console.log(responseJson);
+        //TODO handle responseJson.updatedKycStatus
+        this.setState({loading: false});
+      } else {
+        throw result;
+      }
+    } catch (error) {
+      this.setState({loading: false});
+      console.log(error);
+      //TODO handle properly
+    }
+
+  }
+
+  onPressLogout = () => {
+    NavigationUtil.logout(this.props.navigation);
   }
 
   render() {
@@ -171,19 +204,27 @@ export default class Profile extends React.Component {
                   containerStyle={styles.containerStyle}
                 />
               </View>
-              <View style={styles.separator}/>
-              <View style={styles.profileField}>
-                <Input
-                  label="Email Address / Phone Number*"
-                  editable={false}
-                  value={this.state.tempEmail}
-                  onChangeText={(text) => {this.setState({tempEmail: text})}}
-                  labelStyle={styles.profileFieldTitle}
-                  inputContainerStyle={styles.inputContainerStyle}
-                  inputStyle={[styles.profileFieldValue, this.state.errors && this.state.errors.idNumber ? styles.redText : null]}
-                  containerStyle={styles.containerStyle}
-                />
-              </View>
+              {
+                !this.state.failedVerification ?
+                <View style={styles.separator}/>
+                : null
+              }
+              {
+                !this.state.failedVerification ?
+                <View style={styles.profileField}>
+                  <Input
+                    label="Email Address / Phone Number*"
+                    editable={false}
+                    value={this.state.tempEmail}
+                    onChangeText={(text) => {this.setState({tempEmail: text})}}
+                    labelStyle={styles.profileFieldTitle}
+                    inputContainerStyle={styles.inputContainerStyle}
+                    inputStyle={[styles.profileFieldValue, this.state.errors && this.state.errors.idNumber ? styles.redText : null]}
+                    containerStyle={styles.containerStyle}
+                  />
+                </View>
+                : null
+              }
               {
                 /*
                 <View style={styles.profileField}>
@@ -212,30 +253,55 @@ export default class Profile extends React.Component {
                 */
               }
             </View>
-            <Text style={styles.disclaimer} onPress={this.onPressSupport}>*In order to update any of the those fields please contact us <Text style={styles.disclaimerBold}>using the support form.</Text></Text>
+            {
+              this.state.failedVerification ?
+              <Text style={styles.disclaimer} onPress={this.onPressSupport}>If your details are correct, please <Text style={styles.disclaimerBold}>contact support</Text>.</Text>
+              :
+              <Text style={styles.disclaimer} onPress={this.onPressSupport}>*In order to update any of the those fields please contact us <Text style={styles.disclaimerBold}>using the support form.</Text></Text>
+            }
           </View>
-          <TouchableOpacity style={styles.buttonLine} onPress={this.onPressSave}>
-            <Text style={styles.buttonLineText}>Save Changes</Text>
-            <Icon
-              name='chevron-right'
-              type='evilicon'
-              size={50}
-              color={Colors.MEDIUM_GRAY}
-            />
-          </TouchableOpacity>
-          {
-            !this.state.failedVerification ?
-            <TouchableOpacity style={styles.buttonLine} onPress={this.onPressChangePassword}>
-              <Text style={styles.buttonLineText}>Change Password</Text>
-              <Icon
-                name='chevron-right'
-                type='evilicon'
-                size={50}
-                color={Colors.MEDIUM_GRAY}
-              />
+          <View style={styles.buttonsContainer}>
+            <TouchableOpacity style={styles.buttonLine} onPress={this.onPressSave}>
+              <Text style={styles.buttonLineText}>Save Changes</Text>
+              {
+                this.state.loading ?
+                <ActivityIndicator style={styles.spinner} color={Colors.MEDIUM_GRAY} />
+                :
+                <Icon
+                  name='chevron-right'
+                  type='evilicon'
+                  size={50}
+                  color={Colors.MEDIUM_GRAY}
+                />
+              }
             </TouchableOpacity>
-            : null
-          }
+            {
+              this.state.failedVerification ?
+              <TouchableOpacity style={styles.buttonLine} onPress={this.onPressLogout}>
+                <Text style={styles.buttonLineText}>Logout</Text>
+                <Icon
+                  name='chevron-right'
+                  type='evilicon'
+                  size={50}
+                  color={Colors.MEDIUM_GRAY}
+                />
+              </TouchableOpacity>
+              : null
+            }
+            {
+              !this.state.failedVerification ?
+              <TouchableOpacity style={styles.buttonLine} onPress={this.onPressChangePassword}>
+                <Text style={styles.buttonLineText}>Change Password</Text>
+                <Icon
+                  name='chevron-right'
+                  type='evilicon'
+                  size={50}
+                  color={Colors.MEDIUM_GRAY}
+                />
+              </TouchableOpacity>
+              : null
+            }
+          </View>
         </View>
 
         <Dialog
@@ -439,5 +505,8 @@ const styles = StyleSheet.create({
   },
   redText: {
     color: Colors.RED,
+  },
+  spinner: {
+    marginRight: 15,
   },
 });
