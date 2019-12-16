@@ -12,7 +12,7 @@ export default class AddCash extends React.Component {
     this.state = {
       currency: "R",
       balance: 0,
-      amountToAdd: parseFloat(100).toFixed(2),
+      amountToAdd: parseFloat(100).toFixed(0),
       isOnboarding: false,
       loading: false,
     };
@@ -67,9 +67,9 @@ export default class AddCash extends React.Component {
         method: 'POST',
         body: JSON.stringify({
           "accountId": this.state.accountId,
-          "savedAmount": this.state.amountToAdd * 10000, //multiplying by 100 to get cents and again by 100 to get hundreth cent
-          "savedCurrency": "ZAR", //TODO implement for handling other currencies
-          "savedUnit": "HUNDREDTH_CENT"
+          "amount": this.state.amountToAdd * 10000, //multiplying by 100 to get cents and again by 100 to get hundreth cent
+          "currency": "ZAR", //TODO implement for handling other currencies
+          "unit": "HUNDREDTH_CENT"
         }),
       });
       if (result.ok) {
@@ -90,7 +90,6 @@ export default class AddCash extends React.Component {
       }
     } catch (error) {
       LoggingUtil.logEvent('ADD_CASH_FAILED_UNKNOWN', { "serverResponse" : JSON.stringify(result) });
-      console.log("error!", error);
       this.setState({loading: false});
       // this.showError();
     }
@@ -387,14 +386,6 @@ const styles = StyleSheet.create({
     minHeight: 50,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  makeSureDisclaimer: {
-    fontFamily: 'poppins-regular',
-    fontSize: 11.5,
-    width: '90%',
-    marginTop: 10,
-    lineHeight: 17,
-    color: Colors.MEDIUM_GRAY,
   },
   rateComparison: {
     width: '90%',

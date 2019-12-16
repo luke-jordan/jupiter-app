@@ -3,13 +3,13 @@
     "name": "Jupiter",
     "slug": "Jupiter",
     "privacy": "public",
-    "sdkVersion": "35.0.0",
+    "sdkVersion": "36.0.0",
     "platforms": [
       "ios",
       "android",
       "web"
     ],
-    "version": "0.0.5",
+    "version": "0.0.6",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "splash": {
@@ -29,7 +29,7 @@
     },
     "android": {
       "package": "com.jupitersave.app",
-      "versionCode": 5,
+      "versionCode": 6,
       "permissions": []
     },
     "hooks": {

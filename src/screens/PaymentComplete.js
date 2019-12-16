@@ -88,7 +88,7 @@ export default class PaymentComplete extends React.Component {
         throw result;
       }
     } catch (error) {
-      console.log("error!", error.status);
+      // console.log("error!", error.status);
       this.setState({fetchingProfile: false});
     }
   }

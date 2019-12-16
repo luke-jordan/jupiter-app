@@ -43,6 +43,8 @@ export default class Boosts extends React.Component {
     this.fetchBoosts(token);
   }
 
+  
+
   sortBoosts = (boosts) => {
     return boosts.sort((a, b) => {
       if (a.boostStatus != b.boostStatus) {
@@ -99,12 +101,22 @@ export default class Boosts extends React.Component {
     return require('../../assets/surprise_reward.png');
   }
 
-  getBoostResultIcon(status) {
-    if (status == "REDEEMED") {
+  getBoostResultIcon(boostStatus, endTime) {
+    if (boostStatus == "REDEEMED") {
       return require('../../assets/thumbs_up.png');
-    } else if (status == "EXPIRED") {
+    } else if (this.isBoostExpired({ boostStatus, endTime })) {
       return require('../../assets/sad_face.png');
     }
+  }
+
+  isBoostExpired({ boostStatus, endTime }) {
+    // the server sometimes will not have set a boost status to expire even when its end time is past
+    // in that case, as a fallback, we should set the status to expired here
+    if (boostStatus == 'EXPIRED'){
+      return true;
+    }
+
+    return moment(endTime).isBefore(moment());
   }
 
   isBoostExpiringSoon(endTime) {
@@ -115,7 +127,7 @@ export default class Boosts extends React.Component {
     if (boostDetails.boostStatus == "REDEEMED") {
       return <Text style={styles.boostClaimed}>Boost Claimed: </Text>;
     }
-    if (boostDetails.boostStatus == "EXPIRED") {
+    if (this.isBoostExpired({ boostStatus: boostDetails.boostStatus, endTime: boostDetails.endTime })) {
       return <Text style={styles.boostExpired}>Boost Expired.</Text>;
     }
     if (this.isBoostExpiringSoon(boostDetails.endTime)) {
@@ -125,7 +137,7 @@ export default class Boosts extends React.Component {
 
   getBoostButton(boostDetails) {
 
-    if (boostDetails.boostStatus == "REDEEMED" || boostDetails.boostStatus == "EXPIRED") {
+    if (boostDetails.boostStatus == "REDEEMED" || this.isBoostExpired({ boostStatus: boostDetails.boostStatus, endTime: boostDetails.endTime })) {
       return null;
     }
 
@@ -173,20 +185,22 @@ export default class Boosts extends React.Component {
   }
 
   getHighlightBorder(boostDetails) {
-    if (boostDetails.boostStatus != "REDEEMED" && boostDetails.boostStatus != "EXPIRED" && this.isBoostExpiringSoon(boostDetails.endTime)) {
+    if (boostDetails.boostStatus != "REDEEMED" && !this.isBoostExpired(boostDetails) && this.isBoostExpiringSoon(boostDetails.endTime)) {
       return styles.purpleBorder;
     }
     return null;
   }
 
-  getCardOpacity(boostStatus) {
-    if (boostStatus == "EXPIRED") return 0.6;
+  getCardOpacity(boostStatus, endTime) {
+    if (this.isBoostExpired({ boostStatus, endTime })) return 0.6;
     return 1;
   }
 
   renderBoostCard(boostDetails, index) {
     return (
-      <View opacity={this.getCardOpacity(boostDetails.boostStatus)} style={[styles.boostCard, styles.boxShadow, this.getHighlightBorder(boostDetails)]} key={index}>
+      <View opacity={this.getCardOpacity(boostDetails.boostStatus, boostDetails.endTime)} 
+        style={[styles.boostCard, styles.boxShadow, this.getHighlightBorder(boostDetails)]} key={index}>
+        
         <View style={styles.boostTopRow}>
           <Text style={styles.boostTitle}>{boostDetails.label}</Text>
           <View style={styles.boostIconWrapper}>
@@ -201,8 +215,8 @@ export default class Boosts extends React.Component {
         <View style={styles.boostBottomRow}>
           <View style={styles.boostBottomRowLeft}>
             {
-              boostDetails.boostStatus == "REDEEMED" || boostDetails.boostStatus == "EXPIRED" ?
-              <Image source={this.getBoostResultIcon(boostDetails.boostStatus)} style={styles.boostResultIcon} />
+              boostDetails.boostStatus == "REDEEMED" || this.isBoostExpired({ boostStatus: boostDetails.boostStatus, endTime: boostDetails.endTime }) ?
+              <Image source={this.getBoostResultIcon(boostDetails.boostStatus, boostDetails.endTime)} style={styles.boostResultIcon} />
               : null
             }
             <View style={styles.boostResultTexts}>

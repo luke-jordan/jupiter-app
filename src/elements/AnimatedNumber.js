@@ -1,6 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, TouchableOpacity } from 'react-native';
-import { Icon } from 'react-native-elements';
+import { Text } from 'react-native';
 import moment from 'moment';
 
 export default class AnimatedNumber extends React.Component {
@@ -40,18 +39,18 @@ export default class AnimatedNumber extends React.Component {
       return;
     }
     let startTime = moment();
-    let num = this.state.currentNumber + this.state.stepSize * (this.state.isIncrement ? 1 : -1);
-    if (this.state.isIncrement && num > this.state.targetNumber) num = this.state.targetNumber;
-    if (!this.state.isIncrement && num < this.state.targetNumber) num = this.state.targetNumber;
+    let nextNumber = this.state.currentNumber + this.state.stepSize * (this.state.isIncrement ? 1 : -1);
+    if (this.state.isIncrement && nextNumber > this.state.targetNumber) nextNumber = this.state.targetNumber;
+    if (!this.state.isIncrement && nextNumber < this.state.targetNumber) nextNumber = this.state.targetNumber;
     this.setState({
-      currentNumber: num,
+      currentNumber: nextNumber,
     }, () => {
-      if ((this.state.isIncrement && num < this.state.targetNumber) || (!this.state.isIncrement && num > this.state.targetNumber)) {
+      if ((this.state.isIncrement && nextNumber < this.state.targetNumber) || (!this.state.isIncrement && nextNumber > this.state.targetNumber)) {
         let timeout = this.state.interval - (moment().valueOf() - startTime.valueOf());
         if (timeout < 0) timeout = 0;
         setTimeout(() => {this.animate()}, timeout);
         if (this.props.onAnimationProgress) {
-          this.props.onAnimationProgress(num);
+          this.props.onAnimationProgress(nextNumber);
         }
       } else {
         if (this.props.onAnimationFinished) {

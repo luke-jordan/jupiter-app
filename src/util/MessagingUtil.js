@@ -35,6 +35,16 @@ export const MessagingUtil = {
     return false;
   },
 
+  async setMessageToDisplay (messageFetchResult) {
+    if (Array.isArray(messageFetchResult.messagesToDisplay) && messageFetchResult.messagesToDisplay.length > 0) {
+        MessagingUtil.setGameId(messageFetchResult.messagesToDisplay[0].messageId);
+        MessagingUtil.setGames(messageFetchResult.messagesToDisplay);
+        return messageFetchResult.messagesToDisplay[0];
+    }
+
+    return null;
+  },
+
   async fetchMessagesAndGetTop(authenticationToken) {
     try {
       // let result = await fetch(Endpoints.CORE + 'message/fetch?gameDryRun=true&gameType=CHASE_ARROW', {
@@ -49,16 +59,14 @@ export const MessagingUtil = {
       if (result.ok) {
         let resultJson = await result.json();
         // console.log("resultJson:", resultJson);
-        MessagingUtil.setGameId(resultJson.messagesToDisplay[0].messageId);
-        MessagingUtil.setGames(resultJson.messagesToDisplay);
-        return resultJson.messagesToDisplay[0];
+        return this.setMessageToDisplay(resultJson);
       } else {
         let resultText = await result.text();
         console.log("resultText:", resultText);
         throw result;
       }
     } catch (error) {
-      console.log("error!", error);
+      console.error("error!", JSON.stringify(error));
     }
   },
 
@@ -96,7 +104,7 @@ export const MessagingUtil = {
           throw result;
         }
       } catch (error) {
-        console.log("error!", error);
+        console.log("error!", JSON.stringify(error));
       }
     }
   },
@@ -134,7 +142,7 @@ export const MessagingUtil = {
            throw result;
          }
        } catch (error) {
-         console.log("error!", error);
+         console.log("error!", JSON.stringify(error));
        }
      }
    }
