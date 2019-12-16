@@ -169,6 +169,9 @@ export default class Register extends React.Component {
             clientId: resultJson.clientId,
             defaultFloatId: resultJson.defaultFloatId,
             defaultCurrency: resultJson.defaultCurrency,
+            idNumber: this.state.idNumber,
+            firstName: this.state.firstName,
+            lastName: this.state.lastName
           });
         } else {
           LoggingUtil.logEvent("USER_PROFILE_REGISTER_FAILED", {"reason" : "Result didn't include SUCCESS"});

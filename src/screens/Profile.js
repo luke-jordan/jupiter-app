@@ -36,10 +36,22 @@ export default class Profile extends React.Component {
     LoggingUtil.logEvent('USER_ENTERED_PROFILE_SCREEN');
     let info = await AsyncStorage.getItem('userInfo');
     if (!info) {
-      NavigationUtil.logout(this.props.navigation);
+      if (this.state.failedVerification) {
+        info = this.props.navigation.getParam("info");
+        this.setState({
+          firstName: info.firstName,
+          lastName: info.lastName,
+          idNumber: info.idNumber,
+          initials: info.firstName[0] + info.lastName[0],
+          systemWideUserId: info.systemWideUserId,
+          token: info.token,
+        });
+      } else {
+        NavigationUtil.logout(this.props.navigation);
+      }
     } else {
       info = JSON.parse(info);
-      console.log(info);
+      // console.log(info);
       this.setState({
         firstName: info.profile.personalName,
         lastName: info.profile.familyName,
@@ -112,25 +124,27 @@ export default class Profile extends React.Component {
         familyName: this.state.lastName,
         nationalId: this.state.idNumber
       };
-      let result = await fetch(Endpoints.AUTH + 'profile/edit', {
+      let result = await fetch(Endpoints.AUTH + 'profile/update', {
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'Authorization': 'Bearer ' + this.state.token,
         },
-        method: 'GET',
+        method: 'POST',
         body: JSON.stringify(payload),
       });
       if (result.ok) {
-        let responseJson = await response.json();
+        let resultJson = await result.json();
         console.log(responseJson);
-        //TODO handle responseJson.updatedKycStatus
         this.setState({loading: false});
       } else {
+        let resultText = await result.text();
+        console.log(resultText);
         throw result;
       }
     } catch (error) {
       this.setState({loading: false});
-      console.log(error);
+      console.log("error", JSON.stringify(error, null, "\t"));
       //TODO handle properly
     }
 

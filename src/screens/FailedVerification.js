@@ -22,12 +22,6 @@ export default class FailedVerification extends React.Component {
     // LoggingUtil.logEvent('USER_ENTERED_....');
   }
 
-  onPressEdit = () => {
-    let isFromHome = this.props.navigation.getParam("fromHome");
-    if (isFromHome) this.props.navigation.goBack();
-    else this.props.navigation.pop(2);
-  }
-
   onPressContactUs = () => {
     this.props.navigation.navigate('Support');
   }
@@ -35,9 +29,17 @@ export default class FailedVerification extends React.Component {
   onPressEdit = () => {
     let isFromHome = this.props.navigation.getParam("fromHome");
     if (isFromHome) {
-      this.props.navigation.navigate("Profile", {"failedVerification": true});
+      this.props.navigation.navigate("Profile", {failedVerification: true});
     } else {
-      this.props.navigation.goBack();
+      let params = this.props.navigation.state.params;
+      this.props.navigation.navigate("Profile", {
+        failedVerification: true,
+        info: {
+          idNumber: params.idNumber,
+          firstName: params.firstName,
+          lastName: params.lastName          
+        }
+      });
     }
   }
 
