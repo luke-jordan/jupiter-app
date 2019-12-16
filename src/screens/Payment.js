@@ -90,12 +90,13 @@ export default class Payment extends React.Component {
             amountAdded: this.state.amountAdded,
           });
         } else if (resultJson.result.includes("PAYMENT_PENDING")) {
-          this.props.navigation.navigate('CheckingForPayment', {
+          NavigationUtil.navigateWithHomeBackstack(this.props.navigation, 'CheckingForPayment', {
             paymentLink: this.state.paymentLink,
             accountTransactionId:this.state.accountTransactionId,
             token: this.state.token,
             isOnboarding: this.state.isOnboarding,
             amountAdded: this.state.amountAdded,
+            humanReference: this.state.humanReference,
           });
         } else {
           LoggingUtil.logEvent('PAYMENT_FAILED_UNKNOWN', { "serverResponse" : JSON.stringify(result) });
