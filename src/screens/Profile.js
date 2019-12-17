@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Dimensions } from 'react-native';
+import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Endpoints } from '../util/Values';
@@ -36,10 +36,21 @@ export default class Profile extends React.Component {
     LoggingUtil.logEvent('USER_ENTERED_PROFILE_SCREEN');
     let info = await AsyncStorage.getItem('userInfo');
     if (!info) {
-      NavigationUtil.logout(this.props.navigation);
+      if (this.state.failedVerification) {
+        info = this.props.navigation.getParam("info");
+        this.setState({
+          firstName: info.firstName,
+          lastName: info.lastName,
+          idNumber: info.idNumber,
+          initials: info.firstName[0] + info.lastName[0],
+          systemWideUserId: info.systemWideUserId,
+          token: info.token,
+        });
+      } else {
+        NavigationUtil.logout(this.props.navigation);
+      }
     } else {
       info = JSON.parse(info);
-      console.log(info);
       this.setState({
         firstName: info.profile.personalName,
         lastName: info.profile.familyName,
@@ -51,6 +62,7 @@ export default class Profile extends React.Component {
         initials: info.profile.personalName[0] + info.profile.familyName[0],
         systemWideUserId: info.systemWideUserId,
         token: info.token,
+        userLoggedIn: true,
       });
     }
   }
@@ -103,8 +115,51 @@ export default class Profile extends React.Component {
     this.props.navigation.navigate('Support');
   }
 
-  onPressSave = () => {
-    //TODO
+  onPressSave = async () => {
+    if (this.state.loading) return;
+    this.setState({loading: true});
+    try {
+      const payload = {
+        personalName: this.state.firstName,
+        familyName: this.state.lastName,
+        nationalId: this.state.idNumber
+      };
+      let result = await fetch(Endpoints.AUTH + 'profile/update', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer ' + this.state.token,
+        },
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      if (result.ok) {
+        let resultJson = await result.json();
+        if (resultJson.updatedKycStatus == "VERIFIED_AS_PERSON") {
+          if (this.state.userLoggedIn) {
+            let info = await AsyncStorage.getItem('userInfo');
+            info = JSON.parse(info);
+            info.profile.kycStatus = resultJson.updatedKycStatus;
+            await AsyncStorage.setItem('userInfo', JSON.stringify(info));
+          }
+          this.setState({loading: false});
+          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home');
+        } else {
+          this.setState({hasRepeatingError: true, loading: false});
+        }
+      } else {
+        throw result;
+      }
+    } catch (error) {
+      this.setState({loading: false, hasRepeatingError: true});
+      // console.log("error", JSON.stringify(error, null, "\t"));
+      //TODO handle properly
+    }
+
+  }
+
+  onPressLogout = () => {
+    NavigationUtil.logout(this.props.navigation);
   }
 
   render() {
@@ -171,19 +226,27 @@ export default class Profile extends React.Component {
                   containerStyle={styles.containerStyle}
                 />
               </View>
-              <View style={styles.separator}/>
-              <View style={styles.profileField}>
-                <Input
-                  label="Email Address / Phone Number*"
-                  editable={false}
-                  value={this.state.tempEmail}
-                  onChangeText={(text) => {this.setState({tempEmail: text})}}
-                  labelStyle={styles.profileFieldTitle}
-                  inputContainerStyle={styles.inputContainerStyle}
-                  inputStyle={[styles.profileFieldValue, this.state.errors && this.state.errors.idNumber ? styles.redText : null]}
-                  containerStyle={styles.containerStyle}
-                />
-              </View>
+              {
+                !this.state.failedVerification ?
+                <View style={styles.separator}/>
+                : null
+              }
+              {
+                !this.state.failedVerification ?
+                <View style={styles.profileField}>
+                  <Input
+                    label="Email Address / Phone Number*"
+                    editable={false}
+                    value={this.state.tempEmail}
+                    onChangeText={(text) => {this.setState({tempEmail: text})}}
+                    labelStyle={styles.profileFieldTitle}
+                    inputContainerStyle={styles.inputContainerStyle}
+                    inputStyle={[styles.profileFieldValue, this.state.errors && this.state.errors.idNumber ? styles.redText : null]}
+                    containerStyle={styles.containerStyle}
+                  />
+                </View>
+                : null
+              }
               {
                 /*
                 <View style={styles.profileField}>
@@ -212,30 +275,62 @@ export default class Profile extends React.Component {
                 */
               }
             </View>
-            <Text style={styles.disclaimer} onPress={this.onPressSupport}>*In order to update any of the those fields please contact us <Text style={styles.disclaimerBold}>using the support form.</Text></Text>
+            {
+              this.state.hasRepeatingError ?
+              <Text style={[styles.disclaimer, styles.redText]} onPress={this.onPressSupport}>Sorry, your details still failed the ID verification check. If you believe they are correct, <Text style={styles.disclaimerBold}>please contact support</Text>.</Text>
+              :
+              <View>
+                {
+                  this.state.failedVerification ?
+                  <Text style={styles.disclaimer}>If your details are correct, please <Text style={styles.disclaimerBold} onPress={this.onPressSupport}>contact support</Text>.</Text>
+                  :
+                  <Text style={styles.disclaimer}>*In order to update any of the those fields please contact us <Text style={styles.disclaimerBold} onPress={this.onPressSupport}>using the support form.</Text></Text>
+                }
+              </View>
+            }
           </View>
-          <TouchableOpacity style={styles.buttonLine} onPress={this.onPressSave}>
-            <Text style={styles.buttonLineText}>Save Changes</Text>
-            <Icon
-              name='chevron-right'
-              type='evilicon'
-              size={50}
-              color={Colors.MEDIUM_GRAY}
-            />
-          </TouchableOpacity>
-          {
-            !this.state.failedVerification ?
-            <TouchableOpacity style={styles.buttonLine} onPress={this.onPressChangePassword}>
-              <Text style={styles.buttonLineText}>Change Password</Text>
-              <Icon
-                name='chevron-right'
-                type='evilicon'
-                size={50}
-                color={Colors.MEDIUM_GRAY}
-              />
+          <View style={styles.buttonsContainer}>
+            <TouchableOpacity style={styles.buttonLine} onPress={this.onPressSave}>
+              <Text style={styles.buttonLineText}>Save Changes</Text>
+              {
+                this.state.loading ?
+                <ActivityIndicator style={styles.spinner} color={Colors.MEDIUM_GRAY} />
+                :
+                <Icon
+                  name='chevron-right'
+                  type='evilicon'
+                  size={50}
+                  color={Colors.MEDIUM_GRAY}
+                />
+              }
             </TouchableOpacity>
-            : null
-          }
+            {
+              this.state.failedVerification ?
+              <TouchableOpacity style={styles.buttonLine} onPress={this.onPressLogout}>
+                <Text style={styles.buttonLineText}>Logout</Text>
+                <Icon
+                  name='chevron-right'
+                  type='evilicon'
+                  size={50}
+                  color={Colors.MEDIUM_GRAY}
+                />
+              </TouchableOpacity>
+              : null
+            }
+            {
+              !this.state.failedVerification ?
+              <TouchableOpacity style={styles.buttonLine} onPress={this.onPressChangePassword}>
+                <Text style={styles.buttonLineText}>Change Password</Text>
+                <Icon
+                  name='chevron-right'
+                  type='evilicon'
+                  size={50}
+                  color={Colors.MEDIUM_GRAY}
+                />
+              </TouchableOpacity>
+              : null
+            }
+          </View>
         </View>
 
         <Dialog
@@ -439,5 +534,8 @@ const styles = StyleSheet.create({
   },
   redText: {
     color: Colors.RED,
+  },
+  spinner: {
+    marginRight: 15,
   },
 });

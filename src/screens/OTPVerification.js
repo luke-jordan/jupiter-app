@@ -50,6 +50,11 @@ export default class OTPVerification extends React.Component {
       if (result.ok) {
         let resultJson = await result.json();
         this.setState({loading: false});
+        if (resultJson && resultJson.profile && (resultJson.profile.kycStatus == "FAILED_VERIFICATION" || resultJson.profile.kycStatus == "REVIEW_FAILED")) {
+          AsyncStorage.setItem('userInfo', JSON.stringify(resultJson));
+          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'FailedVerification', { "fromHome": true });
+          return;
+        }
         if (resultJson && resultJson.onboardStepsRemaining && resultJson.onboardStepsRemaining.includes("ADD_CASH")) {
           NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'PendingRegistrationSteps', { userInfo: resultJson });
         } else {
