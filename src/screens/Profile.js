@@ -51,7 +51,6 @@ export default class Profile extends React.Component {
       }
     } else {
       info = JSON.parse(info);
-      // console.log(info);
       this.setState({
         firstName: info.profile.personalName,
         lastName: info.profile.familyName,
@@ -63,6 +62,7 @@ export default class Profile extends React.Component {
         initials: info.profile.personalName[0] + info.profile.familyName[0],
         systemWideUserId: info.systemWideUserId,
         token: info.token,
+        userLoggedIn: true,
       });
     }
   }
@@ -135,16 +135,24 @@ export default class Profile extends React.Component {
       });
       if (result.ok) {
         let resultJson = await result.json();
-        console.log(responseJson);
-        this.setState({loading: false});
+        if (resultJson.updatedKycStatus == "VERIFIED_AS_PERSON") {
+          if (this.state.userLoggedIn) {
+            let info = await AsyncStorage.getItem('userInfo');
+            info = JSON.parse(info);
+            info.profile.kycStatus = resultJson.updatedKycStatus;
+            await AsyncStorage.setItem('userInfo', JSON.stringify(info));
+          }
+          this.setState({loading: false});
+          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home');
+        } else {
+          this.setState({hasRepeatingError: true, loading: false});
+        }
       } else {
-        let resultText = await result.text();
-        console.log(resultText);
         throw result;
       }
     } catch (error) {
-      this.setState({loading: false});
-      console.log("error", JSON.stringify(error, null, "\t"));
+      this.setState({loading: false, hasRepeatingError: true});
+      // console.log("error", JSON.stringify(error, null, "\t"));
       //TODO handle properly
     }
 
@@ -268,10 +276,17 @@ export default class Profile extends React.Component {
               }
             </View>
             {
-              this.state.failedVerification ?
-              <Text style={styles.disclaimer} onPress={this.onPressSupport}>If your details are correct, please <Text style={styles.disclaimerBold}>contact support</Text>.</Text>
+              this.state.hasRepeatingError ?
+              <Text style={[styles.disclaimer, styles.redText]} onPress={this.onPressSupport}>Sorry, your details still failed the ID verification check. If you believe they are correct, <Text style={styles.disclaimerBold}>please contact support</Text>.</Text>
               :
-              <Text style={styles.disclaimer} onPress={this.onPressSupport}>*In order to update any of the those fields please contact us <Text style={styles.disclaimerBold}>using the support form.</Text></Text>
+              <View>
+                {
+                  this.state.failedVerification ?
+                  <Text style={styles.disclaimer}>If your details are correct, please <Text style={styles.disclaimerBold} onPress={this.onPressSupport}>contact support</Text>.</Text>
+                  :
+                  <Text style={styles.disclaimer}>*In order to update any of the those fields please contact us <Text style={styles.disclaimerBold} onPress={this.onPressSupport}>using the support form.</Text></Text>
+                }
+              </View>
             }
           </View>
           <View style={styles.buttonsContainer}>
