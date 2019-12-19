@@ -206,7 +206,7 @@ export default class Register extends React.Component {
         });
       }
     } catch (error) {
-      console.log("error!", error);
+      console.log("Error in registering!", error);
       this.showError(error);
     }
   }

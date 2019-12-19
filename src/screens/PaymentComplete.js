@@ -88,17 +88,21 @@ export default class PaymentComplete extends React.Component {
         throw result;
       }
     } catch (error) {
-      // console.log("error!", error.status);
+      console.log("Error in payment complete!", error.status);
       this.setState({fetchingProfile: false});
     }
   }
 
   onPressDone = (attempts) => {
-    if (!attempts) attempts = 0;
+    // need this here because otherwise event is passed in to argument from on press, which causes proceed to happen too quickly
+    if (!attempts || !Number.isInteger(attempts)) attempts = 0;
     this.setState({loading: true});
+    // console.log('Pressed done, is profile fetched ? :', this.state.fetchingProfile, ' and attempts: ', attempts);
     if ((this.state.fetchingProfile || !this.state.userInfo) && attempts < 10) {
+      // console.log('State not finished fetching profile, wait for next attempt');
       setTimeout(() => {this.onPressDone(attempts + 1)}, 500);
     } else {
+      // console.log('State is set to profile has been fetched, wait before continuing');
       this.setState({loading: false});
       NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', { userInfo: this.state.userInfo });
     }

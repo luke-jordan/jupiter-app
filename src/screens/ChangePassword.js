@@ -183,7 +183,7 @@ export default class ChangePassword extends React.Component {
         throw result;
       }
     } catch (error) {
-      console.log("error!", error.status);
+      console.log("Error in change password!", error.status);
       this.setState({generatePasswordLoading: false});
     }
   }

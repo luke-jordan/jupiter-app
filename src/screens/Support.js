@@ -52,7 +52,7 @@ export default class Support extends React.Component {
         throw result;
       }
     } catch (error) {
-      console.log("error!", error);
+      console.log("Error sending in support request!", error);
       this.showError();
     }
   }

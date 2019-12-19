@@ -289,7 +289,7 @@ export default class Home extends React.Component {
         throw result;
       }
     } catch (error) {
-      console.log("error!", error.status);
+      console.log("Error fetching balance!", error.status);
       this.setState({loading: false});
     }
   }

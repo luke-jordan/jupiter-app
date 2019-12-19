@@ -77,7 +77,7 @@ export default class Boosts extends React.Component {
         throw result;
       }
     } catch (error) {
-      console.log("error!", error.status);
+      console.log("Error in fetch boosts!", error.status);
       this.setState({loading: false});
     }
   }

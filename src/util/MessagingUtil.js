@@ -66,7 +66,7 @@ export const MessagingUtil = {
         throw result;
       }
     } catch (error) {
-      console.error("error!", JSON.stringify(error));
+      console.error("Error fetching messages for user!", JSON.stringify(error));
     }
   },
 
@@ -104,7 +104,7 @@ export const MessagingUtil = {
           throw result;
         }
       } catch (error) {
-        console.log("error!", JSON.stringify(error));
+        console.log("Error sending message process!", JSON.stringify(error));
       }
     }
   },
@@ -142,7 +142,7 @@ export const MessagingUtil = {
            throw result;
          }
        } catch (error) {
-         console.log("error!", JSON.stringify(error));
+         console.log("Error sending game results!", JSON.stringify(error));
        }
      }
    }
