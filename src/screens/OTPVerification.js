@@ -74,7 +74,7 @@ export default class OTPVerification extends React.Component {
         }
       }
     } catch (error) {
-      console.log("error!", await error.text());
+      console.log("Error verifying OTP!", await error.text());
       this.setState({loading: false});
     }
 
@@ -133,7 +133,7 @@ export default class OTPVerification extends React.Component {
         }
       }
     } catch (error) {
-      console.log("error!", await error.text());
+      console.log("Error verifying OTP!", await error.text());
       this.setState({loading: false});
     }
 
@@ -183,7 +183,7 @@ export default class OTPVerification extends React.Component {
         throw result;
       }
     } catch (error) {
-      console.log("error!", error);
+      console.log("Error verifying OTP!", error);
       this.setState({loading: false});
     }
   }

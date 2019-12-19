@@ -24,11 +24,19 @@ export default class AnimatedNumber extends React.Component {
       duration: this.props.duration ? this.props.duration : duration,
       interval: this.props.interval ? this.props.interval : interval,
       isIncrement: isIncrement,
+      isUnmounted: false
     };
   }
 
   async componentDidMount() {
+    this.setState({ isUnmounted: false })
     this.animate();
+  }
+
+  // this is not a great pattern but the alternative is too convert the set timeout into a timed observable and unsubscribe from it
+  // here, but that would be far more work than is justified at this stage by this quasi-anti-pattern
+  async componentWillUnmount() {
+    this.setState({ isUnmounted: true })
   }
 
   animate() {
@@ -42,6 +50,9 @@ export default class AnimatedNumber extends React.Component {
     let nextNumber = this.state.currentNumber + this.state.stepSize * (this.state.isIncrement ? 1 : -1);
     if (this.state.isIncrement && nextNumber > this.state.targetNumber) nextNumber = this.state.targetNumber;
     if (!this.state.isIncrement && nextNumber < this.state.targetNumber) nextNumber = this.state.targetNumber;
+    if (this.state.isUnmounted) {
+      return;
+    }
     this.setState({
       currentNumber: nextNumber,
     }, () => {

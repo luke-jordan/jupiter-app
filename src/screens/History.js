@@ -65,7 +65,7 @@ export default class History extends React.Component {
         throw result;
       }
     } catch (error) {
-      console.log("error!", error.status);
+      console.log("Error fetching history!", error.status);
       this.setState({loading: false});
     }
   }

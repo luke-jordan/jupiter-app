@@ -147,7 +147,7 @@ export default class Withdraw extends React.Component {
         throw result;
       }
     } catch (error) {
-      console.log("error!", error);
+      console.log("Error posting withdrawal amount!", error);
       this.setState({loading: false});
       this.showError(error);
     }
@@ -185,7 +185,7 @@ export default class Withdraw extends React.Component {
         throw result;
       }
     } catch (error) {
-      console.log("error!", error);
+      console.log("Error on final withdrawal step!", error);
       this.setState({withdrawLoading: false});
       this.showError(error);
     }

@@ -143,7 +143,7 @@ export default class SetPassword extends React.Component {
         throw result;
       }
     } catch (error) {
-      console.log("error!", error);
+      console.log("Error in last step resetting password!", error);
       this.showError();
     }
   }
@@ -202,7 +202,7 @@ export default class SetPassword extends React.Component {
         this.showError(errorsString);
       }
     } catch (error) {
-      console.log("error!", error);
+      console.log("Unhandled error in setting password for new user!", error);
       this.showError(error);
     }
   }
@@ -245,7 +245,7 @@ export default class SetPassword extends React.Component {
         throw result;
       }
     } catch (error) {
-      console.log("error!", error.status);
+      console.log("Error auto-generating password!", error.status);
       this.setState({generatePasswordLoading: false});
     }
   }

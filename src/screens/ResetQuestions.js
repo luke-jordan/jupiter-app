@@ -66,7 +66,7 @@ export default class ResetQuestions extends React.Component {
         throw result;
       }
     } catch (error) {
-      console.log("error!", error);
+      console.log("Error fetching reset questions!", error);
       this.showError();
     }
   }

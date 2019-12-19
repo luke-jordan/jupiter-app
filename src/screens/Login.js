@@ -91,7 +91,7 @@ export default class Login extends React.Component {
 
     const isValid = ValidationUtil.isValidEmailPhone(this.state.userId);
     if (!isValid) {
-      console.log('ERROR! Halted submission');
+      console.log('ERROR! Halted submission of login');
       this.setState({ validationError: true });
       return;
     }
@@ -99,7 +99,7 @@ export default class Login extends React.Component {
     try {
       await this.initiateLogin();
     } catch (error) {
-      console.log("error!", error);
+      console.log("Error initiating login!", error);
       this.setState({loading: false});
     }
   }

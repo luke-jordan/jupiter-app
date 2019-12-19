@@ -104,7 +104,7 @@ export default class Withdraw extends React.Component {
         throw result;
       }
     } catch (error) {
-      console.log("error!", error);
+      console.log("Error initiating withdrawal!", error);
       this.setState({loading: false});
       this.showError(error);
     }

@@ -64,7 +64,7 @@ export default class WithdrawalComplete extends React.Component {
         throw result;
       }
     } catch (error) {
-      console.log("error!", error.status);
+      console.log("Error fetching user profile in withdrawal flow!", error.status);
       this.setState({fetchingProfile: false});
     }
   }
