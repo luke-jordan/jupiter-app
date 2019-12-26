@@ -27,6 +27,24 @@ export const NavigationUtil = {
     navigation.dispatch(resetAction);
   },
 
+  directBasedOnProfile(profileData) {
+    let screen = '';
+    let params = {};
+
+    if (profileData && profileData.profile && (profileData.profile.kycStatus == "FAILED_VERIFICATION" || profileData.profile.kycStatus == "REVIEW_FAILED")) {
+      screen = 'FailedVerification';
+      params = { 'fromHome': true };
+    } else if (profileData && profileData.onboardStepsRemaining && profileData.onboardStepsRemaining.includes("ADD_CASH")) {
+      screen = 'PendingRegistrationSteps';
+      params = { userInfo: profileData };
+    } else {
+      screen = 'Home';
+      params = { userInfo: profileData };
+    }
+
+    return { screen, params };
+  },
+
   async cleanUpPushToken () {
     try {
       const storedInfo = await AsyncStorage.getItem('userInfo');

@@ -78,7 +78,7 @@ export default class PaymentComplete extends React.Component {
       });
       if (result.ok) {
         const resultJson = await result.json();
-        console.log('Result of profile fetch on payment complete: ', resultJson);
+        // console.log('Result of profile fetch on payment complete: ', resultJson);
         await AsyncStorage.setItem('userInfo', JSON.stringify(resultJson));
         this.setState({
             userInfo: resultJson,
@@ -100,7 +100,7 @@ export default class PaymentComplete extends React.Component {
     // console.log('Pressed done, is profile fetched ? :', this.state.fetchingProfile, ' and attempts: ', attempts);
     if ((this.state.fetchingProfile || !this.state.userInfo) && attempts < 10) {
       // console.log('State not finished fetching profile, wait for next attempt');
-      setTimeout(() => {this.onPressDone(attempts + 1)}, 500);
+      setTimeout(() => {this.onPressDone(attempts + 1)}, 300);
     } else {
       // console.log('State is set to profile has been fetched, wait before continuing');
       this.setState({loading: false});

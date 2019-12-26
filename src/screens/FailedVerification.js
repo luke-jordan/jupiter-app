@@ -1,9 +1,8 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Dimensions } from 'react-native';
+import { StyleSheet, View, Text, Dimensions } from 'react-native';
 import { LoggingUtil } from '../util/LoggingUtil';
-import { NavigationUtil } from '../util/NavigationUtil';
-import { Endpoints, Colors } from '../util/Values';
-import { Button, Icon, Input } from 'react-native-elements';
+import { Colors } from '../util/Values';
+import { Button } from 'react-native-elements';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
@@ -19,7 +18,7 @@ export default class FailedVerification extends React.Component {
   }
 
   async componentDidMount() {
-    // LoggingUtil.logEvent('USER_ENTERED_....');
+    LoggingUtil.logEvent('USER_ENTERED_FAILED_VERIFICATION');
   }
 
   onPressContactUs = () => {
@@ -27,7 +26,7 @@ export default class FailedVerification extends React.Component {
   }
 
   onPressEdit = () => {
-    let isFromHome = this.props.navigation.getParam("fromHome");
+    const isFromHome = this.props.navigation.getParam("fromHome");
     if (isFromHome) {
       this.props.navigation.navigate("Profile", {failedVerification: true});
     } else {
@@ -37,7 +36,10 @@ export default class FailedVerification extends React.Component {
         info: {
           idNumber: params.idNumber,
           firstName: params.firstName,
-          lastName: params.lastName          
+          lastName: params.lastName,
+          systemWideUserId: params.systemWideUserId,
+          token: params.token,
+          accountId: params.accountId
         }
       });
     }

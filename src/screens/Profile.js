@@ -45,6 +45,7 @@ export default class Profile extends React.Component {
           initials: info.firstName[0] + info.lastName[0],
           systemWideUserId: info.systemWideUserId,
           token: info.token,
+          accountId: info.accountId
         });
       } else {
         NavigationUtil.logout(this.props.navigation);
@@ -62,6 +63,7 @@ export default class Profile extends React.Component {
         initials: info.profile.personalName[0] + info.profile.familyName[0],
         systemWideUserId: info.systemWideUserId,
         token: info.token,
+        accountId: info.balance.accountId[0],
         userLoggedIn: true,
       });
     }
@@ -115,6 +117,22 @@ export default class Profile extends React.Component {
     this.props.navigation.navigate('Support');
   }
 
+  fetchProfileForOnboardingUser = async () => {
+    const result = await fetch(Endpoints.AUTH + 'profile/fetch', {
+      headers: {
+        'Authorization': 'Bearer ' + this.state.token,
+      },
+      method: 'GET',
+    });
+    if (result.ok) {
+      const resultJson = await result.json();
+      await AsyncStorage.setItem('userInfo', JSON.stringify(resultJson));
+      return resultJson;
+    } else {
+      throw result;
+    }
+  }
+
   onPressSave = async () => {
     if (this.state.loading) return;
     this.setState({loading: true});
@@ -124,7 +142,8 @@ export default class Profile extends React.Component {
         familyName: this.state.lastName,
         nationalId: this.state.idNumber
       };
-      let result = await fetch(Endpoints.AUTH + 'profile/update', {
+
+      const result = await fetch(Endpoints.AUTH + 'profile/update', {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -133,17 +152,28 @@ export default class Profile extends React.Component {
         method: 'POST',
         body: JSON.stringify(payload),
       });
+
+      console.log('Result okay?: ', result.ok);
       if (result.ok) {
-        let resultJson = await result.json();
+        const resultJson = await result.json();
+        console.log('Result JSON: ', resultJson);
         if (resultJson.updatedKycStatus == "VERIFIED_AS_PERSON") {
           if (this.state.userLoggedIn) {
+            // update the stored profile and continue
             let info = await AsyncStorage.getItem('userInfo');
             info = JSON.parse(info);
             info.profile.kycStatus = resultJson.updatedKycStatus;
             await AsyncStorage.setItem('userInfo', JSON.stringify(info));
+            this.setState({loading: false});
+            const { screen, params } = NavigationUtil.directBasedOnProfile(info);
+            NavigationUtil.navigateWithoutBackstack(this.props.navigation, screen, params);  
+          } else {
+            // we must be in the condition of user not having completed onboarding; instead of straight to cash,
+            // take them to the onboarding steps remaining screen, straight to add cash being abrupt, but first get & store profile
+            const profileInfo = await this.fetchProfileForOnboardingUser();
+            const { screen, params } = NavigationUtil.directBasedOnProfile(profileInfo);
+            NavigationUtil.navigateWithoutBackstack(this.props.navigation, screen, params);
           }
-          this.setState({loading: false});
-          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home');
         } else {
           this.setState({hasRepeatingError: true, loading: false});
         }

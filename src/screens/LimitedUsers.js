@@ -124,7 +124,7 @@ export default class LimitedUsers extends React.Component {
           </Text>
         </View>
         <View style={styles.inputWrapper}>
-          <Text style={styles.labelStyle}>{this.state.notifyMode ? "Enter your email address to be notified*" : "Enter your referral code*"}</Text>
+          <Text style={styles.labelStyle}>{this.state.notifyMode ? "Enter your cell number or email address to be notified*" : "Enter your referral code*"}</Text>
           <Input
             value={this.state.userInput}
             onChangeText={(text) => this.setState({userInput: text, hasError: false})}
@@ -134,7 +134,7 @@ export default class LimitedUsers extends React.Component {
           />
           {
             this.state.hasError ?
-            <Text style={styles.errorMessage}>{this.state.notifyMode ? "Please enter a valid email address" : "Please enter a valid referral code"}</Text>
+            <Text style={styles.errorMessage}>{this.state.notifyMode ? "Please enter a valid number or email address" : "Please enter a valid referral code"}</Text>
             : null
           }
         </View>
