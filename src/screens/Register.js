@@ -104,6 +104,13 @@ export default class Register extends React.Component {
       errors.idNumber = true;
     }
 
+    // trim the input
+    await this.setState({
+      firstName: this.state.firstName.trim(),
+      lastName: this.state.lastName.trim(),
+      idNumber: this.state.idNumber.trim()  
+    });
+
     // check for phone email is non null & is valid
     if (this.state.userId.length < 1) {
       hasErrors = true;
@@ -114,6 +121,10 @@ export default class Register extends React.Component {
         errors.phoneEmailValidation = true;
       }
     }
+
+    this.setState({ 
+      userId: this.state.userId.trim()
+    });
 
     // since SA ID numbers are easy to check for basic validity, do so
     if (!ValidationUtil.isValidId(this.state.idNumber)) {

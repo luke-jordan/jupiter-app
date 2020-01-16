@@ -60,12 +60,14 @@ export const NavigationUtil = {
 
   async logout(navigation) {
     await this.cleanUpPushToken();
-    AsyncStorage.removeItem("userInfo");
-    AsyncStorage.removeItem("lastShownBalance");
-    AsyncStorage.removeItem("gameId");
-    AsyncStorage.removeItem("currentGames");
-    AsyncStorage.removeItem("userHistory");
-    AsyncStorage.removeItem("userBoosts");
+    await Promise.all([
+      AsyncStorage.removeItem("userInfo"),
+      AsyncStorage.removeItem("lastShownBalance"),
+      AsyncStorage.removeItem("gameId"),
+      AsyncStorage.removeItem("currentGames"),
+      AsyncStorage.removeItem("userHistory"),
+      AsyncStorage.removeItem("userBoosts")
+    ]);
     LoggingUtil.clearUserProperties();
     NavigationUtil.navigateWithoutBackstack(navigation, 'Login');
   }

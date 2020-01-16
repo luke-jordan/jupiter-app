@@ -43,12 +43,10 @@ export default class Boosts extends React.Component {
     this.fetchBoosts(token);
   }
 
-  
-
   sortBoosts = (boosts) => {
     return boosts.sort((a, b) => {
       if (a.boostStatus != b.boostStatus) {
-        if (a.boostStatus == "REDEEMED" || a.boostStatus == "EXPIRED") return 1;
+        if (a.boostStatus == "REDEEMED" || a.boostStatus == "EXPIRED") return a.boostStatus == "REDEEMED" ? 1 : -1;
         else return -1;
       } else {
         if (moment(a.endTime).isAfter(moment(b.endTime))) return -1;

@@ -305,19 +305,21 @@ export default class Profile extends React.Component {
                 */
               }
             </View>
-            {
-              this.state.hasRepeatingError ?
-              <Text style={[styles.disclaimer, styles.redText]} onPress={this.onPressSupport}>Sorry, your details still failed the ID verification check. If you believe they are correct, <Text style={styles.disclaimerBold}>please contact support</Text>.</Text>
-              :
-              <View>
-                {
-                  this.state.failedVerification ?
-                  <Text style={styles.disclaimer}>If your details are correct, please <Text style={styles.disclaimerBold} onPress={this.onPressSupport}>contact support</Text>.</Text>
-                  :
-                  <Text style={styles.disclaimer}>*In order to update any of the those fields please contact us <Text style={styles.disclaimerBold} onPress={this.onPressSupport}>using the support form.</Text></Text>
-                }
-              </View>
-            }
+            <View>
+              {
+                this.state.hasRepeatingError ?
+                <Text style={[styles.disclaimer, styles.redText]} onPress={this.onPressSupport}>Sorry, your details still failed the ID verification check. If you believe they are correct, <Text style={styles.disclaimerBold}>please contact support</Text>.</Text>
+                :
+                <View>
+                  {
+                    this.state.failedVerification ?
+                    <Text style={styles.disclaimer}>If your details are correct, please <Text style={styles.disclaimerBold} onPress={this.onPressSupport}>contact support</Text>.</Text>
+                    :
+                    <Text style={styles.disclaimer}>*In order to update any of the those fields please contact us <Text style={styles.disclaimerBold} onPress={this.onPressSupport}>using the support form.</Text></Text>
+                  }
+                </View>
+              }
+            </View>
           </View>
           <View style={styles.buttonsContainer}>
             <TouchableOpacity style={styles.buttonLine} onPress={this.onPressSave}>
@@ -488,8 +490,8 @@ const styles = StyleSheet.create({
     fontFamily: 'poppins-regular',
     color: Colors.MEDIUM_GRAY,
     fontSize: 12.5,
-    width: '88%',
     marginTop: 5,
+    paddingHorizontal: 18
   },
   disclaimerBold: {
     fontFamily: 'poppins-semibold',

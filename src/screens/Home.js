@@ -103,6 +103,7 @@ export default class Home extends React.Component {
       gameRotation: new Animated.Value(0),
       circleScale: new Animated.Value(0),
 
+      hasBoostsAvailable: false,
       hasMessage: false,
       messageDetails: null,
       hasGameModal: false,
@@ -269,9 +270,11 @@ export default class Home extends React.Component {
       if (result.ok) {
         let resultJson = await result.json();
         await this.storeUpdatedBalance(resultJson);
+        const hasBoostsAvailable = resultJson.availableBoostCount ? parseInt(resultJson.availableBoostCount, 10) > 0 : false;
         this.setState({
           lastFetchTimeMillis: moment().valueOf(),
-          loading: false
+          loading: false,
+          hasBoostsAvailable
         });
         // to make the wheel go to the right place
         this.setBalanceAnimationParameters(resultJson, false);
@@ -325,21 +328,6 @@ export default class Home extends React.Component {
       console.log('Enough time elapsed, check for new balance');
       await this.fetchCurrentBalanceFromServer();
     }
-
-    // for testing
-    // console.log('Incrementing balance, from: ', this.state.currentBalance);
-    // const increment = 100 * 100 * 100;
-    // const mockHigherBalance = {
-    //   currentBalance: { 
-    //     amount: this.state.currentBalance + increment,
-    //     unit: 'HUNDREDTH_CENT',
-    //     currency: 'ZAR'
-    //   },
-    //   balanceEndOfToday: {
-    //     amount: this.state.endOfDayBalance + increment
-    //   }
-    // };
-    // this.setBalanceAnimationParameters(mockHigherBalance, false);
   }
 
   renderBalance() {
@@ -938,7 +926,7 @@ export default class Home extends React.Component {
               this.renderMessageCard()
               : null
             }
-            <NavigationBar navigation={this.props.navigation} currentTab={0} />
+            <NavigationBar navigation={this.props.navigation} currentTab={0} hasNotification={this.state.hasBoostsAvailable} />
           </LinearGradient>
         </View>
 

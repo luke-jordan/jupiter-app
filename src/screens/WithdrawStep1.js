@@ -35,7 +35,7 @@ export default class Withdraw extends React.Component {
       });
     }
 
-    // LoggingUtil.logEvent('USER_ENTERED_....');
+    LoggingUtil.logEvent('USER_INITIATED_WITHDRAWAL');
   }
 
   onPressBack = () => {
@@ -45,10 +45,6 @@ export default class Withdraw extends React.Component {
   verifyData = () => {
     let errors = {};
     let flag = false;
-    if (this.state.accountHolder.length < 1) {
-      errors.accountHolder = true;
-      flag = true;
-    }
     if (this.state.bank.length < 1) {
       errors.bank = true;
       flag = true;
@@ -83,7 +79,6 @@ export default class Withdraw extends React.Component {
         body: JSON.stringify({
           "accountId": this.state.accountId,
           "bankDetails": {
-            "accountHolder": this.state.accountHolder,
             "bankName":  this.state.bank,
             "accountNumber": this.state.accountNumber,
           }
@@ -140,21 +135,6 @@ export default class Withdraw extends React.Component {
           <Text style={styles.topDescription}>We’ll transfer your cash into this bank account whenever you withdraw from your Jupiter savings.</Text>
           <Text style={styles.note}><Text style={styles.bold}>Please note:</Text> This bank account needs to be owned and in the same name as your Jupiter account. By regulation we cannot transfer into an account in any other name.</Text>
           <View style={styles.inputWrapper}>
-            <Text style={styles.labelStyle}>Account Holder</Text>
-            <Input
-              value={this.state.accountHolder}
-              onChangeText={(text) => this.setState({accountHolder: text, errors: null})}
-              inputContainerStyle={styles.inputContainerStyle}
-              inputStyle={[styles.inputStyle, this.state.errors && this.state.errors.accountHolder ? styles.redText : null]}
-              containerStyle={styles.containerStyle}
-            />
-            {
-              this.state.errors && this.state.errors.accountHolder ?
-              <Text style={styles.errorMessage}>Please enter a valid account holder</Text>
-              : null
-            }
-          </View>
-          <View style={styles.inputWrapper}>
             <Text style={styles.labelStyle}>Bank</Text>
             <View style={styles.pickerWrapperStyle}>
               <Picker
@@ -162,7 +142,7 @@ export default class Withdraw extends React.Component {
                 style={styles.pickerStyle}
                 itemStyle={styles.pickerItemStyle}
                 itemTextStyle={styles.pickerItemStyle}
-                onValueChange={(itemValue, itemIndex) => this.setState({ bank: itemValue, errors: null })}>
+                onValueChange={(itemValue) => this.setState({ bank: itemValue, errors: null })}>
                 <Picker.Item label="Choose Bank" value="" />
                 <Picker.Item label="FNB" value="FNB" />
                 <Picker.Item label="Capitec" value="CAPITEC" />

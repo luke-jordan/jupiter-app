@@ -69,3 +69,9 @@ typings/
 # Test related files
 ./test/node_modules
 ./test/package-lock.json
+
+# Compiled AABs and APKs
+.aab
+.apk
+.apks
+.jks

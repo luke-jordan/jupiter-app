@@ -10,7 +10,7 @@ const bgColor = '#00000000';
 export default class NavigationBar extends React.Component {
 
   constructor(props) {
-    super(props);
+    super(props); // passing in hasNotification here shows point at which current state management has reached its limit
     this.state = {
 
     };
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
   notificationDot: {
     width: NOTIFICATION_DOT_SIZE,
     height: NOTIFICATION_DOT_SIZE,
-    backgroundColor: Colors.LIGHT_BLUE,
+    backgroundColor: Colors.RED,
     position: 'absolute',
     top: - NOTIFICATION_DOT_SIZE / 6,
     right: - NOTIFICATION_DOT_SIZE / 3,

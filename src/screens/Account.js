@@ -104,8 +104,8 @@ export default class Account extends React.Component {
                 color={Colors.MEDIUM_GRAY}
               />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.buttonLine} onPress={this.onPressWithdraw}>
-              <Text style={styles.buttonLineText}>Withdraw Cash</Text>
+            <TouchableOpacity style={styles.buttonLine} onPress={this.onPressHistory}>
+              <Text style={styles.buttonLineText}>History</Text>
               <Icon
                 name='chevron-right'
                 type='evilicon'
@@ -113,8 +113,8 @@ export default class Account extends React.Component {
                 color={Colors.MEDIUM_GRAY}
               />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.buttonLine} onPress={this.onPressHistory}>
-              <Text style={styles.buttonLineText}>History</Text>
+            <TouchableOpacity style={styles.buttonLine} onPress={this.onPressWithdraw}>
+              <Text style={styles.buttonLineText}>Withdraw Cash</Text>
               <Icon
                 name='chevron-right'
                 type='evilicon'

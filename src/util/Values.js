@@ -12,18 +12,22 @@ export const Colors = {
   YELLOW : "#FBC943",
   RED : "#CE0D25",
   LIGHT_RED : "#FA7459",
+  NOTIF_RED: "#F30E6E",
   BACKGROUND_GRAY : "#F4F6F8",
   TRANSPARENT_BACKGROUND : "#212C3299",
   WHITE : '#FFFFFF',
   SKY_BLUE : '#EAF8FA',
   GREEN : "#149570",
-
 };
 
 export const Sizes = {
   VISIBLE_NAVIGATION_BAR_HEIGHT : 50,
   NAVIGATION_BAR_HEIGHT : 80,
 };
+
+export const DeviceInfo = {
+  DEVICE_ID: Constants.deviceId
+}
 
 const isMaster = Constants.manifest.releaseChannel == "master";
 

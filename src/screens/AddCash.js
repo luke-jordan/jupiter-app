@@ -56,6 +56,8 @@ export default class AddCash extends React.Component {
 
     if (this.state.isOnboarding) {
       LoggingUtil.logEvent("USER_INITIATED_FIRST_ADD_CASH", {"amountAdded": this.state.amountToAdd});
+    } else {
+      LoggingUtil.logEvent("USER_INITIATED_ADD_CASH", {"amountAdded": this.state.amountToAdd });
     }
     try {
       let result = await fetch(Endpoints.CORE + 'addcash/initiate', {
@@ -89,7 +91,7 @@ export default class AddCash extends React.Component {
         throw result;
       }
     } catch (error) {
-      LoggingUtil.logEvent('ADD_CASH_FAILED_UNKNOWN', { "serverResponse" : JSON.stringify(result) });
+      LoggingUtil.logEvent('ADD_CASH_FAILED_UNKNOWN', { "serverResponse" : JSON.stringify(error.message) });
       this.setState({loading: false});
       // this.showError();
     }

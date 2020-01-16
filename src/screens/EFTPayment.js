@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Dimensions, Clipboard, Share } from 'react-native';
+import { StyleSheet, View, Image, Text, TouchableOpacity, Dimensions, Clipboard, Share } from 'react-native';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { Endpoints, Colors } from '../util/Values';
@@ -15,16 +15,16 @@ export default class EFTPayment extends React.Component {
     super(props);
     let humanReference = this.props.navigation.getParam("humanReference");
     this.state = {
-      bank: "Nedbank",
+      bank: "FNB",
       beneficiaryName: "Jupiter Savings App",
-      accountNumber: "343546957578",
-      branchCode: "343677",
+      accountNumber: "62828393728",
+      branchCode: "250655",
       humanReference,
     };
   }
 
   async componentDidMount() {
-    // LoggingUtil.logEvent('USER_ENTERED_....');
+    LoggingUtil.logEvent('USER_ENTERED_EFT_DETAILS');
   }
 
   onPressCopy = (text) => {

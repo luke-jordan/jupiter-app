@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity } from 'react-native';
-import { Colors, Endpoints } from '../util/Values';
+import { Colors, Endpoints, DeviceInfo } from '../util/Values';
 import { Input, Button } from 'react-native-elements';
 import { NavigationUtil } from '../util/NavigationUtil';
 import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
@@ -17,14 +17,15 @@ export default class OTPVerification extends React.Component {
       otpMethod: "phone",
       otpError: false,
       passwordError: false,
-      header: 'Please enter the one time pin sent to you'
+      header: 'Please enter the one time pin sent to you',
+      deviceId: DeviceInfo.DEVICE_ID
     };
   }
 
   async componentDidMount() {
     //TODO show phone / email in this.state.otpMethod properly according to the backend response
     const channel = this.props.navigation.getParam('channel');
-    console.info('OTP started, with channel received: ', channel);
+    console.info('OTP started, with channel received: ', channel, ' and device ID: ', this.state.deviceId);
     if (channel === 'EMAIL' || channel === 'PHONE') {
       this.setState({
         otpMethod: channel.toLowerCase(),
@@ -35,7 +36,6 @@ export default class OTPVerification extends React.Component {
 
   async handleLogin(userId) {
     try {
-      console.info('About to do login, without password, works?');
       let result = await fetch(Endpoints.AUTH + 'login', {
         headers: {
           'Content-Type': 'application/json',
@@ -45,7 +45,8 @@ export default class OTPVerification extends React.Component {
         body: JSON.stringify({
           "phoneOrEmail": userId,
           "otp": this.state.pin.join(""),
-        }),
+          "deviceId": this.state.deviceId
+        })
       });
       if (result.ok) {
         let resultJson = await result.json();
@@ -91,6 +92,7 @@ export default class OTPVerification extends React.Component {
         body: JSON.stringify({
           "systemWideUserId": systemWideUserId,
           "otp": this.state.pin.join(""),
+          "deviceId": this.state.deviceId
         }),
       });
       if (otpResult.ok) {

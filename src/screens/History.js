@@ -3,7 +3,7 @@ import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, ScrollVi
 import { LoggingUtil } from '../util/LoggingUtil';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { Endpoints, Colors } from '../util/Values';
-import { Button, Icon, Input } from 'react-native-elements';
+import { Icon } from 'react-native-elements';
 import moment from 'moment';
 
 export default class History extends React.Component {
@@ -32,10 +32,9 @@ export default class History extends React.Component {
     let history = await AsyncStorage.getItem('userHistory');
     if (history) {
       history = JSON.parse(history);
-      let balance = history.userBalance.currentBalance;
       this.setState({
-        totalSavings: this.getCurrencySymbol(balance.currency) + this.getFormattedBalance(balance.amount, balance.unit),
-        monthlyInterest: history.accruedInterest,
+        netSavings: history.netSavings,
+        totalEarnings: history.totalEarnings,
         history: history.userHistory,
         loading: false,
       });
@@ -53,10 +52,9 @@ export default class History extends React.Component {
       });
       if (result.ok) {
         let resultJson = await result.json();
-        let balance = resultJson.userBalance.currentBalance;
         this.setState({
-          totalSavings: this.getCurrencySymbol(balance.currency) + this.getFormattedBalance(balance.amount, balance.unit),
-          monthlyInterest: resultJson.accruedInterest,
+          netSavings: resultJson.netSavings,
+          totalEarnings: resultJson.totalEarnings,
           history: resultJson.userHistory,
           loading: false,
         });
@@ -112,8 +110,10 @@ export default class History extends React.Component {
       return require('../../assets/add.png');
       case "WITHDRAWAL":
       return require('../../assets/withdrawal.png');
-      case "INTEREST":
+      case "CAPITALIZATION":
       return require('../../assets/interest.png');
+      case "BOOST_REDEMPTION":
+      return require('../../assets/completed.png');        
       default:
       return require('../../assets/interest.png');
     }
@@ -129,6 +129,12 @@ export default class History extends React.Component {
 
       case "INTEREST":
       return "Interest";
+
+      case "BOOST_REDEMPTION":
+      return "Boost claimed";
+
+      case "CAPITALIZATION":
+      return "Interest paid";
 
       case "USER_REGISTERED":
       return "Registered your account";
@@ -146,9 +152,8 @@ export default class History extends React.Component {
       return "Changed your profile details";
 
       default:
-      let result = type.split("_").map((word) => { return word.toLowerCase();}).join(" ");
-      result = result.charAt(0).toUpperCase() + result.substr(1);
-      return "";
+      let result = type.split("_").map((word) => word.toLowerCase()).join(" ");
+      return result.charAt(0).toUpperCase() + result.substr(1);
     }
   }
 
@@ -199,7 +204,6 @@ export default class History extends React.Component {
     }
   }
 
-
   renderHistoryElement(element, index) {
     let type = "";
     if (element.type == "HISTORY") {
@@ -233,7 +237,7 @@ export default class History extends React.Component {
       let currentDate;
       let currentDay = [], renderInfo = [];
       for (let record of history) {
-        if (currentDay.length == 0) {
+        if (currentDay.length === 0) {
           currentDate = moment(record.timestamp);
           currentDay.push(currentDate);
         }
@@ -285,13 +289,13 @@ export default class History extends React.Component {
           <View style={styles.contentWrapper}>
             <View style={styles.savingsView}>
               <View style={styles.savingsSection}>
-                <Text style={styles.savingsAmount}>{this.state.totalSavings}</Text>
-                <Text style={styles.savingsDesc}>Your total savings</Text>
+                <Text style={styles.savingsAmount}>{this.state.netSavings}</Text>
+                <Text style={styles.savingsDesc}>Amount you&apos;ve put in</Text>
               </View>
               <View style={styles.separator} />
               <View style={styles.savingsSection}>
-                <Text style={styles.savingsAmount}>{this.state.monthlyInterest}</Text>
-                <Text style={styles.savingsDesc}>Interest this month</Text>
+                <Text style={styles.savingsAmount}>{this.state.totalEarnings}</Text>
+                <Text style={styles.savingsDesc}>Total boosts + interest</Text>
               </View>
 
             </View>
@@ -354,7 +358,7 @@ const styles = StyleSheet.create({
   },
   savingsAmount: {
     fontFamily: 'poppins-semibold',
-    fontSize: 22,
+    fontSize: 28,
     color: Colors.PURPLE,
     marginBottom: -1,
   },

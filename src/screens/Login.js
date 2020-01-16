@@ -1,7 +1,8 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, ImageBackground } from 'react-native';
-import { Colors, Endpoints, Defaults } from '../util/Values';
+import { AsyncStorage, StyleSheet, View, Image, Text, ImageBackground } from 'react-native';
+import { Colors, Endpoints, Defaults, DeviceInfo } from '../util/Values';
 import { Input, Button } from 'react-native-elements';
+import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { ValidationUtil } from '../util/ValidationUtil';
 
@@ -20,7 +21,8 @@ export default class Login extends React.Component {
       validationError: false,
       // password: "аА@123456",
       password: Defaults.PASS,
-      passwordError: false
+      passwordError: false,
+      deviceId: DeviceInfo.DEVICE_ID
     };
   }
 
@@ -34,7 +36,8 @@ export default class Login extends React.Component {
       method: 'POST',
       body: JSON.stringify({
         phoneOrEmail: this.state.userId,
-        password: this.state.password
+        password: this.state.password,
+        deviceId: this.state.deviceId
       })
     };
 
@@ -42,7 +45,12 @@ export default class Login extends React.Component {
 
     if (result.ok) {
       let resultJson = await result.json();
-      await this.generateOtpAndMove(resultJson.systemWideUserId);
+      if (resultJson.result === 'OTP_NEEDED') {
+        await this.generateOtpAndMove(resultJson.systemWideUserId);
+      } else {
+        await AsyncStorage.setItem('userInfo', JSON.stringify(resultJson));
+        NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', { userInfo: resultJson });
+      }
     } else if (result.status == 403) {
       LoggingUtil.logEvent('LOGIN_FAILED_403');
       this.setState({
