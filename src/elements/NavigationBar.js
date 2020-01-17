@@ -1,25 +1,16 @@
 import React from 'react';
 import { StyleSheet, View, Image, TouchableOpacity } from 'react-native';
-import { Colors, Sizes } from '../util/Values';
 import { Icon } from 'react-native-elements';
+import { connect } from 'react-redux';
+
+import { getHasBoostsAvailable } from '../modules/boost/boost.reducer';
+import { Colors, Sizes } from '../util/Values';
 
 const NOTIFICATION_DOT_SIZE = 9;
 
 const bgColor = '#00000000';
 
-export default class NavigationBar extends React.Component {
-
-  constructor(props) {
-    super(props); // passing in hasNotification here shows point at which current state management has reached its limit
-    this.state = {
-
-    };
-  }
-
-  async componentDidMount() {
-
-  }
-
+class NavigationBar extends React.Component {
   onPressAddCash = () => {
     this.props.navigation.navigate('AddCash');
   }
@@ -64,7 +55,7 @@ export default class NavigationBar extends React.Component {
             <View>
               <Image style={[styles.navImage, this.props.currentTab == 2 ? styles.purpleTint : styles.grayTint]} source={require('../../assets/gift_card_1.png')}/>
                 {
-                  this.props.hasNotification ?
+                  this.props.hasBoostAvailable ?
                   <View style={styles.notificationDot}>
                     <View style={styles.notificationDotCenter}/>
                   </View>
@@ -155,3 +146,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.WHITE,
   },
 });
+
+const mapStateToProps = state => ({
+  hasBoostAvailable: getHasBoostsAvailable(state),
+});
+
+export default connect(mapStateToProps)(NavigationBar);

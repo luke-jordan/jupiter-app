@@ -89,11 +89,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  closeButton: {
-    position: 'absolute',
-    top: 15,
-    right: 15,
-  },
   title: {
     fontFamily: 'poppins-semibold',
     fontSize: 6.8 * FONT_UNIT,

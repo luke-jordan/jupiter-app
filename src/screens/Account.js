@@ -1,25 +1,24 @@
 import React from 'react';
 import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Dimensions } from 'react-native';
+import { Icon, Button } from 'react-native-elements';
+import VersionCheck from 'react-native-version-check-expo';
+
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import NavigationBar from '../elements/NavigationBar';
-import { Icon, Button } from 'react-native-elements';
 import { Colors } from '../util/Values';
-import VersionCheck from 'react-native-version-check-expo';
 
 let { height, width } = Dimensions.get('window');
-// const FONT_UNIT = 0.01 * width;
 const PROFILE_PIC_SIZE = 0.13 * width;
 
-export default class Account extends React.Component {
-
+class Account extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
       profilePic: null,
       loading: false,
-      fullName: "",
-      initials: "",
+      fullName: '',
+      initials: '',
     };
   }
 
@@ -158,7 +157,10 @@ export default class Account extends React.Component {
               end: { x: 1, y: 0.5 },
             }} />
         </View>
-        <NavigationBar navigation={this.props.navigation} currentTab={3} hasNotification />
+        <NavigationBar
+          navigation={this.props.navigation}
+          currentTab={3}
+        />
       </View>
     );
   }
@@ -271,3 +273,5 @@ const styles = StyleSheet.create({
     color: Colors.MEDIUM_GRAY,
   },
 });
+
+export default Account;

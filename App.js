@@ -2,10 +2,11 @@ import React from 'react';
 import { Platform } from 'react-native';
 import { createStackNavigator, createAppContainer } from 'react-navigation';
 import { StyleSheet, SafeAreaView, AppState } from 'react-native';
-import { LoggingUtil } from './src/util/LoggingUtil';
+import { Provider } from 'react-redux';
 import * as Sentry from 'sentry-expo';
-import { Endpoints } from './src/util/Values';
 
+import { LoggingUtil } from './src/util/LoggingUtil';
+import { Endpoints } from './src/util/Values';
 import Splash from './src/screens/Splash';
 import Login from './src/screens/Login';
 import OTPVerification from './src/screens/OTPVerification';
@@ -38,6 +39,7 @@ import SupportRequestSent from './src/screens/SupportRequestSent';
 import History from './src/screens/History';
 import FailedVerification from './src/screens/FailedVerification';
 import EFTPayment from './src/screens/EFTPayment';
+import configureStore from './src/store/configureStore';
 
 const AppContainer = createAppContainer(
   createStackNavigator(
@@ -80,7 +82,6 @@ const AppContainer = createAppContainer(
 );
 
 export default class App extends React.Component {
-
   componentDidMount() {
     Sentry.init({
       dsn: Endpoints.SENTRY,
@@ -103,14 +104,17 @@ export default class App extends React.Component {
   }
 
   render() {
+    const store = configureStore();
+
     return (
       <SafeAreaView style={styles.safeArea} behavior="padding">
-        <AppContainer/>
+        <Provider store={store}>
+          <AppContainer/>
+        </Provider>
       </SafeAreaView>
     );
   }
 }
-
 
 const styles = StyleSheet.create({
   safeArea: {
