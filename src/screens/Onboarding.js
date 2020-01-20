@@ -34,7 +34,7 @@ export default class Onboarding extends React.Component {
 
   onIndexChanged = (index) => {
     this.setState({
-      currentTab: index,
+      currentTab: index
     });
   }
 

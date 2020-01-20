@@ -72,38 +72,6 @@ export default class History extends React.Component {
     this.props.navigation.goBack();
   }
 
-  renderDayHeader(day) {
-    return (
-      <Text style={styles.dayHeader}>{moment(day).format('LL')}</Text>
-    );
-  }
-
-  renderDayInfo(dayData, parentIndex) {
-    let header = dayData[0];
-    dayData.shift();
-    let dayRender = [];
-    let index = 0;
-    for (let current of dayData) {
-      dayRender.push(this.renderHistoryElement(current, index));
-      index++;
-      dayRender.push(<View style={styles.daySeparator} key={index} />);
-      index++;
-    }
-    dayRender.pop();
-    return (
-      <View style={styles.dayInfo} key={parentIndex}>
-        {
-          this.renderDayHeader(header)
-        }
-        <View style={styles.dayHistoryWrapper}>
-          {
-            dayRender
-          }
-        </View>
-      </View>
-    );
-  }
-
   getItemIcon(type) {
     switch (type) {
       case "USER_SAVING_EVENT":
@@ -206,6 +174,7 @@ export default class History extends React.Component {
 
   renderHistoryElement(element, index) {
     let type = "";
+    // console.log('Rendering history element: ', element);
     if (element.type == "HISTORY") {
       type = element.details.eventType;
     } else if (element.type == "TRANSACTION") {
@@ -231,23 +200,59 @@ export default class History extends React.Component {
     );
   }
 
+  renderDayHeader(day) {
+    return (
+      <Text style={styles.dayHeader}>{moment(day).format('LL')}</Text>
+    );
+  }
+
+  renderDayInfo(dayData, parentIndex) {
+    let header = dayData[0];
+    dayData.shift();
+    let dayRender = [];
+    let index = 0;
+    for (let current of dayData) {
+      dayRender.push(this.renderHistoryElement(current, index));
+      index++;
+      dayRender.push(<View style={styles.daySeparator} key={index} />);
+      index++;
+    }
+    dayRender.pop();
+    return (
+      <View style={styles.dayInfo} key={parentIndex}>
+        {
+          this.renderDayHeader(header)
+        }
+        <View style={styles.dayHistoryWrapper}>
+          {
+            dayRender
+          }
+        </View>
+      </View>
+    );
+  }
+
   renderHistory() {
+    // const logRecord = (record) => console.log(`Type: ${record.type}, time: ${moment(record.timestamp).format('YYYY-MM-DD')}`);
     if (this.state.history && this.state.history.length > 0) {
       let history = this.state.history.sort((a, b) => a.timestamp < b.timestamp ? 1 : -1);
-      let currentDate;
-      let currentDay = [], renderInfo = [];
+      
+      // setup
+      let currentDate = moment(history[0].timestamp); // there is always at least one record (user registration)
+      let currentDay = [currentDate], renderInfo = [];
+      
       for (let record of history) {
-        if (currentDay.length === 0) {
-          currentDate = moment(record.timestamp);
-          currentDay.push(currentDate);
-        }
+        // logRecord(record); // keeping this handy utility method around in case we need it again
+        // if the record is in the same day, add it to the present day array, otherwise start a new one
         if (moment(record.timestamp).isSame(currentDate, 'day')) {
           currentDay.push(record);
         } else {
-          renderInfo.push(currentDay);
-          currentDay = [];
+          renderInfo.push(currentDay); // since render info is an array of days
+          currentDate = moment(record.timestamp); // to start the new day with the right header
+          currentDay = [currentDate, record]; // since the render method expects first row to be the date, for header
         }
       }
+      // as there will be a final day not yet pushed
       renderInfo.push(currentDay);
 
       return (

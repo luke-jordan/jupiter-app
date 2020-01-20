@@ -19,7 +19,7 @@ export default class LimitedUsers extends React.Component {
   }
 
   async componentDidMount() {
-
+    LoggingUtil.logEvent("USER_ENTERED_REFERRAL_SCREEN");
   }
 
   onPressNotifyMe = () => {

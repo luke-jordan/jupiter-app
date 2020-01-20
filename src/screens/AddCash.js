@@ -12,7 +12,7 @@ export default class AddCash extends React.Component {
     this.state = {
       currency: "R",
       balance: 0,
-      amountToAdd: parseFloat(100).toFixed(0),
+      amountToAdd: '',
       isOnboarding: false,
       loading: false,
     };
@@ -30,7 +30,7 @@ export default class AddCash extends React.Component {
     }
 
     if (!params || !params.isOnboarding) {
-      let info = await AsyncStorage.getItem('userInfo');
+      let [info, lastSaveAmount] = await Promise.all([AsyncStorage.getItem('userInfo'), AsyncStorage.getItem('lastSaveAmount')]);
       if (!info) {
         NavigationUtil.logout(this.props.navigation);
       } else {
@@ -43,6 +43,12 @@ export default class AddCash extends React.Component {
           comparatorRates: info.balance.comparatorRates,
         });
       }
+      if (lastSaveAmount) {
+        const  lastSave = parseInt(lastSaveAmount, 10);
+        this.setState({
+          amountToAdd: parseFloat(lastSave).toFixed(0)
+        });
+      }
     }
   }
 
@@ -53,18 +59,19 @@ export default class AddCash extends React.Component {
   onPressAddCash = async () => {
     if (this.state.loading) return;
     this.setState({loading: true});
-
+    
     if (this.state.isOnboarding) {
       LoggingUtil.logEvent("USER_INITIATED_FIRST_ADD_CASH", {"amountAdded": this.state.amountToAdd});
     } else {
       LoggingUtil.logEvent("USER_INITIATED_ADD_CASH", {"amountAdded": this.state.amountToAdd });
     }
     try {
+      AsyncStorage.setItem('lastSaveAmount', parseFloat(this.state.amountToAdd).toFixed(0));
       let result = await fetch(Endpoints.CORE + 'addcash/initiate', {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'Authorization': 'Bearer ' + this.state.token,
+          'Authorization': 'Bearer ' + this.state.token
         },
         method: 'POST',
         body: JSON.stringify({
@@ -91,6 +98,7 @@ export default class AddCash extends React.Component {
         throw result;
       }
     } catch (error) {
+      console.log('Add cash failed: ', error);
       LoggingUtil.logEvent('ADD_CASH_FAILED_UNKNOWN', { "serverResponse" : JSON.stringify(error.message) });
       this.setState({loading: false});
       // this.showError();

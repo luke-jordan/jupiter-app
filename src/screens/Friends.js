@@ -16,7 +16,7 @@ export default class Friends extends React.Component {
     super(props);
     this.state = {
       shareCode: "",
-      shareLink: "https://jupiter.com/share/something",
+      shareLink: "https://jupitersave.com/",
     };
   }
 
@@ -41,12 +41,13 @@ export default class Friends extends React.Component {
       const result = await Share.share({
         message: `I’d love for you to join me as a friend on the Jupiter app. Jupiter makes saving at good rates, with no lock up, easy and enticing for everyone! As friends we can earn extra rewards and encourage each other to save more! Just use my referral code ${this.state.shareCode} to sign up. Download here: ${this.state.shareLink}`,
       });
+      this.setState({loading: false});
       console.log('Result of share: ', result);
       LoggingUtil.logEvent("USER_SHARED_REFERRAL_CODE");
     } catch (error) {
+      this.setState({loading: false});
       //handle somehow?
     }
-    this.setState({loading: false});
   }
 
   onPressCopy = () => {
