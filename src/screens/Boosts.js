@@ -1,17 +1,26 @@
+import moment from 'moment';
 import React from 'react';
-import { StyleSheet, View, Image, Text, Dimensions, AsyncStorage, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import {
+  ActivityIndicator,
+  AsyncStorage,
+  Dimensions,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { Button } from 'react-native-elements';
+
+import NavigationBar from '../elements/NavigationBar';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { Sizes, Endpoints, Colors } from '../util/Values';
-import { Button, Icon, Input } from 'react-native-elements';
-import NavigationBar from '../elements/NavigationBar';
-import moment from 'moment';
 
 const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
-export default class Boosts extends React.Component {
-
+class Boosts extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -271,7 +280,10 @@ export default class Boosts extends React.Component {
           :
           this.renderMainContent()
         }
-        <NavigationBar navigation={this.props.navigation} currentTab={2} hasNotification />
+        <NavigationBar
+          navigation={this.props.navigation}
+          currentTab={2}
+        />
       </View>
     );
   }
@@ -349,7 +361,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   boostCard: {
-    backgroundColor: 'white',
+    backgroundColor: Colors.WHITE,
     marginVertical: 12,
     width: '97%',
     padding: 10,
@@ -433,3 +445,5 @@ const styles = StyleSheet.create({
     borderColor: Colors.PURPLE,
   },
 });
+
+export default Boosts;

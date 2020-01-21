@@ -1,26 +1,41 @@
-import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, Dimensions, Animated, Easing, YellowBox, TouchableOpacity, Linking, Alert } from 'react-native';
 import { Notifications } from 'expo';
-import * as Permissions from 'expo-permissions';
-import { Colors, Sizes, Endpoints } from '../util/Values';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Permissions from 'expo-permissions';
+import moment from 'moment';
+import React from 'react';
+import { connect } from 'react-redux';
+import {
+  Alert,
+  Animated,
+  AsyncStorage,
+  Dimensions,
+  Easing,
+  Image,
+  Linking,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  YellowBox,
+} from 'react-native';
 import { Icon, Button } from 'react-native-elements';
+import { FlingGestureHandler, Directions, State } from 'react-native-gesture-handler';
+import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
+// import VersionCheck from 'react-native-version-check-expo';
+import { NavigationEvents } from 'react-navigation';
+
+import { Colors, Sizes, Endpoints } from '../util/Values';
 import NavigationBar from '../elements/NavigationBar';
 import { NotificationsUtil } from '../util/NotificationsUtil';
 import { MessagingUtil } from '../util/MessagingUtil';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import AnimatedNumber from '../elements/AnimatedNumber';
-import moment from 'moment';
-import { FlingGestureHandler, Directions, State } from 'react-native-gesture-handler';
-import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
-import { NavigationEvents } from 'react-navigation';
-
-// import VersionCheck from 'react-native-version-check-expo';
+import { updateBoostCount } from '../modules/boost/boost.actions';
 
 /*
-This is here because currently long timers are not purely supported on Android. A long timer is used for the rest-of-day-animation
-We should continue to follow the support threads on this issue (visible in the error if you remove this ignore block)
+  This is here because currently long timers are not purely supported on Android. A long timer is used for the rest-of-day-animation
+  We should continue to follow the support threads on this issue (visible in the error if you remove this ignore block)
 */
 YellowBox.ignoreWarnings([
   'Setting a timer',
@@ -42,7 +57,7 @@ const MAX_NUMBER_STEPS_ACCELERATED_ANIMATION = 30;
 
 const COLOR_WHITE = '#fff';
 
-export default class Home extends React.Component {
+class Home extends React.Component {
 
   constructor(props) {
     super(props);
@@ -103,7 +118,6 @@ export default class Home extends React.Component {
       gameRotation: new Animated.Value(0),
       circleScale: new Animated.Value(0),
 
-      hasBoostsAvailable: false,
       hasMessage: false,
       messageDetails: null,
       hasGameModal: false,
@@ -270,11 +284,10 @@ export default class Home extends React.Component {
       if (result.ok) {
         let resultJson = await result.json();
         await this.storeUpdatedBalance(resultJson);
-        const hasBoostsAvailable = resultJson.availableBoostCount ? parseInt(resultJson.availableBoostCount, 10) > 0 : false;
+        this.props.updateBoostCount(parseInt(resultJson.availableBoostCount || 0));
         this.setState({
           lastFetchTimeMillis: moment().valueOf(),
           loading: false,
-          hasBoostsAvailable
         });
         // to make the wheel go to the right place
         this.setBalanceAnimationParameters(resultJson, false);
@@ -793,7 +806,12 @@ export default class Home extends React.Component {
             start: { x: 0, y: 0.5 },
             end: { x: 1, y: 0.5 },
           }}/>
-        <Text style={styles.gamePlayLater} onPress={this.onPressPlayLater} onPress={this.onPressViewOtherBoosts}>View other boosts</Text>
+        <Text
+          style={styles.gamePlayLater}
+          onPress={this.onPressViewOtherBoosts}
+        >
+          View other boosts
+        </Text>
         <TouchableOpacity style={styles.closeDialog} onPress={this.onCloseGameDialog} >
           <Image source={require('../../assets/close.png')}/>
         </TouchableOpacity>
@@ -810,8 +828,14 @@ export default class Home extends React.Component {
         </Text>
         <View style={styles.gameInstructions}>
           <View style={styles.gameInstructionsRow}>
-            <Image style={styles.gameInstructionsImage} resizeMode='contain' source={require('../../assets/clock.png')}/>
-            <Text style={styles.gameInstructionsText}>{gameDetails.actionContext.gameParams.instructionBand}</Text>
+            <Image
+              style={styles.gameInstructionsImage}
+              resizeMode="contain"
+              source={require('../../assets/clock.png')}
+            />
+            <Text style={styles.gameInstructionsText}>
+              {gameDetails.actionContext.gameParams.instructionBand}
+            </Text>
           </View>
         </View>
         <Button
@@ -825,7 +849,12 @@ export default class Home extends React.Component {
             start: { x: 0, y: 0.5 },
             end: { x: 1, y: 0.5 },
           }}/>
-        <Text style={styles.gamePlayLater} onPress={this.onPressPlayLater} onPress={this.onPressPlayLater}>Play Later</Text>
+        <Text
+          style={styles.gamePlayLater}
+          onPress={this.onPressPlayLater}
+        >
+          Play Later
+        </Text>
       </DialogContent>
     );
   }
@@ -926,7 +955,10 @@ export default class Home extends React.Component {
               this.renderMessageCard()
               : null
             }
-            <NavigationBar navigation={this.props.navigation} currentTab={0} hasNotification={this.state.hasBoostsAvailable} />
+            <NavigationBar
+              navigation={this.props.navigation}
+              currentTab={0}
+            />
           </LinearGradient>
         </View>
 
@@ -1228,9 +1260,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingTop: 5,
   },
-  messageCardBold: {
-    fontFamily: 'poppins-semibold',
-  },
   messageCardButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1349,21 +1378,21 @@ const styles = StyleSheet.create({
   buttonContainerStyle: {
     justifyContent: 'center',
   },
-  updateFeatureItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    width: '87%',
-  },
-  updateFeatureItemText: {
-    marginLeft: 10,
-    marginTop: 5,
-    fontFamily: 'poppins-regular',
-    fontSize: 16,
-    lineHeight: 20,
-  },
-  updateFeatureItemBold: {
-    fontFamily: 'poppins-semibold',
-  }
+  // updateFeatureItem: {
+  //   flexDirection: 'row',
+  //   alignItems: 'flex-start',
+  //   width: '87%',
+  // },
+  // updateFeatureItemText: {
+  //   marginLeft: 10,
+  //   marginTop: 5,
+  //   fontFamily: 'poppins-regular',
+  //   fontSize: 16,
+  //   lineHeight: 20,
+  // },
+  // updateFeatureItemBold: {
+  //   fontFamily: 'poppins-semibold',
+  // },
 });
 
   // removing until we have a public page
@@ -1406,3 +1435,9 @@ const styles = StyleSheet.create({
   //   Linking.openURL(link);
   //   this.onCloseDialog();
   // }
+
+const mapDispatchToProps = {
+  updateBoostCount,
+};
+
+export default connect(null, mapDispatchToProps)(Home)

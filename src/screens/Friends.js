@@ -1,16 +1,27 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, Dimensions, Clipboard, TouchableOpacity, Share } from 'react-native';
+import {
+  AsyncStorage,
+  Dimensions,
+  Clipboard,
+  Image,
+  Share,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import Toast from 'react-native-easy-toast';
+import { Button } from 'react-native-elements';
+
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Colors } from '../util/Values';
 import NavigationBar from '../elements/NavigationBar';
-import { Button } from 'react-native-elements';
-import Toast from 'react-native-easy-toast';
 
 const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
-export default class Friends extends React.Component {
+class Friends extends React.Component {
 
   constructor(props) {
     super(props);
@@ -69,7 +80,11 @@ export default class Friends extends React.Component {
           <View style={styles.shareLine}>
             <Text style={styles.shareCode}>{this.state.shareCode}</Text>
             <TouchableOpacity onPress={this.onPressCopy}>
-              <Image style={styles.copyIcon} source={require('../../assets/copy.png')} resizeMode="contain"/>
+              <Image
+                style={styles.copyIcon}
+                source={require('../../assets/copy.png')}
+                resizeMode="contain"
+              />
             </TouchableOpacity>
           </View>
           <Button
@@ -85,7 +100,10 @@ export default class Friends extends React.Component {
               end: { x: 1, y: 0.5 },
             }}/>
         </View>
-        <NavigationBar navigation={this.props.navigation} currentTab={1} />
+        <NavigationBar
+          navigation={this.props.navigation}
+          currentTab={1}
+        />
         <Toast ref="toast" opacity={1} style={styles.toast}/>
       </View>
     );
@@ -171,5 +189,6 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
   },
-
 });
+
+export default Friends;
