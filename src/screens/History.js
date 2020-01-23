@@ -48,32 +48,6 @@ export default class History extends React.Component {
     this.fetchHistory(token);
   }
 
-  fetchHistory = async token => {
-    try {
-      let result = await fetch(Endpoints.CORE + 'history/list', {
-        headers: {
-          Authorization: 'Bearer ' + token,
-        },
-        method: 'GET',
-      });
-      if (result.ok) {
-        let resultJson = await result.json();
-        this.setState({
-          netSavings: resultJson.netSavings,
-          totalEarnings: resultJson.totalEarnings,
-          history: resultJson.userHistory,
-          loading: false,
-        });
-        AsyncStorage.setItem('userHistory', JSON.stringify(resultJson));
-      } else {
-        throw result;
-      }
-    } catch (error) {
-      console.log('Error fetching history!', error.status);
-      this.setState({ loading: false });
-    }
-  };
-
   onPressBack = () => {
     this.props.navigation.goBack();
   };
@@ -266,43 +240,19 @@ export default class History extends React.Component {
     );
   }
 
-  renderDayHeader(day) {
-    return <Text style={styles.dayHeader}>{moment(day).format('LL')}</Text>;
-  }
-
-  renderDayInfo(dayData, parentIndex) {
-    let header = dayData[0];
-    dayData.shift();
-    let dayRender = [];
-    let index = 0;
-    for (let current of dayData) {
-      dayRender.push(this.renderHistoryElement(current, index));
-      index++;
-      dayRender.push(<View style={styles.daySeparator} key={index} />);
-      index++;
-    }
-    dayRender.pop();
-    return (
-      <View style={styles.dayInfo} key={parentIndex}>
-        {this.renderDayHeader(header)}
-        <View style={styles.dayHistoryWrapper}>{dayRender}</View>
-      </View>
-    );
-  }
-
   renderHistory() {
     // const logRecord = (record) => console.log(`Type: ${record.type}, time: ${moment(record.timestamp).format('YYYY-MM-DD')}`);
     if (this.state.history && this.state.history.length > 0) {
-      let history = this.state.history.sort((a, b) =>
+      const history = this.state.history.sort((a, b) =>
         a.timestamp < b.timestamp ? 1 : -1
       );
 
       // setup
       let currentDate = moment(history[0].timestamp); // there is always at least one record (user registration)
-      let currentDay = [currentDate],
-        renderInfo = [];
+      let currentDay = [currentDate];
+      const renderInfo = [];
 
-      for (let record of history) {
+      for (const record of history) {
         // logRecord(record); // keeping this handy utility method around in case we need it again
         // if the record is in the same day, add it to the present day array, otherwise start a new one
         if (moment(record.timestamp).isSame(currentDate, 'day')) {

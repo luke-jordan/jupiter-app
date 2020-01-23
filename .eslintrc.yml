@@ -21,28 +21,27 @@ globals:
 rules:
   # General
   comma-dangle: [warn, always-multiline]
-  global-require: off
+  global-require: 0
   key-spacing: 0
-  guard-for-in: off
-  consistent-return: off
-  max-len: [warn, 160, 4]
-  default-case: off
-  no-else-return: off
+  guard-for-in: 0
+  consistent-return: 0
+  default-case: 0
+  no-else-return: 0
   no-multi-spaces: 0
   no-underscore-dangle: 0
   no-var: error
-  no-restricted-syntax: off
+  no-restricted-syntax: 0
   import/order: error
-  no-use-before-define: off
-  no-param-reassign: off
-  no-continue: off
-  class-methods-use-this: off
+  no-use-before-define: 0
+  no-param-reassign: 0
+  no-continue: 0
+  class-methods-use-this: 0
   eqeqeq: warn
-  no-irregular-whitespace: off
-  no-unneeded-ternary: off
-  no-return-assign: off
-  radix: off
-  no-console: off
+  no-irregular-whitespace: 0
+  no-unneeded-ternary: 0
+  no-return-assign: 0
+  radix: 0
+  no-console: 0
   # FP
   fp/no-arguments: off
   fp/no-delete: error

@@ -2,14 +2,14 @@
   "main": "node_modules/expo/AppEntry.js",
   "scripts": {
     "start": "expo start",
-    "lint": "yarn lint:js && yarn lint:css && yarn lint:last-commit",
-    "lint:js": "eslint src",
-    "lint:css": "stylelint './src/**/*.js'",
-    "lint:last-commit": "commitlint -f HEAD~1",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
     "eject": "expo eject",
+    "lint": "yarn lint:js && yarn lint:css && yarn lint:last-commit",
+    "lint:js": "eslint src",
+    "lint:css": "stylelint './src/**/*.js'",
+    "lint:last-commit": "commitlint -f HEAD~1",
     "prettier": "prettier --write 'src/**/*.js'"
   },
   "dependencies": {
@@ -38,6 +38,8 @@
     "validator": "^11.1.0"
   },
   "devDependencies": {
+    "@commitlint/cli": "^8.3.5",
+    "@commitlint/config-conventional": "^8.3.4",
     "babel-eslint": "^10.0.3",
     "babel-preset-expo": "^7.0.0",
     "eslint": "^6.4.0",
@@ -50,6 +52,11 @@
     "eslint-plugin-react": "^7.14.3",
     "eslint-plugin-react-native": "^3.7.0",
     "prettier": "^1.19.1",
+    "stylelint": "^13.0.0",
+    "stylelint-config-prettier": "^8.0.1",
+    "stylelint-config-standard": "^19.0.0",
+    "stylelint-config-styled-components": "^0.1.1",
+    "stylelint-processor-styled-components": "^1.9.0",
     "wd": "^1.11.4"
   },
   "private": true

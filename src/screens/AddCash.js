@@ -36,6 +36,7 @@ export default class AddCash extends React.Component {
     }
 
     if (!params || !params.isOnboarding) {
+      // eslint-disable-next-line prefer-const
       let [info, lastSaveAmount] = await Promise.all([
         AsyncStorage.getItem('userInfo'),
         AsyncStorage.getItem('lastSaveAmount'),
