@@ -1,7 +1,6 @@
 import React from 'react';
-import { Platform } from 'react-native';
+import { Platform, StyleSheet, SafeAreaView, AppState } from 'react-native';
 import { createStackNavigator, createAppContainer } from 'react-navigation';
-import { StyleSheet, SafeAreaView, AppState } from 'react-native';
 import { Provider } from 'react-redux';
 import * as Sentry from 'sentry-expo';
 
@@ -77,7 +76,7 @@ const AppContainer = createAppContainer(
       FailedVerification: { screen: FailedVerification },
       EFTPayment: { screen: EFTPayment },
     },
-    { initialRouteName: "Splash", headerMode: 'none' }
+    { initialRouteName: 'Splash', headerMode: 'none' }
   )
 );
 
@@ -86,7 +85,7 @@ export default class App extends React.Component {
     Sentry.init({
       dsn: Endpoints.SENTRY,
       enableInExpoDevelopment: true,
-      debug: true
+      debug: true,
     });
     AppState.addEventListener('change', this.handleAppStateChange);
   }
@@ -95,13 +94,13 @@ export default class App extends React.Component {
     AppState.removeEventListener('change', this.handleAppStateChange);
   }
 
-  handleAppStateChange = (nextAppState) => {
+  handleAppStateChange = nextAppState => {
     if (nextAppState === 'inactive') {
-      LoggingUtil.logEvent("USER_EXITED_APP");
+      LoggingUtil.logEvent('USER_EXITED_APP');
     } else if (nextAppState === 'active') {
-      //we are currently logging the USER_OPENED_APP after initialization to avoid conflicts, but here would be another spot to do that
+      // we are currently logging the USER_OPENED_APP after initialization to avoid conflicts, but here would be another spot to do that
     }
-  }
+  };
 
   render() {
     const store = configureStore();
@@ -109,7 +108,7 @@ export default class App extends React.Component {
     return (
       <SafeAreaView style={styles.safeArea} behavior="padding">
         <Provider store={store}>
-          <AppContainer/>
+          <AppContainer />
         </Provider>
       </SafeAreaView>
     );

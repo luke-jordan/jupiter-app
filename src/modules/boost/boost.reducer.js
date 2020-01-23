@@ -6,7 +6,7 @@ const initialState = {
 
 export const STATE_KEY = 'boost';
 
-const boostReducer = (state = initialState, action) => {  
+const boostReducer = (state = initialState, action) => {
   switch (action.type) {
     case UPDATE_BOOST_COUNT: {
       return {

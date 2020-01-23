@@ -1,27 +1,37 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  AsyncStorage,
+  Picker,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import Dialog, {
+  SlideAnimation,
+  DialogContent,
+} from 'react-native-popup-dialog';
+import { Button, Icon, Input } from 'react-native-elements';
+
 import { LoggingUtil } from '../util/LoggingUtil';
-import { Image, Text, AsyncStorage, TouchableOpacity, Picker, ActivityIndicator, ScrollView } from 'react-native';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { Endpoints, Colors } from '../util/Values';
-import { Button, Icon, Input } from 'react-native-elements';
-import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
 
 export default class Withdraw extends React.Component {
-
   constructor(props) {
     super(props);
     this.state = {
-      accountHolder: "",
-      bank: "",
-      accountNumber: "",
+      accountHolder: '',
+      bank: '',
+      accountNumber: '',
       loading: false,
       errors: null,
     };
   }
 
   async componentDidMount() {
-
     let info = await AsyncStorage.getItem('userInfo');
     if (!info) {
       NavigationUtil.logout(this.props.navigation);
@@ -40,10 +50,10 @@ export default class Withdraw extends React.Component {
 
   onPressBack = () => {
     this.props.navigation.goBack();
-  }
+  };
 
   verifyData = () => {
-    let errors = {};
+    const errors = {};
     let flag = false;
     if (this.state.bank.length < 1) {
       errors.bank = true;
@@ -55,38 +65,38 @@ export default class Withdraw extends React.Component {
     }
     if (flag) {
       this.setState({
-        errors: errors,
+        errors,
         loading: false,
       });
       return false;
     }
     return true;
-  }
+  };
 
   onPressNext = async () => {
     if (this.state.loading) return;
     if (!this.verifyData()) return;
-    this.setState({loading: true});
+    this.setState({ loading: true });
 
     try {
-      let result = await fetch(Endpoints.CORE + 'withdrawal/initiate', {
+      const result = await fetch(`${Endpoints.CORE}withdrawal/initiate`, {
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': 'Bearer ' + this.state.token,
+          Accept: 'application/json',
+          Authorization: `Bearer ${this.state.token}`,
         },
         method: 'POST',
         body: JSON.stringify({
-          "accountId": this.state.accountId,
-          "bankDetails": {
-            "bankName":  this.state.bank,
-            "accountNumber": this.state.accountNumber,
-          }
+          accountId: this.state.accountId,
+          bankDetails: {
+            bankName: this.state.bank,
+            accountNumber: this.state.accountNumber,
+          },
         }),
       });
       if (result.ok) {
-        let resultJson = await result.json();
-        this.setState({loading: false});
+        const resultJson = await result.json();
+        this.setState({ loading: false });
         this.props.navigation.navigate('WithdrawStep2', {
           accountHolder: this.state.accountHolder,
           accountNumber: this.state.accountNumber,
@@ -94,25 +104,20 @@ export default class Withdraw extends React.Component {
           initiateResponseData: resultJson,
         });
       } else {
-        let resultText = await result.text();
-        console.log("resultText:", resultText);
         throw result;
       }
     } catch (error) {
-      console.log("Error initiating withdrawal!", error);
-      this.setState({loading: false});
+      this.setState({ loading: false });
       this.showError(error);
     }
-  }
+  };
 
   showError(error) {
-    if (error) {
-
-    } else {
+    if (!error) {
       this.setState({
         errors: {
           generalError: true,
-        }
+        },
       });
     }
   }
@@ -121,19 +126,32 @@ export default class Withdraw extends React.Component {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity style={styles.headerButton} onPress={this.onPressBack} >
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={this.onPressBack}
+          >
             <Icon
-              name='chevron-left'
-              type='evilicon'
+              name="chevron-left"
+              type="evilicon"
               size={45}
               color={Colors.GRAY}
             />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Withdraw Cash</Text>
         </View>
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-          <Text style={styles.topDescription}>We’ll transfer your cash into this bank account whenever you withdraw from your Jupiter savings.</Text>
-          <Text style={styles.note}><Text style={styles.bold}>Please note:</Text> This bank account needs to be owned and in the same name as your Jupiter account. By regulation we cannot transfer into an account in any other name.</Text>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.content}
+        >
+          <Text style={styles.topDescription}>
+            We’ll transfer your cash into this bank account whenever you
+            withdraw from your Jupiter savings.
+          </Text>
+          <Text style={styles.note}>
+            <Text style={styles.bold}>Please note:</Text> This bank account
+            needs to be owned and in the same name as your Jupiter account. By
+            regulation we cannot transfer into an account in any other name.
+          </Text>
           <View style={styles.inputWrapper}>
             <Text style={styles.labelStyle}>Bank</Text>
             <View style={styles.pickerWrapperStyle}>
@@ -142,7 +160,10 @@ export default class Withdraw extends React.Component {
                 style={styles.pickerStyle}
                 itemStyle={styles.pickerItemStyle}
                 itemTextStyle={styles.pickerItemStyle}
-                onValueChange={(itemValue) => this.setState({ bank: itemValue, errors: null })}>
+                onValueChange={itemValue =>
+                  this.setState({ bank: itemValue, errors: null })
+                }
+              >
                 <Picker.Item label="Choose Bank" value="" />
                 <Picker.Item label="FNB" value="FNB" />
                 <Picker.Item label="Capitec" value="CAPITEC" />
@@ -152,35 +173,40 @@ export default class Withdraw extends React.Component {
                 <Picker.Item label="Investec" value="INVESTEC" />
               </Picker>
             </View>
-            {
-              this.state.errors && this.state.errors.bank ?
+            {this.state.errors && this.state.errors.bank ? (
               <Text style={styles.errorMessage}>Please select a bank</Text>
-              : null
-            }
+            ) : null}
           </View>
           <View style={styles.inputWrapper}>
             <Text style={styles.labelStyle}>Account Number</Text>
             <Input
               value={this.state.accountNumber}
-              onChangeText={(text) => this.setState({accountNumber: text, errors: null})}
+              onChangeText={text =>
+                this.setState({ accountNumber: text, errors: null })
+              }
               inputContainerStyle={styles.inputContainerStyle}
-              inputStyle={[styles.inputStyle, this.state.errors && this.state.errors.accountNumber ? styles.redText : null]}
+              inputStyle={[
+                styles.inputStyle,
+                this.state.errors && this.state.errors.accountNumber
+                  ? styles.redText
+                  : null,
+              ]}
               containerStyle={styles.containerStyle}
             />
-            {
-              this.state.errors && this.state.errors.accountNumber ?
-              <Text style={styles.errorMessage}>Please enter a valid account number</Text>
-              : null
-            }
+            {this.state.errors && this.state.errors.accountNumber ? (
+              <Text style={styles.errorMessage}>
+                Please enter a valid account number
+              </Text>
+            ) : null}
           </View>
         </ScrollView>
-        {
-          this.state.errors && this.state.errors.generalError ?
-          <Text style={styles.generalError}>There has been a problem with your request</Text>
-          : null
-        }
+        {this.state.errors && this.state.errors.generalError ? (
+          <Text style={styles.generalError}>
+            There has been a problem with your request
+          </Text>
+        ) : null}
         <Button
-          title={"NEXT"}
+          title="NEXT"
           loading={this.state.loading}
           titleStyle={styles.buttonTitleStyle}
           buttonStyle={styles.buttonStyle}
@@ -190,22 +216,27 @@ export default class Withdraw extends React.Component {
             colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
             start: { x: 0, y: 0.5 },
             end: { x: 1, y: 0.5 },
-          }} />
+          }}
+        />
 
-          <Dialog
-            visible={this.state.loading}
-            dialogStyle={styles.dialogStyle}
-            dialogAnimation={new SlideAnimation({
+        <Dialog
+          visible={this.state.loading}
+          dialogStyle={styles.dialogStyle}
+          dialogAnimation={
+            new SlideAnimation({
               slideFrom: 'bottom',
-            })}
-            onTouchOutside={() => {}}
-            onHardwareBackPress={() => {return true;}}
-          >
-            <DialogContent style={styles.dialogWrapper}>
-              <ActivityIndicator size="large" color={Colors.PURPLE} />
-              <Text style={styles.dialogText}>Verifying your data...</Text>
-            </DialogContent>
-          </Dialog>
+            })
+          }
+          onTouchOutside={() => {}}
+          onHardwareBackPress={() => {
+            return true;
+          }}
+        >
+          <DialogContent style={styles.dialogWrapper}>
+            <ActivityIndicator size="large" color={Colors.PURPLE} />
+            <Text style={styles.dialogText}>Verifying your data...</Text>
+          </DialogContent>
+        </Dialog>
       </View>
     );
   }
@@ -281,7 +312,7 @@ const styles = StyleSheet.create({
     minHeight: 50,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'white',
+    backgroundColor: Colors.WHITE,
   },
   pickerWrapperStyle: {
     width: '100%',
@@ -292,7 +323,7 @@ const styles = StyleSheet.create({
     minHeight: 50,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'white',
+    backgroundColor: Colors.WHITE,
   },
   pickerStyle: {
     flex: 1,
@@ -320,7 +351,7 @@ const styles = StyleSheet.create({
     fontFamily: 'poppins-regular',
     color: Colors.RED,
     fontSize: 13,
-    marginTop: -15, //this is valid because of the exact alignment of other elements - do not reuse in other components
+    marginTop: -15, // this is valid because of the exact alignment of other elements - do not reuse in other components
     marginBottom: 20,
     width: '100%',
   },

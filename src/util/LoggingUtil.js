@@ -3,10 +3,9 @@ import * as Sentry from 'sentry-expo';
 import { Endpoints } from '../util/Values';
 
 export const LoggingUtil = {
-
   initialize() {
     Amplitude.initialize(Endpoints.AMPLITUDE);
-    LoggingUtil.logEvent("USER_OPENED_APP");
+    LoggingUtil.logEvent('USER_OPENED_APP');
   },
 
   setUserId(id) {
@@ -27,5 +26,5 @@ export const LoggingUtil = {
 
   clearUserProperties() {
     Amplitude.clearUserProperties();
-  }
+  },
 };

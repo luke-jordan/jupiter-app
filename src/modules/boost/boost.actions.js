@@ -6,4 +6,3 @@ export const updateBoostCount = payload => ({
   type: UPDATE_BOOST_COUNT,
   payload,
 });
-

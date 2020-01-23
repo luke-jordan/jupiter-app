@@ -1,20 +1,18 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { StyleSheet, View, Text, Dimensions } from 'react-native';
+import { Button } from 'react-native-elements';
+
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Colors } from '../util/Values';
-import { Button } from 'react-native-elements';
-import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
 export default class FailedVerification extends React.Component {
-
   constructor(props) {
     super(props);
-    this.state = {
-
-    };
+    this.state = {};
   }
 
   async componentDidMount() {
@@ -23,15 +21,15 @@ export default class FailedVerification extends React.Component {
 
   onPressContactUs = () => {
     this.props.navigation.navigate('Support');
-  }
+  };
 
   onPressEdit = () => {
-    const isFromHome = this.props.navigation.getParam("fromHome");
+    const isFromHome = this.props.navigation.getParam('fromHome');
     if (isFromHome) {
-      this.props.navigation.navigate("Profile", {failedVerification: true});
+      this.props.navigation.navigate('Profile', { failedVerification: true });
     } else {
-      let params = this.props.navigation.state.params;
-      this.props.navigation.navigate("Profile", {
+      const { params } = this.props.navigation.state;
+      this.props.navigation.navigate('Profile', {
         failedVerification: true,
         info: {
           idNumber: params.idNumber,
@@ -39,23 +37,33 @@ export default class FailedVerification extends React.Component {
           lastName: params.lastName,
           systemWideUserId: params.systemWideUserId,
           token: params.token,
-          accountId: params.accountId
-        }
+          accountId: params.accountId,
+        },
       });
     }
-  }
+  };
 
   render() {
     return (
       <View style={styles.container}>
         <View style={styles.mainContent}>
           <View style={styles.top}>
-            <LinearGradient start={[0, 0.5]} end={[1, 0.5]} colors={[Colors.LIGHT_BLUE, Colors.PURPLE]} style={styles.gradientStyle}>
+            <LinearGradient
+              start={[0, 0.5]}
+              end={[1, 0.5]}
+              colors={[Colors.LIGHT_BLUE, Colors.PURPLE]}
+              style={styles.gradientStyle}
+            >
               <Text style={styles.exclamation}>!</Text>
             </LinearGradient>
             <Text style={styles.title}>Please check your details</Text>
-            <Text style={styles.description}>The ID number you provided did not match your name.</Text>
-            <Text style={styles.descriptionBold}>Please double check both the ID number and spelling of your name and retry.</Text>
+            <Text style={styles.description}>
+              The ID number you provided did not match your name.
+            </Text>
+            <Text style={styles.descriptionBold}>
+              Please double check both the ID number and spelling of your name
+              and retry.
+            </Text>
           </View>
           <Button
             title="EDIT DETAILS"
@@ -68,10 +76,16 @@ export default class FailedVerification extends React.Component {
               colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
               start: { x: 0, y: 0.5 },
               end: { x: 1, y: 0.5 },
-            }} />
+            }}
+          />
         </View>
         <View style={styles.bottomView}>
-          <Text style={styles.bottomText}>Still having problems? <Text style={styles.bottomLink} onPress={this.onPressContactUs}>Contact us</Text></Text>
+          <Text style={styles.bottomText}>
+            Still having problems?{' '}
+            <Text style={styles.bottomLink} onPress={this.onPressContactUs}>
+              Contact us
+            </Text>
+          </Text>
         </View>
       </View>
     );

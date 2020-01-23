@@ -1,18 +1,25 @@
 import React from 'react';
-import { AsyncStorage, StyleSheet, View, Image, Text, ImageBackground } from 'react-native';
-import { Colors, Endpoints, Defaults, DeviceInfo } from '../util/Values';
+import {
+  AsyncStorage,
+  Image,
+  ImageBackground,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { Input, Button } from 'react-native-elements';
+
+import { Colors, Endpoints, Defaults, DeviceInfo } from '../util/Values';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { ValidationUtil } from '../util/ValidationUtil';
 
 const stdHeaders = {
   'Content-Type': 'application/json',
-  'Accept': 'application/json'
+  Accept: 'application/json',
 };
 
 export default class Login extends React.Component {
-
   constructor(props) {
     super(props);
     this.state = {
@@ -22,7 +29,7 @@ export default class Login extends React.Component {
       // password: "аА@123456",
       password: Defaults.PASS,
       passwordError: false,
-      deviceId: DeviceInfo.DEVICE_ID
+      deviceId: DeviceInfo.DEVICE_ID,
     };
   }
 
@@ -37,42 +44,45 @@ export default class Login extends React.Component {
       body: JSON.stringify({
         phoneOrEmail: this.state.userId,
         password: this.state.password,
-        deviceId: this.state.deviceId
-      })
+        deviceId: this.state.deviceId,
+      }),
     };
 
-    const result = await fetch(Endpoints.AUTH + 'login', loginOptions);
+    const result = await fetch(`${Endpoints.AUTH}login`, loginOptions);
 
     if (result.ok) {
-      let resultJson = await result.json();
+      const resultJson = await result.json();
       if (resultJson.result === 'OTP_NEEDED') {
         await this.generateOtpAndMove(resultJson.systemWideUserId);
       } else {
         await AsyncStorage.setItem('userInfo', JSON.stringify(resultJson));
-        NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', { userInfo: resultJson });
+        NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', {
+          userInfo: resultJson,
+        });
       }
-    } else if (result.status == 403) {
+    } else if (result.status === 403) {
       LoggingUtil.logEvent('LOGIN_FAILED_403');
       this.setState({
         loading: false,
-        passwordError: true
+        passwordError: true,
       });
     } else {
-      let resultJson = await result.json();
-      LoggingUtil.logEvent('LOGIN_FAILED_UNKNOWN', { "serverResponse" : JSON.stringify(resultJson) });
-      console.log(resultJson);
+      const resultJson = await result.json();
+      LoggingUtil.logEvent('LOGIN_FAILED_UNKNOWN', {
+        serverResponse: JSON.stringify(resultJson),
+      });
       this.setState({ loading: false });
       // todo: display proper error with contact us
     }
-  }
+  };
 
   generateOtpAndMove = async () => {
-    let result = await fetch(Endpoints.AUTH + 'otp/generate', {
+    const result = await fetch(`${Endpoints.AUTH}otp/generate`, {
       headers: stdHeaders,
       method: 'POST',
       body: JSON.stringify({
         phoneOrEmail: this.state.userId,
-        'type': 'LOGIN',
+        type: 'LOGIN',
       }),
     });
 
@@ -87,7 +97,9 @@ export default class Login extends React.Component {
       });
       this.setState({ loading: false }); // in case we come back (leaving true above in case slowness in nav)
     } else {
-      LoggingUtil.logEvent('GENERATE_OTP_FAILED', { "serverResponse" : JSON.stringify(result) });
+      LoggingUtil.logEvent('GENERATE_OTP_FAILED', {
+        serverResponse: JSON.stringify(result),
+      });
       throw result;
     }
   };
@@ -99,83 +111,90 @@ export default class Login extends React.Component {
 
     const isValid = ValidationUtil.isValidEmailPhone(this.state.userId);
     if (!isValid) {
-      console.log('ERROR! Halted submission of login');
       this.setState({ validationError: true });
       return;
     }
-    this.setState({loading: true});
+    this.setState({ loading: true });
     try {
       await this.initiateLogin();
     } catch (error) {
-      console.log("Error initiating login!", error);
-      this.setState({loading: false});
+      this.setState({ loading: false });
     }
-  }
+  };
 
   onPressSignUp = () => {
     // NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home');
-  }
+  };
 
   onPressWhatIs = () => {
     this.props.navigation.navigate('Onboarding');
-  }
+  };
 
   onPressForgotPassword = () => {
     this.props.navigation.navigate('ResetPassword');
-  }
+  };
 
   onPressSupport = () => {
     this.props.navigation.navigate('Support');
-  }
+  };
 
   render() {
     return (
       <View style={styles.container}>
         <View style={styles.headerImageWrapper}>
-          <Image style={styles.headerImage} source={require('../../assets/group_16.png')}/>
+          <Image
+            style={styles.headerImage}
+            source={require('../../assets/group_16.png')}
+          />
         </View>
         <View style={styles.mainContent}>
-          <Text style={styles.labelStyle}>Enter your phone number or email*</Text>
+          <Text style={styles.labelStyle}>
+            Enter your phone number or email*
+          </Text>
           <Input
-            testID='login-phone-or-email'
-            accessibilityLabel='login-phone-or-email'
+            testID="login-phone-or-email"
+            accessibilityLabel="login-phone-or-email"
             value={this.state.userId}
-            onChangeText={(text) => this.setState({userId: text})}
+            onChangeText={text => this.setState({ userId: text })}
             inputContainerStyle={styles.inputContainerStyle}
             inputStyle={styles.inputStyle}
             containerStyle={styles.containerStyle}
           />
-          {
-            this.state.validationError ?
-            <Text style={styles.validationErrorText}>Please enter a valid email or phone number</Text>
-            : null
-          }
+          {this.state.validationError ? (
+            <Text style={styles.validationErrorText}>
+              Please enter a valid email or phone number
+            </Text>
+          ) : null}
           <Text style={styles.labelStyle}>Password*</Text>
           <Input
-            testID='login-password'
-            accessibilityLabel='login-password'
-            secureTextEntry={true}
+            testID="login-password"
+            accessibilityLabel="login-password"
+            secureTextEntry
             value={this.state.password}
-            onChangeText={(text) => this.setState({password: text})}
+            onChangeText={text => this.setState({ password: text })}
             inputContainerStyle={styles.inputContainerStyle}
             inputStyle={styles.inputStyle}
             containerStyle={styles.containerStyle}
           />
-          <Text style={styles.textAsButton} onPress={this.onPressForgotPassword}>
+          <Text
+            style={styles.textAsButton}
+            onPress={this.onPressForgotPassword}
+          >
             Forgot Password?
           </Text>
           <Text style={styles.textAsButton} onPress={this.onPressSupport}>
-            Can't access your account?
+            Can&apos;t access your account?
           </Text>
-          {
-            this.state.passwordError ?
-            <Text style={styles.accessErrorText}>Sorry, we couldn&apos;t match that phone/email and password. Please try again.</Text>
-            : null
-          }
+          {this.state.passwordError ? (
+            <Text style={styles.accessErrorText}>
+              Sorry, we couldn&apos;t match that phone/email and password.
+              Please try again.
+            </Text>
+          ) : null}
         </View>
         <Button
-          testID='login-btn'
-          accessibilityLabel='login-btn'
+          testID="login-btn"
+          accessibilityLabel="login-btn"
           title="LOGIN"
           loading={this.state.loading}
           titleStyle={styles.buttonTitleStyle}
@@ -186,7 +205,8 @@ export default class Login extends React.Component {
             colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
             start: { x: 0, y: 0.5 },
             end: { x: 1, y: 0.5 },
-          }} />
+          }}
+        />
         <View style={styles.signUpLink}>
           {/*
           <Text style={styles.noAccText}>Don't have an account yet?
@@ -194,8 +214,13 @@ export default class Login extends React.Component {
           </Text>
           */}
         </View>
-        <ImageBackground source={require('../../assets/wave_pattern.png')} style={styles.bottomView}>
-          <Text style={styles.bottomText} onPress={this.onPressWhatIs}>WHAT IS JUPITER?</Text>
+        <ImageBackground
+          source={require('../../assets/wave_pattern.png')}
+          style={styles.bottomView}
+        >
+          <Text style={styles.bottomText} onPress={this.onPressWhatIs}>
+            WHAT IS JUPITER?
+          </Text>
         </ImageBackground>
       </View>
     );
@@ -267,15 +292,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
   },
-  noAccText: {
-    textAlign: 'center',
-    fontFamily: 'poppins-regular',
-    fontSize: 14,
-  },
-  noAccButton: {
-    color: Colors.PURPLE,
-    fontWeight: 'bold',
-  },
   bottomView: {
     width: '100%',
     height: 75,
@@ -292,12 +308,12 @@ const styles = StyleSheet.create({
   validationErrorText: {
     fontFamily: 'poppins-semibold',
     color: Colors.RED,
-    textAlign: 'left'
+    textAlign: 'left',
   },
   accessErrorText: {
     fontFamily: 'poppins-semibold',
     color: Colors.RED,
     textAlign: 'center',
     marginTop: 25,
-  }
+  },
 });
