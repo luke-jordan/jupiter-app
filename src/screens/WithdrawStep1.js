@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { LoggingUtil } from '../util/LoggingUtil';
-import { Image, Text, AsyncStorage, TouchableOpacity, Picker, ActivityIndicator, ScrollView } from 'react-native';
+import { Text, AsyncStorage, TouchableOpacity, Picker, ActivityIndicator, ScrollView } from 'react-native';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { Endpoints, Colors } from '../util/Values';
 import { Button, Icon, Input } from 'react-native-elements';
@@ -12,9 +12,9 @@ export default class Withdraw extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      accountHolder: "",
-      bank: "",
-      accountNumber: "",
+      bank: '',
+      accountNumber: '',
+      accountType: '',
       loading: false,
       errors: null,
     };
@@ -28,8 +28,6 @@ export default class Withdraw extends React.Component {
     } else {
       info = JSON.parse(info);
       this.setState({
-        // balance: info.balance.currentBalance.amount,
-        // unit: info.balance.currentBalance.unit,
         token: info.token,
         accountId: info.balance.accountId[0],
       });
@@ -69,6 +67,7 @@ export default class Withdraw extends React.Component {
     this.setState({loading: true});
 
     try {
+      console.log("Sending with account type: ", this.state.accountType);
       let result = await fetch(Endpoints.CORE + 'withdrawal/initiate', {
         headers: {
           'Content-Type': 'application/json',
@@ -81,6 +80,7 @@ export default class Withdraw extends React.Component {
           "bankDetails": {
             "bankName":  this.state.bank,
             "accountNumber": this.state.accountNumber,
+            "accountType": this.state.accountType
           }
         }),
       });
@@ -105,9 +105,15 @@ export default class Withdraw extends React.Component {
     }
   }
 
+  onPressSupport = () => {
+    this.props.navigation.navigate('Support');
+  }
+
   showError(error) {
     if (error) {
-
+      this.setState({
+        errors: error
+      });
     } else {
       this.setState({
         errors: {
@@ -132,8 +138,10 @@ export default class Withdraw extends React.Component {
           <Text style={styles.headerTitle}>Withdraw Cash</Text>
         </View>
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-          <Text style={styles.topDescription}>We’ll transfer your cash into this bank account whenever you withdraw from your Jupiter savings.</Text>
-          <Text style={styles.note}><Text style={styles.bold}>Please note:</Text> This bank account needs to be owned and in the same name as your Jupiter account. By regulation we cannot transfer into an account in any other name.</Text>
+          <Text style={styles.topDescription}>We’ll transfer your cash into your bank account, only yours</Text>
+          <Text style={styles.note}><Text style={styles.bold}>Note:</Text> This account must be owned by you, in the same name as your 
+          Jupiter account. By law we cannot transfer into an account in any other name. If your bank is not listed, please  
+          <Text style={styles.textAsButton}> contact support</Text></Text>
           <View style={styles.inputWrapper}>
             <Text style={styles.labelStyle}>Bank</Text>
             <View style={styles.pickerWrapperStyle}>
@@ -149,7 +157,6 @@ export default class Withdraw extends React.Component {
                 <Picker.Item label="Standard Bank" value="STANDARD" />
                 <Picker.Item label="Absa" value="ABSA" />
                 <Picker.Item label="Nedbank" value="NEDBANK" />
-                <Picker.Item label="Investec" value="INVESTEC" />
               </Picker>
             </View>
             {
@@ -170,6 +177,28 @@ export default class Withdraw extends React.Component {
             {
               this.state.errors && this.state.errors.accountNumber ?
               <Text style={styles.errorMessage}>Please enter a valid account number</Text>
+              : null
+            }
+          </View>
+          <View style={styles.inputWrapper}>
+            <Text style={styles.labelStyle}>Account type</Text>
+            <View style={styles.pickerWrapperStyle}>
+              <Picker
+                selectedValue={this.state.accountType}
+                style={styles.pickerStyle}
+                itemStyle={styles.pickerItemStyle}
+                itemTextStyle={styles.pickerItemStyle}
+                onValueChange={(itemValue) => this.setState({ accountType: itemValue, errors: null })}>
+                <Picker.Item label="Account type" value="" />
+                <Picker.Item label="Cheque / current" value="CURRENT" />
+                <Picker.Item label="Savings" value="SAVINGS" />
+                <Picker.Item label="Transmission" value="TRANSMISSION" />
+                <Picker.Item label="Bond" value="BOND" />
+              </Picker>
+            </View>
+            {
+              this.state.errors && this.state.errors.accountType ?
+              <Text style={styles.errorMessage}>Please select an account type</Text>
               : null
             }
           </View>
@@ -253,7 +282,7 @@ const styles = StyleSheet.create({
     fontFamily: 'poppins-semibold',
   },
   inputWrapper: {
-    marginTop: 20,
+    marginTop: 10,
     alignItems: 'center',
   },
   labelStyle: {
@@ -281,7 +310,7 @@ const styles = StyleSheet.create({
     minHeight: 50,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'white',
+    backgroundColor: Colors.WHITE,
   },
   pickerWrapperStyle: {
     width: '100%',
@@ -292,7 +321,7 @@ const styles = StyleSheet.create({
     minHeight: 50,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'white',
+    backgroundColor: Colors.WHITE,
   },
   pickerStyle: {
     flex: 1,
@@ -300,6 +329,10 @@ const styles = StyleSheet.create({
   },
   redText: {
     color: Colors.RED,
+  },
+  textAsButton: {
+    fontFamily: 'poppins-semibold',
+    color: Colors.PURPLE
   },
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',

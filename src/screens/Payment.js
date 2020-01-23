@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, TouchableOpacity, Clipboard, AppState, Linking, ActivityIndicator, BackHandler, Dimensions, PixelRatio } from 'react-native';
+import { StyleSheet, View, Image, Text, TouchableOpacity, Clipboard, Linking, ActivityIndicator, Dimensions } from 'react-native';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Endpoints, Colors } from '../util/Values';
@@ -17,18 +17,16 @@ export default class Payment extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      paymentLink: "",
+      paymentLink: '',
       accountTransactionId: -1,
-      appState: AppState.currentState,
       checkingForPayment: false,
-      token: "",
+      token: '',
       isOnboarding: false,
     };
   }
 
   async componentDidMount() {
-    AppState.addEventListener('change', this.handleAppStateChange);
-    this.backHandler = BackHandler.addEventListener('hardwareBackPress', this.handleHardwareBackPress);
+    console.log('**** PAYMENT COMPONENT MOUNTED (B) ****');
     let params = this.props.navigation.state.params;
     if (params) {
       this.setState({
@@ -42,23 +40,48 @@ export default class Payment extends React.Component {
     }
   }
 
-  componentWillUnmount() {
-    AppState.removeEventListener('change', this.handleAppStateChange);
-    this.backHandler.remove();
+  // removing until more confidence in iOS bug handling
+  // handleAppStateChange = async (nextAppState) => {
+  //   console.log('*** PAYMENT APP STATE CHANGED TRIGGERED ****');
+  //   try {
+  //     if (this.state.appState.match(/inactive|background/) && nextAppState === 'active') {
+  //       LoggingUtil.logEvent("USER_RETURNED_TO_PAYMENT_LINK");
+  //       if (this.state.checkingForPayment) {
+  //         this.setState({ appState: nextAppState });
+  //         return;
+  //       }
+  //       this.checkIfPaymentCompleted();
+  //     } else {
+  //       LoggingUtil.logEvent("USER_LEFT_APP_AT_PAYMENT_LINK");
+  //       this.setState({ appState: nextAppState });
+  //     }
+  //   } catch (err) {
+  //     console.log('ERROR: ', err);
+  //     LoggingUtil.logError(err);
+  //   }
+  // }
+
+  navigateToPaymentPending(bankDetails) {
+    NavigationUtil.navigateWithHomeBackstack(this.props.navigation, 'CheckingForPayment', {
+      paymentLink: this.state.paymentLink,
+      accountTransactionId:this.state.accountTransactionId,
+      token: this.state.token,
+      isOnboarding: this.state.isOnboarding,
+      amountAdded: this.state.amountAdded,
+      humanReference: this.state.humanReference,
+      bankDetails
+    });
   }
 
-  handleAppStateChange = async (nextAppState) => {
-    if (this.state.appState.match(/inactive|background/) && nextAppState === 'active') {
-      LoggingUtil.logEvent("USER_RETURNED_TO_PAYMENT_LINK");
-      if (this.state.checkingForPayment) {
-        this.setState({ appState: nextAppState });
-        return;
-      }
-      this.checkIfPaymentCompleted();
-    } else {
-      LoggingUtil.logEvent("USER_LEFT_APP_AT_PAYMENT_LINK");
-      this.setState({ appState: nextAppState });
+  logPaymentError(message, response) {
+    const paymentError = new Error(message);
+    const serverResponse = response ? JSON.stringify(response) : 'Could not retrieve failing server response';
+    if (serverResponse) {
+      paymentError.serverResponse = serverResponse;
     }
+    LoggingUtil.logEvent('PAYMENT_FAILED', { serverResponse });
+    LoggingUtil.logError(paymentError);
+    this.navigateToPaymentPending();
   }
 
   checkIfPaymentCompleted = async () => {
@@ -66,6 +89,7 @@ export default class Payment extends React.Component {
       checkingForPayment: true,
     });
     try {
+      // leaving this in to use for testing ...
       // let result = await fetch(Endpoints.CORE + 'addcash/check?transactionId=' + this.state.accountTransactionId + '&failureType=PENDING', {
       let result = await fetch(Endpoints.CORE + 'addcash/check?transactionId=' + this.state.accountTransactionId, {
         headers: {
@@ -78,8 +102,10 @@ export default class Payment extends React.Component {
         this.setState({
           checkingForPayment: false,
         });
-        AppState.removeEventListener('change', this.handleAppStateChange);
-        this.backHandler.remove();
+        if (!resultJson || !resultJson.result) {
+          LoggingUtil.logError(new Error('Payment status check returned malform result: check'));
+          this.navigateToPaymentPending();
+        }
         if (resultJson.result.includes("PAYMENT_SUCCEEDED")) {
           NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'PaymentComplete', {
             paymentLink: this.state.paymentLink,
@@ -90,38 +116,21 @@ export default class Payment extends React.Component {
             amountAdded: this.state.amountAdded,
           });
         } else if (resultJson.result.includes("PAYMENT_PENDING")) {
-          NavigationUtil.navigateWithHomeBackstack(this.props.navigation, 'CheckingForPayment', {
-            paymentLink: this.state.paymentLink,
-            accountTransactionId:this.state.accountTransactionId,
-            token: this.state.token,
-            isOnboarding: this.state.isOnboarding,
-            amountAdded: this.state.amountAdded,
-            humanReference: this.state.humanReference,
-          });
+          this.navigateToPaymentPending();
         } else {
-          LoggingUtil.logEvent('PAYMENT_FAILED_UNKNOWN', { "serverResponse" : JSON.stringify(result) });
-          //failed
-          //TODO redirect to failed screen
+          this.logPaymentError('Payment failed on server response', result);
         }
       } else {
-        LoggingUtil.logEvent('PAYMENT_FAILED_UNKNOWN', { "serverResponse" : JSON.stringify(result) });
-        throw result;
+        this.logPaymentError('Payment received bad status code from server', result);        
       }
     } catch (error) {
-      // console.log("error!", error.status);
       this.setState({checkingForPayment: false});
+      LoggingUtil.logError(error);
     }
   }
 
-  handleHardwareBackPress = () => {
-    AppState.removeEventListener('change', this.handleAppStateChange);
-    this.backHandler.remove();
-    return true;
-  }
-
   onPressBack = () => {
-    AppState.removeEventListener('change', this.handleAppStateChange);
-    this.backHandler.remove();
+    // AppState.removeEventListener('change', this.handleAppStateChange);
     LoggingUtil.logEvent("USER_WENT_BACK_AT_PAYMENT_LINK");
     this.props.navigation.goBack();
   }
@@ -155,7 +164,6 @@ export default class Payment extends React.Component {
         <View style={styles.contentWrapper}>
           <Text style={styles.title}>Payment</Text>
           <View style={styles.mainContent}>
-            <Text style={styles.secondaryTitle}>Pay with Ozow</Text>
             <Image style={styles.ozowLogo} source={require('../../assets/ozow_black.png')}/>
             <Text style={styles.description}>We use <Text style={styles.bold}>Ozow</Text>, SA&apos;s premium payment solution, to process instant EFTs and transfer cash directly to your Jupiter account. </Text>
             <Text style={styles.buttonDescription}>Tap the link to pay with Ozow:</Text>
@@ -166,13 +174,16 @@ export default class Payment extends React.Component {
               </TouchableOpacity>
             </LinearGradient>
             <TouchableOpacity testID='payment-already-paid' accessibilityLabel='payment-already-paid' style={styles.alreadyPaidButton} onPress={this.onPressAlreadyPaid}>
-              <Text style={styles.alreadyPaidButtonText}>I&apos;VE ALREADY PAID</Text>
+              <Text style={styles.alreadyPaidButtonText}>
+                { this.state.checkingForPayment ? 'CHECKING PAYMENT STATUS...' : 'I MADE THE PAYMENT!' }
+              </Text>
             </TouchableOpacity>
+            <Text style={styles.description}>When you come back from Ozow tap the button to complete adding your cash</Text>
           </View>
         </View>
         {
           height > 600 ?
-          <View style={[styles.footer, styles.boxShadow]}>
+          <View style={styles.footer}>
             <Text style={styles.footerTitle}>THE EASIEST WAY TO PAY:</Text>
             <Image style={styles.shield} source={require('../../assets/shield.png')}/>
             <View style={styles.footerItem}>
@@ -348,13 +359,6 @@ const styles = StyleSheet.create({
     marginBottom: 2,
     marginLeft: 5,
   },
-  boxShadow: {
-    shadowColor: Colors.RED,
-    shadowOffset: { width: 0, height: 1000 },
-    shadowOpacity: 0.1,
-    shadowRadius: 500,
-    elevation: 20,
-  },
   copyIcon: {
     width: 22,
     height: 22,
@@ -379,5 +383,5 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.DARK_GRAY,
     width: '60%',
     alignItems: 'center',
-  },
+  }
 });

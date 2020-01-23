@@ -13,13 +13,11 @@ export default class Withdraw extends React.Component {
   constructor(props) {
     super(props);
     let bank = this.props.navigation.getParam("bank");
-    let accountHolder = this.props.navigation.getParam("accountHolder");
     let accountNumber = this.props.navigation.getParam("accountNumber");
     let data = this.props.navigation.getParam("initiateResponseData");
     this.state = {
       bank: bank,
       accountNumber: accountNumber,
-      accountHolder: accountHolder,
       currency: "R",
       amountToWithdraw: parseFloat(50).toFixed(2),
       balance: 0,
@@ -421,7 +419,7 @@ const styles = StyleSheet.create({
   topBox: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'white',
+    backgroundColor: Colors.WHITE,
     borderRadius: 20,
     paddingVertical: 25,
   },
@@ -447,14 +445,14 @@ const styles = StyleSheet.create({
   },
   bottomBox: {
     alignItems: 'center',
-    backgroundColor: 'white',
+    backgroundColor: Colors.WHITE,
     borderRadius: 20,
     paddingVertical: 25,
   },
   bottomBoxImageWrapper: {
     marginTop: -50,
     borderWidth: 8,
-    borderColor: 'white',
+    borderColor: Colors.WHITE,
     borderRadius: 100,
   },
   bottomBoxTitle: {
@@ -476,7 +474,7 @@ const styles = StyleSheet.create({
   dialogContent: {
     width: '90%',
     minHeight: 390,
-    backgroundColor: 'white',
+    backgroundColor: Colors.WHITE,
     borderRadius: 10,
     justifyContent: 'space-around',
     alignItems: 'center',

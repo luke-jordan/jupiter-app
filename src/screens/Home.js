@@ -132,7 +132,6 @@ class Home extends React.Component {
   }
 
   async componentDidMount() {
-    console.log('***** REMOUNTED ****');
     this.showInitialData();
     this.rotateCircle();
     // this.checkIfUpdateNeeded();
@@ -155,8 +154,7 @@ class Home extends React.Component {
     });
 
     if (info.profile.kycStatus == "FAILED_VERIFICATION" || info.profile.kycStatus == "REVIEW_FAILED") {
-      // NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'FailedVerification', { "fromHome": true });
-      NavigationUtil.logout(this.props.navigation);
+      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'FailedVerification', { "fromHome": true });
       return;
     }
     
@@ -467,7 +465,9 @@ class Home extends React.Component {
   // ////////////////////////////////////////////////////////////////////////////////////
 
   async handleNotificationsModule() {
-    this.registerForPushNotifications();
+    const resultOfRegister = await this.registerForPushNotifications();
+    console.log('Result of notification registration: ', resultOfRegister);
+    // removing this for now, to see if it makes a difference to iOS crashes
     this._notificationSubscription = Notifications.addListener(this.handleNotification);
   }
 
@@ -490,9 +490,11 @@ class Home extends React.Component {
 
       let token = await Notifications.getExpoPushTokenAsync();
       NotificationsUtil.uploadTokenToServer(token, this.state.token);
+      return true;
     } catch (err) {
       err.message = `Push notification registration error: ${err.message}`;
       LoggingUtil.logError(err);
+      return false;
     }
   }
 

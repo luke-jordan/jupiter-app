@@ -15,6 +15,7 @@ export default class AddCash extends React.Component {
       amountToAdd: '',
       isOnboarding: false,
       loading: false,
+      notWholeNumber: false
     };
   }
 
@@ -106,7 +107,17 @@ export default class AddCash extends React.Component {
   }
 
   onChangeAmount = (text) => {
-    this.setState({amountToAdd: text});
+    const wholeNumberRegex = /^[0-9\b]+$/;
+    if (wholeNumberRegex.test(text) || text.trim().length === 0) {
+      this.setState({
+        amountToAdd: text,
+        notWholeNumber: false
+      });
+    } else {
+      this.setState({
+        notWholeNumber: true
+      });
+    }
   }
 
   onChangeAmountEnd = () => {
@@ -241,6 +252,10 @@ export default class AddCash extends React.Component {
               containerStyle={styles.containerStyle}
             />
           </View>
+          { this.state.notWholeNumber ? 
+            <View style={styles.wholeNumberOnlyView}>
+              <Text style={styles.wholeNumberText}>Please enter only a whole number</Text>
+            </View> : null }
           {
             this.state.comparatorRates ?
             <View style={styles.rateComparison}>
@@ -396,6 +411,15 @@ const styles = StyleSheet.create({
     minHeight: 50,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  wholeNumberOnlyView: {
+    marginTop: 20,
+    alignItems: 'center'
+  },
+  wholeNumberText: {
+    fontFamily: 'poppins-regular',
+    color: Colors.MEDIUM_GRAY,
+    fontSize: 13
   },
   rateComparison: {
     width: '90%',

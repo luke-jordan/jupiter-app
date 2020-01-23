@@ -4,7 +4,6 @@ import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Endpoints, Colors } from '../util/Values';
 import { Button } from 'react-native-elements';
-import { LinearGradient } from 'expo-linear-gradient';
 import Toast from 'react-native-easy-toast';
 import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
 
@@ -29,6 +28,7 @@ export default class CheckingForPayment extends React.Component {
     this.rotateHourglass();
     LoggingUtil.logEvent('USER_ENTERED_CHECKING_FOR_PAYMENT');
     let params = this.props.navigation.state.params;
+
     if (params) {
       this.setState({
         paymentLink: params.paymentLink,
@@ -36,6 +36,7 @@ export default class CheckingForPayment extends React.Component {
         token: params.token,
         isOnboarding: params.isOnboarding,
         amountAdded: params.amountAdded,
+        bankDetails: params.bankDetails
       });
     }
   }
@@ -123,7 +124,7 @@ export default class CheckingForPayment extends React.Component {
 
   onPressEft = () => {
     let humanReference = this.props.navigation.getParam("humanReference");
-    this.props.navigation.navigate('EFTPayment', { humanReference: humanReference });
+    this.props.navigation.navigate('EFTPayment', { humanReference: humanReference, bankDetails: this.state.bankDetails });
   }
 
   onPressCancel = () => {

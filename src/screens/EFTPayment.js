@@ -14,17 +14,27 @@ export default class EFTPayment extends React.Component {
   constructor(props) {
     super(props);
     let humanReference = this.props.navigation.getParam("humanReference");
+    // our default
     this.state = {
-      bank: "FNB",
-      beneficiaryName: "Jupiter Savings App",
-      accountNumber: "62828393728",
-      branchCode: "250655",
+      bank: '',
+      beneficiaryName: '',
+      accountNumber: '',
+      branchCode: '',
+      accountType: '',
       humanReference,
     };
   }
 
   async componentDidMount() {
     LoggingUtil.logEvent('USER_ENTERED_EFT_DETAILS');
+    const bankDetails = this.props.navigation.getParam('bankDetails') || {};
+    this.setState({ 
+      bank: bankDetails.bankName || 'FNB',
+      beneficiaryName: bankDetails.beneficiaryName || 'Jupiter Savings App',
+      accountNumber: bankDetails.accountNumber || '62828393728',
+      accountType: bankDetails.accountType || 'Cheque',
+      routingNumber: bankDetails.routingNumber || '250655'
+    });
   }
 
   onPressCopy = (text) => {
