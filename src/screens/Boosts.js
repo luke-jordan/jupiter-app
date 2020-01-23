@@ -36,135 +36,65 @@ class Boosts extends React.Component {
     } else {
       info = JSON.parse(info);
     }
-    let token = info.token;
-    await this.setState({
-      token: token,
-    });
+    const { token } = info;
 
     let boosts = await AsyncStorage.getItem('userBoosts');
     if (boosts) {
       boosts = JSON.parse(boosts);
       this.setState({
-        boosts: boosts,
+        boosts,
         loading: false,
       });
     }
     this.fetchBoosts(token);
   }
 
-  sortBoosts = (boosts) => {
-    return boosts.sort((a, b) => {
-      if (a.boostStatus != b.boostStatus) {
-        if (a.boostStatus == "REDEEMED" || a.boostStatus == "EXPIRED") return a.boostStatus == "REDEEMED" ? 1 : -1;
-        else return -1;
-      } else {
-        if (moment(a.endTime).isAfter(moment(b.endTime))) return -1;
-        else return 1;
-      }
-    });
-  }
-
-  fetchBoosts = async (token) => {
-    try {
-      let result = await fetch(Endpoints.CORE + 'boost/list', {
-        headers: {
-          'Authorization': 'Bearer ' + token,
-        },
-        method: 'GET',
-      });
-      if (result.ok) {
-        let resultJson = await result.json();
-        let boosts = this.sortBoosts(resultJson);
-        this.setState({
-          boosts: boosts,
-          loading: false,
-        });
-        AsyncStorage.setItem("userBoosts", JSON.stringify(boosts));
-      } else {
-        throw result;
-      }
-    } catch (error) {
-      console.log("Error in fetch boosts!", error.status);
-      this.setState({loading: false});
-    }
-  }
-
-  renderBoosts() {
-    return (
-      <View style={styles.cardsWrapper}>
-        {
-          this.state.boosts.map((item, index) => this.renderBoostCard(item, index))
-        }
-      </View>
-    );
-  }
-
   getBoostIcon(boostDetails) {
-    if (boostDetails.boostStatus == "REDEEMED") {
+    if (boostDetails.boostStatus === 'REDEEMED') {
       return require('../../assets/completed.png');
-    } else if (boostDetails.boostType == "GAME") {
+    } else if (boostDetails.boostType === 'GAME') {
       return require('../../assets/boost_challenge.png');
     }
     return require('../../assets/surprise_reward.png');
   }
 
   getBoostResultIcon(boostStatus, endTime) {
-    if (boostStatus == "REDEEMED") {
+    if (boostStatus === 'REDEEMED') {
       return require('../../assets/thumbs_up.png');
     } else if (this.isBoostExpired({ boostStatus, endTime })) {
       return require('../../assets/sad_face.png');
     }
   }
 
-  isBoostExpired({ boostStatus, endTime }) {
-    // the server sometimes will not have set a boost status to expire even when its end time is past
-    // in that case, as a fallback, we should set the status to expired here
-    if (boostStatus == 'EXPIRED'){
-      return true;
-    }
-
-    return moment(endTime).isBefore(moment());
-  }
-
-  isBoostExpiringSoon(endTime) {
-    return moment(endTime).isBefore(moment().add(1, 'days'));
-  }
-
-  getAdditionalLabelRow(boostDetails) {
-    if (boostDetails.boostStatus == "REDEEMED") {
-      return <Text style={styles.boostClaimed}>Boost Claimed: </Text>;
-    }
-    if (this.isBoostExpired({ boostStatus: boostDetails.boostStatus, endTime: boostDetails.endTime })) {
-      return <Text style={styles.boostExpired}>Boost Expired.</Text>;
-    }
-    if (this.isBoostExpiringSoon(boostDetails.endTime)) {
-      return <Text style={styles.boostExpiring}>Expiring soon</Text>;
-    }
-  }
-
   getBoostButton(boostDetails) {
-
-    if (boostDetails.boostStatus == "REDEEMED" || this.isBoostExpired({ boostStatus: boostDetails.boostStatus, endTime: boostDetails.endTime })) {
+    if (
+      boostDetails.boostStatus === 'REDEEMED' ||
+      this.isBoostExpired({
+        boostStatus: boostDetails.boostStatus,
+        endTime: boostDetails.endTime,
+      })
+    ) {
       return null;
     }
 
-    let conditions = boostDetails.statusConditions.REDEEMED;
-    let buttonType = "";
+    const conditions = boostDetails.statusConditions.REDEEMED;
+    let buttonType = '';
     if (conditions && conditions.length > 0) {
-      let condition = conditions[0];
-      if (condition.includes("save_event")) buttonType = "save_event";
-      if (condition.includes("social_event")) buttonType = "social_event";
+      const condition = conditions[0];
+      if (condition.includes('save_event')) buttonType = 'save_event';
+      if (condition.includes('social_event')) buttonType = 'social_event';
     }
 
-    if (buttonType == "") {
+    if (buttonType === '') {
       return null;
     } else {
-      let title = "", action = null;
-      if (buttonType == "save_event") {
-        title = "ADD CASH";
+      let title = '';
+      let action = null;
+      if (buttonType === 'save_event') {
+        title = 'ADD CASH';
         action = this.onPressAddCash;
-      } else if (buttonType == "social_event") {
-        title = "INVITE FRIENDS";
+      } else if (buttonType === 'social_event') {
+        title = 'INVITE FRIENDS';
         action = this.onPressInviteFriends;
       }
       return (
@@ -178,21 +108,35 @@ class Boosts extends React.Component {
             colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
             start: { x: 0, y: 0.5 },
             end: { x: 1, y: 0.5 },
-          }}/>
+          }}
+        />
       );
     }
   }
 
-  onPressAddCash = () => {
-    this.props.navigation.navigate('AddCash');
-  }
-
-  onPressInviteFriends = () => {
-    this.props.navigation.navigate('Friends');
+  getAdditionalLabelRow(boostDetails) {
+    if (boostDetails.boostStatus === 'REDEEMED') {
+      return <Text style={styles.boostClaimed}>Boost Claimed: </Text>;
+    }
+    if (
+      this.isBoostExpired({
+        boostStatus: boostDetails.boostStatus,
+        endTime: boostDetails.endTime,
+      })
+    ) {
+      return <Text style={styles.boostExpired}>Boost Expired.</Text>;
+    }
+    if (this.isBoostExpiringSoon(boostDetails.endTime)) {
+      return <Text style={styles.boostExpiring}>Expiring soon</Text>;
+    }
   }
 
   getHighlightBorder(boostDetails) {
-    if (boostDetails.boostStatus != "REDEEMED" && !this.isBoostExpired(boostDetails) && this.isBoostExpiringSoon(boostDetails.endTime)) {
+    if (
+      boostDetails.boostStatus !== 'REDEEMED' &&
+      !this.isBoostExpired(boostDetails) &&
+      this.isBoostExpiringSoon(boostDetails.endTime)
+    ) {
       return styles.purpleBorder;
     }
     return null;
@@ -203,42 +147,131 @@ class Boosts extends React.Component {
     return 1;
   }
 
+  sortBoosts = boosts => {
+    // eslint-disable-next-line fp/no-mutating-methods
+    return boosts.sort((a, b) => {
+      if (a.boostStatus !== b.boostStatus) {
+        if (a.boostStatus === 'REDEEMED' || a.boostStatus === 'EXPIRED')
+          return a.boostStatus === 'REDEEMED' ? 1 : -1;
+        else return -1;
+      } else if (moment(a.endTime).isAfter(moment(b.endTime))) return -1;
+      else return 1;
+    });
+  };
+
+  fetchBoosts = async token => {
+    try {
+      const result = await fetch(`${Endpoints.CORE}boost/list`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        method: 'GET',
+      });
+      if (result.ok) {
+        const resultJson = await result.json();
+        const boosts = this.sortBoosts(resultJson);
+        this.setState({
+          boosts,
+          loading: false,
+        });
+        AsyncStorage.setItem('userBoosts', JSON.stringify(boosts));
+      } else {
+        throw result;
+      }
+    } catch (error) {
+      this.setState({ loading: false });
+    }
+  };
+
+  onPressAddCash = () => {
+    this.props.navigation.navigate('AddCash');
+  };
+
+  onPressInviteFriends = () => {
+    this.props.navigation.navigate('Friends');
+  };
+
+  isBoostExpiringSoon(endTime) {
+    return moment(endTime).isBefore(moment().add(1, 'days'));
+  }
+
+  isBoostExpired({ boostStatus, endTime }) {
+    // the server sometimes will not have set a boost status to expire even when its end time is past
+    // in that case, as a fallback, we should set the status to expired here
+    if (boostStatus === 'EXPIRED') {
+      return true;
+    }
+
+    return moment(endTime).isBefore(moment());
+  }
+
+  renderBoosts() {
+    return (
+      <View style={styles.cardsWrapper}>
+        {this.state.boosts.map((item, index) =>
+          this.renderBoostCard(item, index)
+        )}
+      </View>
+    );
+  }
+
   renderBoostCard(boostDetails, index) {
     return (
-      <View opacity={this.getCardOpacity(boostDetails.boostStatus, boostDetails.endTime)} 
-        style={[styles.boostCard, styles.boxShadow, this.getHighlightBorder(boostDetails)]} key={index}>
-        
+      <View
+        opacity={this.getCardOpacity(
+          boostDetails.boostStatus,
+          boostDetails.endTime
+        )}
+        style={[
+          styles.boostCard,
+          styles.boxShadow,
+          this.getHighlightBorder(boostDetails),
+        ]}
+        key={index}
+      >
         <View style={styles.boostTopRow}>
           <Text style={styles.boostTitle}>{boostDetails.label}</Text>
           <View style={styles.boostIconWrapper}>
-            {
-              boostDetails.boostType != "SIMPLE" || boostDetails.boostStatus == "REDEEMED" ?
-              <Image source={this.getBoostIcon(boostDetails)} style={styles.boostIcon} />
-              :
-              <Text style={styles.boostAmount}>R{boostDetails.boostAmount}</Text>
-            }
+            {boostDetails.boostType !== 'SIMPLE' ||
+            boostDetails.boostStatus === 'REDEEMED' ? (
+              <Image
+                source={this.getBoostIcon(boostDetails)}
+                style={styles.boostIcon}
+              />
+            ) : (
+              <Text style={styles.boostAmount}>
+                R{boostDetails.boostAmount}
+              </Text>
+            )}
           </View>
         </View>
         <View style={styles.boostBottomRow}>
           <View style={styles.boostBottomRowLeft}>
-            {
-              boostDetails.boostStatus == "REDEEMED" || this.isBoostExpired({ boostStatus: boostDetails.boostStatus, endTime: boostDetails.endTime }) ?
-              <Image source={this.getBoostResultIcon(boostDetails.boostStatus, boostDetails.endTime)} style={styles.boostResultIcon} />
-              : null
-            }
+            {boostDetails.boostStatus === 'REDEEMED' ||
+            this.isBoostExpired({
+              boostStatus: boostDetails.boostStatus,
+              endTime: boostDetails.endTime,
+            }) ? (
+              <Image
+                source={this.getBoostResultIcon(
+                  boostDetails.boostStatus,
+                  boostDetails.endTime
+                )}
+                style={styles.boostResultIcon}
+              />
+            ) : null}
             <View style={styles.boostResultTexts}>
-              {
-                this.getAdditionalLabelRow(boostDetails)
-              }
+              {this.getAdditionalLabelRow(boostDetails)}
               <Text style={styles.boostValidityText}>
-                {boostDetails.boostStatus == "OFFERED" || boostDetails.boostStatus == "PENDING" ? "Valid until " : ""}
-                {moment(boostDetails.endTime).format("DD MMM YY")}
+                {boostDetails.boostStatus === 'OFFERED' ||
+                boostDetails.boostStatus === 'PENDING'
+                  ? 'Valid until '
+                  : ''}
+                {moment(boostDetails.endTime).format('DD MMM YY')}
               </Text>
             </View>
           </View>
-          {
-            this.getBoostButton(boostDetails)
-          }
+          {this.getBoostButton(boostDetails)}
         </View>
       </View>
     );
@@ -247,21 +280,28 @@ class Boosts extends React.Component {
   renderMainContent() {
     return (
       <View style={styles.contentWrapper}>
-        {
-          this.state.boosts && this.state.boosts.length > 0 ?
-          <ScrollView style={styles.scrollView} contentContainerStyle={styles.mainContent}>
-            {
-              this.renderBoosts()
-            }
+        {this.state.boosts && this.state.boosts.length > 0 ? (
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.mainContent}
+          >
+            {this.renderBoosts()}
             <View style={styles.bottomMargin} />
           </ScrollView>
-          :
+        ) : (
           <View style={styles.contentWrapper}>
-            <Image style={styles.image} source={require('../../assets/group_7.png')} resizeMode="contain"/>
+            <Image
+              style={styles.image}
+              source={require('../../assets/group_7.png')}
+              resizeMode="contain"
+            />
             <Text style={styles.title}>Watch this space…</Text>
-            <Text style={styles.description}>We’re adding boosts to encourage and celebrate you being a{"\n"}happy saver!</Text>
+            <Text style={styles.description}>
+              We’re adding boosts to encourage and celebrate you being a{'\n'}
+              happy saver!
+            </Text>
           </View>
-        }
+        )}
       </View>
     );
   }
@@ -272,18 +312,14 @@ class Boosts extends React.Component {
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Boosts</Text>
         </View>
-        {
-          this.state.loading ?
+        {this.state.loading ? (
           <View style={styles.contentWrapper}>
             <ActivityIndicator size="large" color={Colors.PURPLE} />
           </View>
-          :
+        ) : (
           this.renderMainContent()
-        }
-        <NavigationBar
-          navigation={this.props.navigation}
-          currentTab={2}
-        />
+        )}
+        <NavigationBar navigation={this.props.navigation} currentTab={2} />
       </View>
     );
   }
@@ -333,10 +369,12 @@ const styles = StyleSheet.create({
   scrollView: {
     backgroundColor: Colors.BACKGROUND_GRAY,
     width: '100%',
-    marginBottom: - Sizes.NAVIGATION_BAR_HEIGHT + Sizes.VISIBLE_NAVIGATION_BAR_HEIGHT,
+    marginBottom:
+      -Sizes.NAVIGATION_BAR_HEIGHT + Sizes.VISIBLE_NAVIGATION_BAR_HEIGHT,
   },
   bottomMargin: {
-    marginBottom: Sizes.NAVIGATION_BAR_HEIGHT - Sizes.VISIBLE_NAVIGATION_BAR_HEIGHT,
+    marginBottom:
+      Sizes.NAVIGATION_BAR_HEIGHT - Sizes.VISIBLE_NAVIGATION_BAR_HEIGHT,
   },
   mainContent: {
     alignItems: 'center',
@@ -397,9 +435,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  boostIcon: {
-
-  },
+  boostIcon: {},
   boostAmount: {
     fontFamily: 'poppins-semibold',
     fontSize: 15,

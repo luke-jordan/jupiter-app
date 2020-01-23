@@ -1,84 +1,127 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, TouchableOpacity, Dimensions } from 'react-native';
-import { Colors } from '../util/Values';
+import {
+  StyleSheet,
+  View,
+  Image,
+  Text,
+  TouchableOpacity,
+  Dimensions,
+} from 'react-native';
 import { Icon } from 'react-native-elements';
 import { LinearGradient } from 'expo-linear-gradient';
+
+import { Colors } from '../util/Values';
 
 const { width } = Dimensions.get('window');
 
 export default class PendingRegistrationSteps extends React.Component {
-
   constructor(props) {
     super(props);
-    let userInfo = this.props.navigation.getParam("userInfo");
+    const userInfo = this.props.navigation.getParam('userInfo');
     this.state = {
       firstName: userInfo.profile.personalName,
     };
   }
 
-  async componentDidMount() {
-
-  }
-
   onPressAddCash = () => {
-    let userInfo = this.props.navigation.getParam("userInfo");
-    this.props.navigation.navigate("AddCash", {
+    const userInfo = this.props.navigation.getParam('userInfo');
+    this.props.navigation.navigate('AddCash', {
       isOnboarding: true,
       systemWideUserId: userInfo.systemWideUserId,
       token: userInfo.token,
       accountId: userInfo.balance.accountId[0],
     });
-
-  }
+  };
 
   render() {
     return (
       <View style={styles.container}>
         <View style={styles.headerImageWrapper}>
-          <Image style={styles.headerImage} source={require('../../assets/group_16.png')} resizeMode="contain"/>
+          <Image
+            style={styles.headerImage}
+            source={require('../../assets/group_16.png')}
+            resizeMode="contain"
+          />
         </View>
         <View style={styles.mainContent}>
           <View style={styles.topSection}>
             <Text style={styles.title}>Hello, {this.state.firstName}</Text>
-            <Text style={styles.description}>You’re on your way to becoming a smart saver. We just need the following before activating your account:</Text>
+            <Text style={styles.description}>
+              You’re on your way to becoming a smart saver. We just need the
+              following before activating your account:
+            </Text>
           </View>
           <View style={styles.midSection}>
             <Text style={styles.stepsLeftText}>1 STEP LEFT</Text>
             <View style={styles.stepsLeftContainer}>
-              <LinearGradient start={[0, 0.5]} end={[1, 0.5]} colors={[Colors.LIGHT_BLUE, Colors.PURPLE]} style={styles.stepsGradient} />
-              <LinearGradient start={[0, 0.5]} end={[1, 0.5]} colors={[Colors.LIGHT_BLUE, Colors.PURPLE]} style={styles.stepsGradient} />
-              <LinearGradient start={[0, 0.5]} end={[1, 0.5]} colors={[Colors.LIGHT_GRAY, Colors.LIGHT_GRAY]} style={styles.stepsGradient} />
+              <LinearGradient
+                start={[0, 0.5]}
+                end={[1, 0.5]}
+                colors={[Colors.LIGHT_BLUE, Colors.PURPLE]}
+                style={styles.stepsGradient}
+              />
+              <LinearGradient
+                start={[0, 0.5]}
+                end={[1, 0.5]}
+                colors={[Colors.LIGHT_BLUE, Colors.PURPLE]}
+                style={styles.stepsGradient}
+              />
+              <LinearGradient
+                start={[0, 0.5]}
+                end={[1, 0.5]}
+                colors={[Colors.LIGHT_GRAY, Colors.LIGHT_GRAY]}
+                style={styles.stepsGradient}
+              />
             </View>
           </View>
           <View style={styles.botSection}>
             <View style={styles.stepButton}>
-              <Image style={styles.stepButtonIcon} source={require('../../assets/smile.png')} resizeMode="contain"/>
+              <Image
+                style={styles.stepButtonIcon}
+                source={require('../../assets/smile.png')}
+                resizeMode="contain"
+              />
               <Text style={styles.stepButtonText}>Personal details</Text>
               <Icon
-                name='check'
-                type='feather'
+                name="check"
+                type="feather"
                 size={25}
                 color={Colors.PURPLE}
               />
             </View>
             <View style={styles.separator} />
             <View style={styles.stepButton}>
-            <Image style={styles.stepButtonIcon} source={require('../../assets/key.png')} resizeMode="contain"/>
-            <Text style={styles.stepButtonText}>Set a password</Text>
+              <Image
+                style={styles.stepButtonIcon}
+                source={require('../../assets/key.png')}
+                resizeMode="contain"
+              />
+              <Text style={styles.stepButtonText}>Set a password</Text>
               <Icon
-                name='check'
-                type='feather'
+                name="check"
+                type="feather"
                 size={25}
                 color={Colors.PURPLE}
               />
             </View>
             <View style={styles.separator} />
-            <TouchableOpacity style={styles.stepButton} onPress={this.onPressAddCash}>
-              <Image style={styles.stepButtonIcon} source={require('../../assets/arrow_up_circle.png')} resizeMode="contain"/>
-              <Text style={[styles.stepButtonText, styles.stepButtonTextIncomplete]}>Add cash</Text>
+            <TouchableOpacity
+              style={styles.stepButton}
+              onPress={this.onPressAddCash}
+            >
+              <Image
+                style={styles.stepButtonIcon}
+                source={require('../../assets/arrow_up_circle.png')}
+                resizeMode="contain"
+              />
+              <Text
+                style={[styles.stepButtonText, styles.stepButtonTextIncomplete]}
+              >
+                Add cash
+              </Text>
               <Icon
-                name='chevron-right'
-                type='evilicon'
+                name="chevron-right"
+                type="evilicon"
                 size={40}
                 color={Colors.MEDIUM_GRAY}
               />
@@ -103,9 +146,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  headerImage: {
-
-  },
+  headerImage: {},
   mainContent: {
     flex: 2,
     width: '90%',

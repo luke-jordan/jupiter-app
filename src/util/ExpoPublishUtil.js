@@ -2,14 +2,14 @@ import Expo from 'expo';
 import { Platform } from 'react-native';
 
 let isReloading = false;
-export async function reloadIfUpdateAvailable () {
-  const {id,sdkVersion,revisionId} = Expo.Constants.manifest;
+export async function reloadIfUpdateAvailable() {
+  const { id, sdkVersion, revisionId } = Expo.Constants.manifest;
   if (!revisionId) return;
 
   const res = await fetch(`https://expo.io/${id}/index.exp`, {
     headers: {
-    'Exponent-SDK-Version': sdkVersion,
-    'Exponent-Platform': Platform.OS,
+      'Exponent-SDK-Version': sdkVersion,
+      'Exponent-Platform': Platform.OS,
     },
     method: 'GET',
   });
@@ -25,5 +25,4 @@ export async function reloadIfUpdateAvailable () {
       }
     }
   }
-
 }

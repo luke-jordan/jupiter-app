@@ -1,20 +1,29 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, TouchableOpacity, Dimensions, Clipboard, Share } from 'react-native';
+import {
+  Clipboard,
+  Dimensions,
+  Image,
+  Share,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { Button, Icon } from 'react-native-elements';
+import Toast from 'react-native-easy-toast';
+
 import { LoggingUtil } from '../util/LoggingUtil';
 import { NavigationUtil } from '../util/NavigationUtil';
-import { Endpoints, Colors } from '../util/Values';
-import { Button, Icon, Input } from 'react-native-elements';
-import Toast from 'react-native-easy-toast';
+import { Colors } from '../util/Values';
 
 const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
 export default class EFTPayment extends React.Component {
-
   constructor(props) {
     super(props);
-    let humanReference = this.props.navigation.getParam("humanReference");
-    // our default
+    this.toastRef = React.createRef();
+    const humanReference = this.props.navigation.getParam('humanReference');
     this.state = {
       bank: '',
       beneficiaryName: '',
@@ -28,23 +37,24 @@ export default class EFTPayment extends React.Component {
   async componentDidMount() {
     LoggingUtil.logEvent('USER_ENTERED_EFT_DETAILS');
     const bankDetails = this.props.navigation.getParam('bankDetails') || {};
-    this.setState({ 
+    // our default used in case the backend doesn't supply details
+    this.setState({
       bank: bankDetails.bankName || 'FNB',
       beneficiaryName: bankDetails.beneficiaryName || 'Jupiter Savings App',
       accountNumber: bankDetails.accountNumber || '62828393728',
       accountType: bankDetails.accountType || 'Cheque',
-      routingNumber: bankDetails.routingNumber || '250655'
+      routingNumber: bankDetails.routingNumber || '250655',
     });
   }
 
-  onPressCopy = (text) => {
+  onPressCopy = text => {
     Clipboard.setString(text);
-    this.refs.toast.show('Copied to clipboard!');
-  }
+    this.toastRef.current.show('Copied to clipboard!');
+  };
 
   onPressShare = async () => {
     if (this.state.loading) return;
-    this.setState({loading: true});
+    this.setState({ loading: true });
     try {
       const result = await Share.share({
         message: `Jupiter Payment Details: Bank: ${this.state.bank}; Beneficiary Name: ${this.state.beneficiaryName}; Account Type: Current/Cheque; Account Number: ${this.state.accountNumber}; Branch code: ${this.state.branchCode}`,
@@ -52,60 +62,113 @@ export default class EFTPayment extends React.Component {
       console.log(result);
     } catch (error) {
       console.log(error);
-      //handle somehow?
+      // handle somehow?
     }
-    this.setState({loading: false});
-  }
-
+    this.setState({ loading: false });
+  };
 
   onPressDone = () => {
-    NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', { userInfo: this.state.userInfo });
-  }
+    NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', {
+      userInfo: this.state.userInfo,
+    });
+  };
 
   render() {
     return (
       <View style={styles.container}>
         <TouchableOpacity style={styles.closeButton} onPress={this.onPressDone}>
           <Icon
-            name='close'
-            type='evilicon'
+            name="close"
+            type="evilicon"
             size={30}
             color={Colors.MEDIUM_GRAY}
           />
         </TouchableOpacity>
         <View style={styles.mainContent}>
           <View style={styles.top}>
-            <Image style={styles.image} source={require('../../assets/card.png')} resizeMode="contain"/>
+            <Image
+              style={styles.image}
+              source={require('../../assets/card.png')}
+              resizeMode="contain"
+            />
             <Text style={styles.title}>Pay via EFT</Text>
-            <Text style={styles.description}>EFT’s take <Text style={styles.descriptionBold}>2-3 working days</Text> to reflect. As soon as we receive the funds your balance will be updated.</Text>
+            <Text style={styles.description}>
+              EFT’s take{' '}
+              <Text style={styles.descriptionBold}>2-3 working days</Text> to
+              reflect. As soon as we receive the funds your balance will be
+              updated.
+            </Text>
           </View>
           <View style={styles.reference}>
             <Text style={styles.referenceTitle}>USE THIS REFERENCE</Text>
-            <Text style={styles.referenceText}>{this.state.humanReference}</Text>
-            <TouchableOpacity style={styles.copyButton} onPress={() => this.onPressCopy(this.state.humanReference)}>
-              <Image style={styles.copyIcon} source={require('../../assets/copy.png')} resizeMode="contain"/>
+            <Text style={styles.referenceText}>
+              {this.state.humanReference}
+            </Text>
+            <TouchableOpacity
+              style={styles.copyButton}
+              onPress={() => this.onPressCopy(this.state.humanReference)}
+            >
+              <Image
+                style={styles.copyIcon}
+                source={require('../../assets/copy.png')}
+                resizeMode="contain"
+              />
             </TouchableOpacity>
           </View>
           <View style={styles.bottomBox}>
             <Text style={styles.bottomTitle}>PLEASE MAKE PAYMENT TO:</Text>
             <View style={styles.separator} />
-            <Text style={styles.bottomText}>Bank: <Text style={styles.bottomBold}>{this.state.bank}</Text></Text>
-            <Text style={styles.bottomText}>Benificiary Name: <Text style={styles.bottomBold}>{this.state.beneficiaryName}</Text></Text>
-            <Text style={styles.bottomText}>Account Type: Current/Cheque</Text>
+            <Text style={styles.bottomText}>
+              Bank: <Text style={styles.bottomBold}>{this.state.bank}</Text>
+            </Text>
+            <Text style={styles.bottomText}>
+              Benificiary Name:{' '}
+              <Text style={styles.bottomBold}>
+                {this.state.beneficiaryName}
+              </Text>
+            </Text>
+            <Text style={styles.bottomText}>Account Type: {this.state.accountType}</Text>
             <View style={styles.bottomRow}>
-              <Text style={styles.bottomText}>Account Number: <Text style={styles.bottomBold}>{this.state.accountNumber}</Text></Text>
-              <TouchableOpacity onPress={() => this.onPressCopy(this.state.accountNumber)}>
-                <Image style={styles.copyIcon} source={require('../../assets/copy.png')} resizeMode="contain"/>
+              <Text style={styles.bottomText}>
+                Account Number:{' '}
+                <Text style={styles.bottomBold}>
+                  {this.state.accountNumber}
+                </Text>
+              </Text>
+              <TouchableOpacity
+                onPress={() => this.onPressCopy(this.state.accountNumber)}
+              >
+                <Image
+                  style={styles.copyIcon}
+                  source={require('../../assets/copy.png')}
+                  resizeMode="contain"
+                />
               </TouchableOpacity>
             </View>
             <View style={styles.bottomRow}>
-              <Text style={styles.bottomText}>Branch code: <Text style={styles.bottomBold}>{this.state.branchCode}</Text></Text>
-              <TouchableOpacity onPress={() => this.onPressCopy(this.state.branchCode)}>
-                <Image style={styles.copyIcon} source={require('../../assets/copy.png')} resizeMode="contain"/>
+              <Text style={styles.bottomText}>
+                Branch code:{' '}
+                <Text style={styles.bottomBold}>{this.state.routingNumber}</Text>
+              </Text>
+              <TouchableOpacity
+                onPress={() => this.onPressCopy(this.state.routingNumber)}
+              >
+                <Image
+                  style={styles.copyIcon}
+                  source={require('../../assets/copy.png')}
+                  resizeMode="contain"
+                />
               </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.shareButton} onPress={this.onPressShare}>
-              <Image style={styles.shareIcon} source={require('../../assets/share.png')} resizeMode="contain"/>
+            <TouchableOpacity
+              style={styles.shareButton}
+              onPress={this.onPressShare}
+            >
+              <Image
+                style={styles.shareIcon}
+                source={require('../../assets/share.png')}
+                resizeMode="contain"
+              />
               <Text style={styles.shareText}>Share Payment Details</Text>
             </TouchableOpacity>
           </View>
@@ -119,10 +182,11 @@ export default class EFTPayment extends React.Component {
               colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
               start: { x: 0, y: 0.5 },
               end: { x: 1, y: 0.5 },
-            }} />
+            }}
+          />
         </View>
 
-        <Toast ref="toast" opacity={1} style={styles.toast}/>
+        <Toast ref={this.toastRef} opacity={1} style={styles.toast} />
       </View>
     );
   }

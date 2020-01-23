@@ -22,12 +22,12 @@ const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
 class Friends extends React.Component {
-
   constructor(props) {
     super(props);
+    this.toastRef = React.createRef(null);
     this.state = {
-      shareCode: "",
-      shareLink: "https://jupitersave.com/",
+      shareCode: '',
+      shareLink: 'https://jupiter.com/share/something',
     };
   }
 
@@ -42,38 +42,46 @@ class Friends extends React.Component {
         shareCode: info.profile.referralCode,
       });
     }
-
   }
 
   onPressShare = async () => {
     if (this.state.loading) return;
-    this.setState({loading: true});
+    this.setState({ loading: true });
     try {
       const result = await Share.share({
         message: `I’d love for you to join me as a friend on the Jupiter app. Jupiter makes saving at good rates, with no lock up, easy and enticing for everyone! As friends we can earn extra rewards and encourage each other to save more! Just use my referral code ${this.state.shareCode} to sign up. Download here: ${this.state.shareLink}`,
       });
-      this.setState({loading: false});
+      this.setState({ loading: false });
       console.log('Result of share: ', result);
-      LoggingUtil.logEvent("USER_SHARED_REFERRAL_CODE");
+      LoggingUtil.logEvent('USER_SHARED_REFERRAL_CODE');
     } catch (error) {
-      this.setState({loading: false});
-      //handle somehow?
+      // handle somehow?
     }
-  }
+    this.setState({ loading: false });
+  };
 
   onPressCopy = () => {
     Clipboard.setString(this.state.shareCode);
-    this.refs.toast.show('Copied to clipboard!');
-  }
+    this.toastRef.current.show('Copied to clipboard!');
+  };
 
   render() {
     return (
       <View style={styles.container}>
         <View style={styles.mainContent}>
-          <Image style={styles.image} source={require('../../assets/group_77.png')} resizeMode="contain"/>
-          <Text style={styles.title}>Jupiter will be launching the ability to save with your friends soon</Text>
-          <Text style={styles.description}><Text style={styles.bold}>While you wait - </Text>
-            Invite your friends to Jupiter using the referral code below. We’ll add <Text style={styles.bold}>R20.00</Text> to your balance each time one of them signs up and starts saving!
+          <Image
+            style={styles.image}
+            source={require('../../assets/group_77.png')}
+            resizeMode="contain"
+          />
+          <Text style={styles.title}>
+            Jupiter will be launching the ability to save with your friends soon
+          </Text>
+          <Text style={styles.description}>
+            <Text style={styles.bold}>While you wait - </Text>
+            Invite your friends to Jupiter using the referral code below. We’ll
+            add <Text style={styles.bold}>R20.00</Text> to your balance each
+            time one of them signs up and starts saving!
           </Text>
         </View>
         <View style={styles.input}>
@@ -98,13 +106,11 @@ class Friends extends React.Component {
               colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
               start: { x: 0, y: 0.5 },
               end: { x: 1, y: 0.5 },
-            }}/>
+            }}
+          />
         </View>
-        <NavigationBar
-          navigation={this.props.navigation}
-          currentTab={1}
-        />
-        <Toast ref="toast" opacity={1} style={styles.toast}/>
+        <NavigationBar navigation={this.props.navigation} currentTab={1} />
+        <Toast ref={this.toastRef} opacity={1} style={styles.toast} />
       </View>
     );
   }

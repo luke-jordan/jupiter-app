@@ -1,19 +1,25 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, Dimensions, TouchableOpacity } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  Image,
+  Text,
+  Dimensions,
+  TouchableOpacity,
+} from 'react-native';
+import { Icon } from 'react-native-elements';
+
+import iconCheck from '../../assets/check.png';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Colors } from '../util/Values';
-import { Icon } from 'react-native-elements';
 
 const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
 export default class ThankYou extends React.Component {
-
   constructor(props) {
     super(props);
-    this.state = {
-
-    };
+    this.state = {};
   }
 
   async componentDidMount() {
@@ -22,35 +28,45 @@ export default class ThankYou extends React.Component {
 
   onPressIntro = () => {
     this.props.navigation.navigate('Onboarding');
-  }
+  };
 
-  onPressWebsite = () => {
-
-  }
+  onPressWebsite = () => {};
 
   onPressClose = () => {
     this.props.navigation.navigate('Onboarding');
-  }
+  };
 
   render() {
     return (
       <View style={styles.container}>
-        <TouchableOpacity style={styles.closeButton} onPress={this.onPressClose}>
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={this.onPressClose}
+        >
           <Icon
-            name='close'
-            type='evilicon'
+            name="close"
+            type="evilicon"
             size={35}
             color={Colors.DARK_GRAY}
           />
         </TouchableOpacity>
         <View style={styles.top}>
-          <Image style={styles.image} source={require('../../assets/check.png')} resizeMode="contain"/>
-          <Text style={styles.title}>Thank you for your interest in Jupiter!</Text>
-          <Text style={styles.description}>You’ll receive an email as soon as we’ve launched access to everyone.</Text>
+          <Image style={styles.image} source={iconCheck} resizeMode="contain" />
+          <Text style={styles.title}>
+            Thank you for your interest in Jupiter!
+          </Text>
+          <Text style={styles.description}>
+            You’ll receive an email as soon as we’ve launched access to
+            everyone.
+          </Text>
         </View>
         <View style={styles.bottom}>
-          <Text style={styles.textAsButton} onPress={this.onPressIntro}>View intro again</Text>
-          <Text style={styles.textAsButton} onPress={this.onPressWebsite}>Learn more on our website</Text>
+          <Text style={styles.textAsButton} onPress={this.onPressIntro}>
+            View intro again
+          </Text>
+          <Text style={styles.textAsButton} onPress={this.onPressWebsite}>
+            Learn more on our website
+          </Text>
         </View>
       </View>
     );

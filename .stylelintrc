@@ -1,0 +1,27 @@
+{
+  "processors": ["stylelint-processor-styled-components"],
+  "extends": [
+    "stylelint-config-standard",
+    "stylelint-config-styled-components",
+    "stylelint-config-prettier"
+  ],
+  "syntax": "scss",
+  "rules": {
+    "declaration-colon-space-before": null,
+    "property-no-unknown": [
+      true, {
+        "ignoreProperties": [
+          "margin-vertical",
+          "margin-horizontal",
+          "padding-vertical",
+          "padding-horizontal",
+          "shadow-color",
+          "shadow-offset",
+          "shadow-radius",
+          "shadow-opacity",
+          "resize-mode"
+        ]
+      }
+    ]
+  }
+}

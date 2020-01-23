@@ -1,107 +1,105 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, TouchableOpacity, ScrollView, KeyboardAvoidingView, ActivityIndicator } from 'react-native';
-import { NavigationUtil } from '../util/NavigationUtil';
-import { LoggingUtil } from '../util/LoggingUtil';
+import {
+  StyleSheet,
+  View,
+  Image,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  KeyboardAvoidingView,
+  ActivityIndicator,
+} from 'react-native';
 import { Button, Icon, Input } from 'react-native-elements';
-import { Colors, Endpoints } from '../util/Values';
-import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
+import Dialog, {
+  SlideAnimation,
+  DialogContent,
+} from 'react-native-popup-dialog';
 import Toast from 'react-native-easy-toast';
 
+import { NavigationUtil } from '../util/NavigationUtil';
+import { LoggingUtil } from '../util/LoggingUtil';
+import { Colors, Endpoints } from '../util/Values';
 
 export default class ChangePassword extends React.Component {
-
   constructor(props) {
     super(props);
+    this.toastRef = React.createRef();
     this.state = {
       token: this.props.navigation.state.params.token,
       systemWideUserId: this.props.navigation.state.params.systemWideUserId,
       loading: false,
       generatePasswordLoading: false,
-      oldPassword: "",
-      password: "",
-      passwordConfirm: "",
+      oldPassword: '',
+      password: '',
+      passwordConfirm: '',
       errors: {
         password: false,
         passwordConfirm: false,
         general: false,
       },
       dialogVisible: false,
-      generatedPassword: "",
-      oldPasswordErrorMessage: "Your password is not valid",
-      defaultOldPasswordErrorMessage: "Your password is not valid",
-      passwordErrorMessage: "Please enter a valid password",
-      defaultPasswordErrorMessage: "Please enter a valid password",
-      generalErrorText: "There is a problem with your request",
+      generatedPassword: '',
+      oldPasswordErrorMessage: 'Your password is not valid',
+      defaultOldPasswordErrorMessage: 'Your password is not valid',
+      passwordErrorMessage: 'Please enter a valid password',
+      defaultPasswordErrorMessage: 'Please enter a valid password',
+      generalErrorText: 'There is a problem with your request',
       checkingForCompletion: false,
     };
   }
 
   onPressBack = () => {
     this.props.navigation.goBack();
-  }
-
-  fieldIsMandatory(field) {
-    switch (field) {
-      case "password":
-      case "passwordConfirm":
-      return true;
-
-      default:
-      return false;
-    }
-  }
+  };
 
   onEditField = (text, field) => {
-    let errors = Object.assign({}, this.state.errors);
+    const errors = { ...this.state.errors };
     errors[field] = false;
     errors.general = false;
     this.setState({
       [field]: text,
-      errors: errors,
+      errors,
     });
-  }
+  };
 
-  onEndEditing = (field) => {
-    let errors = Object.assign({}, this.state.errors);
-    if (this.fieldIsMandatory(field) && this.state[field].length == 0) {
+  onEndEditing = field => {
+    const errors = { ...this.state.errors };
+    if (this.fieldIsMandatory(field) && this.state[field].length === 0) {
       errors[field] = true;
     } else {
       errors[field] = false;
     }
     errors.general = false;
     this.setState({
-      errors: errors,
+      errors,
     });
-  }
+  };
 
   validateInput = async () => {
     let hasErrors = false;
-    let errors = Object.assign({}, this.state.errors);
-    // if (this.state.password.length < 8) {
-    //   hasErrors = true;
-    //   errors.password = true;
-    // }
-    if (this.state.oldPassword.length == 0) {
+    const errors = { ...this.state.errors };
+
+    if (this.state.oldPassword.length === 0) {
       hasErrors = true;
       errors.oldPassword = true;
     }
-    if (this.state.password.length == 0) {
+    if (this.state.password.length === 0) {
       hasErrors = true;
       errors.password = true;
     }
-    if (this.state.password != this.state.passwordConfirm) {
+    if (this.state.password !== this.state.passwordConfirm) {
       hasErrors = true;
       errors.password = false;
       errors.passwordConfirm = true;
     }
     if (hasErrors) {
       await this.setState({
-        errors: errors,
+        errors,
       });
       return false;
     }
     return true;
-  }
+  };
 
   onPressContinue = async () => {
     if (this.state.loading) return;
@@ -109,21 +107,21 @@ export default class ChangePassword extends React.Component {
       checkingForCompletion: true,
       loading: true,
     });
-    let validation = await this.validateInput();
+    const validation = await this.validateInput();
     if (!validation) {
       this.showError();
       return;
     }
     this.handleChangePassword();
-  }
+  };
 
   handleChangePassword = async () => {
     try {
-      let result = await fetch(Endpoints.AUTH + 'password/change', {
+      const result = await fetch(`${Endpoints.AUTH}password/change`, {
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': 'Bearer ' + this.state.token,
+          Accept: 'application/json',
+          Authorization: `Bearer ${this.state.token}`,
         },
         method: 'POST',
         body: JSON.stringify({
@@ -136,45 +134,34 @@ export default class ChangePassword extends React.Component {
           loading: false,
           checkingForCompletion: false,
         });
-        this.refs.toast.show('Your password has been changed!');
-        NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'ResetComplete');
+        this.toastRef.current.show('Your password has been changed!');
+        NavigationUtil.navigateWithoutBackstack(
+          this.props.navigation,
+          'ResetComplete'
+        );
       } else {
-        let resultText = await result.text();
-        console.log(resultText);
         throw result;
       }
     } catch (error) {
       this.showError();
     }
-  }
-
-  showError(errorText) {
-    let errors = Object.assign({}, this.state.errors);
-    errors.general = true;
-    this.setState({
-      checkingForCompletion: false,
-      loading: false,
-      errors: errors,
-      passwordErrorMessage: errorText ? errorText : this.state.defaultPasswordErrorMessage,
-    });
-  }
-
+  };
 
   onPressGeneratePassword = async () => {
     if (this.state.generatePasswordLoading) return;
-    LoggingUtil.logEvent("USER_REQUESTED_PASSWORD");
+    LoggingUtil.logEvent('USER_REQUESTED_PASSWORD');
     this.setState({
       dialogVisible: true,
-      generatePassword: "",
+      generatePassword: '',
       generatePasswordLoading: true,
     });
     try {
-      let result = await fetch(Endpoints.AUTH + 'password/generate', {
+      const result = await fetch(`${Endpoints.AUTH}password/generate`, {
         method: 'GET',
       });
       if (result.ok) {
-        let resultJson = await result.json();
-        let generated = resultJson.message.newPassword;
+        const resultJson = await result.json();
+        const generated = resultJson.message.newPassword;
         this.setState({
           generatedPassword: generated,
           generatePasswordLoading: false,
@@ -183,36 +170,67 @@ export default class ChangePassword extends React.Component {
         throw result;
       }
     } catch (error) {
-      console.log("Error in change password!", error.status);
-      this.setState({generatePasswordLoading: false});
+      console.log('Error in change password!', error.status);
+      this.setState({ generatePasswordLoading: false });
     }
-  }
+  };
 
   onPressUseThisPassword = () => {
     if (this.state.generatePasswordLoading) return;
-    LoggingUtil.logEvent("USER_ACCEPTED_PASSWORD");
+    LoggingUtil.logEvent('USER_ACCEPTED_PASSWORD');
     this.setState({
       password: this.state.generatedPassword,
       passwordConfirm: this.state.generatedPassword,
       dialogVisible: false,
     });
-  }
+  };
 
   onHideDialog = () => {
     this.setState({
       dialogVisible: false,
     });
     return true;
+  };
+
+  fieldIsMandatory(field) {
+    switch (field) {
+      case 'password':
+      case 'passwordConfirm':
+        return true;
+
+      default:
+        return false;
+    }
+  }
+
+  showError(errorText) {
+    const errors = { ...this.state.errors };
+    errors.general = true;
+    this.setState({
+      checkingForCompletion: false,
+      loading: false,
+      errors,
+      passwordErrorMessage: errorText
+        ? errorText
+        : this.state.defaultPasswordErrorMessage,
+    });
   }
 
   render() {
     return (
-      <KeyboardAvoidingView style={styles.container} contentContainerStyle={styles.container} behavior="padding">
+      <KeyboardAvoidingView
+        style={styles.container}
+        contentContainerStyle={styles.container}
+        behavior="padding"
+      >
         <View style={styles.header}>
-          <TouchableOpacity style={styles.headerButton} onPress={this.onPressBack} >
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={this.onPressBack}
+          >
             <Icon
-              name='chevron-left'
-              type='evilicon'
+              name="chevron-left"
+              type="evilicon"
               size={45}
               color={Colors.MEDIUM_GRAY}
             />
@@ -220,65 +238,88 @@ export default class ChangePassword extends React.Component {
           <Text style={styles.resetTitle}>Change password</Text>
         </View>
         <View style={styles.contentWrapper}>
-          <ScrollView style={styles.scrollView} contentContainerStyle={styles.mainContent}>
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.mainContent}
+          >
             <View style={styles.profileField}>
               <Text style={styles.profileFieldTitle}>Old Password*</Text>
-                <Input
-                  value={this.state.oldPassword}
-                  secureTextEntry={true}
-                  onChangeText={(text) => this.onEditField(text, "oldPassword")}
-                  onEndEditing={() => this.onEndEditing("oldPassword")}
-                  inputContainerStyle={styles.inputContainerStyle}
-                  inputStyle={[styles.inputStyle, this.state.errors && this.state.errors.oldPassword ? styles.redText : null]}
-                  containerStyle={styles.containerStyle}
-                />
-                {
-                  this.state.errors && this.state.errors.password ?
-                  <Text style={styles.errorMessage}>{this.state.oldPasswordErrorMessage}</Text>
-                  : null
-                }
+              <Input
+                value={this.state.oldPassword}
+                secureTextEntry
+                onChangeText={text => this.onEditField(text, 'oldPassword')}
+                onEndEditing={() => this.onEndEditing('oldPassword')}
+                inputContainerStyle={styles.inputContainerStyle}
+                inputStyle={[
+                  styles.inputStyle,
+                  this.state.errors && this.state.errors.oldPassword
+                    ? styles.redText
+                    : null,
+                ]}
+                containerStyle={styles.containerStyle}
+              />
+              {this.state.errors && this.state.errors.password ? (
+                <Text style={styles.errorMessage}>
+                  {this.state.oldPasswordErrorMessage}
+                </Text>
+              ) : null}
             </View>
             <View style={styles.profileField}>
               <Text style={styles.profileFieldTitle}>New Password*</Text>
-                <Input
-                  value={this.state.password}
-                  secureTextEntry={true}
-                  onChangeText={(text) => this.onEditField(text, "password")}
-                  onEndEditing={() => this.onEndEditing("password")}
-                  inputContainerStyle={styles.inputContainerStyle}
-                  inputStyle={[styles.inputStyle, this.state.errors && this.state.errors.password ? styles.redText : null]}
-                  containerStyle={styles.containerStyle}
-                />
-                {
-                  this.state.errors && this.state.errors.password ?
-                  <Text style={styles.errorMessage}>{this.state.passwordErrorMessage}</Text>
-                  : null
-                }
+              <Input
+                value={this.state.password}
+                secureTextEntry
+                onChangeText={text => this.onEditField(text, 'password')}
+                onEndEditing={() => this.onEndEditing('password')}
+                inputContainerStyle={styles.inputContainerStyle}
+                inputStyle={[
+                  styles.inputStyle,
+                  this.state.errors && this.state.errors.password
+                    ? styles.redText
+                    : null,
+                ]}
+                containerStyle={styles.containerStyle}
+              />
+              {this.state.errors && this.state.errors.password ? (
+                <Text style={styles.errorMessage}>
+                  {this.state.passwordErrorMessage}
+                </Text>
+              ) : null}
             </View>
             <View style={styles.profileField}>
               <Text style={styles.profileFieldTitle}>Retype New Password*</Text>
-                <Input
-                  value={this.state.passwordConfirm}
-                  secureTextEntry={true}
-                  onChangeText={(text) => this.onEditField(text, "passwordConfirm")}
-                  onEndEditing={() => this.onEndEditing("passwordConfirm")}
-                  inputContainerStyle={styles.inputContainerStyle}
-                  inputStyle={[styles.inputStyle, this.state.errors && this.state.errors.passwordConfirm ? styles.redText : null]}
-                  containerStyle={styles.containerStyle}
-                />
-                {
-                  this.state.errors && this.state.errors.passwordConfirm ?
-                  <Text style={styles.errorMessage}>Passwords don&apos;t match</Text>
-                  : null
-                }
+              <Input
+                value={this.state.passwordConfirm}
+                secureTextEntry
+                onChangeText={text => this.onEditField(text, 'passwordConfirm')}
+                onEndEditing={() => this.onEndEditing('passwordConfirm')}
+                inputContainerStyle={styles.inputContainerStyle}
+                inputStyle={[
+                  styles.inputStyle,
+                  this.state.errors && this.state.errors.passwordConfirm
+                    ? styles.redText
+                    : null,
+                ]}
+                containerStyle={styles.containerStyle}
+              />
+              {this.state.errors && this.state.errors.passwordConfirm ? (
+                <Text style={styles.errorMessage}>
+                  Passwords don&apos;t match
+                </Text>
+              ) : null}
             </View>
           </ScrollView>
-          {
-            this.state.errors && this.state.errors.general ?
-            <Text style={styles.errorMessage}>{this.state.generalErrorText}</Text>
-            : null
-          }
-          <Text style={styles.generatePassword} onPress={this.onPressGeneratePassword}>Help me generate a password</Text>
+          {this.state.errors && this.state.errors.general ? (
+            <Text style={styles.errorMessage}>
+              {this.state.generalErrorText}
+            </Text>
+          ) : null}
+          <Text
+            style={styles.generatePassword}
+            onPress={this.onPressGeneratePassword}
+          >
+            Help me generate a password
+          </Text>
           <Button
             title="CONTINUE"
             loading={this.state.loading}
@@ -290,15 +331,18 @@ export default class ChangePassword extends React.Component {
               colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
               start: { x: 0, y: 0.5 },
               end: { x: 1, y: 0.5 },
-            }} />
+            }}
+          />
         </View>
 
         <Dialog
           visible={this.state.dialogVisible}
           dialogStyle={styles.dialogStyle}
-          dialogAnimation={new SlideAnimation({
-            slideFrom: 'bottom',
-          })}
+          dialogAnimation={
+            new SlideAnimation({
+              slideFrom: 'bottom',
+            })
+          }
           onTouchOutside={this.onHideDialog}
           onHardwareBackPress={this.onHideDialog}
         >
@@ -307,7 +351,11 @@ export default class ChangePassword extends React.Component {
               <Text style={styles.dialogTitle}>Suggested password</Text>
               <View style={styles.profileField}>
                 <Text style={styles.profileFieldTitle}>Password</Text>
-                <Text style={[styles.containerStyle, styles.generatedPasswordStyle]}>{this.state.generatedPassword}</Text>
+                <Text
+                  style={[styles.containerStyle, styles.generatedPasswordStyle]}
+                >
+                  {this.state.generatedPassword}
+                </Text>
                 <Button
                   title="USE THIS PASSWORD"
                   loading={this.state.generatePasswordLoading}
@@ -319,11 +367,15 @@ export default class ChangePassword extends React.Component {
                     colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
                     start: { x: 0, y: 0.5 },
                     end: { x: 1, y: 0.5 },
-                  }} />
+                  }}
+                />
               </View>
             </View>
-            <TouchableOpacity style={styles.closeDialog} onPress={this.onHideDialog} >
-              <Image source={require('../../assets/close.png')}/>
+            <TouchableOpacity
+              style={styles.closeDialog}
+              onPress={this.onHideDialog}
+            >
+              <Image source={require('../../assets/close.png')} />
             </TouchableOpacity>
           </DialogContent>
         </Dialog>
@@ -331,19 +383,26 @@ export default class ChangePassword extends React.Component {
         <Dialog
           visible={this.state.checkingForCompletion}
           dialogStyle={styles.dialogStyle}
-          dialogAnimation={new SlideAnimation({
-            slideFrom: 'bottom',
-          })}
+          dialogAnimation={
+            new SlideAnimation({
+              slideFrom: 'bottom',
+            })
+          }
           onTouchOutside={() => {}}
-          onHardwareBackPress={() => {this.setState({checkingForCompletion: false}); return true;}}
+          onHardwareBackPress={() => {
+            this.setState({ checkingForCompletion: false });
+            return true;
+          }}
         >
           <DialogContent style={styles.checkingDialogWrapper}>
             <ActivityIndicator size="large" color={Colors.PURPLE} />
-            <Text style={styles.checkingDialogText}>Changing your password...</Text>
+            <Text style={styles.checkingDialogText}>
+              Changing your password...
+            </Text>
           </DialogContent>
         </Dialog>
 
-        <Toast ref="toast" opacity={1} style={styles.toast}/>
+        <Toast ref={this.toastRef} opacity={1} style={styles.toast} />
       </KeyboardAvoidingView>
     );
   }
@@ -367,11 +426,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 5,
   },
-  headerTitle: {
-    marginLeft: -5,
-    fontFamily: 'poppins-semibold',
-    fontSize: 22,
-  },
   resetTitle: {
     fontFamily: 'poppins-semibold',
     fontSize: 27,
@@ -380,13 +434,6 @@ const styles = StyleSheet.create({
     paddingLeft: 15,
     marginTop: 20,
     marginBottom: 10,
-  },
-  title: {
-    fontFamily: 'poppins-semibold',
-    fontSize: 27,
-    color: Colors.DARK_GRAY,
-    width: '100%',
-    paddingLeft: 15,
   },
   mainContent: {
     width: '100%',
@@ -426,11 +473,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 5,
   },
-  profileFieldValue: {
-    fontFamily: 'poppins-regular',
-    color: Colors.DARK_GRAY,
-    fontSize: 18,
-  },
   inputContainerStyle: {
     borderBottomWidth: 0,
   },
@@ -451,7 +493,7 @@ const styles = StyleSheet.create({
     fontFamily: 'poppins-regular',
     color: Colors.RED,
     fontSize: 13,
-    marginTop: -15, //this is valid because of the exact alignment of other elements - do not reuse in other components
+    marginTop: -15, // this is valid because of the exact alignment of other elements - do not reuse in other components
     marginBottom: 20,
   },
   redText: {
@@ -516,5 +558,4 @@ const styles = StyleSheet.create({
     width: '60%',
     alignItems: 'center',
   },
-
 });
