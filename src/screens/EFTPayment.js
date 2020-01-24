@@ -127,7 +127,9 @@ export default class EFTPayment extends React.Component {
                 {this.state.beneficiaryName}
               </Text>
             </Text>
-            <Text style={styles.bottomText}>Account Type: {this.state.accountType}</Text>
+            <Text style={styles.bottomText}>
+              Account Type: {this.state.accountType}
+            </Text>
             <View style={styles.bottomRow}>
               <Text style={styles.bottomText}>
                 Account Number:{' '}
@@ -148,7 +150,9 @@ export default class EFTPayment extends React.Component {
             <View style={styles.bottomRow}>
               <Text style={styles.bottomText}>
                 Branch code:{' '}
-                <Text style={styles.bottomBold}>{this.state.routingNumber}</Text>
+                <Text style={styles.bottomBold}>
+                  {this.state.routingNumber}
+                </Text>
               </Text>
               <TouchableOpacity
                 onPress={() => this.onPressCopy(this.state.routingNumber)}
