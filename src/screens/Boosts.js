@@ -159,7 +159,7 @@ class Boosts extends React.Component {
   sortBoosts = boosts => {
     const sortByTime = (a, b) =>
       moment(a.endTime).isAfter(moment(b.endTime)) && 1;
-    const isOneOf = options => x => options.indexOf(x) !== -1;
+    const isOneOf = options => x => options.indexOf(x.boostStatus) !== -1;
 
     const topGroup = boosts
       .filter(
