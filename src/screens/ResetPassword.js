@@ -1,20 +1,28 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, Platform, Dimensions, TouchableOpacity } from 'react-native';
+import {
+  Dimensions,
+  Image,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { Button, Input, Icon } from 'react-native-elements';
+
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Endpoints, Colors } from '../util/Values';
-import { Button, Input, Icon } from 'react-native-elements';
 
 const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
 export default class ResetPassword extends React.Component {
-
   constructor(props) {
     super(props);
     this.state = {
       loading: false,
       hasError: false,
-      userInput: "",
+      userInput: '',
     };
   }
 
@@ -24,41 +32,38 @@ export default class ResetPassword extends React.Component {
 
   onPressBack = () => {
     this.props.navigation.goBack();
-  }
+  };
 
   onPressReset = async () => {
     if (this.state.loading) return;
-    this.setState({loading: true});
+    this.setState({ loading: true });
     try {
-      let result = await fetch(Endpoints.AUTH + 'otp/generate', {
+      const result = await fetch(`${Endpoints.AUTH}otp/generate`, {
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          Accept: 'application/json',
         },
         method: 'POST',
         body: JSON.stringify({
-          "phoneOrEmail": this.state.userInput,
-          "type": "RESET",
+          phoneOrEmail: this.state.userInput,
+          type: 'RESET',
         }),
       });
       if (result.ok) {
-        this.setState({loading: false});
-        let resultJson = await result.json();
+        this.setState({ loading: false });
+        const resultJson = await result.json();
         this.props.navigation.navigate('OTPVerification', {
           userId: this.state.userInput,
           systemWideUserId: resultJson.systemWideUserId,
           redirection: 'Reset',
         });
       } else {
-        let resultText = await result.text();
-        console.log(resultText);
         throw result;
       }
     } catch (error) {
-      // console.log("error!", error);
       this.showError();
     }
-  }
+  };
 
   showError() {
     this.setState({
@@ -69,37 +74,58 @@ export default class ResetPassword extends React.Component {
 
   render() {
     return (
-      <View style={styles.container} contentContainerStyle={styles.container} behavior="position" keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}>
+      <View
+        style={styles.container}
+        contentContainerStyle={styles.container}
+        behavior="position"
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
+      >
         <View style={styles.header}>
-          <TouchableOpacity style={styles.headerButton} onPress={this.onPressBack} >
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={this.onPressBack}
+          >
             <Icon
-              name='chevron-left'
-              type='evilicon'
+              name="chevron-left"
+              type="evilicon"
               size={45}
               color={Colors.MEDIUM_GRAY}
             />
           </TouchableOpacity>
         </View>
-        <Image style={styles.image} source={require('../../assets/lock.png')} resizeMode="contain"/>
+        <Image
+          style={styles.image}
+          source={require('../../assets/lock.png')}
+          resizeMode="contain"
+        />
         <Text style={styles.title}>Reset Password</Text>
-        <Text style={styles.description}>We’ll send you a code to reset your password.</Text>
+        <Text style={styles.description}>
+          We’ll send you a code to reset your password.
+        </Text>
         <View style={styles.inputWrapper}>
-          <Text style={styles.labelStyle}>Enter your phone number or email address*</Text>
+          <Text style={styles.labelStyle}>
+            Enter your phone number or email address*
+          </Text>
           <Input
             value={this.state.userInput}
-            onChangeText={(text) => this.setState({userInput: text, hasError: false})}
+            onChangeText={text =>
+              this.setState({ userInput: text, hasError: false })
+            }
             inputContainerStyle={styles.inputContainerStyle}
-            inputStyle={[styles.inputStyle, this.state.hasError ? styles.redText : null]}
+            inputStyle={[
+              styles.inputStyle,
+              this.state.hasError ? styles.redText : null,
+            ]}
             containerStyle={styles.containerStyle}
           />
-          {
-            this.state.hasError ?
-            <Text style={styles.errorMessage}>Please enter a valid phone number or email address</Text>
-            : null
-          }
+          {this.state.hasError ? (
+            <Text style={styles.errorMessage}>
+              Please enter a valid phone number or email address
+            </Text>
+          ) : null}
         </View>
         <Button
-          title={"RESET PASSWORD"}
+          title="RESET PASSWORD"
           loading={this.state.loading}
           titleStyle={styles.buttonTitleStyle}
           buttonStyle={styles.buttonStyle}
@@ -109,7 +135,8 @@ export default class ResetPassword extends React.Component {
             colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
             start: { x: 0, y: 0.5 },
             end: { x: 1, y: 0.5 },
-          }} />
+          }}
+        />
       </View>
     );
   }
@@ -188,7 +215,7 @@ const styles = StyleSheet.create({
     fontFamily: 'poppins-regular',
     color: Colors.RED,
     fontSize: 12,
-    marginTop: -15, //this is valid because of the exact alignment of other elements - do not reuse in other components
+    marginTop: -15, // this is valid because of the exact alignment of other elements - do not reuse in other components
     marginBottom: 20,
   },
   header: {

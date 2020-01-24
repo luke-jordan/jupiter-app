@@ -1,20 +1,28 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Dimensions, BackHandler } from 'react-native';
+import {
+  AsyncStorage,
+  BackHandler,
+  Dimensions,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { Button, Icon } from 'react-native-elements';
+
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { MessagingUtil } from '../util/MessagingUtil';
 import { Endpoints, Colors } from '../util/Values';
-import { Button, Icon } from 'react-native-elements';
 
 const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
 export default class PaymentComplete extends React.Component {
-
   constructor(props) {
     super(props);
     this.state = {
-      isOnboarding: false,
       loading: false,
       fetchingProfile: true,
       userInfo: null,
@@ -22,21 +30,21 @@ export default class PaymentComplete extends React.Component {
   }
 
   async componentDidMount() {
-    this.backHandler = BackHandler.addEventListener('hardwareBackPress', this.handleHardwareBackPress);
+    this.backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      this.handleHardwareBackPress
+    );
 
-    let params = this.props.navigation.state.params;
+    const { params } = this.props.navigation.state;
     if (params) {
-      this.setState({
-        paymentLink: params.paymentLink,
-        accountTransactionId: params.accountTransactionId,
-        token: params.token,
-        isOnboarding: params.isOnboarding,
-      });
-
       if (params.isOnboarding) {
-        LoggingUtil.logEvent("USER_COMPLETED_ONBOARD", {"amountAdded": params.amountAdded});
+        LoggingUtil.logEvent('USER_COMPLETED_ONBOARD', {
+          amountAdded: params.amountAdded,
+        });
       }
-      LoggingUtil.logEvent("PAYMENT_SUCCEEDED", {"amountAdded": params.amountAdded});
+      LoggingUtil.logEvent('PAYMENT_SUCCEEDED', {
+        amountAdded: params.amountAdded,
+      });
     }
 
     this.fetchProfile(params.token);
@@ -48,19 +56,67 @@ export default class PaymentComplete extends React.Component {
     this.backHandler.remove();
   }
 
+  onPressDone = attempts => {
+    // need this here because otherwise event is passed in to argument from on press, which causes proceed to happen too quickly
+    if (!attempts || !Number.isInteger(attempts)) attempts = 0;
+    this.setState({ loading: true });
+    // console.log('Pressed done, is profile fetched ? :', this.state.fetchingProfile, ' and attempts: ', attempts);
+    if ((this.state.fetchingProfile || !this.state.userInfo) && attempts < 10) {
+      // console.log('State not finished fetching profile, wait for next attempt');
+      setTimeout(() => {
+        this.onPressDone(attempts + 1);
+      }, 300);
+    } else {
+      // console.log('State is set to profile has been fetched, wait before continuing');
+      this.setState({ loading: false });
+      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', {
+        userInfo: this.state.userInfo,
+      });
+    }
+  };
+
+  getFormattedBalance(balance, unit) {
+    return (balance / this.getDivisor(unit)).toFixed(2);
+  }
+
+  getDivisor(unit) {
+    switch (unit) {
+      case 'MILLIONTH_CENT':
+        return 100000000;
+
+      case 'TEN_THOUSANDTH_CENT':
+        return 1000000;
+
+      case 'THOUSANDTH_CENT':
+        return 100000;
+
+      case 'HUNDREDTH_CENT':
+        return 10000;
+
+      case 'WHOLE_CENT':
+        return 100;
+
+      case 'WHOLE_CURRENCY':
+        return 1;
+
+      default:
+        return 1;
+    }
+  }
+
   handleHardwareBackPress = () => {
     this.backHandler.remove();
     this.onPressDone();
     return false;
-  }
+  };
 
-  checkForActiveGame = async (token) => {
-    //TODO this should check for amounts
-    let game = await MessagingUtil.fetchMessagesAndGetTop(token);
-    if (game && game.actionToTake && game.actionToTake.includes("ADD_CASH")) {
+  checkForActiveGame = async token => {
+    // TODO this should check for amounts
+    const game = await MessagingUtil.fetchMessagesAndGetTop(token);
+    if (game && game.actionToTake && game.actionToTake.includes('ADD_CASH')) {
       MessagingUtil.setGameId(game.actionContext.msgOnSuccess);
     }
-  }
+  };
 
   async fetchProfile(token) {
     this.setState({
@@ -70,9 +126,9 @@ export default class PaymentComplete extends React.Component {
       if (!token) {
         NavigationUtil.logout(this.props.navigation);
       }
-      let result = await fetch(Endpoints.AUTH + 'profile/fetch', {
+      const result = await fetch(`${Endpoints.AUTH}profile/fetch`, {
         headers: {
-          'Authorization': 'Bearer ' + token,
+          Authorization: `Bearer ${token}`,
         },
         method: 'GET',
       });
@@ -81,95 +137,64 @@ export default class PaymentComplete extends React.Component {
         // console.log('Result of profile fetch on payment complete: ', resultJson);
         await AsyncStorage.setItem('userInfo', JSON.stringify(resultJson));
         this.setState({
-            userInfo: resultJson,
-            fetchingProfile: false,
+          userInfo: resultJson,
+          fetchingProfile: false,
         });
       } else {
         throw result;
       }
     } catch (error) {
-      console.log("Error in payment complete!", error.status);
-      this.setState({fetchingProfile: false});
-    }
-  }
-
-  onPressDone = (attempts) => {
-    // need this here because otherwise event is passed in to argument from on press, which causes proceed to happen too quickly
-    if (!attempts || !Number.isInteger(attempts)) attempts = 0;
-    this.setState({loading: true});
-    // console.log('Pressed done, is profile fetched ? :', this.state.fetchingProfile, ' and attempts: ', attempts);
-    if ((this.state.fetchingProfile || !this.state.userInfo) && attempts < 10) {
-      // console.log('State not finished fetching profile, wait for next attempt');
-      setTimeout(() => {this.onPressDone(attempts + 1)}, 300);
-    } else {
-      // console.log('State is set to profile has been fetched, wait before continuing');
-      this.setState({loading: false});
-      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', { userInfo: this.state.userInfo });
-    }
-  }
-
-  getFormattedBalance(balance, unit) {
-    return (balance / this.getDivisor(unit)).toFixed(2);
-  }
-
-  getDivisor(unit) {
-    switch(unit) {
-      case "MILLIONTH_CENT":
-      return 100000000;
-
-      case "TEN_THOUSANDTH_CENT":
-      return 1000000;
-
-      case "THOUSANDTH_CENT":
-      return 100000;
-
-      case "HUNDREDTH_CENT":
-      return 10000;
-
-      case "WHOLE_CENT":
-      return 100;
-
-      case "WHOLE_CURRENCY":
-      return 1;
-
-      default:
-      return 1;
+      this.setState({ fetchingProfile: false });
     }
   }
 
   render() {
-    let newBalance = this.props.navigation.state.params.newBalance;
-    let amountAdded = this.props.navigation.state.params.amountAdded;
+    const { newBalance } = this.props.navigation.state.params;
+    const { amountAdded } = this.props.navigation.state.params;
     return (
       <View style={styles.container}>
         <TouchableOpacity style={styles.closeButton} onPress={this.onPressDone}>
           <Icon
-            name='close'
-            type='evilicon'
+            name="close"
+            type="evilicon"
             size={30}
             color={Colors.MEDIUM_GRAY}
           />
         </TouchableOpacity>
         <View style={styles.mainContent}>
           <View style={styles.top}>
-            <Image style={styles.image} source={require('../../assets/thank_you.png')} resizeMode="contain"/>
+            <Image
+              style={styles.image}
+              source={require('../../assets/thank_you.png')}
+              resizeMode="contain"
+            />
             <Text style={styles.title}>Payment complete</Text>
-            <Text style={styles.description}>Congratulations on creating your account. We’re looking forward to watching your savings grow!</Text>
+            <Text style={styles.description}>
+              Congratulations on creating your account. We’re looking forward to
+              watching your savings grow!
+            </Text>
           </View>
           <View style={styles.amountsView}>
-            <Text style={styles.description}>Your new account has been topped up with:</Text>
-            <Text style={styles.amount}>{this.props.amount}R{amountAdded}</Text>
+            <Text style={styles.description}>
+              Your new account has been topped up with:
+            </Text>
+            <Text style={styles.amount}>
+              {this.props.amount}R{amountAdded}
+            </Text>
           </View>
           <View style={styles.separator} />
           <View style={styles.amountsView}>
             <Text style={styles.description}>Your balance is now:</Text>
-            <Text style={styles.amount}>{this.props.balance}R{this.getFormattedBalance(newBalance.amount, newBalance.unit)}</Text>
+            <Text style={styles.amount}>
+              {this.props.balance}R
+              {this.getFormattedBalance(newBalance.amount, newBalance.unit)}
+            </Text>
           </View>
           <View style={styles.separator} />
         </View>
         <Button
-          testID='paymnent-complete-done-btn'
-          accessibilityLabel='paymnent-complete-done-btn'
+          testID="paymnent-complete-done-btn"
+          accessibilityLabel="paymnent-complete-done-btn"
           title="DONE"
           loading={this.state.loading}
           titleStyle={styles.buttonTitleStyle}
@@ -180,7 +205,8 @@ export default class PaymentComplete extends React.Component {
             colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
             start: { x: 0, y: 0.5 },
             end: { x: 1, y: 0.5 },
-          }} />
+          }}
+        />
       </View>
     );
   }
@@ -236,13 +262,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: Colors.MEDIUM_GRAY,
   },
-  // textAsButton: {
-  //   fontFamily: 'poppins-semibold',
-  //   color: Colors.PURPLE,
-  //   textDecorationLine: 'underline',
-  //   fontSize: 3.7 * FONT_UNIT,
-  //   marginBottom: 10,
-  // },
   separator: {
     height: 1,
     width: width * 0.8,

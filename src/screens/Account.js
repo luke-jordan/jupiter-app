@@ -1,5 +1,13 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Dimensions } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  Image,
+  Text,
+  AsyncStorage,
+  TouchableOpacity,
+  Dimensions,
+} from 'react-native';
 import { Icon, Button } from 'react-native-elements';
 import VersionCheck from 'react-native-version-check-expo';
 
@@ -8,7 +16,7 @@ import { LoggingUtil } from '../util/LoggingUtil';
 import NavigationBar from '../elements/NavigationBar';
 import { Colors } from '../util/Values';
 
-let { height, width } = Dimensions.get('window');
+const { height, width } = Dimensions.get('window');
 const PROFILE_PIC_SIZE = 0.13 * width;
 
 class Account extends React.Component {
@@ -30,7 +38,7 @@ class Account extends React.Component {
     } else {
       info = JSON.parse(info);
       this.setState({
-        fullName: info.profile.personalName + " " + info.profile.familyName,
+        fullName: `${info.profile.personalName} ${info.profile.familyName}`,
         initials: info.profile.personalName[0] + info.profile.familyName[0],
       });
     }
@@ -38,45 +46,43 @@ class Account extends React.Component {
 
   onPressLogout = () => {
     if (this.state.loading) return;
-    this.setState({loading: true});
+    this.setState({ loading: true });
     NavigationUtil.logout(this.props.navigation);
-  }
+  };
 
   onPressDetails = () => {
     this.props.navigation.navigate('Profile');
-  }
+  };
 
   onPressHistory = () => {
     this.props.navigation.navigate('History');
-  }
+  };
 
   onPressWithdraw = () => {
     this.props.navigation.navigate('WithdrawStep1');
-  }
+  };
 
   onPressTerms = () => {
     this.props.navigation.navigate('Terms');
-  }
+  };
 
   onPressPrivacy = () => {
     this.props.navigation.navigate('PrivacyPolicy');
-  }
+  };
 
   onPressSupport = () => {
     this.props.navigation.navigate('Support');
-  }
+  };
 
   renderProfilePicture() {
     if (this.state.profilePic) {
-      return (
-        <Image style={styles.profilePic}/>
-      );
+      return <Image style={styles.profilePic} />;
     } else {
       return (
         <View style={styles.profilePic}>
           <Text style={styles.profilePicText}>{this.state.initials}</Text>
         </View>
-      )
+      );
     }
   }
 
@@ -88,7 +94,10 @@ class Account extends React.Component {
         </View>
         <View style={styles.mainContentWrapper}>
           <View style={styles.mainContent}>
-            <TouchableOpacity style={[styles.buttonLine, styles.accountButtonLine]} onPress={this.onPressDetails}>
+            <TouchableOpacity
+              style={[styles.buttonLine, styles.accountButtonLine]}
+              onPress={this.onPressDetails}
+            >
               <View style={styles.accountLineContent}>
                 {this.renderProfilePicture()}
                 <View style={styles.accountInfo}>
@@ -97,52 +106,68 @@ class Account extends React.Component {
                 </View>
               </View>
               <Icon
-                name='chevron-right'
-                type='evilicon'
+                name="chevron-right"
+                type="evilicon"
                 size={50}
                 color={Colors.MEDIUM_GRAY}
               />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.buttonLine} onPress={this.onPressHistory}>
+            <TouchableOpacity
+              style={styles.buttonLine}
+              onPress={this.onPressHistory}
+            >
               <Text style={styles.buttonLineText}>History</Text>
               <Icon
-                name='chevron-right'
-                type='evilicon'
+                name="chevron-right"
+                type="evilicon"
                 size={50}
                 color={Colors.MEDIUM_GRAY}
               />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.buttonLine} onPress={this.onPressWithdraw}>
+            <TouchableOpacity
+              style={styles.buttonLine}
+              onPress={this.onPressWithdraw}
+            >
               <Text style={styles.buttonLineText}>Withdraw Cash</Text>
               <Icon
-                name='chevron-right'
-                type='evilicon'
+                name="chevron-right"
+                type="evilicon"
                 size={50}
                 color={Colors.MEDIUM_GRAY}
               />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.buttonLine} onPress={this.onPressTerms}>
+            <TouchableOpacity
+              style={styles.buttonLine}
+              onPress={this.onPressTerms}
+            >
               <Text style={styles.buttonLineText}>Terms & Conditions</Text>
               <Icon
-                name='chevron-right'
-                type='evilicon'
+                name="chevron-right"
+                type="evilicon"
                 size={50}
                 color={Colors.MEDIUM_GRAY}
               />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.buttonLine} onPress={this.onPressPrivacy}>
+            <TouchableOpacity
+              style={styles.buttonLine}
+              onPress={this.onPressPrivacy}
+            >
               <Text style={styles.buttonLineText}>Privacy Policy</Text>
               <Icon
-                name='chevron-right'
-                type='evilicon'
+                name="chevron-right"
+                type="evilicon"
                 size={50}
                 color={Colors.MEDIUM_GRAY}
               />
             </TouchableOpacity>
           </View>
           <View style={styles.versionLine}>
-            <Text style={styles.versionText}>Version {VersionCheck.getCurrentVersion()}</Text>
-            <Text style={styles.versionText} onPress={this.onPressSupport}>Contact Support</Text>
+            <Text style={styles.versionText}>
+              Version {VersionCheck.getCurrentVersion()}
+            </Text>
+            <Text style={styles.versionText} onPress={this.onPressSupport}>
+              Contact Support
+            </Text>
           </View>
           <Button
             title="LOG OUT"
@@ -155,12 +180,10 @@ class Account extends React.Component {
               colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
               start: { x: 0, y: 0.5 },
               end: { x: 1, y: 0.5 },
-            }} />
+            }}
+          />
         </View>
-        <NavigationBar
-          navigation={this.props.navigation}
-          currentTab={3}
-        />
+        <NavigationBar navigation={this.props.navigation} currentTab={3} />
       </View>
     );
   }

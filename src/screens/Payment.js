@@ -1,21 +1,35 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
-import { StyleSheet, View, Image, Text, TouchableOpacity, Clipboard, Linking, ActivityIndicator, Dimensions } from 'react-native';
+import {
+  ActivityIndicator,
+  Clipboard,
+  Dimensions,
+  Image,
+  Linking,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { Icon } from 'react-native-elements';
+import Toast from 'react-native-easy-toast';
+import Dialog, {
+  DialogContent,
+  SlideAnimation,
+} from 'react-native-popup-dialog';
+
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Endpoints, Colors } from '../util/Values';
-import { Icon } from 'react-native-elements';
-import { LinearGradient } from 'expo-linear-gradient';
-import Toast from 'react-native-easy-toast';
-import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
 
 const { width, height } = Dimensions.get('window');
 
 const FONT_UNIT = 0.01 * width;
 
 export default class Payment extends React.Component {
-
   constructor(props) {
     super(props);
+    this.toastRef = React.createRef();
     this.state = {
       paymentLink: '',
       accountTransactionId: -1,
@@ -26,8 +40,12 @@ export default class Payment extends React.Component {
   }
 
   async componentDidMount() {
-    console.log('**** PAYMENT COMPONENT MOUNTED (B) ****');
-    let params = this.props.navigation.state.params;
+    // AppState.addEventListener('change', this.handleAppStateChange);
+    // this.backHandler = BackHandler.addEventListener(
+    //   'hardwareBackPress',
+    //   this.handleHardwareBackPress
+    // );
+    const { params } = this.props.navigation.state;
     if (params) {
       this.setState({
         humanReference: params.humanReference,
@@ -61,21 +79,99 @@ export default class Payment extends React.Component {
   //   }
   // }
 
-  navigateToPaymentPending(bankDetails) {
-    NavigationUtil.navigateWithHomeBackstack(this.props.navigation, 'CheckingForPayment', {
-      paymentLink: this.state.paymentLink,
-      accountTransactionId:this.state.accountTransactionId,
-      token: this.state.token,
-      isOnboarding: this.state.isOnboarding,
-      amountAdded: this.state.amountAdded,
-      humanReference: this.state.humanReference,
-      bankDetails
+  checkIfPaymentCompleted = async () => {
+    this.setState({
+      checkingForPayment: true,
     });
-  }
+    try {
+      // leaving this in to use for testing ...
+      // let result = await fetch(Endpoints.CORE + 'addcash/check?transactionId=' + this.state.accountTransactionId + '&failureType=PENDING', {
+      const result = await fetch(
+        `${Endpoints.CORE}addcash/check?transactionId=${this.state.accountTransactionId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${this.state.token}`,
+          },
+          method: 'GET',
+        }
+      );
+      if (result.ok) {
+        const resultJson = await result.json();
+        this.setState({
+          checkingForPayment: false,
+        });
+        if (!resultJson || !resultJson.result) {
+          LoggingUtil.logError(
+            new Error('Payment status check returned malform result: check')
+          );
+          this.navigateToPaymentPending();
+        }
+        if (resultJson.result.includes('PAYMENT_SUCCEEDED')) {
+          NavigationUtil.navigateWithoutBackstack(
+            this.props.navigation,
+            'PaymentComplete',
+            {
+              paymentLink: this.state.paymentLink,
+              accountTransactionId: this.state.accountTransactionId,
+              token: this.state.token,
+              isOnboarding: this.state.isOnboarding,
+              newBalance: resultJson.newBalance,
+              amountAdded: this.state.amountAdded,
+            }
+          );
+        } else if (resultJson.result.includes('PAYMENT_PENDING')) {
+          this.navigateToPaymentPending();
+        } else {
+          this.logPaymentError('Payment failed on server response', result);
+        }
+      } else {
+        this.logPaymentError(
+          'Payment received bad status code from server',
+          result
+        );
+      }
+    } catch (error) {
+      this.setState({ checkingForPayment: false });
+      LoggingUtil.logError(error);
+    }
+  };
+
+  onPressBack = () => {
+    // AppState.removeEventListener('change', this.handleAppStateChange);
+    LoggingUtil.logEvent('USER_WENT_BACK_AT_PAYMENT_LINK');
+  };
+
+  // handleHardwareBackPress = () => {
+  //   AppState.removeEventListener('change', this.handleAppStateChange);
+  //   this.backHandler.remove();
+  //   return true;
+  // };
+
+  // onPressBack = () => {
+  //   AppState.removeEventListener('change', this.handleAppStateChange);
+  //   this.backHandler.remove();
+  //   LoggingUtil.logEvent('USER_WENT_BACK_AT_PAYMENT_LINK');
+  //   this.props.navigation.goBack();
+  // };
+
+  onPressAlreadyPaid = () => {
+    this.checkIfPaymentCompleted();
+  };
+
+  onPressCopy = () => {
+    Clipboard.setString(this.state.paymentLink);
+    this.toastRef.current.show('Copied to clipboard!');
+  };
+
+  onPressPaymentLink = () => {
+    Linking.openURL(this.state.paymentLink);
+  };
 
   logPaymentError(message, response) {
     const paymentError = new Error(message);
-    const serverResponse = response ? JSON.stringify(response) : 'Could not retrieve failing server response';
+    const serverResponse = response
+      ? JSON.stringify(response)
+      : 'Could not retrieve failing server response';
     if (serverResponse) {
       paymentError.serverResponse = serverResponse;
     }
@@ -84,78 +180,33 @@ export default class Payment extends React.Component {
     this.navigateToPaymentPending();
   }
 
-  checkIfPaymentCompleted = async () => {
-    this.setState({
-      checkingForPayment: true,
-    });
-    try {
-      // leaving this in to use for testing ...
-      // let result = await fetch(Endpoints.CORE + 'addcash/check?transactionId=' + this.state.accountTransactionId + '&failureType=PENDING', {
-      let result = await fetch(Endpoints.CORE + 'addcash/check?transactionId=' + this.state.accountTransactionId, {
-        headers: {
-          'Authorization': 'Bearer ' + this.state.token,
-        },
-        method: 'GET',
-      });
-      if (result.ok) {
-        let resultJson = await result.json();
-        this.setState({
-          checkingForPayment: false,
-        });
-        if (!resultJson || !resultJson.result) {
-          LoggingUtil.logError(new Error('Payment status check returned malform result: check'));
-          this.navigateToPaymentPending();
-        }
-        if (resultJson.result.includes("PAYMENT_SUCCEEDED")) {
-          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'PaymentComplete', {
-            paymentLink: this.state.paymentLink,
-            accountTransactionId: this.state.accountTransactionId,
-            token: this.state.token,
-            isOnboarding: this.state.isOnboarding,
-            newBalance: resultJson.newBalance,
-            amountAdded: this.state.amountAdded,
-          });
-        } else if (resultJson.result.includes("PAYMENT_PENDING")) {
-          this.navigateToPaymentPending();
-        } else {
-          this.logPaymentError('Payment failed on server response', result);
-        }
-      } else {
-        this.logPaymentError('Payment received bad status code from server', result);        
+  navigateToPaymentPending(bankDetails) {
+    NavigationUtil.navigateWithHomeBackstack(
+      this.props.navigation,
+      'CheckingForPayment',
+      {
+        paymentLink: this.state.paymentLink,
+        accountTransactionId: this.state.accountTransactionId,
+        token: this.state.token,
+        isOnboarding: this.state.isOnboarding,
+        amountAdded: this.state.amountAdded,
+        humanReference: this.state.humanReference,
+        bankDetails,
       }
-    } catch (error) {
-      this.setState({checkingForPayment: false});
-      LoggingUtil.logError(error);
-    }
-  }
-
-  onPressBack = () => {
-    // AppState.removeEventListener('change', this.handleAppStateChange);
-    LoggingUtil.logEvent("USER_WENT_BACK_AT_PAYMENT_LINK");
-    this.props.navigation.goBack();
-  }
-
-  onPressAlreadyPaid = () => {
-    this.checkIfPaymentCompleted();
-  }
-
-  onPressCopy = () => {
-    Clipboard.setString(this.state.paymentLink);
-    this.refs.toast.show('Copied to clipboard!');
-  }
-
-  onPressPaymentLink = () => {
-    Linking.openURL(this.state.paymentLink);
+    );
   }
 
   render() {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity style={styles.headerButton} onPress={this.onPressBack} >
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={this.onPressBack}
+          >
             <Icon
-              name='chevron-left'
-              type='evilicon'
+              name="chevron-left"
+              type="evilicon"
               size={45}
               color={Colors.MEDIUM_GRAY}
             />
@@ -164,81 +215,128 @@ export default class Payment extends React.Component {
         <View style={styles.contentWrapper}>
           <Text style={styles.title}>Payment</Text>
           <View style={styles.mainContent}>
-            <Image style={styles.ozowLogo} source={require('../../assets/ozow_black.png')}/>
-            <Text style={styles.description}>We use <Text style={styles.bold}>Ozow</Text>, SA&apos;s premium payment solution, to process instant EFTs and transfer cash directly to your Jupiter account. </Text>
-            <Text style={styles.buttonDescription}>Tap the link to pay with Ozow:</Text>
-            <LinearGradient start={[0, 0.5]} end={[1, 0.5]} colors={[Colors.LIGHT_BLUE, Colors.PURPLE]} style={[styles.buttonStyle]}>
-              <Text style={styles.paymentLink} onPress={this.onPressPaymentLink}>{this.state.paymentLink}</Text>
+            <Image
+              style={styles.ozowLogo}
+              source={require('../../assets/ozow_black.png')}
+            />
+            <Text style={styles.description}>
+              We use <Text style={styles.bold}>Ozow</Text>, SA&apos;s premium
+              payment solution, to process instant EFTs and transfer cash
+              directly to your Jupiter account.{' '}
+            </Text>
+            <Text style={styles.buttonDescription}>
+              Tap the link to pay with Ozow:
+            </Text>
+            <LinearGradient
+              start={[0, 0.5]}
+              end={[1, 0.5]}
+              colors={[Colors.LIGHT_BLUE, Colors.PURPLE]}
+              style={[styles.buttonStyle]}
+            >
+              <Text
+                style={styles.paymentLink}
+                onPress={this.onPressPaymentLink}
+              >
+                {this.state.paymentLink}
+              </Text>
               <TouchableOpacity onPress={this.onPressCopy}>
-                <Image style={styles.copyIcon} source={require('../../assets/copy.png')} resizeMode="contain"/>
+                <Image
+                  style={styles.copyIcon}
+                  source={require('../../assets/copy.png')}
+                  resizeMode="contain"
+                />
               </TouchableOpacity>
             </LinearGradient>
-            <TouchableOpacity testID='payment-already-paid' accessibilityLabel='payment-already-paid' style={styles.alreadyPaidButton} onPress={this.onPressAlreadyPaid}>
+            <TouchableOpacity
+              testID="payment-already-paid"
+              accessibilityLabel="payment-already-paid"
+              style={styles.alreadyPaidButton}
+              onPress={this.onPressAlreadyPaid}
+            >
               <Text style={styles.alreadyPaidButtonText}>
-                { this.state.checkingForPayment ? 'CHECKING PAYMENT STATUS...' : 'I MADE THE PAYMENT!' }
+                {this.state.checkingForPayment
+                  ? 'CHECKING PAYMENT STATUS...'
+                  : 'I MADE THE PAYMENT!'}
               </Text>
             </TouchableOpacity>
-            <Text style={styles.description}>When you come back from Ozow tap the button to complete adding your cash</Text>
+            <Text style={styles.description}>
+              When you come back from Ozow tap the button to complete adding
+              your cash
+            </Text>
           </View>
         </View>
-        {
-          height > 600 ?
+        {height > 600 ? (
           <View style={styles.footer}>
             <Text style={styles.footerTitle}>THE EASIEST WAY TO PAY:</Text>
-            <Image style={styles.shield} source={require('../../assets/shield.png')}/>
+            <Image
+              style={styles.shield}
+              source={require('../../assets/shield.png')}
+            />
             <View style={styles.footerItem}>
               <Icon
-                name='check'
-                type='feather'
+                name="check"
+                type="feather"
                 size={19}
                 color={Colors.PURPLE}
               />
-              <Text style={styles.footerItemText}>No registration or app download required</Text>
+              <Text style={styles.footerItemText}>
+                No registration or app download required
+              </Text>
             </View>
             <View style={styles.footerItem}>
               <Icon
-                name='check'
-                type='feather'
+                name="check"
+                type="feather"
                 size={19}
                 color={Colors.PURPLE}
               />
-              <Text style={styles.footerItemText}>Payments completed in seconds</Text>
+              <Text style={styles.footerItemText}>
+                Payments completed in seconds
+              </Text>
             </View>
             <View style={styles.footerItem}>
               <Icon
-                name='check'
-                type='feather'
+                name="check"
+                type="feather"
                 size={19}
                 color={Colors.PURPLE}
               />
-              <Text style={styles.footerItemText}><Text style={styles.bold}>No</Text> banking login details stored</Text>
+              <Text style={styles.footerItemText}>
+                <Text style={styles.bold}>No</Text> banking login details stored
+              </Text>
             </View>
             <View style={styles.footerItem}>
               <Icon
-                name='check'
-                type='feather'
+                name="check"
+                type="feather"
                 size={19}
                 color={Colors.PURPLE}
               />
               <Text style={styles.footerItemText}>Safe and secure</Text>
             </View>
           </View>
-          : null
-        }
-        <Toast ref="toast" opacity={1} style={styles.toast}/>
+        ) : null}
+        <Toast ref={this.toastRef} opacity={1} style={styles.toast} />
 
         <Dialog
           visible={this.state.checkingForPayment}
           dialogStyle={styles.dialogStyle}
-          dialogAnimation={new SlideAnimation({
-            slideFrom: 'bottom',
-          })}
+          dialogAnimation={
+            new SlideAnimation({
+              slideFrom: 'bottom',
+            })
+          }
           onTouchOutside={() => {}}
-          onHardwareBackPress={() => {this.setState({checkingForPayment: false}); return true;}}
+          onHardwareBackPress={() => {
+            this.setState({ checkingForPayment: false });
+            return true;
+          }}
         >
           <DialogContent style={styles.dialogWrapper}>
             <ActivityIndicator size="large" color={Colors.PURPLE} />
-            <Text style={styles.dialogText}>Checking if your payment is complete...</Text>
+            <Text style={styles.dialogText}>
+              Checking if your payment is complete...
+            </Text>
           </DialogContent>
         </Dialog>
       </View>
@@ -288,20 +386,13 @@ const styles = StyleSheet.create({
     minHeight: 65,
     minWidth: 220,
   },
-  secondaryTitle: {
-    fontFamily: 'poppins-semibold',
-    fontSize: 18,
-    color: Colors.DARK_GRAY,
-  },
-  ozowLogo: {
-
-  },
+  ozowLogo: {},
   description: {
     fontFamily: 'poppins-regular',
     fontSize: 15,
     color: Colors.MEDIUM_GRAY,
     textAlign: 'center',
-    paddingHorizontal: 7
+    paddingHorizontal: 7,
   },
   bold: {
     fontFamily: 'poppins-semibold',
@@ -383,5 +474,5 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.DARK_GRAY,
     width: '60%',
     alignItems: 'center',
-  }
+  },
 });

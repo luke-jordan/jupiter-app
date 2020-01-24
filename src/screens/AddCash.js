@@ -1,37 +1,47 @@
 import React from 'react';
-import { StyleSheet, View, Text, AsyncStorage, TouchableOpacity, ScrollView } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  Text,
+  AsyncStorage,
+  TouchableOpacity,
+  ScrollView,
+} from 'react-native';
+import { Icon, Input, Button } from 'react-native-elements';
+
 import { NavigationUtil } from '../util/NavigationUtil';
 import { Colors, Endpoints } from '../util/Values';
-import { Icon, Input, Button } from 'react-native-elements';
 import { LoggingUtil } from '../util/LoggingUtil';
 
 export default class AddCash extends React.Component {
-
   constructor(props) {
     super(props);
     this.state = {
-      currency: "R",
+      currency: 'R',
       balance: 0,
       amountToAdd: '',
       isOnboarding: false,
       loading: false,
-      notWholeNumber: false
+      notWholeNumber: false,
     };
   }
 
   async componentDidMount() {
-    let params = this.props.navigation.state.params;
+    const { params } = this.props.navigation.state;
     if (params) {
       this.setState({
         isOnboarding: params.isOnboarding,
-        systemWideUserId: params.systemWideUserId,
         token: params.token,
         accountId: params.accountId,
       });
     }
 
     if (!params || !params.isOnboarding) {
-      let [info, lastSaveAmount] = await Promise.all([AsyncStorage.getItem('userInfo'), AsyncStorage.getItem('lastSaveAmount')]);
+      // eslint-disable-next-line prefer-const
+      let [info, lastSaveAmount] = await Promise.all([
+        AsyncStorage.getItem('userInfo'),
+        AsyncStorage.getItem('lastSaveAmount'),
+      ]);
       if (!info) {
         NavigationUtil.logout(this.props.navigation);
       } else {
@@ -45,9 +55,9 @@ export default class AddCash extends React.Component {
         });
       }
       if (lastSaveAmount) {
-        const  lastSave = parseInt(lastSaveAmount, 10);
+        const lastSave = parseInt(lastSaveAmount, 10);
         this.setState({
-          amountToAdd: parseFloat(lastSave).toFixed(0)
+          amountToAdd: parseFloat(lastSave).toFixed(0),
         });
       }
     }
@@ -55,103 +65,145 @@ export default class AddCash extends React.Component {
 
   onPressBack = () => {
     this.props.navigation.goBack();
-  }
+  };
 
   onPressAddCash = async () => {
     if (this.state.loading) return;
-    this.setState({loading: true});
-    
+    this.setState({ loading: true });
+
     if (this.state.isOnboarding) {
-      LoggingUtil.logEvent("USER_INITIATED_FIRST_ADD_CASH", {"amountAdded": this.state.amountToAdd});
+      LoggingUtil.logEvent('USER_INITIATED_FIRST_ADD_CASH', {
+        amountAdded: this.state.amountToAdd,
+      });
     } else {
-      LoggingUtil.logEvent("USER_INITIATED_ADD_CASH", {"amountAdded": this.state.amountToAdd });
+      LoggingUtil.logEvent('USER_INITIATED_ADD_CASH', {
+        amountAdded: this.state.amountToAdd,
+      });
     }
     try {
-      AsyncStorage.setItem('lastSaveAmount', parseFloat(this.state.amountToAdd).toFixed(0));
-      let result = await fetch(Endpoints.CORE + 'addcash/initiate', {
+      AsyncStorage.setItem(
+        'lastSaveAmount',
+        parseFloat(this.state.amountToAdd).toFixed(0)
+      );
+      const result = await fetch(`${Endpoints.CORE}addcash/initiate`, {
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': 'Bearer ' + this.state.token
+          Accept: 'application/json',
+          Authorization: `Bearer ${this.state.token}`,
         },
         method: 'POST',
         body: JSON.stringify({
-          "accountId": this.state.accountId,
-          "amount": this.state.amountToAdd * 10000, //multiplying by 100 to get cents and again by 100 to get hundreth cent
-          "currency": "ZAR", //TODO implement for handling other currencies
-          "unit": "HUNDREDTH_CENT"
+          accountId: this.state.accountId,
+          amount: this.state.amountToAdd * 10000, // multiplying by 100 to get cents and again by 100 to get hundreth cent
+          currency: 'ZAR', // TODO implement for handling other currencies
+          unit: 'HUNDREDTH_CENT',
         }),
       });
       if (result.ok) {
-        let resultJson = await result.json();
-        this.setState({loading: false});
+        const resultJson = await result.json();
+        this.setState({ loading: false });
         this.props.navigation.navigate('Payment', {
-          urlToCompletePayment: resultJson.paymentRedirectDetails.urlToCompletePayment,
-          accountTransactionId: resultJson.transactionDetails[0].accountTransactionId,
+          urlToCompletePayment:
+            resultJson.paymentRedirectDetails.urlToCompletePayment,
+          accountTransactionId:
+            resultJson.transactionDetails[0].accountTransactionId,
           humanReference: resultJson.humanReference,
           token: this.state.token,
           isOnboarding: this.state.isOnboarding,
           amountAdded: this.state.amountToAdd,
         });
       } else {
-        let resultText = await result.text();
-        console.log("resultText:", resultText);
         throw result;
       }
     } catch (error) {
       console.log('Add cash failed: ', error);
-      LoggingUtil.logEvent('ADD_CASH_FAILED_UNKNOWN', { "serverResponse" : JSON.stringify(error.message) });
-      this.setState({loading: false});
+      LoggingUtil.logEvent('ADD_CASH_FAILED_UNKNOWN', {
+        serverResponse: JSON.stringify(error.message),
+      });
+      this.setState({ loading: false });
       // this.showError();
     }
-  }
+  };
 
-  onChangeAmount = (text) => {
+  onChangeAmount = text => {
     const wholeNumberRegex = /^[0-9\b]+$/;
     if (wholeNumberRegex.test(text) || text.trim().length === 0) {
       this.setState({
         amountToAdd: text,
-        notWholeNumber: false
+        notWholeNumber: false,
       });
     } else {
       this.setState({
-        notWholeNumber: true
+        notWholeNumber: true,
       });
     }
-  }
+  };
 
   onChangeAmountEnd = () => {
-    this.setState({amountToAdd: parseFloat(this.state.amountToAdd).toFixed(2)});
+    this.setState({
+      amountToAdd: parseFloat(this.state.amountToAdd).toFixed(2),
+    });
     this.amountInputRef.blur();
-  }
+  };
 
   getFormattedBalance(balance) {
     return (balance / this.getDivisor(this.state.unit)).toFixed(2);
   }
 
   getDivisor(unit) {
-    switch(unit) {
-      case "MILLIONTH_CENT":
-      return 100000000;
+    switch (unit) {
+      case 'MILLIONTH_CENT':
+        return 100000000;
 
-      case "TEN_THOUSANDTH_CENT":
-      return 1000000;
+      case 'TEN_THOUSANDTH_CENT':
+        return 1000000;
 
-      case "THOUSANDTH_CENT":
-      return 100000;
+      case 'THOUSANDTH_CENT':
+        return 100000;
 
-      case "HUNDREDTH_CENT":
-      return 10000;
+      case 'HUNDREDTH_CENT':
+        return 10000;
 
-      case "WHOLE_CENT":
-      return 100;
+      case 'WHOLE_CENT':
+        return 100;
 
-      case "WHOLE_CURRENCY":
-      return 1;
+      case 'WHOLE_CURRENCY':
+        return 1;
 
       default:
-      return 1;
+        return 1;
     }
+  }
+
+  getBankRate(bank) {
+    let result = 0;
+    let bankThreshold = -1;
+    const relevantAmount =
+      parseInt(this.state.amountToAdd) +
+      parseInt(this.getFormattedBalance(this.state.balance));
+    for (const key in bank) {
+      if (key === 'label') continue;
+
+      const keyInt = parseInt(key);
+      if (relevantAmount > keyInt && keyInt > bankThreshold) {
+        result = bank[key];
+        bankThreshold = keyInt;
+      }
+    }
+    return parseFloat(result / 100).toFixed(2);
+  }
+
+  getReferenceRate() {
+    if (
+      this.state.comparatorRates &&
+      this.state.comparatorRates.referenceRate
+    ) {
+      return parseFloat(this.state.comparatorRates.referenceRate / 100).toFixed(
+        2
+      );
+    }
+
+    return '';
   }
 
   renderHeader() {
@@ -159,10 +211,13 @@ export default class AddCash extends React.Component {
       return (
         <View style={styles.headerWrapper}>
           <View style={styles.header}>
-            <TouchableOpacity style={styles.headerButton} onPress={this.onPressBack} >
+            <TouchableOpacity
+              style={styles.headerButton}
+              onPress={this.onPressBack}
+            >
               <Icon
-                name='chevron-left'
-                type='evilicon'
+                name="chevron-left"
+                type="evilicon"
                 size={45}
                 color={Colors.GRAY}
               />
@@ -174,10 +229,13 @@ export default class AddCash extends React.Component {
     } else {
       return (
         <View style={styles.header}>
-          <TouchableOpacity style={styles.headerButton} onPress={this.onPressBack} >
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={this.onPressBack}
+          >
             <Icon
-              name='chevron-left'
-              type='evilicon'
+              name="chevron-left"
+              type="evilicon"
               size={45}
               color={Colors.GRAY}
             />
@@ -188,31 +246,8 @@ export default class AddCash extends React.Component {
     }
   }
 
-  getBankRate(bank) {
-    let result = 0, bankThreshold = -1;
-    let relevantAmount = parseInt(this.state.amountToAdd) + parseInt(this.getFormattedBalance(this.state.balance));
-    for (let key in bank) {
-      if (key == "label") continue;
-
-      let keyInt = parseInt(key);
-      if (relevantAmount > keyInt && keyInt > bankThreshold) {
-        result = bank[key];
-        bankThreshold = keyInt;
-      }
-    }
-    return parseFloat(result / 100).toFixed(2);
-   }
-
-   getReferenceRate() {  
-    if (this.state.comparatorRates && this.state.comparatorRates.referenceRate) {
-      return parseFloat(this.state.comparatorRates.referenceRate / 100).toFixed(2);
-    }
-
-    return "";
-   }
-
   renderBankLine(item, index) {
-    let bank = this.state.comparatorRates.rates[item];
+    const bank = this.state.comparatorRates.rates[item];
     return (
       <View style={styles.rateLine} key={index}>
         <Text style={styles.rateComparisonBank}>{bank.label}</Text>
@@ -225,60 +260,74 @@ export default class AddCash extends React.Component {
     return (
       <View style={styles.container}>
         {this.renderHeader()}
-        <ScrollView style={styles.mainContent} contentContainerStyle={styles.mainContentContainer} >
-          {
-            this.state.isOnboarding ?
+        <ScrollView
+          style={styles.mainContent}
+          contentContainerStyle={styles.mainContentContainer}
+        >
+          {this.state.isOnboarding ? (
             <Text style={styles.onboardingTitle}>Choose an amount</Text>
-            :
+          ) : (
             <View style={styles.currentBalance}>
-              <Text style={styles.balanceAmount}>{this.state.currency}{this.getFormattedBalance(this.state.balance)}</Text>
+              <Text style={styles.balanceAmount}>
+                {this.state.currency}
+                {this.getFormattedBalance(this.state.balance)}
+              </Text>
               <Text style={styles.balanceDesc}>Current Balance</Text>
             </View>
-          }
+          )}
           <View style={styles.inputWrapper}>
             <View style={styles.inputWrapperLeft}>
               <Text style={styles.currencyLabel}>{this.state.currency}</Text>
             </View>
             <Input
-              testID='add-cash-input'
-              accessibilityLabel='add-cash-input'
-              keyboardType='numeric'
-              ref={(ref) => {this.amountInputRef = ref;}}
+              testID="add-cash-input"
+              accessibilityLabel="add-cash-input"
+              keyboardType="numeric"
+              ref={ref => {
+                this.amountInputRef = ref;
+              }}
               value={this.state.amountToAdd}
-              onChangeText={(text) => this.onChangeAmount(text)}
+              onChangeText={text => this.onChangeAmount(text)}
               onEndEditing={() => this.onChangeAmountEnd()}
               inputContainerStyle={styles.inputContainerStyle}
               inputStyle={styles.inputStyle}
               containerStyle={styles.containerStyle}
             />
           </View>
-          { this.state.notWholeNumber ? 
+          {this.state.notWholeNumber ? (
             <View style={styles.wholeNumberOnlyView}>
-              <Text style={styles.wholeNumberText}>Please enter only a whole number</Text>
-            </View> : null }
-          {
-            this.state.comparatorRates ?
+              <Text style={styles.wholeNumberText}>
+                Please enter only a whole number
+              </Text>
+            </View>
+          ) : null}
+          {this.state.comparatorRates ? (
             <View style={styles.rateComparison}>
-              <Text style={styles.rateComparisonTitle}>Compare our interest rate</Text>
+              <Text style={styles.rateComparisonTitle}>
+                Compare our interest rate
+              </Text>
               <View style={styles.rateComparisonBox}>
                 <View style={styles.rateLine}>
-                  <Text style={styles.rateComparisonJupiter}>Jupiter Savings</Text>
-                  <Text style={styles.rateComparisonJupiter}>{this.getReferenceRate()}%</Text>
+                  <Text style={styles.rateComparisonJupiter}>
+                    Jupiter Savings
+                  </Text>
+                  <Text style={styles.rateComparisonJupiter}>
+                    {this.getReferenceRate()}%
+                  </Text>
                 </View>
                 <View style={styles.rateComparisonSeparator} />
-                {
-                  this.state.comparatorRates.rates ?
-                  Object.keys(this.state.comparatorRates.rates).map((item, index) => this.renderBankLine(item, index))
-                  : null
-                }
+                {this.state.comparatorRates.rates
+                  ? Object.keys(
+                      this.state.comparatorRates.rates
+                    ).map((item, index) => this.renderBankLine(item, index))
+                  : null}
               </View>
             </View>
-            : null
-          }
+          ) : null}
         </ScrollView>
         <Button
-          testID='add-cash-next-btn'
-          accessibilityLabel='add-cash-next-btn'
+          testID="add-cash-next-btn"
+          accessibilityLabel="add-cash-next-btn"
           title="NEXT: PAYMENT"
           loading={this.state.loading}
           titleStyle={styles.buttonTitleStyle}
@@ -289,7 +338,8 @@ export default class AddCash extends React.Component {
             colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
             start: { x: 0, y: 0.5 },
             end: { x: 1, y: 0.5 },
-          }} />
+          }}
+        />
       </View>
     );
   }
@@ -414,12 +464,12 @@ const styles = StyleSheet.create({
   },
   wholeNumberOnlyView: {
     marginTop: 20,
-    alignItems: 'center'
+    alignItems: 'center',
   },
   wholeNumberText: {
     fontFamily: 'poppins-regular',
     color: Colors.MEDIUM_GRAY,
-    fontSize: 13
+    fontSize: 13,
   },
   rateComparison: {
     width: '90%',
@@ -433,7 +483,7 @@ const styles = StyleSheet.create({
   },
   rateComparisonBox: {
     width: '100%',
-    backgroundColor: 'white',
+    backgroundColor: Colors.WHITE,
     borderRadius: 20,
     paddingVertical: 20,
   },

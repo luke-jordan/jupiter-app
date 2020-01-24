@@ -8,12 +8,9 @@ import { LoggingUtil } from '../util/LoggingUtil';
 const SPLASH_TIMEOUT = 1400;
 
 export default class Splash extends React.Component {
-
   constructor(props) {
     super(props);
-    this.state = {
-
-    };
+    this.state = {};
   }
 
   async componentDidMount() {
@@ -39,15 +36,26 @@ export default class Splash extends React.Component {
     if (userInfo && userInfo.token && userInfo.token.length > 0) {
       NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home');
     } else {
-      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Onboarding');
+      NavigationUtil.navigateWithoutBackstack(
+        this.props.navigation,
+        'Onboarding'
+      );
     }
   }
 
   render() {
     return (
       <View style={styles.container}>
-        <Image style={styles.logo} source={require('../../assets/group_15.png')} resizeMode='contain'/>
-        <Image style={styles.text} source={require('../../assets/group_2.png')} resizeMode='contain'/>
+        <Image
+          style={styles.logo}
+          source={require('../../assets/group_15.png')}
+          resizeMode="contain"
+        />
+        <Image
+          style={styles.text}
+          source={require('../../assets/group_2.png')}
+          resizeMode="contain"
+        />
       </View>
     );
   }
