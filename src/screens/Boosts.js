@@ -19,6 +19,15 @@ import { Sizes, Endpoints, Colors } from '../util/Values';
 
 const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
+const BoostStatus = {
+  CREATED: 'CREATED',
+  OFFERED: 'OFFERED',
+  PENDING: 'PENDING',
+  CLAIMED: 'CLAIMED',
+  EXPIRED: 'EXPIRED',
+  REDEEMED: 'REDEEMED',
+  REVOKED: 'REVOKED',
+};
 
 class Boosts extends React.Component {
   constructor(props) {
@@ -148,15 +157,23 @@ class Boosts extends React.Component {
   }
 
   sortBoosts = boosts => {
-    // eslint-disable-next-line fp/no-mutating-methods
-    return boosts.sort((a, b) => {
-      if (a.boostStatus !== b.boostStatus) {
-        if (a.boostStatus === 'REDEEMED' || a.boostStatus === 'EXPIRED')
-          return a.boostStatus === 'REDEEMED' ? 1 : -1;
-        else return -1;
-      } else if (moment(a.endTime).isAfter(moment(b.endTime))) return -1;
-      else return 1;
-    });
+    const sortByTime = (a, b) =>
+      moment(a.endTime).isAfter(moment(b.endTime)) && 1;
+    const isOneOf = options => x => options.indexOf(x) !== -1;
+
+    const topGroup = boosts
+      .filter(
+        isOneOf([BoostStatus.OFFERED, BoostStatus.CREATED, BoostStatus.PENDING])
+      )
+      .sort(sortByTime);
+    const middleGroup = boosts
+      .filter(isOneOf([BoostStatus.CLAIMED, BoostStatus.REDEEMED]))
+      .sort(sortByTime);
+    const bottomGroup = boosts
+      .filter(isOneOf([BoostStatus.EXPIRED, BoostStatus.REVOKED]))
+      .sort(sortByTime);
+
+    return [...topGroup, ...middleGroup, ...bottomGroup];
   };
 
   fetchBoosts = async token => {
