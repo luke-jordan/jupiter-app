@@ -7,11 +7,7 @@ import {
   AsyncStorage,
   TouchableOpacity,
 } from 'react-native';
-import { Input, Button } from 'react-native-elements';
-import Dialog, {
-  SlideAnimation,
-  DialogContent,
-} from 'react-native-popup-dialog';
+import { Input, Button, Overlay } from 'react-native-elements';
 
 import { Colors, Endpoints, DeviceInfo } from '../util/Values';
 import { NavigationUtil } from '../util/NavigationUtil';
@@ -380,18 +376,14 @@ export default class OTPVerification extends React.Component {
           </Text>
         </View>
 
-        <Dialog
-          visible={this.state.dialogVisible}
-          dialogStyle={styles.editPicDialog}
-          dialogAnimation={
-            new SlideAnimation({
-              slideFrom: 'bottom',
-            })
-          }
-          onTouchOutside={this.onHideDialog}
+        <Overlay
+          isVisible={this.state.dialogVisible}
+          height="auto"
+          width="auto"
+          onBackdropPress={this.onHideDialog}
           onHardwareBackPress={this.onHideDialog}
         >
-          <DialogContent style={styles.dialogWrapper}>
+          <View style={styles.dialogWrapper}>
             <View style={styles.helpDialog}>
               <Text style={styles.helpTitle}>Help</Text>
               <Text style={styles.helpContent}>
@@ -411,8 +403,8 @@ export default class OTPVerification extends React.Component {
                 <Image source={require('../../assets/close.png')} />
               </TouchableOpacity>
             </View>
-          </DialogContent>
-        </Dialog>
+          </View>
+        </Overlay>
       </View>
     );
   }

@@ -9,11 +9,7 @@ import {
   KeyboardAvoidingView,
   ActivityIndicator,
 } from 'react-native';
-import { Button, Icon, Input } from 'react-native-elements';
-import Dialog, {
-  SlideAnimation,
-  DialogContent,
-} from 'react-native-popup-dialog';
+import { Button, Icon, Input, Overlay } from 'react-native-elements';
 import Toast from 'react-native-easy-toast';
 
 import { NavigationUtil } from '../util/NavigationUtil';
@@ -335,18 +331,14 @@ export default class ChangePassword extends React.Component {
           />
         </View>
 
-        <Dialog
-          visible={this.state.dialogVisible}
-          dialogStyle={styles.dialogStyle}
-          dialogAnimation={
-            new SlideAnimation({
-              slideFrom: 'bottom',
-            })
-          }
-          onTouchOutside={this.onHideDialog}
+        <Overlay
+          isVisible={this.state.dialogVisible}
+          height="auto"
+          width="auto"
+          onBackdropPress={this.onHideDialog}
           onHardwareBackPress={this.onHideDialog}
         >
-          <DialogContent style={styles.dialogWrapper}>
+          <View style={styles.dialogWrapper}>
             <View style={styles.dialogContent}>
               <Text style={styles.dialogTitle}>Suggested password</Text>
               <View style={styles.profileField}>
@@ -377,30 +369,26 @@ export default class ChangePassword extends React.Component {
             >
               <Image source={require('../../assets/close.png')} />
             </TouchableOpacity>
-          </DialogContent>
-        </Dialog>
+          </View>
+        </Overlay>
 
-        <Dialog
-          visible={this.state.checkingForCompletion}
-          dialogStyle={styles.dialogStyle}
-          dialogAnimation={
-            new SlideAnimation({
-              slideFrom: 'bottom',
-            })
-          }
-          onTouchOutside={() => {}}
+        <Overlay
+          isVisible={this.state.checkingForCompletion}
+          height="auto"
+          width="auto"
+          onBackdropPress={() => {}}
           onHardwareBackPress={() => {
             this.setState({ checkingForCompletion: false });
             return true;
           }}
         >
-          <DialogContent style={styles.checkingDialogWrapper}>
+          <View style={styles.checkingDialogWrapper}>
             <ActivityIndicator size="large" color={Colors.PURPLE} />
             <Text style={styles.checkingDialogText}>
               Changing your password...
             </Text>
-          </DialogContent>
-        </Dialog>
+          </View>
+        </Overlay>
 
         <Toast ref={this.toastRef} opacity={1} style={styles.toast} />
       </KeyboardAvoidingView>
@@ -505,17 +493,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginBottom: 10,
   },
-  dialogStyle: {
-    width: '90%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   dialogWrapper: {
-    minHeight: 310,
+    minHeight: 280,
     backgroundColor: Colors.WHITE,
     borderRadius: 10,
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 30,
     width: '100%',
   },
   dialogTitle: {
@@ -525,8 +508,8 @@ const styles = StyleSheet.create({
   },
   closeDialog: {
     position: 'absolute',
-    top: 20,
-    right: 20,
+    top: 5,
+    right: 5,
   },
   dialogContent: {
     flex: 1,
@@ -537,7 +520,6 @@ const styles = StyleSheet.create({
     paddingLeft: 10,
     textAlignVertical: 'center',
   },
-
   checkingDialogWrapper: {
     width: '80%',
     alignItems: 'center',

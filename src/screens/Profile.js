@@ -9,11 +9,7 @@ import {
   Dimensions,
   View,
 } from 'react-native';
-import { Button, Input, Icon } from 'react-native-elements';
-import Dialog, {
-  DialogContent,
-  SlideAnimation,
-} from 'react-native-popup-dialog';
+import { Button, Input, Icon, Overlay } from 'react-native-elements';
 
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
@@ -236,9 +232,9 @@ export default class Profile extends React.Component {
             <View style={styles.profileInfo}>
               <View style={styles.profileField}>
                 <Input
-                  label={
-                    `First Name${!this.state.failedVerification}` ? '*' : ''
-                  }
+                  label={`First Name${
+                    !this.state.failedVerification ? '*' : ''
+                  }`}
                   editable={this.state.failedVerification}
                   value={this.state.firstName}
                   onChangeText={text => {
@@ -258,9 +254,9 @@ export default class Profile extends React.Component {
               <View style={styles.separator} />
               <View style={styles.profileField}>
                 <Input
-                  label={
-                    `Last Name${!this.state.failedVerification}` ? '*' : ''
-                  }
+                  label={`Last Name${
+                    !this.state.failedVerification ? '*' : ''
+                  }`}
                   editable={this.state.failedVerification}
                   value={this.state.lastName}
                   onChangeText={text => {
@@ -280,9 +276,9 @@ export default class Profile extends React.Component {
               <View style={styles.separator} />
               <View style={styles.profileField}>
                 <Input
-                  label={
-                    `ID Number${!this.state.failedVerification}` ? '*' : ''
-                  }
+                  label={`ID number${
+                    !this.state.failedVerification ? '*' : ''
+                  }`}
                   editable={this.state.failedVerification}
                   value={this.state.idNumber}
                   onChangeText={text => {
@@ -442,18 +438,13 @@ export default class Profile extends React.Component {
           </View>
         </View>
 
-        <Dialog
-          visible={this.state.dialogVisible}
-          dialogStyle={styles.editPicDialog}
-          dialogAnimation={
-            new SlideAnimation({
-              slideFrom: 'bottom',
-            })
-          }
-          onTouchOutside={this.onHideDialog}
+        <Overlay
+          isVisible={this.state.dialogVisible}
+          containerStyle={styles.editPicDialog}
+          onBackdropPress={this.onHideDialog}
           onHardwareBackPress={this.onHideDialog}
         >
-          <DialogContent style={styles.dialogContent}>
+          <View style={styles.dialogContent}>
             <Text style={styles.editPicDialogTitle}>Select a photo</Text>
             <Button
               title="TAKE PHOTO"
@@ -487,8 +478,8 @@ export default class Profile extends React.Component {
             >
               Cancel
             </Text>
-          </DialogContent>
-        </Dialog>
+          </View>
+        </Overlay>
       </View>
     );
   }

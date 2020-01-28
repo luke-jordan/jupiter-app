@@ -13,12 +13,8 @@ import {
   ImageBackground,
   View,
 } from 'react-native';
-import { Button } from 'react-native-elements';
+import { Button, Overlay } from 'react-native-elements';
 import Toast from 'react-native-easy-toast';
-import Dialog, {
-  SlideAnimation,
-  DialogContent,
-} from 'react-native-popup-dialog';
 
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
@@ -257,27 +253,22 @@ export default class CheckingForPayment extends React.Component {
           </View>
         </View>
 
-        <Dialog
-          visible={this.state.checkingForPayment}
+        <Overlay
+          isVisible={this.state.checkingForPayment}
           dialogStyle={styles.dialogStyle}
-          dialogAnimation={
-            new SlideAnimation({
-              slideFrom: 'bottom',
-            })
-          }
-          onTouchOutside={() => {}}
+          onBackdropPress={() => {}}
           onHardwareBackPress={() => {
             this.setState({ checkingForPayment: false });
             return true;
           }}
         >
-          <DialogContent style={styles.dialogWrapper}>
+          <View style={styles.dialogWrapper}>
             <ActivityIndicator size="large" color={Colors.PURPLE} />
             <Text style={styles.dialogText}>
               Checking if your payment is complete...
             </Text>
-          </DialogContent>
-        </Dialog>
+          </View>
+        </Overlay>
 
         <Toast ref={this.toastRef} opacity={1} style={styles.toast} />
       </View>

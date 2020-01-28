@@ -56,7 +56,7 @@ export default class Terms extends React.Component {
         >
           <Text style={styles.termsText}>
             <Text style={styles.termsEmphasis}>
-              Last updated: November 2019{'\n'}
+              Last updated: January 2020{'\n'}
             </Text>
             All clauses in these Terms displayed in{' '}
             <Text style={styles.termsEmphasis}>BOLD</Text> are provisions which
@@ -103,7 +103,7 @@ export default class Terms extends React.Component {
               2. Interpretation and definitions{'\n'}
             </Text>
             <Text style={styles.termsParaNumber}>2.1. </Text>&quot;
-            <Text style={styles.termsEmphasis}>Account</Text>&quote; means your
+            <Text style={styles.termsEmphasis}>Account</Text>&quot; means your
             account through which you access the Platform and transact with
             Jupiter;
             {'\n'}
@@ -170,30 +170,30 @@ export default class Terms extends React.Component {
             and which forms part of the Services;
             {'\n'}
             <Text style={styles.termsParaNumber}>2.13. </Text>&quot;
-            <Text style={styles.termsEmphasis}>Privacy Policy</Text>&quote;
-            means the policy available on the Platform setting out how we use
-            Personal Information;
+            <Text style={styles.termsEmphasis}>Privacy Policy</Text>&quot; means
+            the policy available on the Platform setting out how we use Personal
+            Information;
             {'\n'}
             <Text style={styles.termsParaNumber}>2.14. </Text>&quot;
-            <Text style={styles.termsEmphasis}>Service Fee</Text>&quote; means a
+            <Text style={styles.termsEmphasis}>Service Fee</Text>&quot; means a
             portion of the Interest retained by Jupiter for the Services;
             {'\n'}
             <Text style={styles.termsParaNumber}>2.15. </Text>&quot;
-            <Text style={styles.termsEmphasis}>Services</Text>&quote; means the
+            <Text style={styles.termsEmphasis}>Services</Text>&quot; means the
             services supplied by Jupiter to Users, which includes the Platform;
             {'\n'}
             <Text style={styles.termsParaNumber}>2.16. </Text>&quot;
-            <Text style={styles.termsEmphasis}>Terms</Text>&quote; means means
+            <Text style={styles.termsEmphasis}>Terms</Text>&quot; means means
             these terms in this legally binding agreement that regulate your use
             of the Services and our relationship with you;
             {'\n'}
             <Text style={styles.termsParaNumber}>2.17. </Text>&quot;
-            <Text style={styles.termsEmphasis}>User</Text>&quote; and &quot;
+            <Text style={styles.termsEmphasis}>User</Text>&quot; and &quot;
             <Text style={styles.termsEmphasis}>you</Text> means the person
             making use of the Services; and
             {'\n'}
             <Text style={styles.termsParaNumber}>2.18. </Text>&quot;
-            <Text style={styles.termsEmphasis}>Website</Text>&quote; means means{' '}
+            <Text style={styles.termsEmphasis}>Website</Text>&quot; means means{' '}
             <Text style={styles.termsLink}>www.jupitersave.com</Text>, including
             all sub-domains.
             {'\n'}
@@ -402,7 +402,7 @@ export default class Terms extends React.Component {
             Jupiter, R3 will be deducted as the Card Payment Fee and R97 will be
             added to your Jupiter Balance. Jupiter will however not charge you
             for the first 3 (three) card payments that you make, but you will be
-            liable for the Card Payment Fee from the 4th (forth) payment.
+            liable for the Card Payment Fee from the 4th (fourth) payment.
             {'\n'}
             <Text style={styles.termsParaNumber}>8.5. </Text>Jupiter may decide
             to charge an account fee or a subscription fee for the use of the

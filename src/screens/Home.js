@@ -20,16 +20,13 @@ import {
   View,
   YellowBox,
 } from 'react-native';
-import { Icon, Button } from 'react-native-elements';
+import { Icon, Button, Overlay } from 'react-native-elements';
 import {
   FlingGestureHandler,
   Directions,
   State,
 } from 'react-native-gesture-handler';
-import Dialog, {
-  SlideAnimation,
-  DialogContent,
-} from 'react-native-popup-dialog';
+
 // import VersionCheck from 'react-native-version-check-expo';
 import { NavigationEvents } from 'react-navigation';
 
@@ -895,7 +892,7 @@ class Home extends React.Component {
 
   renderGameEndDialog(gameDetails) {
     return (
-      <DialogContent style={styles.gameDialog}>
+      <View style={styles.gameDialog}>
         <Text style={styles.helpTitle}>{gameDetails.title}</Text>
         <Text style={styles.gameInfoBody}>
           {this.getGameDetailsBody(gameDetails.body)}
@@ -924,13 +921,13 @@ class Home extends React.Component {
         >
           <Image source={require('../../assets/close.png')} />
         </TouchableOpacity>
-      </DialogContent>
+      </View>
     );
   }
 
   renderGameStartDialog(gameDetails) {
     return (
-      <DialogContent style={styles.gameDialog}>
+      <View style={styles.gameDialog}>
         <Text style={styles.helpTitle}>{gameDetails.title}</Text>
         <Text style={styles.gameInfoBody}>
           {this.getGameDetailsBody(gameDetails.body)}
@@ -962,7 +959,7 @@ class Home extends React.Component {
         <Text style={styles.gamePlayLater} onPress={this.onPressPlayLater}>
           Play Later
         </Text>
-      </DialogContent>
+      </View>
     );
   }
 
@@ -1116,29 +1113,21 @@ class Home extends React.Component {
           </LinearGradient>
         </View>
 
-        <Dialog
-          visible={this.state.hasGameModal}
-          dialogStyle={styles.dialogWrapper}
-          dialogAnimation={
-            new SlideAnimation({
-              slideFrom: 'top',
-            })
-          }
+        <Overlay
+          isVisible={this.state.hasGameModal}
+          height="auto"
+          width="auto"
           onHardwareBackPress={this.onCloseGameDialog}
         >
           {this.renderGameDialog()}
-        </Dialog>
+        </Overlay>
 
-        <Dialog
-          visible={this.state.updateRequiredDialogVisible}
-          dialogStyle={styles.dialogWrapper}
-          dialogAnimation={
-            new SlideAnimation({
-              slideFrom: 'bottom',
-            })
-          }
+        <Overlay
+          isVisible={this.state.updateRequiredDialogVisible}
+          height="auto"
+          width="auto"
         >
-          <DialogContent style={styles.helpDialog}>
+          <View style={styles.helpDialog}>
             <Text style={styles.helpTitle}>Update Required</Text>
             <Text style={styles.helpContent}>
               We&apos;ve made some big changes to the app,(more than usual).
@@ -1159,21 +1148,17 @@ class Home extends React.Component {
                 }}
               />
             </View>
-          </DialogContent>
-        </Dialog>
+          </View>
+        </Overlay>
 
-        <Dialog
-          visible={this.state.updateAvailableDialogVisible}
-          dialogStyle={styles.dialogWrapper}
-          dialogAnimation={
-            new SlideAnimation({
-              slideFrom: 'bottom',
-            })
-          }
-          onTouchOutside={this.onCloseDialog}
+        <Overlay
+          isVisible={this.state.updateAvailableDialogVisible}
+          height="auto"
+          width="auto"
+          onBackdropPress={this.onCloseDialog}
           onHardwareBackPress={this.onCloseDialog}
         >
-          <DialogContent style={styles.helpDialog}>
+          <View style={styles.helpDialog}>
             <Text style={styles.helpTitle}>New Features!</Text>
             <Text style={styles.helpContent}>
               We&apos;ve made some changes to the app. Please update to activate
@@ -1229,8 +1214,8 @@ class Home extends React.Component {
             >
               <Image source={require('../../assets/close.png')} />
             </TouchableOpacity>
-          </DialogContent>
-        </Dialog>
+          </View>
+        </Overlay>
       </View>
     );
   }
@@ -1426,10 +1411,6 @@ const styles = StyleSheet.create({
     fontSize: 3.2 * FONT_UNIT,
     color: Colors.PURPLE,
     marginRight: -5,
-  },
-  dialogWrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   gameDialog: {
     width: '90%',

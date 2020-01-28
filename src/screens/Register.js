@@ -9,11 +9,7 @@ import {
   Keyboard,
   View,
 } from 'react-native';
-import { Button, Icon, Input } from 'react-native-elements';
-import Dialog, {
-  SlideAnimation,
-  DialogContent,
-} from 'react-native-popup-dialog';
+import { Button, Icon, Input, Overlay } from 'react-native-elements';
 
 import { LoggingUtil } from '../util/LoggingUtil';
 import { ValidationUtil } from '../util/ValidationUtil';
@@ -453,18 +449,13 @@ export default class Register extends React.Component {
           />
         </View>
 
-        <Dialog
-          visible={this.state.dialogVisible}
+        <Overlay
+          isVisible={this.state.dialogVisible}
           dialogStyle={styles.dialogStyle}
-          dialogAnimation={
-            new SlideAnimation({
-              slideFrom: 'bottom',
-            })
-          }
-          onTouchOutside={this.onHideDialog}
+          onBackdropPress={this.onHideDialog}
           onHardwareBackPress={this.onHideDialog}
         >
-          <DialogContent style={styles.dialogWrapper}>
+          <View style={styles.dialogWrapper}>
             <View style={styles.helpDialog}>
               <Text style={styles.helpTitle}>Account already exists</Text>
               <Text style={styles.helpContent}>
@@ -521,8 +512,8 @@ export default class Register extends React.Component {
                 </Text>
               </Text>
             </View>
-          </DialogContent>
-        </Dialog>
+          </View>
+        </Overlay>
       </KeyboardAvoidingView>
     );
   }
@@ -648,7 +639,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     justifyContent: 'space-around',
     paddingBottom: 20,
-    paddingTop: 10,
+    paddingTop: 50,
     paddingHorizontal: 15,
   },
   helpTitle: {
@@ -666,8 +657,8 @@ const styles = StyleSheet.create({
   },
   closeDialog: {
     position: 'absolute',
-    top: 10,
-    right: 10,
+    top: 8,
+    right: 8,
   },
   explanation: {
     fontFamily: 'poppins-regular',

@@ -8,11 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import Dialog, {
-  SlideAnimation,
-  DialogContent,
-} from 'react-native-popup-dialog';
-import { Button, Icon, Input } from 'react-native-elements';
+import { Button, Icon, Input, Overlay } from 'react-native-elements';
 import moment from 'moment';
 
 import { NavigationUtil } from '../util/NavigationUtil';
@@ -28,7 +24,7 @@ export default class Withdraw extends React.Component {
       bank,
       accountNumber,
       currency: 'R',
-      amountToWithdraw: parseFloat(50).toFixed(2),
+      amountToWithdraw: '',
       balance: 0,
       dialogVisible: false,
       cardTitle: data.cardTitle,
@@ -39,7 +35,6 @@ export default class Withdraw extends React.Component {
 
   async componentDidMount() {
     // LoggingUtil.logEvent('USER_ENTERED_....');
-
     let info = await AsyncStorage.getItem('userInfo');
     if (!info) {
       NavigationUtil.logout(this.props.navigation);
@@ -132,7 +127,7 @@ export default class Withdraw extends React.Component {
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
-          Authorization: `Bearer '${this.state.token}`,
+          Authorization: `Bearer ${this.state.token}`,
         },
         method: 'POST',
         body: JSON.stringify({
@@ -160,6 +155,7 @@ export default class Withdraw extends React.Component {
   };
 
   finishWithdrawal = async isWithdrawing => {
+    console.log('Finishing withdrawal, user chose to: ', isWithdrawing);
     if (this.state.withdrawLoading) return;
     this.setState({ withdrawLoading: true });
 
@@ -176,6 +172,7 @@ export default class Withdraw extends React.Component {
           userDecision: isWithdrawing ? 'WITHDRAW' : 'CANCEL',
         }),
       });
+      console.log('Server result: ', result);
       if (result.ok) {
         this.setState({ withdrawLoading: false });
         if (isWithdrawing) {
@@ -198,7 +195,7 @@ export default class Withdraw extends React.Component {
   getBoostAmount = () => {
     const amount = this.state.delayOffer.boostAmount;
     const parts = amount.split('::');
-    return (parts[0] / this.getDivisor(parts[1])).toFixed(2); // + " " + parts[2];
+    return (parts[0] / this.getDivisor(parts[1])).toFixed(0); // + " " + parts[2];
   };
 
   render() {
@@ -255,8 +252,6 @@ export default class Withdraw extends React.Component {
                 Your current balance is {this.state.currency}
                 {this.getFormattedBalance(this.state.balance)}.{'\n'}
               </Text>
-              Please make sure you have added the correct amount as this
-              transaction cannot be reversed.
             </Text>
           </View>
           <View style={styles.bottomBox}>
@@ -284,18 +279,13 @@ export default class Withdraw extends React.Component {
           }}
         />
 
-        <Dialog
-          visible={this.state.dialogVisible}
-          dialogStyle={styles.dialogWrapper}
-          dialogAnimation={
-            new SlideAnimation({
-              slideFrom: 'bottom',
-            })
-          }
-          onTouchOutside={this.onCloseDialog}
-          onHardwareBackPress={this.onCloseDialog}
+        <Overlay
+          isVisible={this.state.dialogVisible}
+          onBackdropPress={this.onCloseDialog}
+          width="auto"
+          height="auto"
         >
-          <DialogContent style={styles.dialogContent}>
+          <View style={styles.dialogContent}>
             <View style={styles.dialogTitleWrapper}>
               <Text style={styles.dialogTitle}>
                 {this.state.delayOffer
@@ -327,7 +317,7 @@ export default class Withdraw extends React.Component {
               </Text>
             ) : null}
             <Button
-              title="CANCEL WITHDRAW"
+              title="CANCEL WITHDRAWAL"
               titleStyle={styles.buttonTitleStyle}
               buttonStyle={styles.buttonStyle}
               containerStyle={styles.buttonContainerStyle}
@@ -350,27 +340,22 @@ export default class Withdraw extends React.Component {
             >
               <Image source={require('../../assets/close.png')} />
             </TouchableOpacity>
-          </DialogContent>
-        </Dialog>
+          </View>
+        </Overlay>
 
-        <Dialog
-          visible={this.state.withdrawLoading}
-          dialogStyle={styles.dialogStyle}
-          dialogAnimation={
-            new SlideAnimation({
-              slideFrom: 'bottom',
-            })
-          }
-          onTouchOutside={() => {}}
-          onHardwareBackPress={() => {
+        <Overlay
+          isVisible={this.state.withdrawLoading}
+          height="auto"
+          width="auto"
+          onBackdropPress={() => {
             return true;
           }}
         >
-          <DialogContent style={styles.finalDialogWrapper}>
+          <View style={styles.finalDialogWrapper}>
             <ActivityIndicator size="large" color={Colors.PURPLE} />
             <Text style={styles.finalDialogText}>Please wait...</Text>
-          </DialogContent>
-        </Dialog>
+          </View>
+        </Overlay>
       </View>
     );
   }
@@ -517,13 +502,9 @@ const styles = StyleSheet.create({
     color: Colors.MEDIUM_GRAY,
     textAlign: 'center',
   },
-  dialogWrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   dialogContent: {
     width: '90%',
-    minHeight: 390,
+    minHeight: 220,
     backgroundColor: Colors.WHITE,
     borderRadius: 10,
     justifyContent: 'space-around',

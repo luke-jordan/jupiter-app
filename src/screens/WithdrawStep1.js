@@ -9,11 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import Dialog, {
-  SlideAnimation,
-  DialogContent,
-} from 'react-native-popup-dialog';
-import { Button, Icon, Input } from 'react-native-elements';
+import { Button, Icon, Input, Overlay } from 'react-native-elements';
 
 import { LoggingUtil } from '../util/LoggingUtil';
 import { NavigationUtil } from '../util/NavigationUtil';
@@ -61,6 +57,10 @@ export default class Withdraw extends React.Component {
       errors.accountNumber = true;
       flag = true;
     }
+    if (this.state.accountType.length < 1) {
+      errors.accountType = true;
+      flag = true;
+    }
     if (flag) {
       this.setState({
         errors,
@@ -77,6 +77,7 @@ export default class Withdraw extends React.Component {
     this.setState({ loading: true });
 
     try {
+      console.log('Initiating withdrawal');
       const result = await fetch(`${Endpoints.CORE}withdrawal/initiate`, {
         headers: {
           'Content-Type': 'application/json',
@@ -89,7 +90,7 @@ export default class Withdraw extends React.Component {
           bankDetails: {
             bankName: this.state.bank,
             accountNumber: this.state.accountNumber,
-            accountType: this.this.state.accountType,
+            accountType: this.state.accountType,
           },
         }),
       });
@@ -106,6 +107,7 @@ export default class Withdraw extends React.Component {
         throw result;
       }
     } catch (error) {
+      console.log('Error on withdrawal initiate: ', error);
       this.setState({ loading: false });
       this.showError(error);
     }
@@ -251,24 +253,21 @@ export default class Withdraw extends React.Component {
           }}
         />
 
-        <Dialog
-          visible={this.state.loading}
-          dialogStyle={styles.dialogStyle}
-          dialogAnimation={
-            new SlideAnimation({
-              slideFrom: 'bottom',
-            })
-          }
-          onTouchOutside={() => {}}
+        <Overlay
+          isVisible={this.state.loading}
+          containerStyle={styles.dialogStyle}
+          height="auto"
+          width="auto"
+          onBackdropPress={() => {}}
           onHardwareBackPress={() => {
             return true;
           }}
         >
-          <DialogContent style={styles.dialogWrapper}>
+          <View style={styles.dialogWrapper}>
             <ActivityIndicator size="large" color={Colors.PURPLE} />
             <Text style={styles.dialogText}>Verifying your data...</Text>
-          </DialogContent>
-        </Dialog>
+          </View>
+        </Overlay>
       </View>
     );
   }
