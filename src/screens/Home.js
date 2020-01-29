@@ -18,7 +18,6 @@ import {
   Text,
   TouchableOpacity,
   View,
-  YellowBox,
 } from 'react-native';
 import { Icon, Button, Overlay } from 'react-native-elements';
 import {
@@ -36,14 +35,18 @@ import { NotificationsUtil } from '../util/NotificationsUtil';
 import { MessagingUtil } from '../util/MessagingUtil';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
-import AnimatedNumber from '../elements/AnimatedNumber';
+
+import BalanceNumber from '../elements/BalanceNumber';
+
 import { updateBoostCount } from '../modules/boost/boost.actions';
 
-/*
-  This is here because currently long timers are not purely supported on Android. A long timer is used for the rest-of-day-animation
-  We should continue to follow the support threads on this issue (visible in the error if you remove this ignore block)
-*/
-YellowBox.ignoreWarnings(['Setting a timer']);
+import { updateServerBalance, updateShownBalance } from '../modules/balance/balance.actions';
+
+const mapDispatchToProps = {
+  updateBoostCount,
+  updateServerBalance, 
+  updateShownBalance,
+};
 
 const { height, width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
@@ -52,13 +55,6 @@ const TIME_BETWEEN_FETCH = 10 * 1000; // don't fetch if time is between this (i.
 const CIRCLE_ROTATION_DURATION = 6000;
 const CIRCLE_SCALE_DURATION = 200;
 
-// depending on the phone, a shorter interval actually leads to a longer animation, because the animation can't
-// move as fast as desired (given calculations etc), especially at large balances
-const DEFAULT_BALANCE_ANIMATION_INTERVAL = 14;
-const DEFAULT_BALANCE_ANIMATION_DURATION = 3000;
-const DEFAULT_BALANCE_ANIMATION_STEP_SIZE = 50;
-const MAX_NUMBER_STEPS_ACCELERATED_ANIMATION = 30;
-
 const COLOR_WHITE = '#fff';
 
 class Home extends React.Component {
@@ -66,55 +62,8 @@ class Home extends React.Component {
     super(props);
     this.state = {
       firstName: '',
-      currency: 'R',
       loading: false,
 
-      // The state has crucial variables that control what the central balance displays, and how quickly it is
-      // animating towards its target or not. there are two kinds of animation of the balance,
-      // "accelerated" when the displayed balance needs to reach a much higher balance quickly, e.g.,
-      // when the app is loaded (so, from 0 to the current or last stored balance) and after the user
-      // has saved or a boost has been awarded, or similar. "Slow" is when the balance is stable and is just
-      // ticking upwards to its projected level at the end of the day (calculated by the server).
-
-      // The AnimatedNumber component that handles the animation has four inputs: initial (where to start),
-      // target (where to reach), duration (how long to animate), and stepSize (how much to increment on each)
-      // tick. It will calculate how often to animate (tick up or down) based on the step size and duration.
-
-      // Three numbers therefore control the animation: the current reference balance; the last shown balance;
-      // and the target balance for the end of the day:
-
-      // ** The current reference balance (currentBalance) is the user's balance as of either the start of the day or the last
-      // balance-related event (save, withdraw, boost award), whichever  is latest. The current reference balance always forms
-      // the initial balance for the slow animation. It is stored locally in userInfo.balance.currentBalance.
-
-      // ** The last shown balance (lastShownBalance) is whatever is currently on the screen or was the last time the user was on
-      // this screen. It serves as the "initial" point each time the balance is rendered
-
-      // ** The target balance (endOfDayBalance) for the end of the day is where the server projects the user will be if they do not
-      // have any balance-related event, i.e., in steady state earning interest. In steady-state, the balance
-      // animation (in "slow"), animates to reach this number at the end of the day.
-
-      // The animation decision tree is therefore as follows: if the lastShownBalance is different from the currentBalance
-      // and is not between the currentBalance and the endOfDay balance, then initiate accelerated animation, to close the
-      // gap between the lastShownBalance and the currentBalance within the default animation duration; else, initiate or continue
-      // slow animation, to make the lastShownBalance converge to the endOfDay balance.
-
-      // Finally, there is one corner case where the current reference amount changes by less than the difference between
-      // it and the end of day target. This is only possible where the daily interest on an account is less than the amount
-      // of a potential save, which is a very very large account. Still, to accommodate it, when we fetch the balance from the
-      // server we do an additional check on whether the server's reference balance is different to the currentBalance, and if so,
-      // we set the currentBalance accordingly and we initiate accelerated animation.
-
-      currentBalance: 0,
-      lastShownBalance: 0,
-      endOfDayBalance: 0,
-
-      balanceAnimationStepSize: DEFAULT_BALANCE_ANIMATION_STEP_SIZE,
-      balanceAnimationDuration: DEFAULT_BALANCE_ANIMATION_DURATION,
-      acceleratedBalanceAnimationStarted: false,
-      slowBalanceAnimationStarted: false,
-
-      // expectedToAdd: "100",
       rotation: new Animated.Value(0),
       gameRotation: new Animated.Value(0),
       circleScale: new Animated.Value(0),
@@ -136,6 +85,35 @@ class Home extends React.Component {
     this.showInitialData();
     this.rotateCircle();
   }
+
+  /*
+    // eslint-disable-next-line react/sort-comp
+    async storeAuthToken() {
+      if (!this.props.token) {
+        const storedInfo = await AsyncStorage.getItem('userInfo');
+        const userInfo = JSON.parse(storedInfo);
+        this.props.updateAuthToken(userInfo.token);  
+      }
+    }
+
+    async updateBalance () {
+      await this.storeAuthToken();
+
+      const result = await fetch(`${Endpoints.CORE}balance`, {
+        headers: {
+          Authorization: `Bearer ${this.props.token}`,
+        },
+        method: 'GET',
+      });
+
+      if (result.ok) {
+        const resultJson = await result.json();
+        this.props.updateServerBalance(resultJson);
+      } else {
+        throw result;
+      }
+    }
+  */
 
   async showInitialData() {
     let info = this.props.navigation.getParam('userInfo');
@@ -170,137 +148,16 @@ class Home extends React.Component {
     LoggingUtil.setUserId(info.systemWideUserId);
     LoggingUtil.logEvent('USER_ENTERED_SCREEN', { screen_name: 'Home' });
 
-    this.setBalanceAnimationParameters(info.balance, true);
+    this.props.updateServerBalance(info.balance);
+
     this.fetchCurrentBalanceFromServer();
     this.fetchMessagesIfNeeded();
-  }
-
-  // when the component first loads, we animate from zero, so the stored last shown balance is disregarded
-  async setBalanceAnimationParameters(balanceInfo, showingInitialData) {
-    // console.log('Set balance animation parameters called');
-    let lastShownBalance = 0;
-
-    if (!showingInitialData) {
-      const storedLastShownBalance = await AsyncStorage.getItem(
-        'lastShownBalance'
-      );
-      if (storedLastShownBalance) {
-        lastShownBalance = JSON.parse(storedLastShownBalance);
-      }
-    }
-
-    const currentBalance = balanceInfo.currentBalance.amount;
-    const endOfDayBalance = balanceInfo.balanceEndOfToday.amount;
-
-    this.setState({
-      lastShownBalance,
-      currentBalance,
-      endOfDayBalance,
-      unit: balanceInfo.currentBalance.unit,
-      currency: this.getCurrencySymbol(balanceInfo.currentBalance.currency),
-      balanceAnimationStepSize:
-        Math.abs(balanceInfo.currentBalance.amount - lastShownBalance) / 50, // backup
-    });
-
-    // as in large comment at top, if last shown balance is not in between the current and projected, we accelerate.
-    // making this explicit and verbose as it is important and could get a little confusing, and the cost of false negatives is high
-    const isLastShownBtwCurrentAndEndDay =
-      (lastShownBalance > currentBalance &&
-        lastShownBalance < endOfDayBalance) ||
-      (lastShownBalance < currentBalance && lastShownBalance > endOfDayBalance);
-    const shouldAccelerate = !(
-      lastShownBalance === currentBalance || isLastShownBtwCurrentAndEndDay
-    );
-
-    console.log(
-      `Alright, current balance: ${currentBalance}, end of day balance: ${endOfDayBalance}, last shown: ${lastShownBalance}, should accelerate: ${shouldAccelerate}`
-    );
-
-    // due to extreme assymetry -- accidentally going fast has little to no negative effects, accidentally going slow means the
-    // user might think their latest withdrawal/boost/save/etc is not being reflected -- we only turn on acceleration, we do not
-    // turn it off (turning off is done by end of animation method when acceleration has reached its target)
-    if (shouldAccelerate) {
-      this.playAcceleratedAnimation();
-    }
-
-    // console.log(`Balance parameters set!: current: ${this.state.currentBalance}, last shown: ${this.state.lastShownBalance}, end day: ${this.state.endOfDayBalance}`);
-  }
-
-  playAcceleratedAnimation() {
-    const balanceDiff = Math.abs(
-      this.state.currentBalance - this.state.lastShownBalance
-    );
-    console.log(
-      `Balance difference: ${balanceDiff} and current unit: ${this.state.unit}`
-    );
-    const numberSteps = Math.min(
-      DEFAULT_BALANCE_ANIMATION_DURATION / DEFAULT_BALANCE_ANIMATION_INTERVAL,
-      MAX_NUMBER_STEPS_ACCELERATED_ANIMATION
-    );
-    const stepSize = balanceDiff / numberSteps;
-    console.log(
-      'Accelerated step size: ',
-      stepSize,
-      ' should produce ',
-      numberSteps,
-      ' steps'
-    );
-    // const stepSize = this.calculateStepSize(balanceDiff, DEFAULT_BALANCE_ANIMATION_DURATION);
-
-    this.setState({
-      acceleratedBalanceAnimationStarted: true,
-      acceleratedBalanceAnimationFinished: false,
-      balanceAnimationDuration: DEFAULT_BALANCE_ANIMATION_DURATION,
-      balanceAnimationStepSize: stepSize,
-    });
-  }
-
-  calculateStepSize(balanceDiff, timeToComplete) {
-    const balanceDiffInCents =
-      (balanceDiff / this.getDivisor(this.state.unit)) * 100; // get the amount to be earned in the period in cents
-
-    let steps = balanceDiffInCents; // set a default amount of steps, equal to the amount of cents we want to increase
-    let stepSize = 0.01; // set a default count by to 1 cent per step
-
-    // if there are too many steps, make them go twice as fast until we reach a good speed
-    // this way, if the amount to increase is way too big, we will be moving not by a cent every millisecond, but 2 cents per milli, etc.
-    while (steps > timeToComplete) {
-      steps /= 2;
-      stepSize *= 2;
-    }
-
-    return stepSize * this.getDivisor(this.state.unit);
-  }
-
-  playRestOfDayAnimation() {
-    console.log('Playing rest of day slow animation');
-
-    const { currentBalance } = this.state; // get balance as of right now
-    const { endOfDayBalance } = this.state; // get end of day balance
-
-    if (currentBalance < endOfDayBalance) {
-      // only keep going if we actually need to animate anything
-      const timeToEndOfDay =
-        moment()
-          .endOf('day')
-          .valueOf() - moment().valueOf(); // get the time left until end of day in millis
-      // let timeToEndOfDay = moment().add(30, 'seconds').valueOf() - moment().valueOf(); //testing for 120 seconds
-      const balanceDiff = endOfDayBalance - currentBalance; // get the amount to be earned by the end of day in "huge numbers"
-
-      const stepSize = this.calculateStepSize(balanceDiff, timeToEndOfDay);
-
-      this.setState({
-        balanceAnimationStepSize: stepSize,
-        balanceAnimationDuration: timeToEndOfDay,
-        slowBalanceAnimationStarted: true,
-        acceleratedBalanceAnimationFinished: true,
-      });
-    }
   }
 
   fetchCurrentBalanceFromServer = async () => {
     if (this.state.loading) return;
     this.setState({ loading: true });
+
     try {
       const result = await fetch(`${Endpoints.CORE}balance`, {
         headers: {
@@ -309,13 +166,10 @@ class Home extends React.Component {
         method: 'GET',
       });
 
-      // Uncomment this to force MA-69 test case
-      // result.ok = false;
-      // result.status = 403;
-
       if (result.ok) {
         const resultJson = await result.json();
-        await this.storeUpdatedBalance(resultJson);
+        this.storeUpdatedBalance(resultJson);
+        this.props.updateServerBalance(resultJson);
         this.props.updateBoostCount(
           parseInt(resultJson.availableBoostCount || 0)
         );
@@ -323,21 +177,15 @@ class Home extends React.Component {
           lastFetchTimeMillis: moment().valueOf(),
           loading: false,
         });
-        // to make the wheel go to the right place
-        this.setBalanceAnimationParameters(resultJson, false);
       } else {
         if (result.status === 403) {
           Alert.alert(
             'Token expired',
             'For your security, please login again',
-            [
-              {
-                text: 'OK',
-                onPress: () => {
-                  NavigationUtil.logout(this.props.navigation);
-                },
+            [{ text: 'OK', onPress: () => {
+                NavigationUtil.logout(this.props.navigation);
               },
-            ],
+            }],
             { cancelable: false }
           );
         }
@@ -359,12 +207,13 @@ class Home extends React.Component {
     if (response) {
       info.balance = response;
       await AsyncStorage.setItem('userInfo', JSON.stringify(info));
+      this.props.updateServerBalance(response);
     }
   }
 
-  // todo : try make sure this isn't blocking (slows arrow on dev build)
   async checkBalanceOnReload() {
     // first we reload the balance from storage, in case it changed (e.g., by stashing after payment complete)
+    // note : remove this shortly once payment & withdrawal convert to using redux
     const info = await AsyncStorage.getItem('userInfo');
     if (!info) {
       // means something went wrong while on other screens or some backdoor attempt
@@ -372,133 +221,13 @@ class Home extends React.Component {
     }
 
     const { balance } = JSON.parse(info);
-    this.setBalanceAnimationParameters(balance, false);
+    this.props.updateServerBalance(balance);
 
-    const millisSinceLastFetch =
-      moment().valueOf() - this.state.lastFetchTimeMillis;
+    const millisSinceLastFetch = moment().valueOf() - this.state.lastFetchTimeMillis;
     console.log('Time since fetch: ', millisSinceLastFetch);
     if (millisSinceLastFetch > TIME_BETWEEN_FETCH) {
       console.log('Enough time elapsed, check for new balance');
       await this.fetchCurrentBalanceFromServer();
-    }
-  }
-
-  renderBalance() {
-    if (!this.state.acceleratedBalanceAnimationStarted) return null;
-    return (
-      <View style={styles.balanceWrapper}>
-        <Text style={styles.currency}>{this.state.currency}</Text>
-        {this.state.acceleratedBalanceAnimationStarted &&
-        !this.state.acceleratedBalanceAnimationFinished ? (
-          <AnimatedNumber
-            style={styles.balance}
-            initial={this.state.lastShownBalance}
-            target={this.state.currentBalance}
-            formatting={value => this.getFormattedValue(value)}
-            stepSize={this.state.balanceAnimationStepSize}
-            duration={this.state.balanceAnimationDuration}
-            onAnimationProgress={value => {
-              this.onProgressBalanceAnimation(value);
-            }}
-            onAnimationFinished={() => {
-              this.onFinishBalanceAnimation(true);
-            }}
-          />
-        ) : null}
-        {this.state.acceleratedBalanceAnimationFinished &&
-        this.state.slowBalanceAnimationStarted ? (
-          <AnimatedNumber
-            style={styles.balance}
-            initial={this.state.lastShownBalance}
-            target={this.state.endOfDayBalance}
-            formatting={value => this.getFormattedValue(value)}
-            stepSize={this.state.balanceAnimationStepSize}
-            duration={this.state.balanceAnimationDuration}
-            onAnimationProgress={value => {
-              this.onProgressBalanceAnimation(value);
-            }}
-            onAnimationFinished={() => {
-              this.onFinishBalanceAnimation(false);
-            }}
-          />
-        ) : null}
-      </View>
-    );
-  }
-
-  async onFinishBalanceAnimation(hasBeenAccelerated) {
-    const finalBalance = hasBeenAccelerated
-      ? this.state.currentBalance
-      : this.state.endOfDayBalance;
-    await AsyncStorage.setItem(
-      'lastShownBalance',
-      JSON.stringify(finalBalance)
-    );
-    this.setState({
-      lastShownBalance: finalBalance,
-    });
-    if (hasBeenAccelerated) {
-      setTimeout(() => {
-        this.playRestOfDayAnimation();
-      }, 300);
-    }
-  }
-
-  async onProgressBalanceAnimation(value) {
-    this.setState({
-      lastShownBalance: value,
-    });
-    if (
-      !this.state.lastSetStorage ||
-      moment().valueOf() - this.state.lastSetStorage.valueOf() > 15000
-    ) {
-      // if the last time we saved it was more than 15 seconds ago, save it again
-      await AsyncStorage.setItem('lastShownBalance', JSON.stringify(value));
-      this.setState({
-        lastSetStorage: moment(),
-      });
-    }
-  }
-
-  getFormattedValue(value) {
-    let result = (value / this.getDivisor(this.state.unit)).toFixed(2);
-    result = result.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ','); // I don't understand how this works. It's a plain copy paste which allows comma separators
-    return result;
-  }
-
-  getCurrencySymbol(currencyName) {
-    // todo improve this to handle more currencies
-    switch (currencyName) {
-      case 'ZAR':
-        return 'R';
-
-      default:
-        return '?';
-    }
-  }
-
-  getDivisor(unit) {
-    switch (unit) {
-      case 'MILLIONTH_CENT':
-        return 100000000;
-
-      case 'TEN_THOUSANDTH_CENT':
-        return 1000000;
-
-      case 'THOUSANDTH_CENT':
-        return 100000;
-
-      case 'HUNDREDTH_CENT':
-        return 10000;
-
-      case 'WHOLE_CENT':
-        return 100;
-
-      case 'WHOLE_CURRENCY':
-        return 1;
-
-      default:
-        return 1;
     }
   }
 
@@ -1094,9 +823,11 @@ class Home extends React.Component {
                   </Animated.View>
                 )}
               </View>
+
               {this.state.tapScreenGameMode || this.state.chaseArrowGameMode
                 ? this.renderTapCounter()
-                : this.renderBalance()}
+                : <BalanceNumber balanceStyle={styles.balance} currencyStyle={styles.currency} />}
+
               {/* {<View style={styles.endOfMonthBalanceWrapper}>
                 <Text style={styles.endOfMonthBalance}>+R{this.state.expectedToAdd}</Text>
                   <Icon
@@ -1108,8 +839,11 @@ class Home extends React.Component {
               </View>
               <Text style={styles.endOfMonthDesc}>Due end of month</Text>} */}
             </View>
+
             {this.state.hasMessage ? this.renderMessageCard() : null}
+            
             <NavigationBar navigation={this.props.navigation} currentTab={0} />
+
           </LinearGradient>
         </View>
 
@@ -1305,9 +1039,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: width * 0.895,
     height: width * 0.895,
-  },
-  balanceWrapper: {
-    flexDirection: 'row',
   },
   tapCounterWrapper: {
     alignItems: 'center',
@@ -1514,66 +1245,6 @@ const styles = StyleSheet.create({
   buttonContainerStyle: {
     justifyContent: 'center',
   },
-  // updateFeatureItem: {
-  //   flexDirection: 'row',
-  //   alignItems: 'flex-start',
-  //   width: '87%',
-  // },
-  // updateFeatureItemText: {
-  //   marginLeft: 10,
-  //   marginTop: 5,
-  //   fontFamily: 'poppins-regular',
-  //   fontSize: 16,
-  //   lineHeight: 20,
-  // },
-  // updateFeatureItemBold: {
-  //   fontFamily: 'poppins-semibold',
-  // },
 });
-
-// removing until we have a public page
-// async checkIfUpdateNeeded() {
-//   try {
-//     let localVersion = VersionCheck.getCurrentVersion();
-//     let remoteVersion = await VersionCheck.getLatestVersion();
-
-//     const updateStatus = this.needsUpdate(localVersion, remoteVersion);
-//     if (updateStatus == 2) {
-//       this.showUpdateDialog(true);
-//     } else if (updateStatus == 1) {
-//       this.showUpdateDialog(false);
-//     }
-//   } catch (err) {
-//     LoggingUtil.logError(err);
-//   }
-// }
-
-// needsUpdate(localVersion, remoteVersion) {
-//   let localParts = localVersion.split('.');
-//   if (!remoteVersion) return false;
-//   let remoteParts = remoteVersion.split('.');
-//   if (localParts[0] < remoteParts[0]) return 2;
-//   if (localParts[1] < remoteParts[1]) return 2;
-//   if (localParts[2] < remoteParts[2]) return 1;
-//   return 0;
-// }
-
-// async showUpdateDialog(required){
-//   if (required) {
-//     this.setState({updateRequiredDialogVisible: true});
-//   } else {
-//     this.setState({updateAvailableDialogVisible: true});
-//   }
-// }
-
-// onPressUpdate = async () => {
-//   let link = await VersionCheck.getStoreUrl();
-//   Linking.openURL(link);
-//   this.onCloseDialog();
-// }
-
-const mapDispatchToProps = {
-  updateBoostCount,
-};
 
 export default connect(null, mapDispatchToProps)(Home);

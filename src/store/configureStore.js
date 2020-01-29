@@ -15,6 +15,7 @@ export default initialState => {
   // Create enhancer.
   const enhancer = applyMiddleware(...middlewares);
   const store = createStore(rootReducer, initialState, enhancer);
+  console.log('Set up store');
 
   enableStoreDebug(store);
   enableHotReload(store);
