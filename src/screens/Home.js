@@ -39,7 +39,7 @@ import { LoggingUtil } from '../util/LoggingUtil';
 import BalanceNumber from '../elements/BalanceNumber';
 
 import { updateBoostCount } from '../modules/boost/boost.actions';
-
+import BoostModalChallenge from '../modules/home/components/BoostChallengeModal';
 import {
   updateServerBalance,
   updateShownBalance,
@@ -120,6 +120,7 @@ class Home extends React.Component {
 
   async showInitialData() {
     let info = this.props.navigation.getParam('userInfo');
+    const { params } = this.props.navigation.state;
     if (!info) {
       info = await AsyncStorage.getItem('userInfo');
       if (!info) {
@@ -128,11 +129,19 @@ class Home extends React.Component {
         info = JSON.parse(info);
       }
     }
-
-    await this.setState({
-      token: info.token,
-      firstName: info.profile.personalName,
-    });
+    // check params if we have params.showModal we show modal with game
+    if (params) {
+      await this.setState({
+        token: info.token,
+        firstName: info.profile.personalName,
+        showModal: params.showModal,
+      });
+    } else {
+      await this.setState({
+        token: info.token,
+        firstName: info.profile.personalName,
+      });
+    }
 
     if (
       info.profile.kycStatus === 'FAILED_VERIFICATION' ||
@@ -599,6 +608,13 @@ class Home extends React.Component {
     AsyncStorage.removeItem('currentGames');
   };
 
+  /**
+   * handler for hide modal with game
+   */
+  hideBoostModalHandler = async () => {
+    await this.setState({ showModal: false });
+  };
+
   getGameDetailsBody(body) {
     let taps = 0;
     if (this.tapScreenGameTaps && this.tapScreenGameTaps > 0)
@@ -962,6 +978,13 @@ class Home extends React.Component {
             </TouchableOpacity>
           </View>
         </Overlay>
+        {this.state.showModal && (
+          <BoostModalChallenge
+            showModal={this.state.showModal}
+            hideModal={this.hideBoostModalHandler}
+            startGame={() => {}}
+          />
+        )}
       </View>
     );
   }

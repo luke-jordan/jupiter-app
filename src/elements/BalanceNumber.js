@@ -107,7 +107,10 @@ class BalanceNumber extends React.Component {
 
   onProgressBalanceAnimation(value) {
     this.setState({ lastShownBalance: value });
-    if (!this.state.lastSetStorage || moment().valueOf() - this.state.lastSetStorage.valueOf() > 1000) {
+    if (
+      !this.state.lastSetStorage ||
+      moment().valueOf() - this.state.lastSetStorage.valueOf() > 1000
+    ) {
       this.props.updateShownBalance(value);
       this.setState({ lastSetStorage: moment() });
     }
@@ -128,9 +131,15 @@ class BalanceNumber extends React.Component {
     }
 
     // console.log(`Last animation target: ${this.state.animationTargetNumber}, and currentBalance: ${this.props.currentAnchorBalance} and target: ${this.props.currentTargetBalance}`);
-    const isAnimatingToRightAnchor = this.state.animationTargetNumber === this.props.currentAnchorBalance;
+    const isAnimatingToRightAnchor =
+      this.state.animationTargetNumber === this.props.currentAnchorBalance;
     // as below note, end of day target is *always* above current, so this will guard against accidental declines
-    const isAnimatingToRightTarget = this.state.animationTargetNumber === Math.max(this.props.currentTargetBalance, this.props.currentAnchorBalance);
+    const isAnimatingToRightTarget =
+      this.state.animationTargetNumber ===
+      Math.max(
+        this.props.currentTargetBalance,
+        this.props.currentAnchorBalance
+      );
     // console.log(`Animating tags: to anchor: ${isAnimatingToRightAnchor} and to target: ${isAnimatingToRightTarget}`);
     if (!isAnimatingToRightAnchor && !isAnimatingToRightTarget) {
       // neither heading to anchor balance nor on way to target, so go to anchor quickly
@@ -138,7 +147,10 @@ class BalanceNumber extends React.Component {
       return;
     }
 
-    if (isAnimatingToRightAnchor && this.state.lastShownBalance === this.state.animationTargetNumber) {
+    if (
+      isAnimatingToRightAnchor &&
+      this.state.lastShownBalance === this.state.animationTargetNumber
+    ) {
       this.animateToEndOfDayBalance();
       return;
     }
@@ -161,15 +173,24 @@ class BalanceNumber extends React.Component {
   }
 
   animateToEndOfDayBalance() {
-    const animationDuration = moment().endOf('day').valueOf() - moment().valueOf();
+    const animationDuration =
+      moment()
+        .endOf('day')
+        .valueOf() - moment().valueOf();
     const animationStartNumber = this.state.lastShownBalance;
     // this prevents an accidental decline (e.g., on day changeover), and is valid, since interest mechanics
     // dictate that the only way a balance should decline is via withdrawal, i.e., change in server balance, so end of day target always higher
-    const animationTargetNumber = Math.max(this.props.currentTargetBalance, this.props.currentAnchorBalance);
+    const animationTargetNumber = Math.max(
+      this.props.currentTargetBalance,
+      this.props.currentAnchorBalance
+    );
 
     // in here we calculate this (animated number can, but would then require reverting to two differently set up anim-numbers, which
     // current refactor eliminates, as one of its larger gains); interval = duration / number of steps, where nu
-    const numberSteps = Math.abs((animationTargetNumber - animationStartNumber) / DEFAULT_REST_DAY_STEP_SIZE);  
+    const numberSteps = Math.abs(
+      (animationTargetNumber - animationStartNumber) /
+        DEFAULT_REST_DAY_STEP_SIZE
+    );
     if (numberSteps === 0) {
       // console.log('Nothing to do, exiting');
       return;
