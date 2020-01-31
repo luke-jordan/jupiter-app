@@ -72,6 +72,30 @@ export const MessagingUtil = {
     }
   },
 
+  async fetchInstructionsMessage(authenticationToken, instructionId) {
+    try {
+      const result = await fetch(
+        `${Endpoints.CORE}message/fetch?instructionId=${instructionId}`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            Authorization: `Bearer ${authenticationToken}`,
+          },
+          method: 'GET',
+        }
+      );
+      if (result.ok) {
+        const resultJson = await result.json();
+        return resultJson;
+      } else {
+        throw result;
+      }
+    } catch (error) {
+      console.error('Error fetching messages for user!', JSON.stringify(error));
+    }
+  },
+
   async dismissedGame(authenticationToken) {
     const gameId = await MessagingUtil.getGameId();
     if (!gameId) {
