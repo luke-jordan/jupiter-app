@@ -1,5 +1,9 @@
 import { BoostStatus } from '../models';
 
+/**
+ * Check boost by status
+ * In order to display different actions
+ */
 const getPermittedTypesOfBoost = boostDetails => {
   if (
     boostDetails.boostStatus === BoostStatus.CREATED ||
