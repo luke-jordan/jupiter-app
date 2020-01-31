@@ -71,6 +71,7 @@ export default class PaymentComplete extends React.Component {
       this.setState({ loading: false });
       NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', {
         userInfo: this.state.userInfo,
+        showModal: true,
       });
     }
   };

@@ -95,7 +95,7 @@ class Home extends React.Component {
       if (!this.props.token) {
         const storedInfo = await AsyncStorage.getItem('userInfo');
         const userInfo = JSON.parse(storedInfo);
-        this.props.updateAuthToken(userInfo.token);  
+        this.props.updateAuthToken(userInfo.token);
       }
     }
 
@@ -185,7 +185,14 @@ class Home extends React.Component {
           Alert.alert(
             'Token expired',
             'For your security, please login again',
-            [{ text: 'OK', onPress: () => { NavigationUtil.logout(this.props.navigation); } }],
+            [
+              {
+                text: 'OK',
+                onPress: () => {
+                  NavigationUtil.logout(this.props.navigation);
+                },
+              },
+            ],
             { cancelable: false }
           );
         }
@@ -223,7 +230,8 @@ class Home extends React.Component {
     const { balance } = JSON.parse(info);
     this.props.updateServerBalance(balance);
 
-    const millisSinceLastFetch = moment().valueOf() - this.state.lastFetchTimeMillis;
+    const millisSinceLastFetch =
+      moment().valueOf() - this.state.lastFetchTimeMillis;
     console.log('Time since fetch: ', millisSinceLastFetch);
     if (millisSinceLastFetch > TIME_BETWEEN_FETCH) {
       console.log('Enough time elapsed, check for new balance');
