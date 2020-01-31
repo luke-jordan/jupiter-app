@@ -26,6 +26,7 @@ export default class PaymentComplete extends React.Component {
       loading: false,
       fetchingProfile: true,
       userInfo: null,
+      showModal: false,
     };
   }
 
@@ -37,6 +38,9 @@ export default class PaymentComplete extends React.Component {
 
     const { params } = this.props.navigation.state;
     if (params) {
+      // check if the amount of replenishment is greater than the amount indicated in the boost
+      if (params.amountForBoost <= params.amountAdded)
+        this.setState({ showModal: true });
       if (params.isOnboarding) {
         LoggingUtil.logEvent('USER_COMPLETED_ONBOARD', {
           amountAdded: params.amountAdded,
@@ -71,7 +75,7 @@ export default class PaymentComplete extends React.Component {
       this.setState({ loading: false });
       NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', {
         userInfo: this.state.userInfo,
-        showModal: true,
+        showModal: this.state.showModal,
       });
     }
   };

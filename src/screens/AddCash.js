@@ -65,6 +65,7 @@ class AddCash extends React.Component {
       if (lastSaveAmount) {
         const lastSave = parseInt(lastSaveAmount, 10);
         this.setState({
+          amountForBoost: parseFloat(lastSave).toFixed(0),
           amountToAdd: parseFloat(lastSave).toFixed(0),
         });
       }
@@ -119,6 +120,7 @@ class AddCash extends React.Component {
           token: this.state.token,
           isOnboarding: this.state.isOnboarding,
           amountAdded: this.state.amountToAdd,
+          amountForBoost: this.state.amountForBoost,
         });
       } else {
         throw result;
