@@ -40,11 +40,14 @@ import BalanceNumber from '../elements/BalanceNumber';
 
 import { updateBoostCount } from '../modules/boost/boost.actions';
 
-import { updateServerBalance, updateShownBalance } from '../modules/balance/balance.actions';
+import {
+  updateServerBalance,
+  updateShownBalance,
+} from '../modules/balance/balance.actions';
 
 const mapDispatchToProps = {
   updateBoostCount,
-  updateServerBalance, 
+  updateServerBalance,
   updateShownBalance,
 };
 
@@ -182,10 +185,7 @@ class Home extends React.Component {
           Alert.alert(
             'Token expired',
             'For your security, please login again',
-            [{ text: 'OK', onPress: () => {
-                NavigationUtil.logout(this.props.navigation);
-              },
-            }],
+            [{ text: 'OK', onPress: () => { NavigationUtil.logout(this.props.navigation); } }],
             { cancelable: false }
           );
         }
@@ -824,9 +824,14 @@ class Home extends React.Component {
                 )}
               </View>
 
-              {this.state.tapScreenGameMode || this.state.chaseArrowGameMode
-                ? this.renderTapCounter()
-                : <BalanceNumber balanceStyle={styles.balance} currencyStyle={styles.currency} />}
+              {this.state.tapScreenGameMode || this.state.chaseArrowGameMode ? (
+                this.renderTapCounter()
+              ) : (
+                <BalanceNumber
+                  balanceStyle={styles.balance}
+                  currencyStyle={styles.currency}
+                />
+              )}
 
               {/* {<View style={styles.endOfMonthBalanceWrapper}>
                 <Text style={styles.endOfMonthBalance}>+R{this.state.expectedToAdd}</Text>
@@ -841,9 +846,8 @@ class Home extends React.Component {
             </View>
 
             {this.state.hasMessage ? this.renderMessageCard() : null}
-            
-            <NavigationBar navigation={this.props.navigation} currentTab={0} />
 
+            <NavigationBar navigation={this.props.navigation} currentTab={0} />
           </LinearGradient>
         </View>
 

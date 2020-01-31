@@ -1,4 +1,6 @@
 import React from 'react';
+import { connect } from 'react-redux';
+
 import {
   StyleSheet,
   View,
@@ -12,8 +14,15 @@ import { Icon, Input, Button } from 'react-native-elements';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { Colors, Endpoints } from '../util/Values';
 import { LoggingUtil } from '../util/LoggingUtil';
+import { getDivisor } from '../util/AmountUtil';
 
-export default class AddCash extends React.Component {
+import { getComparatorRates } from '../modules/balance/balance.reducer';
+
+const mapStateToProps = state => ({
+  comparatorRates: getComparatorRates(state),
+});
+
+class AddCash extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -51,7 +60,6 @@ export default class AddCash extends React.Component {
           unit: info.balance.currentBalance.unit,
           token: info.token,
           accountId: info.balance.accountId[0],
-          comparatorRates: info.balance.comparatorRates,
         });
       }
       if (lastSaveAmount) {
@@ -147,32 +155,7 @@ export default class AddCash extends React.Component {
   };
 
   getFormattedBalance(balance) {
-    return (balance / this.getDivisor(this.state.unit)).toFixed(2);
-  }
-
-  getDivisor(unit) {
-    switch (unit) {
-      case 'MILLIONTH_CENT':
-        return 100000000;
-
-      case 'TEN_THOUSANDTH_CENT':
-        return 1000000;
-
-      case 'THOUSANDTH_CENT':
-        return 100000;
-
-      case 'HUNDREDTH_CENT':
-        return 10000;
-
-      case 'WHOLE_CENT':
-        return 100;
-
-      case 'WHOLE_CURRENCY':
-        return 1;
-
-      default:
-        return 1;
-    }
+    return (balance / getDivisor(this.state.unit)).toFixed(2);
   }
 
   getBankRate(bank) {
@@ -195,10 +178,10 @@ export default class AddCash extends React.Component {
 
   getReferenceRate() {
     if (
-      this.state.comparatorRates &&
-      this.state.comparatorRates.referenceRate
+      this.props.comparatorRates &&
+      this.props.comparatorRates.referenceRate
     ) {
-      return parseFloat(this.state.comparatorRates.referenceRate / 100).toFixed(
+      return parseFloat(this.props.comparatorRates.referenceRate / 100).toFixed(
         2
       );
     }
@@ -247,7 +230,7 @@ export default class AddCash extends React.Component {
   }
 
   renderBankLine(item, index) {
-    const bank = this.state.comparatorRates.rates[item];
+    const bank = this.props.comparatorRates.rates[item];
     return (
       <View style={styles.rateLine} key={index}>
         <Text style={styles.rateComparisonBank}>{bank.label}</Text>
@@ -301,7 +284,7 @@ export default class AddCash extends React.Component {
               </Text>
             </View>
           ) : null}
-          {this.state.comparatorRates ? (
+          {this.props.comparatorRates ? (
             <View style={styles.rateComparison}>
               <Text style={styles.rateComparisonTitle}>
                 Compare our interest rate
@@ -316,9 +299,9 @@ export default class AddCash extends React.Component {
                   </Text>
                 </View>
                 <View style={styles.rateComparisonSeparator} />
-                {this.state.comparatorRates.rates
+                {this.props.comparatorRates.rates
                   ? Object.keys(
-                      this.state.comparatorRates.rates
+                      this.props.comparatorRates.rates
                     ).map((item, index) => this.renderBankLine(item, index))
                   : null}
               </View>
@@ -510,3 +493,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 });
+
+export default connect(mapStateToProps)(AddCash);

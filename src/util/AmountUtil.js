@@ -1,30 +1,29 @@
+export const getDivisor = unit => {
+  switch (unit) {
+    case 'MILLIONTH_CENT':
+      return 100000000;
 
-export const getDivisor = (unit) => {
-    switch (unit) {
-      case 'MILLIONTH_CENT':
-        return 100000000;
+    case 'TEN_THOUSANDTH_CENT':
+      return 1000000;
 
-      case 'TEN_THOUSANDTH_CENT':
-        return 1000000;
+    case 'THOUSANDTH_CENT':
+      return 100000;
 
-      case 'THOUSANDTH_CENT':
-        return 100000;
+    case 'HUNDREDTH_CENT':
+      return 10000;
 
-      case 'HUNDREDTH_CENT':
-        return 10000;
+    case 'WHOLE_CENT':
+      return 100;
 
-      case 'WHOLE_CENT':
-        return 100;
+    case 'WHOLE_CURRENCY':
+      return 1;
 
-      case 'WHOLE_CURRENCY':
-        return 1;
-
-      default:
-        return 1;
-    }
+    default:
+      return 1;
+  }
 };
 
-export const getCurrencySymbol = (currencyName) => {
+export const getCurrencySymbol = currencyName => {
   // todo improve this to handle more currencies
   switch (currencyName) {
     case 'ZAR':

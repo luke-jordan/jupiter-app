@@ -9,6 +9,6 @@ export const updateAuthToken = token => ({
 });
 
 export const removeAuthToken = token => ({
-    type: REMOVE_AUTH_TOKEN,
-    token,
+  type: REMOVE_AUTH_TOKEN,
+  token,
 });

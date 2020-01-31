@@ -1,4 +1,6 @@
 import React from 'react';
+import { connect } from 'react-redux';
+
 import {
   ActivityIndicator,
   Image,
@@ -16,7 +18,15 @@ import { LoggingUtil } from '../util/LoggingUtil';
 import { Colors, Endpoints } from '../util/Values';
 import iconClose from '../../assets/close.png';
 
-export default class SetPassword extends React.Component {
+import { updateAuthToken } from '../modules/auth/auth.actions';
+import { updateComparatorRates } from '../modules/balance/balance.actions';
+
+const mapDispatchToProps = {
+  updateAuthToken,
+  updateComparatorRates,
+};
+
+class SetPassword extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -166,6 +176,10 @@ export default class SetPassword extends React.Component {
           checkingForCompletion: false,
         });
 
+        if (resultJson.comparatorRates) {
+          this.props.updateComparatorRates(resultJson.comparatorRates);
+        }
+
         if (
           resultJson.kycStatus === 'FAILED_VERIFICATION' ||
           resultJson.kycStatus === 'REVIEW_FAILED'
@@ -184,7 +198,8 @@ export default class SetPassword extends React.Component {
         }
 
         if (resultJson.result.includes('SUCCESS')) {
-          LoggingUtil.logEvent('USER_PROFILE_PASSWORD_SUCCEEDED');
+          this.props.updateAuthToken(resultJson.token);
+
           this.props.navigation.navigate('AddCash', {
             isOnboarding: true,
             systemWideUserId: resultJson.systemWideUserId,
@@ -366,16 +381,18 @@ export default class SetPassword extends React.Component {
               />
               {this.state.errors && this.state.errors.passwordConfirm ? (
                 <Text style={styles.errorMessage}>
-                  Passwords don&apos;t match
+                  Sorry, those passwords do not match. Please adjust and
+                  resubmit.
                 </Text>
               ) : null}
+              <Text style={styles.requirementsMessage}>
+                Passwords must be at least 8 characters long, have at least one
+                uppercase letter, one lowercase letter, one number and one
+                special character (e.g., @, #, !, etc). Set your password tight
+                to keep your money safe!
+              </Text>
             </View>
           </ScrollView>
-          {this.state.errors && this.state.errors.general ? (
-            <Text style={styles.errorMessage}>
-              {this.state.generalErrorText}
-            </Text>
-          ) : null}
           <Text
             testID="set-password-generate"
             accessibilityLabel="set-password-generate"
@@ -556,6 +573,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  requirementsMessage: {
+    fontFamily: 'poppins-regular',
+    color: Colors.MEDIUM_GRAY,
+    fontSize: 13,
+    marginTop: 10,
+    marginBottom: 20,
+  },
   errorMessage: {
     fontFamily: 'poppins-regular',
     color: Colors.RED,
@@ -616,3 +640,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+
+export default connect(null, mapDispatchToProps)(SetPassword);

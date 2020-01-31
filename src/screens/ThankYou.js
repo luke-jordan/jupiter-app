@@ -6,6 +6,7 @@ import {
   Text,
   Dimensions,
   TouchableOpacity,
+  Linking,
 } from 'react-native';
 import { Icon } from 'react-native-elements';
 
@@ -30,7 +31,9 @@ export default class ThankYou extends React.Component {
     this.props.navigation.navigate('Onboarding');
   };
 
-  onPressWebsite = () => {};
+  onPressWebsite = () => {
+    Linking.openURL('https://jupitersave.com');
+  };
 
   onPressClose = () => {
     this.props.navigation.navigate('Onboarding');

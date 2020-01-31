@@ -10,8 +10,17 @@ import AnimatedNumber from './AnimatedNumber';
 
 import { updateAuthToken, removeAuthToken } from '../modules/auth/auth.actions';
 
-import { updateServerBalance, updateShownBalance } from '../modules/balance/balance.actions';
-import { getLastShownBalanceAmount, getLastServerBalanceFull, getEndOfTodayBalanceAmount, getCurrentBalanceAmount } from '../modules/balance/balance.reducer';
+import {
+  updateServerBalance,
+  updateShownBalance,
+} from '../modules/balance/balance.actions';
+
+import {
+  getLastShownBalanceAmount,
+  getLastServerBalanceFull,
+  getEndOfTodayBalanceAmount,
+  getCurrentBalanceAmount,
+} from '../modules/balance/balance.reducer';
 
 // depending on the phone, a shorter interval actually leads to a longer animation, because the animation can't
 // move as fast as desired (given calculations etc), especially at large balances
@@ -70,7 +79,6 @@ YellowBox.ignoreWarnings(['Setting a timer']);
 // animation towards it; otherwise stop animating.
 
 class BalanceNumber extends React.Component {
-
   constructor(props) {
     super(props);
     this.state = {
@@ -81,7 +89,7 @@ class BalanceNumber extends React.Component {
       animationInterval: DEFAULT_BALANCE_ANIMATION_INTERVAL,
       animationDuration: DEFAULT_BALANCE_ANIMATION_DURATION,
       lastShownBalance: 0,
-    }
+    };
   }
 
   componentDidMount() {
@@ -101,7 +109,7 @@ class BalanceNumber extends React.Component {
     this.setState({ lastShownBalance: value });
     if (!this.state.lastSetStorage || moment().valueOf() - this.state.lastSetStorage.valueOf() > 1000) {
       this.props.updateShownBalance(value);
-      this.setState({ lastSetStorage: moment() });      
+      this.setState({ lastSetStorage: moment() });
     }
   }
 
@@ -189,11 +197,11 @@ class BalanceNumber extends React.Component {
           interval={this.state.animationInterval}
           duration={this.state.animationDuration}
           onAnimationProgress={value => {
-          this.onProgressBalanceAnimation(value);
-        }}
+            this.onProgressBalanceAnimation(value);
+          }}
           onAnimationFinished={() => {
-          this.onFinishBalanceAnimation(true);
-        }}
+            this.onFinishBalanceAnimation(true);
+          }}
         />
       </View>
     );
