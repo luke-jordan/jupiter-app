@@ -13,6 +13,7 @@ const BoostInstructionModal = ({
 }) => {
   const { title, body, actionToTake } = boostMessage;
 
+  // Get button handler and label depending on the `actionToTake`
   const { onPressHandler, buttonLabel } = getSomeActionToTake(actionToTake);
 
   return (

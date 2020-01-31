@@ -21,6 +21,7 @@ import { LoggingUtil } from '../../../util/LoggingUtil';
 import { NavigationUtil } from '../../../util/NavigationUtil';
 import { Sizes, Endpoints, Colors } from '../../../util/Values';
 import { MessagingUtil } from '../../../util/MessagingUtil';
+import { equalizeAmounts } from '../helpers/parseAmountValue';
 
 const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
@@ -91,6 +92,14 @@ class Boosts extends React.Component {
       if (condition.includes('social_event')) buttonType = 'social_event';
     }
 
+    // get value from boost item
+    const getValueFromConditional = boostDetails.statusConditions.REDEEMED[0];
+
+    // split string on 3 parameters
+    const parameterMatch = getValueFromConditional.match(/#{(.*)}/);
+    const parameterValue = parameterMatch ? parameterMatch[1] : null;
+    const amount = equalizeAmounts(parameterValue);
+
     if (buttonType === '') {
       return null;
     } else {
@@ -98,11 +107,12 @@ class Boosts extends React.Component {
       let action = null;
       if (buttonType === 'save_event') {
         title = 'ADD CASH';
-        action = this.onPressAddCash;
+        action = () => this.onPressAddCash(amount);
       } else if (buttonType === 'social_event') {
         title = 'INVITE FRIENDS';
         action = this.onPressInviteFriends;
       }
+
       return (
         <Button
           title={title}
@@ -206,7 +216,13 @@ class Boosts extends React.Component {
     }
   };
 
-  onPressAddCash = () => {
+  onPressAddCash = async amount => {
+    // write amount from status condition in async storage
+    await AsyncStorage.setItem(
+      'lastSaveAmount',
+      parseFloat(amount / 10000).toFixed(0)
+    );
+
     this.props.navigation.navigate('AddCash');
   };
 
