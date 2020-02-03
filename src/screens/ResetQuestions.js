@@ -37,10 +37,8 @@ export default class ResetQuestions extends React.Component {
   onPressContinue = async () => {
     if (this.state.loading) return;
     this.setState({ loading: true });
-    const bodyArray = [];
-    for (const answerKey in this.state.answers) {
-      bodyArray[answerKey] = this.state.answers[answerKey];
-    }
+
+    const bodyArray = { ...this.state.answers };
     try {
       const result = await fetch(`${Endpoints.AUTH}password/reset/answerqs`, {
         headers: {
@@ -48,7 +46,10 @@ export default class ResetQuestions extends React.Component {
           Accept: 'application/json',
         },
         method: 'POST',
-        body: JSON.stringify(bodyArray),
+        body: JSON.stringify({
+          systemWideUserId: this.state.systemWideUserId, 
+          userAnswers: bodyArray,
+        }),
       });
       if (result.ok) {
         this.setState({ loading: false });
@@ -102,6 +103,10 @@ export default class ResetQuestions extends React.Component {
     NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Login');
   };
 
+  onPressSupport = () => {
+    this.props.navigation.navigate('Support');
+  };
+
   showError() {
     this.setState({
       loading: false,
@@ -146,8 +151,9 @@ export default class ResetQuestions extends React.Component {
             : null}
         </ScrollView>
         {this.state.hasError ? (
-          <Text style={styles.errorMessage}>
-            Some of your answers might be incorrect.
+          <Text style={styles.errorMessage} onPress={this.onPressSupport}>
+            Sorry, some of those answers are too far away from the correct values. Please try again, 
+            or <Text style={styles.errorSupport}>contact support</Text> to ask for manual verification and reset.
           </Text>
         ) : null}
         <Text style={styles.goback} onPress={this.onPressLogin}>
@@ -251,6 +257,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: -15, // this is valid because of the exact alignment of other elements - do not reuse in other components
     marginBottom: 20,
+    paddingHorizontal: 20,
+  },
+  errorSupport: {
+    fontFamily: 'poppins-semibold',
+    textDecorationLine: 'underline',
   },
   goback: {
     color: Colors.PURPLE,

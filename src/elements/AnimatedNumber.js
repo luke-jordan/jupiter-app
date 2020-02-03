@@ -59,7 +59,6 @@ export default class AnimatedNumber extends React.Component {
       stepSize,
       isIncrement: this.props.target > this.props.initial,
     }, () => {
-      // console.log(`Animated number paramaters set with interval ${this.state.interval} and duration ${this.props.duration} and step size ${this.state.stepSize}`);
       console.log(`Animating from current number ${this.state.currentNumber}, towards target number ${this.state.targetNumber}`)
       this.animate();
     });

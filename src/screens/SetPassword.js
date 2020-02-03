@@ -15,7 +15,7 @@ import { Button, Icon, Input, Overlay } from 'react-native-elements';
 
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
-import { Colors, Endpoints } from '../util/Values';
+import { Colors, Endpoints, DeviceInfo } from '../util/Values';
 import iconClose from '../../assets/close.png';
 
 import { updateAuthToken } from '../modules/auth/auth.actions';
@@ -134,6 +134,7 @@ class SetPassword extends React.Component {
         body: JSON.stringify({
           systemWideUserId: this.state.systemWideUserId,
           newPassword: this.state.password,
+          deviceId: DeviceInfo.DEVICE_ID,
         }),
       });
       if (result.ok) {

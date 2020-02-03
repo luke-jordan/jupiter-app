@@ -10,6 +10,8 @@ import {
   Text,
   TouchableOpacity,
   View,
+  AppState,
+  BackHandler,
 } from 'react-native';
 import { Icon, Overlay } from 'react-native-elements';
 import Toast from 'react-native-easy-toast';
@@ -32,15 +34,16 @@ export default class Payment extends React.Component {
       checkingForPayment: false,
       token: '',
       isOnboarding: false,
+      appState: AppState.currentState,
     };
   }
 
   async componentDidMount() {
-    // AppState.addEventListener('change', this.handleAppStateChange);
-    // this.backHandler = BackHandler.addEventListener(
-    //   'hardwareBackPress',
-    //   this.handleHardwareBackPress
-    // );
+    AppState.addEventListener('change', this.handleAppStateChange);
+    this.backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      this.handleHardwareBackPress
+    );
     const { params } = this.props.navigation.state;
     if (params) {
       this.setState({
@@ -55,25 +58,25 @@ export default class Payment extends React.Component {
   }
 
   // removing until more confidence in iOS bug handling
-  // handleAppStateChange = async (nextAppState) => {
-  //   console.log('*** PAYMENT APP STATE CHANGED TRIGGERED ****');
-  //   try {
-  //     if (this.state.appState.match(/inactive|background/) && nextAppState === 'active') {
-  //       LoggingUtil.logEvent("USER_RETURNED_TO_PAYMENT_LINK");
-  //       if (this.state.checkingForPayment) {
-  //         this.setState({ appState: nextAppState });
-  //         return;
-  //       }
-  //       this.checkIfPaymentCompleted();
-  //     } else {
-  //       LoggingUtil.logEvent("USER_LEFT_APP_AT_PAYMENT_LINK");
-  //       this.setState({ appState: nextAppState });
-  //     }
-  //   } catch (err) {
-  //     console.log('ERROR: ', err);
-  //     LoggingUtil.logError(err);
-  //   }
-  // }
+  handleAppStateChange = async (nextAppState) => {
+    console.log('*** PAYMENT APP STATE CHANGED TRIGGERED ****');
+    try {
+      if (this.state.appState.match(/inactive|background/) && nextAppState === 'active') {
+        LoggingUtil.logEvent("USER_RETURNED_TO_PAYMENT_LINK");
+        if (this.state.checkingForPayment) {
+          this.setState({ appState: nextAppState });
+          return;
+        }
+        this.checkIfPaymentCompleted();
+      } else {
+        LoggingUtil.logEvent("USER_LEFT_APP_AT_PAYMENT_LINK");
+        this.setState({ appState: nextAppState });
+      }
+    } catch (err) {
+      console.log('ERROR: ', err);
+      LoggingUtil.logError(err);
+    }
+  }
 
   checkIfPaymentCompleted = async () => {
     this.setState({
@@ -103,6 +106,7 @@ export default class Payment extends React.Component {
           this.navigateToPaymentPending();
         }
         if (resultJson.result.includes('PAYMENT_SUCCEEDED')) {
+          AppState.removeEventListener('change', this.handleAppStateChange);
           NavigationUtil.navigateWithoutBackstack(
             this.props.navigation,
             'PaymentComplete',
@@ -121,10 +125,7 @@ export default class Payment extends React.Component {
           this.logPaymentError('Payment failed on server response', result);
         }
       } else {
-        this.logPaymentError(
-          'Payment received bad status code from server',
-          result
-        );
+        this.logPaymentError('Payment received bad status code from server', result);
       }
     } catch (error) {
       this.setState({ checkingForPayment: false });
@@ -132,23 +133,19 @@ export default class Payment extends React.Component {
     }
   };
 
-  onPressBack = () => {
-    // AppState.removeEventListener('change', this.handleAppStateChange);
-    LoggingUtil.logEvent('USER_WENT_BACK_AT_PAYMENT_LINK');
+  handleHardwareBackPress = () => {
+    AppState.removeEventListener('change', this.handleAppStateChange);
+    this.backHandler.remove();
+    return true;
   };
 
-  // handleHardwareBackPress = () => {
-  //   AppState.removeEventListener('change', this.handleAppStateChange);
-  //   this.backHandler.remove();
-  //   return true;
-  // };
-
-  // onPressBack = () => {
-  //   AppState.removeEventListener('change', this.handleAppStateChange);
-  //   this.backHandler.remove();
-  //   LoggingUtil.logEvent('USER_WENT_BACK_AT_PAYMENT_LINK');
-  //   this.props.navigation.goBack();
-  // };
+  onPressBack = () => {
+    // TODO : consider altering to prevent back
+    AppState.removeEventListener('change', this.handleAppStateChange);
+    this.backHandler.remove();
+    LoggingUtil.logEvent('USER_WENT_BACK_AT_PAYMENT_LINK');
+    this.props.navigation.goBack();
+  };
 
   onPressAlreadyPaid = () => {
     this.checkIfPaymentCompleted();
@@ -177,6 +174,7 @@ export default class Payment extends React.Component {
   }
 
   navigateToPaymentPending(bankDetails) {
+    AppState.removeEventListener('change', this.handleAppStateChange);
     NavigationUtil.navigateWithHomeBackstack(
       this.props.navigation,
       'CheckingForPayment',

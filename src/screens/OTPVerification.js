@@ -43,9 +43,7 @@ export default class OTPVerification extends React.Component {
     if (redirection.includes('Login')) {
       this.handleLogin(userId);
     } else if (redirection.includes('Reset')) {
-      const systemWideUserId = this.props.navigation.getParam(
-        'systemWideUserId'
-      );
+      const systemWideUserId = this.props.navigation.getParam('systemWideUserId');
       this.handlePassReset(userId, systemWideUserId);
     } else {
       this.setState({ loading: false });
@@ -177,10 +175,7 @@ export default class OTPVerification extends React.Component {
       if (result.ok) {
         const resultJson = await result.json();
         this.setState({ loading: false });
-        if (
-          resultJson.flags &&
-          resultJson.flags.includes('CAN_SKIP_QUESTIONS')
-        ) {
+        if (resultJson.flags && resultJson.flags.includes('CAN_SKIP_QUESTIONS')) {
           NavigationUtil.navigateWithoutBackstack(
             this.props.navigation,
             'SetPassword',
@@ -208,7 +203,7 @@ export default class OTPVerification extends React.Component {
         }
       }
     } catch (error) {
-      this.setState({ loading: false });
+      this.setState({ loading: false, otpError: true });
     }
   }
 
@@ -340,7 +335,7 @@ export default class OTPVerification extends React.Component {
           </View>
           {this.state.otpError ? (
             <Text style={styles.redText}>
-              The OTP you entered is not valid.
+              Sorry, the OTP you entered is not valid.
             </Text>
           ) : null}
         </View>
