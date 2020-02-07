@@ -14,7 +14,7 @@ import AddCash from './src/screens/AddCash';
 import Onboarding from './src/screens/Onboarding';
 import LimitedUsers from './src/screens/LimitedUsers';
 import ThankYou from './src/screens/ThankYou';
-import Boosts from './src/screens/Boosts';
+import Boosts from './src/modules/boost/views/Boosts';
 import Friends from './src/screens/Friends';
 import Account from './src/screens/Account';
 import Terms from './src/screens/Terms';
