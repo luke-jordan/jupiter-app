@@ -38,9 +38,10 @@ import { LoggingUtil } from '../util/LoggingUtil';
 import { getDivisor } from '../util/AmountUtil';
 
 import BalanceNumber from '../elements/BalanceNumber';
+import BoostModalChallenge from '../elements/boost/BoostChallengeModal';
+import BoostInstructionModal from '../elements/boost/BoostInstructionModal';
 
 import { updateBoostCount } from '../modules/boost/boost.actions';
-import BoostModalChallenge from '../modules/home/components/BoostChallengeModal';
 import {
   updateServerBalance,
   updateShownBalance,
@@ -317,6 +318,13 @@ class Home extends React.Component {
       return false;
     }
   };
+
+  async checkForTriggeredBoost() {
+    // only bother if boost count is > 0. If so, we check if pending or redeemed. If they are,
+    // we show some default pending / redeemed messages.
+    
+    
+  }
 
   async fetchMessagesIfNeeded() {
     const gameId = await MessagingUtil.getGameId();

@@ -13,15 +13,16 @@ import {
 } from 'react-native';
 import { Button } from 'react-native-elements';
 
-import BoostInstructionModal from '../components/BoostInstructionModal';
-import NavigationBar from '../../../elements/NavigationBar';
-import getPermittedTypesOfBoost from '../helpers/getPermittedTypesOfBoost';
-import { BoostStatus } from '../models';
-import { LoggingUtil } from '../../../util/LoggingUtil';
-import { NavigationUtil } from '../../../util/NavigationUtil';
-import { Sizes, Endpoints, Colors } from '../../../util/Values';
-import { MessagingUtil } from '../../../util/MessagingUtil';
-import { equalizeAmounts } from '../helpers/parseAmountValue';
+import BoostInstructionModal from '../elements/boost/BoostInstructionModal';
+
+import NavigationBar from '../elements/NavigationBar';
+import getPermittedTypesOfBoost from '../modules/boost/helpers/getPermittedTypesOfBoost';
+import { BoostStatus } from '../modules/boost/models';
+import { LoggingUtil } from '../util/LoggingUtil';
+import { NavigationUtil } from '../util/NavigationUtil';
+import { Sizes, Endpoints, Colors } from '../util/Values';
+import { MessagingUtil } from '../util/MessagingUtil';
+import { equalizeAmounts } from '../modules/boost/helpers/parseAmountValue';
 
 const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;

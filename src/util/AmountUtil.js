@@ -39,3 +39,13 @@ export const getFormattedValue = (value, unit) => {
   result = result.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ','); // I don't understand how this works. It's a plain copy paste which allows comma separators
   return result;
 };
+
+export const formatString = (template, argumentDict) => {
+    let str = template;
+    
+    Object.keys(argumentDict).forEach((key) => {
+      str = str.replace(new RegExp("\\{" + key + "\\}", "gi"), argumentDict[key]);
+    })
+
+    return str;
+};
