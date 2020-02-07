@@ -38,6 +38,7 @@ export default class Register extends React.Component {
       defaultGeneralErrorText:
         "Sorry, there's an error with one or more input above, please check and resubmit",
       dialogVisible: false,
+      hasErrors: false,
     };
   }
 
@@ -131,9 +132,14 @@ export default class Register extends React.Component {
     if (hasErrors) {
       await this.setState({
         errors,
+        hasErrors: true,
       });
       return false;
     }
+
+    this.setState({
+      hasErrors: false,
+    });
 
     return true;
   };
@@ -215,6 +221,7 @@ export default class Register extends React.Component {
         this.setState({
           loading: false,
           errors,
+          hasErrors: true,
         });
       }
     } catch (error) {
@@ -262,6 +269,7 @@ export default class Register extends React.Component {
     this.setState({
       loading: false,
       errors,
+      hasErrors: true,
       generalErrorText: errorText
         ? errorText
         : this.state.defaultGeneralErrorText,
@@ -271,7 +279,7 @@ export default class Register extends React.Component {
   clearError() {
     const errors = { ...this.state.errors };
     Object.keys(errors).forEach(key => (errors[key] = false));
-    this.setState({ errors });
+    this.setState({ errors, hasErrors: false });
   }
 
   render() {
@@ -317,6 +325,11 @@ export default class Register extends React.Component {
                 ]}
                 containerStyle={styles.containerStyle}
               />
+              {this.state.hasErrors ? null : (
+                <Text style={styles.noteMessage}>
+                  Please enter your legal names (i.e., the same as on your ID)
+                </Text>
+              )}
               {this.state.errors && this.state.errors.firstName ? (
                 <Text style={styles.errorMessage}>
                   Please enter a valid first name
@@ -598,6 +611,14 @@ const styles = StyleSheet.create({
     minHeight: 50,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  noteMessage: {
+    fontFamily: 'poppins-regular',
+    color: Colors.DARK_GRAY,
+    fontSize: 13,
+    marginTop: -15, // as below on error message
+    marginBottom: 20,
+    width: '90%',
   },
   errorMessage: {
     fontFamily: 'poppins-regular',

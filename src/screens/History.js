@@ -15,7 +15,10 @@ import { Icon } from 'react-native-elements';
 
 import { LoggingUtil } from '../util/LoggingUtil';
 import { NavigationUtil } from '../util/NavigationUtil';
+import { getDivisor, getCurrencySymbol } from '../util/AmountUtil';
 import { Endpoints, Colors } from '../util/Values';
+
+const HIGHLIGHTED_TYPES = ['USER_SAVING_EVENT', 'BOOST_REDEMPTION', 'CAPITALIZATION'];
 
 export default class History extends React.Component {
   constructor(props) {
@@ -110,50 +113,14 @@ export default class History extends React.Component {
   }
 
   getItemAmount(amount, unit, currency) {
-    const currencySymbol = this.getCurrencySymbol(currency);
+    const currencySymbol = getCurrencySymbol(currency);
     const sign = amount > 0 ? '+' : '-';
     return sign + currencySymbol + this.getFormattedBalance(amount, unit);
   }
 
-  getCurrencySymbol(currencyName) {
-    // todo improve this to handle more currencies
-    switch (currencyName) {
-      case 'ZAR':
-        return 'R';
-
-      default:
-        return '?';
-    }
-  }
-
   getFormattedBalance(balance, unit) {
     if (balance < 0) balance *= -1;
-    return (balance / this.getDivisor(unit)).toFixed(2);
-  }
-
-  getDivisor(unit) {
-    switch (unit) {
-      case 'MILLIONTH_CENT':
-        return 100000000;
-
-      case 'TEN_THOUSANDTH_CENT':
-        return 1000000;
-
-      case 'THOUSANDTH_CENT':
-        return 100000;
-
-      case 'HUNDREDTH_CENT':
-        return 10000;
-
-      case 'WHOLE_CENT':
-        return 100;
-
-      case 'WHOLE_CURRENCY':
-        return 1;
-
-      default:
-        return 1;
-    }
+    return (balance / getDivisor(unit)).toFixed(2);
   }
 
   fetchHistory = async token => {
@@ -209,6 +176,14 @@ export default class History extends React.Component {
     );
   }
 
+  // eslint-disable-next-line react/sort-comp
+  onPressItem(element) {
+    if (element.type === 'TRANSACTION' && element.details.transactionType === 'USER_SAVING_EVENT') {
+      const defaultAmount = element.details.amount / getDivisor(element.details.unit);
+      this.props.navigation.navigate('AddCash', { preFilledAmount: defaultAmount });
+    }
+  }
+
   renderHistoryElement(element, index) {
     let type = '';
     if (element.type === 'HISTORY') {
@@ -216,9 +191,12 @@ export default class History extends React.Component {
     } else if (element.type === 'TRANSACTION') {
       type = element.details.transactionType;
     }
+    const highlightAmount = HIGHLIGHTED_TYPES.includes(type);
     return (
       <View style={styles.historyItem} key={index ? index : null}>
-        <Image style={styles.historyItemIcon} source={this.getItemIcon(type)} />
+        <TouchableOpacity onPress={() => this.onPressItem(element)}>
+          <Image style={styles.historyItemIcon} source={this.getItemIcon(type)} />
+        </TouchableOpacity>
         <View style={styles.historyItemInfo}>
           <Text style={styles.historyTitle}>{this.getItemTitle(type)}</Text>
           {element.details.humanReference ? (
@@ -228,7 +206,7 @@ export default class History extends React.Component {
           ) : null}
         </View>
         {element.type === 'TRANSACTION' ? (
-          <Text style={styles.historyAmount}>
+          <Text style={highlightAmount ? styles.historyAmountHighlight : styles.historyAmount}>
             {this.getItemAmount(
               element.details.amount,
               element.details.unit,
@@ -426,9 +404,15 @@ const styles = StyleSheet.create({
   },
   historyAmount: {
     marginHorizontal: 10,
-    fontFamily: 'poppins-semibold',
+    fontFamily: 'poppins-regular',
     fontSize: 16,
     color: Colors.DARK_GRAY,
+  },
+  historyAmountHighlight: {
+    marginHorizontal: 10,
+    fontFamily: 'poppins-semibold',
+    fontSize: 16,
+    color: Colors.HISTORY_GREEN,
   },
   daySeparator: {
     height: 1,

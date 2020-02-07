@@ -19,7 +19,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Icon, Button, Overlay } from 'react-native-elements';
+import { Icon } from 'react-native-elements';
 import {
   FlingGestureHandler,
   Directions,
@@ -35,6 +35,7 @@ import { NotificationsUtil } from '../util/NotificationsUtil';
 import { MessagingUtil } from '../util/MessagingUtil';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
+import { getDivisor } from '../util/AmountUtil';
 
 import BalanceNumber from '../elements/BalanceNumber';
 
@@ -73,10 +74,7 @@ class Home extends React.Component {
 
       hasMessage: false,
       messageDetails: null,
-      hasGameModal: false,
       gameModalDetails: null,
-      updateRequiredDialogVisible: false,
-      updateAvailableDialogVisible: false,
       tapScreenGameMode: false,
       chaseArrowGameMode: false,
 
@@ -149,13 +147,40 @@ class Home extends React.Component {
     this.handleNotificationsModule();
 
     LoggingUtil.setUserId(info.systemWideUserId);
-    LoggingUtil.logEvent('USER_ENTERED_SCREEN', { screen_name: 'Home' });
+    LoggingUtil.logEvent('USER_ENTERED_HOME_SCREEN');
 
     this.props.updateServerBalance(info.balance);
 
     this.fetchCurrentBalanceFromServer();
     this.fetchMessagesIfNeeded();
   }
+
+  showLogoutAlert = () => {
+    Alert.alert(
+      'Session expired',
+      'For your security, Jupiter will ask you to login again from time to time. Please click below to login again',
+      [{ text: 'OK', onPress: () => { NavigationUtil.logout(this.props.navigation); } }],
+      { cancelable: false }
+    );
+  }
+
+  handlePendingTransactions = (balanceResult) => {
+    if (!balanceResult || !Array.isArray(balanceResult.pendingTransactions)) {
+      this.setState({ hasPendingTransactions: false });
+      return;
+    }
+
+    const { pendingTransactions } = balanceResult;
+    const equalizeTx = (transaction) => transaction.amount / getDivisor(transaction.unit);
+    const totalPendingAmount = pendingTransactions.reduce((sum, tx) => sum + equalizeTx(tx), 0);
+
+    this.setState({
+      hasPendingTransactions: true,
+      numberPendingTx: pendingTransactions.length,
+      totalPendingAmount,
+    });
+  };
+
 
   fetchCurrentBalanceFromServer = async () => {
     if (this.state.loading) return;
@@ -176,23 +201,20 @@ class Home extends React.Component {
         this.props.updateBoostCount(
           parseInt(resultJson.availableBoostCount || 0)
         );
+        this.handlePendingTransactions(resultJson);
         this.setState({
           lastFetchTimeMillis: moment().valueOf(),
           loading: false,
         });
       } else {
-        if (result.status === 403) {
-          Alert.alert(
-            'Token expired',
-            'For your security, please login again',
-            [{ text: 'OK', onPress: () => { NavigationUtil.logout(this.props.navigation); } }],
-            { cancelable: false }
-          );
+        if (result.status === 401 || result.status === 403) {
+          this.showLogoutAlert();
+          return;
         }
         throw result;
       }
     } catch (error) {
-      console.log('Error fetching balance!', error.status);
+      console.log('Error fetching balance!', error.message);
       this.setState({ loading: false });
     }
   };
@@ -224,9 +246,9 @@ class Home extends React.Component {
     this.props.updateServerBalance(balance);
 
     const millisSinceLastFetch = moment().valueOf() - this.state.lastFetchTimeMillis;
-    console.log('Time since fetch: ', millisSinceLastFetch);
+    // console.log('Time since fetch: ', millisSinceLastFetch);
     if (millisSinceLastFetch > TIME_BETWEEN_FETCH) {
-      console.log('Enough time elapsed, check for new balance');
+      // console.log('Enough time elapsed, check for new balance');
       await this.fetchCurrentBalanceFromServer();
     }
   }
@@ -336,13 +358,13 @@ class Home extends React.Component {
     }
   }
 
-  onCloseDialog = () => {
-    this.setState({
-      updateRequiredDialogVisible: false,
-      updateAvailableDialogVisible: false,
-    });
-    return true;
-  };
+  // onCloseDialog = () => {
+  //   this.setState({
+  //     updateRequiredDialogVisible: false,
+  //     updateAvailableDialogVisible: false,
+  //   });
+  //   return true;
+  // };
 
   onPressModalAction = action => {
     switch (action) {
@@ -363,6 +385,27 @@ class Home extends React.Component {
     }
   };
 
+  renderPendingBalance() {
+    const isWithdrawal = this.state.totalPendingAmount < 0;
+    const descriptor = isWithdrawal ? 'withdrawal' : 'save';
+    const label = this.state.numberPendingTx === 1 ? `Pending ${descriptor}` :
+            `${isWithdrawal ? '' : '+ '}${this.state.numberPendingTx} pending ${descriptor}s`;
+    const icon = isWithdrawal ? require('../../assets/withdrawal_home.png') : require('../../assets/add_home.png');
+    const amount = `R${Math.abs(this.state.totalPendingAmount).toFixed(0)}`;
+    return (
+      <TouchableOpacity style={styles.pendingItemsHolder}>
+        <View style={styles.endOfMonthBalanceWrapper}>
+          <Image style={styles.pendingItemsIcon} source={icon} />
+          <Text style={styles.endOfMonthBalance}>
+            {amount}
+          </Text>
+          <Icon name='chevron-right' containerStyle={styles.pendingItemsChevron} type='evilicon' size={30} color={Colors.GRAY} />
+        </View>
+        <Text style={styles.endOfMonthDesc}>{label}</Text>
+      </TouchableOpacity>
+    );
+  }
+
   renderMessageCard() {
     const { messageDetails } = this.state;
     if (!messageDetails) {
@@ -376,7 +419,7 @@ class Home extends React.Component {
     );
     return (
       <FlingGestureHandler
-        direction={Directions.DOWN}
+        direction={Directions.RIGHT}
         onHandlerStateChange={({ nativeEvent }) => {
           if (nativeEvent.state === State.ACTIVE) {
             this.onFlingMessage(nativeEvent);
@@ -453,7 +496,7 @@ class Home extends React.Component {
       });
     } else if (game.display.type.includes('MODAL')) {
       this.setState({
-        hasGameModal: true,
+        // hasGameModal: true,
         gameModalDetails: game,
       });
     }
@@ -489,18 +532,18 @@ class Home extends React.Component {
   }
 
   onPressPlayLater = () => {
-    this.setState({
-      hasGameModal: false,
-    });
+    // this.setState({
+    //   hasGameModal: false,
+    // });
     // TODO show gameDetails.actionContext.gameParams.waitMessage maybe?
   };
 
   onPressStartGame = () => {
     const game = this.state.gameModalDetails;
-    console.log(game);
-    this.setState({
-      hasGameModal: false,
-    });
+    // console.log(game);
+    // this.setState({
+    //   hasGameModal: false,
+    // });
     if (game.actionContext.gameParams.gameType.includes('TAP_SCREEN')) {
       this.setState({
         tapScreenGameMode: true,
@@ -583,114 +626,19 @@ class Home extends React.Component {
   };
 
   onCloseGameDialog = () => {
-    this.setState({
-      hasGameModal: false,
-    });
+    // this.setState({
+    //   hasGameModal: false,
+    // });
     MessagingUtil.dismissedGame(this.state.token);
     AsyncStorage.removeItem('gameId');
     AsyncStorage.removeItem('currentGames');
   };
 
-  getGameDetailsBody(body) {
-    let taps = 0;
-    if (this.tapScreenGameTaps && this.tapScreenGameTaps > 0)
-      taps = this.tapScreenGameTaps;
-    else if (this.chaseArrowGameTaps && this.chaseArrowGameTaps > 0)
-      taps = this.chaseArrowGameTaps;
-    if (body.includes('#{numberUserTaps}')) {
-      body = body.replace('#{numberUserTaps}', taps);
-    }
-    return body;
-  }
 
   onPressViewOtherBoosts = () => {
     this.onCloseGameDialog();
     this.props.navigation.navigate('Boosts');
   };
-
-  renderGameDialog() {
-    const gameDetails = this.state.gameModalDetails;
-    if (!gameDetails) return null;
-
-    if (gameDetails.actionContext.gameParams) {
-      return this.renderGameStartDialog(gameDetails);
-    } else {
-      return this.renderGameEndDialog(gameDetails);
-    }
-  }
-
-  renderGameEndDialog(gameDetails) {
-    return (
-      <View style={styles.gameDialog}>
-        <Text style={styles.helpTitle}>{gameDetails.title}</Text>
-        <Text style={styles.gameInfoBody}>
-          {this.getGameDetailsBody(gameDetails.body)}
-        </Text>
-        <Button
-          title="DONE"
-          titleStyle={styles.buttonTitleStyle}
-          buttonStyle={styles.buttonStyle}
-          containerStyle={styles.buttonContainerStyle}
-          onPress={this.onCloseGameDialog}
-          linearGradientProps={{
-            colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
-            start: { x: 0, y: 0.5 },
-            end: { x: 1, y: 0.5 },
-          }}
-        />
-        <Text
-          style={styles.gamePlayLater}
-          onPress={this.onPressViewOtherBoosts}
-        >
-          View other boosts
-        </Text>
-        <TouchableOpacity
-          style={styles.closeDialog}
-          onPress={this.onCloseGameDialog}
-        >
-          <Image source={require('../../assets/close.png')} />
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  renderGameStartDialog(gameDetails) {
-    return (
-      <View style={styles.gameDialog}>
-        <Text style={styles.helpTitle}>{gameDetails.title}</Text>
-        <Text style={styles.gameInfoBody}>
-          {this.getGameDetailsBody(gameDetails.body)}
-        </Text>
-        <View style={styles.gameInstructions}>
-          <View style={styles.gameInstructionsRow}>
-            <Image
-              style={styles.gameInstructionsImage}
-              resizeMode="contain"
-              source={require('../../assets/clock.png')}
-            />
-            <Text style={styles.gameInstructionsText}>
-              {gameDetails.actionContext.gameParams.instructionBand}
-            </Text>
-          </View>
-        </View>
-        <Button
-          title="START GAME"
-          titleStyle={styles.buttonTitleStyle}
-          buttonStyle={styles.buttonStyle}
-          containerStyle={styles.buttonContainerStyle}
-          onPress={this.onPressStartGame}
-          linearGradientProps={{
-            colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
-            start: { x: 0, y: 0.5 },
-            end: { x: 1, y: 0.5 },
-          }}
-        />
-        <Text style={styles.gamePlayLater} onPress={this.onPressPlayLater}>
-          Play Later
-        </Text>
-      </View>
-    );
-  }
 
   renderTapCounter() {
     let taps = 0;
@@ -833,6 +781,7 @@ class Home extends React.Component {
                 />
               )}
 
+              {this.state.hasPendingTransactions ? this.renderPendingBalance() : null}
               {/* {<View style={styles.endOfMonthBalanceWrapper}>
                 <Text style={styles.endOfMonthBalance}>+R{this.state.expectedToAdd}</Text>
                   <Icon
@@ -851,109 +800,15 @@ class Home extends React.Component {
           </LinearGradient>
         </View>
 
-        <Overlay
+        {/* <Overlay
           isVisible={this.state.hasGameModal}
           height="auto"
           width="auto"
           onHardwareBackPress={this.onCloseGameDialog}
         >
           {this.renderGameDialog()}
-        </Overlay>
+        </Overlay> */}
 
-        <Overlay
-          isVisible={this.state.updateRequiredDialogVisible}
-          height="auto"
-          width="auto"
-        >
-          <View style={styles.helpDialog}>
-            <Text style={styles.helpTitle}>Update Required</Text>
-            <Text style={styles.helpContent}>
-              We&apos;ve made some big changes to the app,(more than usual).
-              Please update to activate the new features. This version will no
-              longer be supported in the future.
-            </Text>
-            <View style={styles.dialogBottomRight}>
-              <Button
-                title="UPDATE NOW"
-                titleStyle={styles.buttonTitleStyle}
-                buttonStyle={styles.buttonStyle}
-                containerStyle={styles.buttonContainerStyle}
-                onPress={this.onPressUpdate}
-                linearGradientProps={{
-                  colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
-                  start: { x: 0, y: 0.5 },
-                  end: { x: 1, y: 0.5 },
-                }}
-              />
-            </View>
-          </View>
-        </Overlay>
-
-        <Overlay
-          isVisible={this.state.updateAvailableDialogVisible}
-          height="auto"
-          width="auto"
-          onBackdropPress={this.onCloseDialog}
-          onHardwareBackPress={this.onCloseDialog}
-        >
-          <View style={styles.helpDialog}>
-            <Text style={styles.helpTitle}>New Features!</Text>
-            <Text style={styles.helpContent}>
-              We&apos;ve made some changes to the app. Please update to activate
-              the new features.
-            </Text>
-            {/*
-            <Text style={styles.helpContent}>
-              Grow your savings even more with these new features on Jupiter:
-            </Text>
-            <View style={styles.updateFeatureItem}>
-              <Icon
-                name='check'
-                type='feather'
-                size={28}
-                color={Colors.PURPLE}
-              />
-              <Text style={styles.updateFeatureItemText}>
-                <Text style={styles.updateFeatureItemBold}>BOOSTS</Text> - Earn rewards to boost your savings even more!
-              </Text>
-            </View>
-            <View style={styles.updateFeatureItem}>
-              <Icon
-                name='check'
-                type='feather'
-                size={28}
-                color={Colors.PURPLE}
-              />
-              <Text style={styles.updateFeatureItemText}>
-                <Text style={styles.updateFeatureItemBold}>SAVING HISTORY</Text> - Keep track of all your savings, with a full history view.
-              </Text>
-            </View>
-            */}
-            <View style={styles.dialogBottomLine}>
-              <Text style={styles.helpLink} onPress={this.onCloseDialog}>
-                Later
-              </Text>
-              <Button
-                title="UPDATE NOW"
-                titleStyle={styles.buttonTitleStyle}
-                buttonStyle={styles.buttonStyle}
-                containerStyle={styles.buttonContainerStyle}
-                onPress={this.onPressUpdate}
-                linearGradientProps={{
-                  colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
-                  start: { x: 0, y: 0.5 },
-                  end: { x: 1, y: 0.5 },
-                }}
-              />
-            </View>
-            <TouchableOpacity
-              style={styles.closeDialog}
-              onPress={this.onCloseDialog}
-            >
-              <Image source={require('../../assets/close.png')} />
-            </TouchableOpacity>
-          </View>
-        </Overlay>
       </View>
     );
   }
@@ -1067,23 +922,35 @@ const styles = StyleSheet.create({
     marginRight: 2,
     lineHeight: 40,
   },
-  // endOfMonthBalanceWrapper: {
-  //   flexDirection: 'row',
-  //   alignItems: 'center',
-  //   marginTop: 25,
-  //   marginLeft: 10,
-  //   marginBottom: -10,
-  // },
-  // endOfMonthBalance: {
-  //   color: COLOR_WHITE,
-  //   fontSize: 7.5 * FONT_UNIT,
-  //   fontFamily: 'poppins-semibold',
-  // },
-  // endOfMonthDesc: {
-  //   color: Colors.GRAY,
-  //   fontSize: 5 * FONT_UNIT,
-  //   fontFamily: 'poppins-regular',
-  // },
+  pendingItemsHolder: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  pendingItemsIcon: {
+    marginRight: 5, 
+    width: 19,
+    height: 19,
+  },
+  pendingItemsChevron: {
+    marginLeft: -5,
+  },
+  endOfMonthBalanceWrapper: {
+    flexDirection: 'row',
+    marginTop: 5,
+    alignItems: 'center',
+  },
+  endOfMonthBalance: {
+    color: COLOR_WHITE,
+    fontSize: 6 * FONT_UNIT,
+    fontFamily: 'poppins-semibold',
+    paddingRight: 0,
+    marginRight: 0,
+  },
+  endOfMonthDesc: {
+    color: Colors.GRAY,
+    fontSize: 4 * FONT_UNIT,
+    fontFamily: 'poppins-regular',
+  },
   messageCard: {
     minHeight: height * 0.23,
     width: '95%',
@@ -1143,111 +1010,15 @@ const styles = StyleSheet.create({
   },
   messageCardButtonText: {
     fontFamily: 'poppins-semibold',
-    fontSize: 3.2 * FONT_UNIT,
+    fontSize: 3.7 * FONT_UNIT,
     color: Colors.PURPLE,
     marginRight: -5,
-  },
-  gameDialog: {
-    width: '90%',
-    minHeight: 380,
-    backgroundColor: COLOR_WHITE,
-    borderRadius: 10,
-    justifyContent: 'space-around',
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    paddingTop: 10,
-  },
-  gameInfoBody: {
-    color: Colors.MEDIUM_GRAY,
-    fontFamily: 'poppins-regular',
-    fontSize: 15,
-    lineHeight: 20,
-    textAlign: 'center',
-  },
-  gameInstructions: {
-    backgroundColor: Colors.PURPLE_TRANSPARENT,
-    borderRadius: 20,
-    minHeight: 30,
-    alignItems: 'center',
-    width: '100%',
-    marginVertical: 10,
-  },
-  gameInstructionsRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 10,
-  },
-  gameInstructionsImage: {
-    flex: 1,
-  },
-  gameInstructionsText: {
-    flex: 5,
-    color: Colors.PURPLE,
-    fontFamily: 'poppins-semibold',
-    fontSize: 13,
-    textAlignVertical: 'center',
-    marginLeft: 5,
-  },
-  gamePlayLater: {
-    marginTop: -10,
-    color: Colors.PURPLE,
-    fontFamily: 'poppins-semibold',
-    fontSize: 16,
-    textAlign: 'center',
-    textDecorationLine: 'underline',
-  },
-  helpDialog: {
-    width: '90%',
-    minHeight: 340,
-    backgroundColor: COLOR_WHITE,
-    borderRadius: 10,
-    justifyContent: 'space-around',
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    paddingTop: 10,
-  },
-  helpTitle: {
-    textAlign: 'left',
-    fontFamily: 'poppins-semibold',
-    fontSize: 19,
-  },
-  helpContent: {
-    color: Colors.MEDIUM_GRAY,
-    fontFamily: 'poppins-regular',
-    fontSize: 16,
-    lineHeight: 20,
-  },
-  helpLink: {
-    fontFamily: 'poppins-semibold',
-    fontSize: 16,
-    color: Colors.PURPLE,
-    fontWeight: 'bold',
-    textDecorationLine: 'underline',
-  },
-  closeDialog: {
-    position: 'absolute',
-    top: 20,
-    right: 20,
-  },
-  dialogBottomLine: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  dialogBottomRight: {
-    alignItems: 'flex-end',
-  },
-  buttonTitleStyle: {
-    fontFamily: 'poppins-semibold',
-    fontSize: 19,
-    color: COLOR_WHITE,
-    marginHorizontal: 15,
-  },
-  buttonStyle: {
-    borderRadius: 10,
-    minHeight: 55,
-  },
-  buttonContainerStyle: {
-    justifyContent: 'center',
+    padding: 10,
+    paddingBottom: 6,
+    borderStyle: 'solid',
+    borderWidth: 2,
+    borderColor: Colors.PURPLE,
+    borderRadius: 4,
   },
 });
 

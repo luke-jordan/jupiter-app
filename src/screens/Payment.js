@@ -59,7 +59,6 @@ export default class Payment extends React.Component {
 
   // removing until more confidence in iOS bug handling
   handleAppStateChange = async (nextAppState) => {
-    console.log('*** PAYMENT APP STATE CHANGED TRIGGERED ****');
     try {
       if (this.state.appState.match(/inactive|background/) && nextAppState === 'active') {
         LoggingUtil.logEvent("USER_RETURNED_TO_PAYMENT_LINK");
@@ -73,7 +72,6 @@ export default class Payment extends React.Component {
         this.setState({ appState: nextAppState });
       }
     } catch (err) {
-      console.log('ERROR: ', err);
       LoggingUtil.logError(err);
     }
   }
@@ -83,7 +81,6 @@ export default class Payment extends React.Component {
       checkingForPayment: true,
     });
     try {
-      // leaving this in to use for testing ...
       // let result = await fetch(Endpoints.CORE + 'addcash/check?transactionId=' + this.state.accountTransactionId + '&failureType=PENDING', {
       const result = await fetch(
         `${Endpoints.CORE}addcash/check?transactionId=${this.state.accountTransactionId}`,
@@ -130,6 +127,7 @@ export default class Payment extends React.Component {
     } catch (error) {
       this.setState({ checkingForPayment: false });
       LoggingUtil.logError(error);
+      this.navigateToPaymentPending();
     }
   };
 
@@ -162,14 +160,12 @@ export default class Payment extends React.Component {
 
   logPaymentError(message, response) {
     const paymentError = new Error(message);
-    const serverResponse = response
-      ? JSON.stringify(response)
-      : 'Could not retrieve failing server response';
+    const serverResponse = response ? JSON.stringify(response) : 'Could not retrieve failing server response';
     if (serverResponse) {
       paymentError.serverResponse = serverResponse;
     }
-    LoggingUtil.logEvent('PAYMENT_FAILED', { serverResponse });
     LoggingUtil.logError(paymentError);
+    LoggingUtil.logEvent('PAYMENT_FAILED_SERVER_ERROR');
     this.navigateToPaymentPending();
   }
 

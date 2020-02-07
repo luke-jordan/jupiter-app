@@ -249,7 +249,10 @@ export default class OTPVerification extends React.Component {
             { userInfo: resultJson }
           );
         } else {
-          AsyncStorage.setItem('userInfo', JSON.stringify(resultJson));
+          await Promise.all([
+            AsyncStorage.setItem('userInfo', JSON.stringify(resultJson)),
+            AsyncStorage.setItem('hasOnboarded', 'true'),
+          ]);
           NavigationUtil.navigateWithoutBackstack(
             this.props.navigation,
             'Home',

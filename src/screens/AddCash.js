@@ -62,7 +62,13 @@ class AddCash extends React.Component {
           accountId: info.balance.accountId[0],
         });
       }
-      if (lastSaveAmount) {
+
+      const preFilledAmount = this.props.navigation.getParam('preFilledAmount');
+      if (preFilledAmount) {
+        this.setState({ 
+          amountToAdd: preFilledAmount.toFixed(0),
+        })
+      } else if (lastSaveAmount) {
         const lastSave = parseInt(lastSaveAmount, 10);
         this.setState({
           amountToAdd: parseFloat(lastSave).toFixed(0),
@@ -149,13 +155,13 @@ class AddCash extends React.Component {
 
   onChangeAmountEnd = () => {
     this.setState({
-      amountToAdd: parseFloat(this.state.amountToAdd).toFixed(2),
+      amountToAdd: parseFloat(this.state.amountToAdd).toFixed(0),
     });
     this.amountInputRef.blur();
   };
 
   getFormattedBalance(balance) {
-    return (balance / getDivisor(this.state.unit)).toFixed(2);
+    return (balance / getDivisor(this.state.unit)).toFixed(0);
   }
 
   getBankRate(bank) {

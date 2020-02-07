@@ -159,7 +159,7 @@ export default class LimitedUsers extends React.Component {
           <Text style={styles.labelStyle}>
             {this.state.notifyMode
               ? 'Enter your cell number or email address to be notified*'
-              : 'Enter your referral code*'}
+              : 'Enter your referral code (caps or lower case)*'}
           </Text>
           <Input
             value={this.state.userInput}

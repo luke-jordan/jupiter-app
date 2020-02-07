@@ -22,19 +22,23 @@ export default class Splash extends React.Component {
       'poppins-regular': require('./../../assets/poppins/Poppins-Regular.ttf'),
       'poppins-semibold': require('./../../assets/poppins/Poppins-SemiBold.ttf'),
     });
-    let userInfo = await AsyncStorage.getItem('userInfo');
+    let [userInfo, hasOnboarded] = await Promise.all([AsyncStorage.getItem('userInfo'), AsyncStorage.getItem('hasOnboarded')]);
     if (userInfo) {
       userInfo = JSON.parse(userInfo);
     }
 
+    hasOnboarded = Boolean(hasOnboarded);
+
     setTimeout(() => {
-      this.navigate(userInfo);
+      this.navigate(userInfo, hasOnboarded);
     }, SPLASH_TIMEOUT);
   }
 
-  navigate(userInfo) {
+  navigate(userInfo, hasOnboarded) {
     if (userInfo && userInfo.token && userInfo.token.length > 0) {
       NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home');
+    } else if (hasOnboarded) {
+      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Login');
     } else {
       NavigationUtil.navigateWithoutBackstack(
         this.props.navigation,

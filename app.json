@@ -8,9 +8,10 @@
       "ios",
       "android"
     ],
-    "version": "0.0.10",
+    "version": "0.0.11a",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
+    "scheme": "jupiter",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -28,8 +29,24 @@
     },
     "android": {
       "package": "com.jupitersave.app",
-      "versionCode": 10,
-      "permissions": []
+      "versionCode": 11,
+      "permissions": [],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "https",
+              "host": "*.jupitersave.com",
+              "pathPrefix": "/message"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
     },
     "hooks": {
       "postPublish": [

@@ -35,19 +35,29 @@ export const MessagingUtil = {
     return false;
   },
 
+  getFallbackMessage() {
+    return {
+      display: {
+        type: 'CARD',
+        titleType: 'EMPHASIS',
+      },
+      actionToTake: 'ADD_CASH',
+      title: 'Add money, earn interest',
+      body: 'Once you add money in your Jupiter account, you start earning interest immediately. From your very first R1, straight up earnings',
+    }
+  },
+
   async setMessageToDisplay(messageFetchResult) {
     if (
       Array.isArray(messageFetchResult.messagesToDisplay) &&
       messageFetchResult.messagesToDisplay.length > 0
     ) {
-      MessagingUtil.setGameId(
-        messageFetchResult.messagesToDisplay[0].messageId
-      );
+      MessagingUtil.setGameId(messageFetchResult.messagesToDisplay[0].messageId);
       MessagingUtil.setGames(messageFetchResult.messagesToDisplay);
       return messageFetchResult.messagesToDisplay[0];
     }
 
-    return null;
+    return this.getFallbackMessage();
   },
 
   async fetchMessagesAndGetTop(authenticationToken) {
@@ -68,7 +78,7 @@ export const MessagingUtil = {
         throw result;
       }
     } catch (error) {
-      console.error('Error fetching messages for user!', JSON.stringify(error));
+      console.log('Error fetching messages for user!', JSON.stringify(error));
     }
   },
 

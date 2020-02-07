@@ -18,6 +18,7 @@ export const Colors = {
   WHITE: '#FFFFFF',
   SKY_BLUE: '#EAF8FA',
   GREEN: '#149570',
+  HISTORY_GREEN: '#6CD4C4',
 };
 
 export const Sizes = {

@@ -13,6 +13,7 @@ import moment from 'moment';
 
 import { NavigationUtil } from '../util/NavigationUtil';
 import { Endpoints, Colors } from '../util/Values';
+import { getDivisor, getFormattedValue } from '../util/AmountUtil';
 
 export default class Withdraw extends React.Component {
   constructor(props) {
@@ -73,32 +74,7 @@ export default class Withdraw extends React.Component {
   };
 
   getFormattedBalance(balance) {
-    return (balance / this.getDivisor(this.state.unit)).toFixed(2);
-  }
-
-  getDivisor(unit) {
-    switch (unit) {
-      case 'MILLIONTH_CENT':
-        return 100000000;
-
-      case 'TEN_THOUSANDTH_CENT':
-        return 1000000;
-
-      case 'THOUSANDTH_CENT':
-        return 100000;
-
-      case 'HUNDREDTH_CENT':
-        return 10000;
-
-      case 'WHOLE_CENT':
-        return 100;
-
-      case 'WHOLE_CURRENCY':
-        return 1;
-
-      default:
-        return 1;
-    }
+    return (balance / getDivisor(this.state.unit)).toFixed(2);
   }
 
   onCloseDialog = () => {
@@ -144,6 +120,7 @@ export default class Withdraw extends React.Component {
           loading: false,
           transactionId: resultJson.transactionId,
           delayOffer: resultJson.delayOffer,
+          interestProjection: resultJson.potentialInterest,
         });
       } else {
         throw result;
@@ -172,7 +149,6 @@ export default class Withdraw extends React.Component {
           userDecision: isWithdrawing ? 'WITHDRAW' : 'CANCEL',
         }),
       });
-      console.log('Server result: ', result);
       if (result.ok) {
         this.setState({ withdrawLoading: false });
         if (isWithdrawing) {
@@ -196,6 +172,10 @@ export default class Withdraw extends React.Component {
     const amount = this.state.delayOffer.boostAmount;
     const parts = amount.split('::');
     return (parts[0] / this.getDivisor(parts[1])).toFixed(0); // + " " + parts[2];
+  };
+
+  getFutureInterestAmount = () => {
+    return getFormattedValue(this.state.interestProjection.amount, this.state.interestProjection.unit);
   };
 
   render() {
@@ -316,6 +296,22 @@ export default class Withdraw extends React.Component {
                 to earn this boost.
               </Text>
             ) : null}
+            {this.state.interestProjection && !this.state.delayOffer && (
+              <Text style={styles.interestProjectionText}>
+                This money could earn a lot if you leave it in your account. Thanks to compound interest,
+                over the next five years it could make:
+              </Text>
+            )}
+            {this.state.interestProjection && !this.state.delayOffer && (
+              <View style={styles.dialogBoostView}>
+                <View style={styles.dialogBoostTextWrapper}>
+                  <Text style={styles.dialogBoostSuperscript}>R</Text>
+                  <Text style={styles.dialogBoostText}>
+                    {this.getFutureInterestAmount()}
+                  </Text>
+                </View>
+              </View>
+            )}
             <Button
               title="CANCEL WITHDRAWAL"
               titleStyle={styles.buttonTitleStyle}
@@ -515,8 +511,8 @@ const styles = StyleSheet.create({
   },
   closeDialog: {
     position: 'absolute',
-    top: 20,
-    right: 20,
+    top: 5,
+    right: 5,
   },
   dialogTitleWrapper: {
     width: '75%',
@@ -560,6 +556,14 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
     color: Colors.MEDIUM_GRAY,
     textAlign: 'center',
+  },
+  interestProjectionText: {
+    fontFamily: 'poppins-regular',
+    fontSize: 16,
+    marginVertical: 10,
+    marginHorizontal: 10,
+    color: Colors.MEDIUM_GRAY,
+    textAlign: 'left',
   },
   dialogTextAsButton: {
     fontFamily: 'poppins-semibold',

@@ -25,9 +25,7 @@ export default class Onboarding extends React.Component {
   }
 
   async componentDidMount() {
-    LoggingUtil.logEvent('USER_VISITED_SCREEN', {
-      intro_screen_name: this.getTabTitle(0),
-    });
+    LoggingUtil.logEvent('USER_ENTERED_INTRO');
   }
 
   onPressNext = async () => {

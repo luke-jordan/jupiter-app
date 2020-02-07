@@ -10,6 +10,7 @@ import {
   ScrollView,
   StyleSheet,
   View,
+  AsyncStorage,
 } from 'react-native';
 import { Button, Icon, Input, Overlay } from 'react-native-elements';
 
@@ -176,6 +177,8 @@ class SetPassword extends React.Component {
           loading: false,
           checkingForCompletion: false,
         });
+
+        await AsyncStorage.setItem('hasOnboarded', 'true');
 
         if (resultJson.comparatorRates) {
           this.props.updateComparatorRates(resultJson.comparatorRates);

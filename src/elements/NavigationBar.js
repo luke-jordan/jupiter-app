@@ -105,7 +105,7 @@ class NavigationBar extends React.Component {
                   ? styles.purpleTint
                   : styles.grayTint,
               ]}
-              source={require('../../assets/wallet_7.png')}
+              source={require('../../assets/account.png')}
             />
           </TouchableOpacity>
         </View>

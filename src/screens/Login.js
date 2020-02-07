@@ -45,6 +45,7 @@ export default class Login extends React.Component {
         phoneOrEmail: this.state.userId,
         password: this.state.password,
         deviceId: this.state.deviceId,
+        countryCode: 'ZAF',
       }),
     };
 
@@ -55,7 +56,10 @@ export default class Login extends React.Component {
       if (resultJson.result === 'OTP_NEEDED') {
         await this.generateOtpAndMove(resultJson.systemWideUserId);
       } else {
-        await AsyncStorage.setItem('userInfo', JSON.stringify(resultJson));
+        await Promise.all([
+          AsyncStorage.setItem('userInfo', JSON.stringify(resultJson)), 
+          AsyncStorage.setItem('hasOnboarded', 'true'),
+        ]);
         NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', {
           userInfo: resultJson,
         });
