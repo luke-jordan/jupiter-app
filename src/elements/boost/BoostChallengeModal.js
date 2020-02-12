@@ -9,10 +9,10 @@ import {
 } from 'react-native';
 import { Button } from 'react-native-elements';
 
-import { Colors } from '../../../util/Values';
+import { Colors } from '../../util/Values';
 
-const closeImage = require('../../../../assets/close.png');
-const tapToScreenImage = require('../../../../assets/tapToScreen.png');
+const closeImage = require('../../../assets/close.png');
+const tapToScreenImage = require('../../../assets/tapToScreen.png');
 
 const BoostChallengeModal = ({ showModal, hideModal, startGame }) => (
   <View style={styles.backgroundWrapper}>

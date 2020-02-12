@@ -53,7 +53,6 @@ export default class Payment extends React.Component {
         token: params.token,
         isOnboarding: params.isOnboarding,
         amountAdded: params.amountAdded,
-        amountForBoost: params.amountForBoost,
       });
     }
   }
@@ -115,7 +114,6 @@ export default class Payment extends React.Component {
               isOnboarding: this.state.isOnboarding,
               newBalance: resultJson.newBalance,
               amountAdded: this.state.amountAdded,
-              amountForBoost: this.state.amountForBoost,
             }
           );
         } else if (resultJson.result.includes('PAYMENT_PENDING')) {
@@ -181,7 +179,6 @@ export default class Payment extends React.Component {
         accountTransactionId: this.state.accountTransactionId,
         token: this.state.token,
         isOnboarding: this.state.isOnboarding,
-        amountForBoost: this.state.amountForBoost,
         amountAdded: this.state.amountAdded,
         humanReference: this.state.humanReference,
         bankDetails,

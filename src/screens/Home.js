@@ -6,52 +6,47 @@ import * as Permissions from 'expo-permissions';
 import moment from 'moment';
 import React from 'react';
 import { connect } from 'react-redux';
-import {
-  Alert,
-  Animated,
-  AsyncStorage,
-  Dimensions,
-  Easing,
-  Image,
-  Linking,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Alert, Animated, AsyncStorage, Dimensions, Easing, Image, Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Icon } from 'react-native-elements';
-import {
-  FlingGestureHandler,
-  Directions,
-  State,
-} from 'react-native-gesture-handler';
 
 // import VersionCheck from 'react-native-version-check-expo';
 import { NavigationEvents } from 'react-navigation';
 
-import { Colors, Sizes, Endpoints } from '../util/Values';
-import NavigationBar from '../elements/NavigationBar';
+import { Colors, Endpoints } from '../util/Values';
 import { NotificationsUtil } from '../util/NotificationsUtil';
 import { MessagingUtil } from '../util/MessagingUtil';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
-import { getDivisor } from '../util/AmountUtil';
+import { getDivisor, extractAmount } from '../util/AmountUtil';
 
 import BalanceNumber from '../elements/BalanceNumber';
-import BoostModalChallenge from '../elements/boost/BoostChallengeModal';
-import BoostInstructionModal from '../elements/boost/BoostInstructionModal';
+import NavigationBar from '../elements/NavigationBar';
+import MessageCard from '../elements/MessageCard';
 
-import { updateBoostCount } from '../modules/boost/boost.actions';
-import {
-  updateServerBalance,
-  updateShownBalance,
-} from '../modules/balance/balance.actions';
+import BoostModalChallenge from '../elements/boost/BoostChallengeModal';
+import BoostResultModal from '../elements/boost/BoostResultModal';
+// import BoostOfferModal from '../elements/boost/BoostOfferModal';
+
+import { updateServerBalance, updateShownBalance } from '../modules/balance/balance.actions';
+import { updateBoostCount, updateBoostViewed, updateMessagesAvailable, updateMessageSequence, updateMessageViewed } from '../modules/boost/boost.actions';
+import { getViewedBoosts, hasViewedFallback, getNextMessage, getAvailableMessages } from '../modules/boost/boost.reducer';
 
 const mapDispatchToProps = {
   updateBoostCount,
   updateServerBalance,
   updateShownBalance,
+  updateBoostViewed,
+  updateMessagesAvailable,
+  updateMessageSequence,
+  updateMessageViewed,
 };
+
+const mapStateToProps = state => ({
+  viewedBoosts: getViewedBoosts(state),
+  hasShownFallback: hasViewedFallback(state),
+  nextMessage: getNextMessage(state),
+  availableMessages: getAvailableMessages(state),
+});
 
 const { height, width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
@@ -133,7 +128,6 @@ class Home extends React.Component {
       await this.setState({
         token: info.token,
         firstName: info.profile.personalName,
-        showModal: params.showModal,
       });
     } else {
       await this.setState({
@@ -142,15 +136,8 @@ class Home extends React.Component {
       });
     }
 
-    if (
-      info.profile.kycStatus === 'FAILED_VERIFICATION' ||
-      info.profile.kycStatus === 'REVIEW_FAILED'
-    ) {
-      NavigationUtil.navigateWithoutBackstack(
-        this.props.navigation,
-        'FailedVerification',
-        { fromHome: true }
-      );
+    if (info.profile.kycStatus === 'FAILED_VERIFICATION' || info.profile.kycStatus === 'REVIEW_FAILED') {
+      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'FailedVerification', { fromHome: true });
       return;
     }
 
@@ -163,6 +150,7 @@ class Home extends React.Component {
 
     this.fetchCurrentBalanceFromServer();
     this.fetchMessagesIfNeeded();
+    this.checkForTriggeredBoost();
   }
 
   showLogoutAlert = () => {
@@ -190,7 +178,6 @@ class Home extends React.Component {
       totalPendingAmount,
     });
   };
-
 
   fetchCurrentBalanceFromServer = async () => {
     if (this.state.loading) return;
@@ -252,6 +239,11 @@ class Home extends React.Component {
       NavigationUtil.logout(this.props.navigation);
     }
 
+    if (this.state.lastFetchTimeMillis === 0) {
+      // have not fetched before, so do not do so
+      return;
+    }
+
     const { balance } = JSON.parse(info);
     this.props.updateServerBalance(balance);
 
@@ -259,7 +251,7 @@ class Home extends React.Component {
     // console.log('Time since fetch: ', millisSinceLastFetch);
     if (millisSinceLastFetch > TIME_BETWEEN_FETCH) {
       // console.log('Enough time elapsed, check for new balance');
-      await this.fetchCurrentBalanceFromServer();
+      await Promise.all([this.fetchCurrentBalanceFromServer(), this.checkForTriggeredBoost(), this.fetchMessagesIfNeeded()]);
     }
   }
 
@@ -283,9 +275,7 @@ class Home extends React.Component {
 
   async handleNotificationsModule() {
     this.registerForPushNotifications();
-    this._notificationSubscription = Notifications.addListener(
-      this.handleNotification
-    );
+    this._notificationSubscription = Notifications.addListener(this.handleNotification);
   }
 
   handleNotification = notification => {
@@ -320,81 +310,136 @@ class Home extends React.Component {
   };
 
   async checkForTriggeredBoost() {
-    // only bother if boost count is > 0. If so, we check if pending or redeemed. If they are,
-    // we show some default pending / redeemed messages.
+    // note : we do the check regardless of whether boost count is above 0, because if, e.g., the user
+    // claims a boost right after they add the cash, then we will have a race condition between this and balance update
+    try {
+      const result = await fetch(`${Endpoints.CORE}boost/display`, {
+        headers: {
+          Authorization: `Bearer ${this.state.token}`,
+        },
+        method: 'GET',
+      });
+
+      if (result.ok) {
+        const resultJson = await result.json();
+        this.handleBoostCheckResult(resultJson);    
+      } else {
+        throw result;
+      }
+    } catch (error) {
+      console.log('Error fetching changed boost!', error.message);
+    }
+  }
+
+  handleBoostCheckResult(boostArray) {
+    if (!Array.isArray(boostArray) || boostArray.length === 0) {
+      return;
+    }
+
+    const { viewedBoosts } = this.props;
+    const statusNotViewedFilter = (boost, status) => boost.boostStatus === status &&
+      (Object.keys(viewedBoosts).indexOf(boost.boostId) < 0 || viewedBoosts[boost.boostId].indexOf(status) < 0); 
+
+    const redeemedBoosts = boostArray.filter((boost) => statusNotViewedFilter(boost, 'REDEEMED'));
     
-    
+    if (redeemedBoosts.length > 0) {
+      const boostToView = redeemedBoosts[0]; // i.e., first one
+      this.setState({ 
+        showBoostResultModal: true,
+        boostResultDetails: boostToView, 
+      },
+      () => this.props.updateBoostViewed({ boostId: boostToView.boostId, viewedStatus: 'REDEEMED' }));
+      return;
+    }
+
+    const pendingBoosts = boostArray.filter((boost) => statusNotViewedFilter(boost, 'PENDING'));
+    if (pendingBoosts.length > 0) {
+      // if this is a game then bring up the game dialogue; otherwise ignore it (for now)
+      this.props.updateBoostViewed({ boostId: pendingBoosts[0].boostId, viewedStatus: 'PENDING' });
+    }
+  }
+
+  hideBoostResultModal() {
+    this.setState({ showBoostResultModal: false }, () => {
+      this.checkForTriggeredBoost(); // in case there is another one pending in the meantime
+    });
   }
 
   async fetchMessagesIfNeeded() {
-    const gameId = await MessagingUtil.getGameId();
-    if (gameId) {
-      const game = await MessagingUtil.getGame(gameId);
-      if (game) this.showGame(game);
+    const { nextMessage } = this.props;
+    if (nextMessage) {
+      this.showMessage(nextMessage);
     } else {
-      const data = await MessagingUtil.fetchMessagesAndGetTop(this.state.token);
-      if (data) this.showGame(data);
+      const { availableMessages, messageSequence } = await MessagingUtil.fetchMessagesAndGetTop(this.state.token);
+      this.props.updateMessagesAvailable(availableMessages);
+      this.props.updateMessageSequence(messageSequence);
+      this.showMessageOrFallback(this.props.nextMessage);
     }
+  }
+
+  showMessageOrFallback(message) {
+    if (message) {
+      this.showMessage(message);
+    } else if (!this.props.hasShownFallback) {
+      this.showMessage(MessagingUtil.getFallbackMessage());
+    }
+  }
+
+  showMessage(message) {
+    if (message.display.type.includes('CARD')) {
+      this.setState({
+        hasMessage: true,
+        messageDetails: message,
+      });
+    } else if (message.display.type.includes('MODAL')) {
+      this.setState({
+        // hasGameModal: true,
+        gameModalDetails: message,
+      });
+    }
+    this.props.updateMessageViewed(message);
   }
 
   onFlingMessage() {
     this.setState({
       hasMessage: false,
     });
-    MessagingUtil.dismissedGame(this.state.token);
-    AsyncStorage.removeItem('gameId');
-    AsyncStorage.removeItem('currentGames');
+    MessagingUtil.tellServerMessageAction('DISMISSED', this.state.messageDetails.messageId, this.state.token);
   }
 
-  getMessageCardButtonText(action) {
-    switch (action) {
-      case 'ADD_CASH':
-        return 'ADD CASH';
-
-      case 'VIEW_HISTORY':
-        return 'VIEW HISTORY';
-
-      case 'VISIT_WEB':
-        return 'FOLLOW LINK';
-
-      default:
-        return '';
+  onPressMsgAction = action => {
+    this.setState({ hasMessage: false });
+    const { messageDetails } = this.state;
+    
+    if (messageDetails) {
+      MessagingUtil.tellServerMessageAction('ACTED', messageDetails.messageId, this.state.token);
     }
-  }
 
-  getMessageCardIcon(iconType) {
-    switch (iconType) {
-      case 'BOOST_ROCKET':
-        return require('../../assets/rocket.png');
-
-      case 'UNLOCKED':
-        return require('../../assets/unlocked.png');
-
-      default:
-        return require('../../assets/notification.png');
-    }
-  }
-
-  // onCloseDialog = () => {
-  //   this.setState({
-  //     updateRequiredDialogVisible: false,
-  //     updateAvailableDialogVisible: false,
-  //   });
-  //   return true;
-  // };
-
-  onPressModalAction = action => {
+    const actionContext = messageDetails ? messageDetails.actionContext : null;
+    console.log('Processing message action, message details: ', messageDetails);
+    
     switch (action) {
-      case 'ADD_CASH':
-        this.props.navigation.navigate('AddCash');
-        break;
+      case 'ADD_CASH': {
+          const addCashEmbeddedAmount = actionContext ? actionContext.addCashPreFilled : null;
+          if (addCashEmbeddedAmount) {
+            const preFilledAmount = extractAmount(addCashEmbeddedAmount, 'WHOLE_CURRENCY');
+            this.props.navigation.navigate('AddCash', { preFilledAmount });
+          } else {
+            this.props.navigation.navigate('AddCash');
+          }
+          break;
+      }
 
       case 'VIEW_HISTORY':
         this.props.navigation.navigate('History');
         break;
 
       case 'VISIT_WEB':
-        Linking.openURL('https://jupitersave.com'); // TODO : make follow actual link
+        if (actionContext && actionContext.urlToVisit) {
+          Linking.openURL(actionContext.urlToVisit);
+        } else {
+          Linking.openURL('https://jupitersave.com')
+        }
         break;
 
       default:
@@ -423,101 +468,9 @@ class Home extends React.Component {
     );
   }
 
-  renderMessageCard() {
-    const { messageDetails } = this.state;
-    if (!messageDetails) {
-      return null;
-    }
-    const isEmphasis =
-      messageDetails.display.titleType &&
-      messageDetails.display.titleType.includes('EMPHASIS');
-    const messageActionText = this.getMessageCardButtonText(
-      messageDetails.actionToTake
-    );
-    return (
-      <FlingGestureHandler
-        direction={Directions.RIGHT}
-        onHandlerStateChange={({ nativeEvent }) => {
-          if (nativeEvent.state === State.ACTIVE) {
-            this.onFlingMessage(nativeEvent);
-          }
-        }}
-      >
-        <View style={styles.messageCard}>
-          <View
-            style={
-              isEmphasis
-                ? styles.messageCardHeaderEmphasis
-                : styles.messageCardHeader
-            }
-          >
-            {!isEmphasis ? (
-              <Image
-                style={styles.messageCardIcon}
-                source={this.getMessageCardIcon(
-                  messageDetails.display.iconType
-                )}
-              />
-            ) : null}
-            <Text
-              style={
-                isEmphasis
-                  ? styles.messageCardTitleEmphasis
-                  : styles.messageCardTitle
-              }
-            >
-              {messageDetails.title}
-            </Text>
-            {isEmphasis ? (
-              <Image
-                style={styles.messageCardIconEmphasis}
-                source={this.getMessageCardIcon(
-                  messageDetails.display.iconType
-                )}
-              />
-            ) : null}
-          </View>
-          <Text style={styles.messageCardText}>{messageDetails.body}</Text>
-          {messageActionText && messageActionText.length > 0 ? (
-            <TouchableOpacity
-              style={styles.messageCardButton}
-              onPress={() =>
-                this.onPressModalAction(messageDetails.actionToTake)
-              }
-            >
-              <Text style={styles.messageCardButtonText}>
-                {messageActionText}
-              </Text>
-              <Icon
-                name="chevron-right"
-                type="evilicon"
-                size={30}
-                color={Colors.PURPLE}
-              />
-            </TouchableOpacity>
-          ) : null}
-        </View>
-      </FlingGestureHandler>
-    );
-  }
-
   // ////////////////////////////////////////////////////////////////////////////////////
   // ///////////////////  GAME HANDLING /////////////////////////////////////////////////
   // ////////////////////////////////////////////////////////////////////////////////////
-
-  async showGame(game) {
-    if (game.display.type.includes('CARD')) {
-      this.setState({
-        hasMessage: true,
-        messageDetails: game,
-      });
-    } else if (game.display.type.includes('MODAL')) {
-      this.setState({
-        // hasGameModal: true,
-        gameModalDetails: game,
-      });
-    }
-  }
 
   rotateGameCircle(arrowSpeedMultiplier) {
     const rotationDuration = CIRCLE_ROTATION_DURATION / arrowSpeedMultiplier;
@@ -599,14 +552,12 @@ class Home extends React.Component {
     this.setState({ tapScreenGameTimer: this.state.tapScreenGameTimer - 1 });
   };
 
-  handleTapScreenGameEnd = async () => {
+  handleTapScreenGameEnd = () => {
     this.setState({ tapScreenGameMode: false });
 
-    const nextStepId = this.state.gameModalDetails.actionContext.gameParams
-      .finishedMessage;
-    MessagingUtil.setGameId(nextStepId);
-    const nextStep = await MessagingUtil.getGame(nextStepId);
-    if (nextStep) this.showGame(nextStep);
+    const nextStepId = this.state.gameModalDetails.actionContext.gameParams.finishedMessage;
+    const nextStep = this.props.availableMessages[nextStepId];
+    if (nextStep) this.showMessage(nextStep);
     MessagingUtil.sendTapGameResults(this.tapScreenGameTaps, this.state.token);
   };
 
@@ -617,14 +568,12 @@ class Home extends React.Component {
     this.setState({ chaseArrowGameTimer: this.state.chaseArrowGameTimer - 1 });
   };
 
-  handleChaseArrrowGameEnd = async () => {
+  handleChaseArrrowGameEnd = () => {
     this.setState({ chaseArrowGameMode: false });
 
-    const nextStepId = this.state.gameModalDetails.actionContext.gameParams
-      .finishedMessage;
-    MessagingUtil.setGameId(nextStepId);
-    const nextStep = await MessagingUtil.getGame(nextStepId);
-    if (nextStep) this.showGame(nextStep);
+    const nextStepId = this.state.gameModalDetails.actionContext.gameParams.finishedMessage;
+    const nextStep = this.props.availableMessages[nextStepId]
+    if (nextStep) this.showMessage(nextStep);
     MessagingUtil.sendTapGameResults(this.chaseArrowGameTaps, this.state.token);
   };
 
@@ -643,18 +592,13 @@ class Home extends React.Component {
   };
 
   onCloseGameDialog = () => {
-    // this.setState({
-    //   hasGameModal: false,
-    // });
-    MessagingUtil.dismissedGame(this.state.token);
-    AsyncStorage.removeItem('gameId');
-    AsyncStorage.removeItem('currentGames');
+    MessagingUtil.tellServerMessageAction('DISMISSED', this.state.gameModalDetails.messageId, this.state.token);
   };
 
   /**
    * handler for hide modal with game
    */
-  hideBoostModalHandler = async () => {
+  hideBoostChallengeModal = async () => {
     await this.setState({ showModal: false });
   };
 
@@ -817,6 +761,7 @@ class Home extends React.Component {
               )}
 
               {this.state.hasPendingTransactions ? this.renderPendingBalance() : null}
+
               {/* {<View style={styles.endOfMonthBalanceWrapper}>
                 <Text style={styles.endOfMonthBalance}>+R{this.state.expectedToAdd}</Text>
                   <Icon
@@ -829,7 +774,13 @@ class Home extends React.Component {
               <Text style={styles.endOfMonthDesc}>Due end of month</Text>} */}
             </View>
 
-            {this.state.hasMessage ? this.renderMessageCard() : null}
+            {this.state.hasMessage && (
+              <MessageCard 
+                messageDetails={this.state.messageDetails}
+                onFlingMessage={() => this.onFlingMessage()}
+                onPressActionButton={(actionToTake) => this.onPressMsgAction(actionToTake)}
+              />
+            )}
 
             <NavigationBar navigation={this.props.navigation} currentTab={0} />
           </LinearGradient>
@@ -838,8 +789,17 @@ class Home extends React.Component {
         {this.state.showModal && (
           <BoostModalChallenge
             showModal={this.state.showModal}
-            hideModal={this.hideBoostModalHandler}
+            hideModal={this.hideBoostChallengeModal}
             startGame={() => {}}
+          />
+        )}
+
+        {this.state.showBoostResultModal && (
+          <BoostResultModal
+            showModal={this.state.showBoostResultModal}
+            hideModal={() => this.hideBoostResultModal()}
+            boostDetails={this.state.boostResultDetails}
+            navigation={this.props.navigation}
           />
         )}
       </View>
@@ -984,75 +944,6 @@ const styles = StyleSheet.create({
     fontSize: 4 * FONT_UNIT,
     fontFamily: 'poppins-regular',
   },
-  messageCard: {
-    minHeight: height * 0.23,
-    width: '95%',
-    backgroundColor: COLOR_WHITE,
-    marginBottom: -(
-      Sizes.NAVIGATION_BAR_HEIGHT - Sizes.VISIBLE_NAVIGATION_BAR_HEIGHT
-    ),
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-  },
-  messageCardHeaderEmphasis: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-    backgroundColor: Colors.LIGHT_BLUE,
-    borderTopLeftRadius: 5,
-    borderTopRightRadius: 5,
-  },
-  messageCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-    padding: 15,
-  },
-  messageCardIcon: {
-    marginHorizontal: 10,
-  },
-  messageCardIconEmphasis: {
-    marginHorizontal: 10,
-    position: 'absolute',
-    top: -10,
-    right: -10,
-  },
-  messageCardTitleEmphasis: {
-    fontFamily: 'poppins-semibold',
-    fontSize: 3.7 * FONT_UNIT,
-    color: COLOR_WHITE,
-    paddingVertical: 10,
-    marginLeft: 10,
-  },
-  messageCardTitle: {
-    fontFamily: 'poppins-semibold',
-    fontSize: 3.7 * FONT_UNIT,
-  },
-  messageCardText: {
-    fontFamily: 'poppins-regular',
-    fontSize: 3.2 * FONT_UNIT,
-    paddingHorizontal: 15,
-    paddingTop: 5,
-  },
-  messageCardButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingVertical: 10,
-  },
-  messageCardButtonText: {
-    fontFamily: 'poppins-semibold',
-    fontSize: 3.7 * FONT_UNIT,
-    color: Colors.PURPLE,
-    marginRight: -5,
-    padding: 10,
-    paddingBottom: 6,
-    borderStyle: 'solid',
-    borderWidth: 2,
-    borderColor: Colors.PURPLE,
-    borderRadius: 4,
-  },
 });
 
-export default connect(null, mapDispatchToProps)(Home);
+export default connect(mapStateToProps, mapDispatchToProps)(Home);

@@ -1,42 +1,11 @@
-import { AsyncStorage } from 'react-native';
-
 import { Endpoints } from '../util/Values';
+import { FALLBACK_MSG_ID } from '../modules/boost/boost.reducer';
 
 export const MessagingUtil = {
-  setGameId(id) {
-    AsyncStorage.setItem('gameId', JSON.stringify(id));
-  },
-
-  async getGameId() {
-    const info = await AsyncStorage.getItem('gameId');
-    if (!info) {
-      return false;
-    } else {
-      return JSON.parse(info);
-    }
-  },
-
-  setGames(games) {
-    AsyncStorage.setItem('currentGames', JSON.stringify(games));
-  },
-
-  async getGame(gameId) {
-    const info = await AsyncStorage.getItem('currentGames');
-    if (!info) {
-      return false;
-    } else {
-      const games = JSON.parse(info);
-      for (const game of games) {
-        if (game.messageId === gameId) {
-          return game;
-        }
-      }
-    }
-    return false;
-  },
 
   getFallbackMessage() {
     return {
+      messageId: FALLBACK_MSG_ID,
       display: {
         type: 'CARD',
         titleType: 'EMPHASIS',
@@ -45,19 +14,6 @@ export const MessagingUtil = {
       title: 'Add money, earn interest',
       body: 'Once you add money in your Jupiter account, you start earning interest immediately. From your very first R1, straight up earnings',
     }
-  },
-
-  async setMessageToDisplay(messageFetchResult) {
-    if (
-      Array.isArray(messageFetchResult.messagesToDisplay) &&
-      messageFetchResult.messagesToDisplay.length > 0
-    ) {
-      MessagingUtil.setGameId(messageFetchResult.messagesToDisplay[0].messageId);
-      MessagingUtil.setGames(messageFetchResult.messagesToDisplay);
-      return messageFetchResult.messagesToDisplay[0];
-    }
-
-    return this.getFallbackMessage();
   },
 
   async fetchMessagesAndGetTop(authenticationToken) {
@@ -71,9 +27,13 @@ export const MessagingUtil = {
         method: 'GET',
       });
       if (result.ok) {
-        const resultJson = await result.json();
-        // console.log("resultJson:", resultJson);
-        return this.setMessageToDisplay(resultJson);
+        const { messagesToDisplay } = await result.json();
+        if (!Array.isArray(messagesToDisplay) || messagesToDisplay.length === 0) {
+          return { availableMessages: {}, messageSequence: [] };
+        }
+        const messageSequence = messagesToDisplay.map((msg) => msg.messageId);
+        const availableMessages = messagesToDisplay.reduce((obj, message) => ({ ...obj, [message.messageId]: message }), {});
+        return { messageSequence, availableMessages };
       } else {
         throw result;
       }
@@ -106,9 +66,8 @@ export const MessagingUtil = {
     }
   },
 
-  async dismissedGame(authenticationToken) {
-    const gameId = await MessagingUtil.getGameId();
-    if (!gameId) {
+  async tellServerMessageAction(userAction, messageId, authenticationToken) {
+    if (!messageId || messageId === FALLBACK_MSG_ID) {
       return false;
     } else {
       try {
@@ -119,33 +78,23 @@ export const MessagingUtil = {
             Authorization: `Bearer ${authenticationToken}`,
           },
           method: 'POST',
-          body: JSON.stringify({
-            messageId: gameId,
-            userAction: 'DISMISSED',
-          }),
+          body: JSON.stringify({ messageId, userAction }),
         });
         if (result.ok) {
-          const resultJson = await result.json();
-          // console.log("resultJson:", resultJson);
-          if (resultJson.result.includes('SUCCESS')) {
-            AsyncStorage.removeItem('gameId');
-            AsyncStorage.removeItem('currentGames');
-            return true;
-          } else {
-            return false;
-          }
+          return true;
         } else {
           throw result;
         }
       } catch (error) {
         console.log('Error sending message process!', JSON.stringify(error));
+        return false;
       }
     }
   },
 
   async sendTapGameResults(taps, authenticationToken) {
-    const gameId = await MessagingUtil.getGameId();
-    const game = await MessagingUtil.getGame(gameId);
+    const gameId = await MessagingUtil.getNextMessageId();
+    const game = await MessagingUtil.getMessage(gameId);
     if (!gameId || !game) {
       return false;
     } else {

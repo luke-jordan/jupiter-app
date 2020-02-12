@@ -13,7 +13,6 @@ import { Button, Icon } from 'react-native-elements';
 
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
-import { MessagingUtil } from '../util/MessagingUtil';
 import { Endpoints, Colors } from '../util/Values';
 
 const { width } = Dimensions.get('window');
@@ -26,7 +25,6 @@ export default class PaymentComplete extends React.Component {
       loading: false,
       fetchingProfile: true,
       userInfo: null,
-      showModal: false,
     };
   }
 
@@ -38,9 +36,6 @@ export default class PaymentComplete extends React.Component {
 
     const { params } = this.props.navigation.state;
     if (params) {
-      // check if the amount of replenishment is greater than the amount indicated in the boost
-      if (params.amountForBoost <= params.amountAdded)
-        this.setState({ showModal: true });
       if (params.isOnboarding) {
         LoggingUtil.logEvent('USER_COMPLETED_ONBOARD', {
           amountAdded: params.amountAdded,
@@ -52,8 +47,6 @@ export default class PaymentComplete extends React.Component {
     }
 
     this.fetchProfile(params.token);
-
-    this.checkForActiveGame(params.token);
   }
 
   componentWillUnmount() {
@@ -113,14 +106,6 @@ export default class PaymentComplete extends React.Component {
     this.backHandler.remove();
     this.onPressDone();
     return false;
-  };
-
-  checkForActiveGame = async token => {
-    // TODO this should check for amounts
-    const game = await MessagingUtil.fetchMessagesAndGetTop(token);
-    if (game && game.actionContext && game.actionToTake && game.actionToTake.includes('ADD_CASH')) {
-      MessagingUtil.setGameId(game.actionContext.msgOnSuccess);
-    }
   };
 
   async fetchProfile(token) {

@@ -49,7 +49,6 @@ export default class CheckingForPayment extends React.Component {
         isOnboarding: params.isOnboarding,
         amountAdded: params.amountAdded,
         bankDetails: params.bankDetails,
-        amountForBoost: params.amountForBoost,
       });
     }
   }
@@ -96,7 +95,6 @@ export default class CheckingForPayment extends React.Component {
               isOnboarding: this.state.isOnboarding,
               newBalance: resultJson.newBalance,
               amountAdded: this.state.amountAdded,
-              amountForBoost: this.state.amountForBoost,
             }
           );
         } else if (resultJson.result.includes('PAYMENT_PENDING')) {

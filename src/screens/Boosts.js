@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { Button } from 'react-native-elements';
 
-import BoostInstructionModal from '../elements/boost/BoostInstructionModal';
+import BoostOfferModal from '../elements/boost/BoostOfferModal';
 
 import NavigationBar from '../elements/NavigationBar';
 import getPermittedTypesOfBoost from '../modules/boost/helpers/getPermittedTypesOfBoost';
@@ -23,6 +23,8 @@ import { NavigationUtil } from '../util/NavigationUtil';
 import { Sizes, Endpoints, Colors } from '../util/Values';
 import { MessagingUtil } from '../util/MessagingUtil';
 import { equalizeAmounts } from '../modules/boost/helpers/parseAmountValue';
+
+import { extractConditionParameter, getDivisor } from '../util/AmountUtil';
 
 const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
@@ -59,18 +61,18 @@ class Boosts extends React.Component {
 
   getBoostIcon(boostDetails) {
     if (boostDetails.boostStatus === 'REDEEMED') {
-      return require('../../../../assets/completed.png');
+      return require('../../assets/completed.png');
     } else if (boostDetails.boostType === 'GAME') {
-      return require('../../../../assets/boost_challenge.png');
+      return require('../../assets/boost_challenge.png');
     }
-    return require('../../../../assets/surprise_reward.png');
+    return require('../../assets/surprise_reward.png');
   }
 
   getBoostResultIcon(boostStatus, endTime) {
     if (boostStatus === 'REDEEMED') {
-      return require('../../../../assets/thumbs_up.png');
+      return require('../../assets/thumbs_up.png');
     } else if (this.isBoostExpired({ boostStatus, endTime })) {
-      return require('../../../../assets/sad_face.png');
+      return require('../../assets/sad_face.png');
     }
   }
 
@@ -94,12 +96,12 @@ class Boosts extends React.Component {
     }
 
     // get value from boost item
-    const getValueFromConditional = boostDetails.statusConditions.REDEEMED[0];
+    // const getValueFromConditional = boostDetails.statusConditions.REDEEMED[0];
 
     // split string on 3 parameters
-    const parameterMatch = getValueFromConditional.match(/#{(.*)}/);
-    const parameterValue = parameterMatch ? parameterMatch[1] : null;
-    const amount = equalizeAmounts(parameterValue);
+    // const parameterMatch = getValueFromConditional.match(/#{(.*)}/);
+    // const parameterValue = parameterMatch ? parameterMatch[1] : null;
+    const amount = this.extractStatusThreshold(boostDetails);
 
     if (buttonType === '') {
       return null;
@@ -166,7 +168,7 @@ class Boosts extends React.Component {
 
   sortBoosts = boosts => {
     const sortByTime = (a, b) =>
-      moment(a.endTime).isAfter(moment(b.endTime)) && 1;
+      moment(b.endTime).isAfter(moment(a.endTime)) && 1;
     const isOneOf = options => x => options.indexOf(x.boostStatus) !== -1;
 
     const topGroup = boosts
@@ -184,8 +186,23 @@ class Boosts extends React.Component {
     return [...topGroup, ...middleGroup, ...bottomGroup];
   };
 
-  showModalHandler = () => {
-    this.setState({ showModal: true });
+  extractStatusThreshold = (boostDetails) => {
+    const { statusConditions } = boostDetails;
+    const redeemConditions = statusConditions.REDEEMED;
+    const saveCondition = redeemConditions.find((condition) => condition.startsWith('save_event_greater_than'));
+    const saveConditionParam = extractConditionParameter(saveCondition);
+    const thresholdNumber = equalizeAmounts(saveConditionParam) / getDivisor('DEFAULT');
+    return thresholdNumber;
+    // return `${getCurrencySymbol(boostDetails.boostCurrency)}${thresholdNumber.toFixed(0)}`;
+  }
+
+  extractBoostModalParameters = (boostDetails) => {
+    const boostThreshold = this.extractStatusThreshold(boostDetails);
+    return { ...boostDetails, boostThreshold };
+  };
+
+  showModalHandler = (boostDetails) => {
+    this.setState({ showModal: true, currentBoostParameters: this.extractBoostModalParameters(boostDetails) });
   };
 
   hideModalHandler = () => {
@@ -203,7 +220,7 @@ class Boosts extends React.Component {
       if (result.ok) {
         const resultJson = await result.json();
         const boosts = this.sortBoosts(resultJson);
-        console.log('TCL: Boosts -> boosts', boosts);
+        // console.log('TCL: Boosts -> boosts', boosts);
         this.setState({
           boosts,
           loading: false,
@@ -217,15 +234,7 @@ class Boosts extends React.Component {
     }
   };
 
-  onPressAddCash = async amount => {
-    // write amount from status condition in async storage
-    await AsyncStorage.setItem(
-      'lastSaveAmount',
-      parseFloat(amount / 10000).toFixed(0)
-    );
-
-    this.props.navigation.navigate('AddCash');
-  };
+  onPressAddCash = amount => this.props.navigation.navigate('AddCash', { preFilledAmount: amount });
 
   onPressInviteFriends = () => {
     this.props.navigation.navigate('Friends');
@@ -255,7 +264,7 @@ class Boosts extends React.Component {
     );
   }
 
-  renderBoostCard(boostDetails, index) {
+  renderBoostCard(boostDetails) {
     const permittedTypesOfBoost = getPermittedTypesOfBoost(boostDetails);
     if (permittedTypesOfBoost) {
       const offeredInstructionStatus = boostDetails.messageInstructionIds.instructions.find(
@@ -273,21 +282,20 @@ class Boosts extends React.Component {
 
     return (
       <TouchableOpacity
-        style={{ width: '100%' }}
         disabled={boostDetails.boostStatus !== BoostStatus.OFFERED}
-        onPress={this.showModalHandler}
+        onPress={() => this.showModalHandler(boostDetails)}
+        key={boostDetails.boostId}
+        style={[
+          styles.boostCard,
+          styles.boxShadow,
+          this.getHighlightBorder(boostDetails),
+        ]}
       >
         <View
           opacity={this.getCardOpacity(
             boostDetails.boostStatus,
             boostDetails.endTime
           )}
-          style={[
-            styles.boostCard,
-            styles.boxShadow,
-            this.getHighlightBorder(boostDetails),
-          ]}
-          key={index}
         >
           <View style={styles.boostTopRow}>
             <Text style={styles.boostTitle}>{boostDetails.label}</Text>
@@ -353,7 +361,7 @@ class Boosts extends React.Component {
           <View style={styles.contentWrapper}>
             <Image
               style={styles.image}
-              source={require('../../../../assets/group_7.png')}
+              source={require('../../assets/group_7.png')}
               resizeMode="contain"
             />
             <Text style={styles.title}>Watch this space…</Text>
@@ -383,10 +391,11 @@ class Boosts extends React.Component {
         )}
         <NavigationBar navigation={this.props.navigation} currentTab={2} />
         {showModal && (
-          <BoostInstructionModal
+          <BoostOfferModal
             showModal
             navigation={this.props.navigation}
             hideModal={() => this.hideModalHandler()}
+            boostDetails={this.state.currentBoostParameters}
             // boostMessage={this.state.boostMessage}
           />
         )}

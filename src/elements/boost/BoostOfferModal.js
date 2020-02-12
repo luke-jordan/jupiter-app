@@ -1,17 +1,35 @@
+import moment from 'moment';
 import React from 'react';
-import { Modal, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { Modal, StyleSheet, Text, View, Image, TouchableOpacity } from 'react-native';
 import { Button } from 'react-native-elements';
 
-import { Colors } from '../../../util/Values';
-import getSomeActionToTake from '../helpers/getSomeActionToTake';
+import { Colors } from '../../util/Values';
+import { formatStringTemplate, getCurrencySymbol, getFormattedValue } from '../../util/AmountUtil';
 
-const BoostInstructionModal = ({
+import getSomeActionToTake from '../../modules/boost/helpers/getSomeActionToTake';
+
+const closeImage = require('../../../assets/close.png');
+
+const BoostOfferModal = ({
   showModal,
   hideModal,
   boostMessage,
+  boostDetails,
   navigation,
 }) => {
-  const { title, body, actionToTake } = boostMessage;
+
+  const { title, actionToTake } = boostMessage;
+  
+  let { body } = boostMessage;
+  
+  const boostThresholdFormatted = `${getCurrencySymbol(boostDetails.boostCurrency)}${boostDetails.boostThreshold.toFixed(0)}`;
+  const boostExpiryFormatted = moment(boostDetails.endTime).format('dddd DD MMM [at] hA');
+  const currency = getCurrencySymbol(boostDetails.boostCurrency);
+  const boostAmountFormatted = `${currency}${getFormattedValue(boostDetails.boostAmount, boostDetails.boostUnit, 0)}`;
+    
+  const stringParameters = { boostThresholdFormatted, boostExpiryFormatted, boostAmountFormatted };
+  
+  body = formatStringTemplate(body, stringParameters);
 
   // Get button handler and label depending on the `actionToTake`
   const { onPressHandler, buttonLabel } = getSomeActionToTake(actionToTake);
@@ -26,9 +44,17 @@ const BoostInstructionModal = ({
       >
         <View style={styles.modalContainer}>
           <View style={styles.header}>
-            <Text style={styles.textTitle}>{title}</Text>
+            <Image
+              style={styles.image}
+              source={require('../../../assets/group_7.png')}
+              resizeMode="contain"
+            />
+            <TouchableOpacity onPress={hideModal} style={styles.closeDialog}>
+              <Image source={closeImage} />
+            </TouchableOpacity>
           </View>
           <View style={styles.textContainer}>
+            <Text style={styles.textTitle}>{title}</Text>
             <Text style={styles.content}>{body}</Text>
           </View>
           <Button
@@ -36,7 +62,7 @@ const BoostInstructionModal = ({
             titleStyle={styles.buttonTitleStyle}
             buttonStyle={styles.buttonStyle}
             containerStyle={styles.buttonContainerStyle}
-            onPress={() => onPressHandler(navigation, hideModal)}
+            onPress={() => onPressHandler(navigation, hideModal, boostDetails.boostThreshold)}
             linearGradientProps={{
               colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
               start: { x: 0, y: 0.5 },
@@ -55,11 +81,11 @@ const BoostInstructionModal = ({
   );
 };
 
-BoostInstructionModal.defaultProps = {
+BoostOfferModal.defaultProps = {
   boostMessage: {
-    title: 'Get a reward today',
+    title: 'Get rewarded for saving!',
     body:
-      'Save R100 before the end of today and you will be rewarded with R10. Save now to claim!',
+      'Save {boostThresholdFormatted} before {boostExpiryFormatted} and you will be rewarded with {boostAmountFormatted}. Save now to get your reward!',
     actionToTake: 'ADD_CASH',
   },
 };
@@ -82,17 +108,27 @@ const styles = StyleSheet.create({
   textTitle: {
     color: Colors.DARK_GRAY,
     fontSize: 18,
+    fontFamily: 'poppins-semibold',
+  },
+  image: {
+    height: 100,
+    width: 100,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 21,
+    paddingTop: 25,
     paddingHorizontal: 16,
   },
+  closeDialog: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+  },
   textContainer: {
-    paddingHorizontal: 10,
-    paddingTop: 18,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
     width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
@@ -100,6 +136,8 @@ const styles = StyleSheet.create({
   content: {
     textAlign: 'center',
     color: Colors.MEDIUM_GRAY,
+    lineHeight: 22,
+    fontSize: 15,
   },
   buttonTitleStyle: {
     fontSize: 15,
@@ -132,4 +170,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default BoostInstructionModal;
+export default BoostOfferModal;

@@ -1,8 +1,10 @@
 import React from 'react';
-import { Modal, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { Modal, StyleSheet, Text, View, Image, TouchableOpacity } from 'react-native';
 import { Button } from 'react-native-elements';
 
 import { Colors } from '../../util/Values';
+import { formatStringTemplate, getCurrencySymbol } from '../../util/AmountUtil';
+
 import { BoostStatus } from '../../modules/boost/models/index';
 
 const DEFAULT_TITLES = {
@@ -10,20 +12,26 @@ const DEFAULT_TITLES = {
 };
 
 const DEFAULT_BODY = {
-    [BoostStatus.REDEEMED]: 'You’ve successfully completed the challenge and have won #{boostAwardedAmount}!\nKeep being the speedy, smart saver you are to get a chance to unlock further boost challenges and save even more.',
+    [BoostStatus.REDEEMED]: 'You’ve successfully completed the challenge and have won {boostAwardedAmount}!\nKeep being the speedy, smart saver you are to get a chance to unlock further boost challenges and save even more.',
 };
+
+const hideAndNavigage = (screen, navigation, hideModal) => {
+  navigation.navigate(screen);
+  hideModal();
+}
 
 const BoostResultModal = ({
   showModal,
   hideModal,
-  newStatus,
   boostMessage,
-  boostParamaters,
+  boostDetails,
   navigation,
 }) => {
 
     let title = '';
     let body = '';
+
+    const newStatus = boostDetails.boostStatus;
 
     if (boostMessage) {
         title = boostMessage.title || DEFAULT_TITLES[newStatus];
@@ -33,7 +41,12 @@ const BoostResultModal = ({
         body = DEFAULT_BODY[newStatus];
     }
 
-    
+    if (newStatus === 'REDEEMED') {
+      const currency = getCurrencySymbol(boostDetails.boostCurrency);
+      boostDetails.boostAwardedAmount = `${currency}${boostDetails.boostAmount}`
+    }
+
+    body = formatStringTemplate(body, boostDetails);
     
     return (
       <View style={styles.backgroundWrapper}>
@@ -45,17 +58,25 @@ const BoostResultModal = ({
         >
           <View style={styles.modalContainer}>
             <View style={styles.header}>
-              <Text style={styles.textTitle}>{title}</Text>
+              <Image
+                style={styles.image}
+                source={require('../../../assets/group_7.png')}
+                resizeMode="contain"
+              />
+              <TouchableOpacity onPress={hideModal} style={styles.closeDialog}>
+                <Image source={require('../../../assets/close.png')} />
+              </TouchableOpacity>
             </View>
             <View style={styles.textContainer}>
+              <Text style={styles.textTitle}>{title}</Text>
               <Text style={styles.content}>{body}</Text>
             </View>
             <Button
-              title={buttonLabel}
+              title="DONE"
+              onPress={hideModal}
               titleStyle={styles.buttonTitleStyle}
               buttonStyle={styles.buttonStyle}
               containerStyle={styles.buttonContainerStyle}
-              onPress={() => onPressHandler(navigation, hideModal)}
               linearGradientProps={{
                 colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
                 start: { x: 0, y: 0.5 },
@@ -64,23 +85,14 @@ const BoostResultModal = ({
             />
             <TouchableOpacity
               style={styles.playLaterContainer}
-              onPress={hideModal}
+              onPress={() => hideAndNavigage('Boosts', navigation, hideModal)}
             >
-              <Text style={styles.playLaterContent}>Close</Text>
+              <Text style={styles.playLaterContent}>View other boosts</Text>
             </TouchableOpacity>
           </View>
         </Modal>
       </View>
     );
-};
-
-BoostResultModal.defaultProps = {
-  boostMessage: {
-    title: 'Get a reward today',
-    body:
-      'Save R100 before the end of today and you will be rewarded with R10. Save now to claim!',
-    actionToTake: 'ADD_CASH',
-  },
 };
 
 const styles = StyleSheet.create({
@@ -98,9 +110,20 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.WHITE,
     borderRadius: 10,
   },
+  image: {
+    height: 100,
+    width: 100,
+  },
+  closeDialog: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+  },
   textTitle: {
     color: Colors.DARK_GRAY,
     fontSize: 18,
+    fontFamily: 'poppins-semibold',
+    fontWeight: '600',
   },
   header: {
     flexDirection: 'row',
@@ -110,7 +133,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   textContainer: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingTop: 18,
     width: '100%',
     justifyContent: 'center',
@@ -119,6 +142,8 @@ const styles = StyleSheet.create({
   content: {
     textAlign: 'center',
     color: Colors.MEDIUM_GRAY,
+    lineHeight: 22,
+    fontSize: 15,
   },
   buttonTitleStyle: {
     fontSize: 15,

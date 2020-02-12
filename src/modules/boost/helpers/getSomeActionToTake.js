@@ -14,10 +14,14 @@ const getSomeActionToTake = action => {
 };
 
 /**
- * If the user decided to add cash, you need to hide the modal
+ * If the user decided to add cash, you need to hide the modal, and go to the add cash screen
  */
-const addCashHandler = (navigation, hideModal) => {
-  navigation.navigate('AddCash');
+const addCashHandler = (navigation, hideModal, preFilledAmount) => {
+  if (preFilledAmount) {
+    navigation.navigate('AddCash', { preFilledAmount });
+  } else {
+    navigation.navigate('AddCash');
+  }
   hideModal();
 };
 
