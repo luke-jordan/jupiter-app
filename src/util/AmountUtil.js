@@ -49,6 +49,10 @@ export const getFormattedValue = (value, unit, decimals = 2) => {
   return result;
 };
 
+export const standardFormatAmount = (amount, unit, currency, decimals = 2) => {
+  return `${getCurrencySymbol(currency)}${getFormattedValue(amount, unit, decimals)}`;
+}
+
 export const formatStringTemplate = (template, argumentDict) => {
     let str = template;
     
@@ -60,6 +64,9 @@ export const formatStringTemplate = (template, argumentDict) => {
 };
 
 export const extractConditionParameter = (condition) => {
+  if (!condition) {
+    return null;
+  }
   const paramMatch = condition.match(/#{(.*)}/);
   return paramMatch ? paramMatch[1] : null; // to get what is inside the parens
 };

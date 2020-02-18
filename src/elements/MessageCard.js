@@ -24,7 +24,7 @@ const MessageCard = ({
             return 'VIEW HISTORY';
     
           case 'VISIT_WEB':
-            return 'FOLLOW LINK';
+            return 'VISIT SITE';
     
           default:
             return '';

@@ -12,7 +12,7 @@ const DEFAULT_TITLES = {
 };
 
 const DEFAULT_BODY = {
-    [BoostStatus.REDEEMED]: 'You’ve successfully completed the challenge and have won {boostAwardedAmount}!\nKeep being the speedy, smart saver you are to get a chance to unlock further boost challenges and save even more.',
+    [BoostStatus.REDEEMED]: 'Congrats! By being awesome and making smart decisions to grow your savings, Jupiter has rewarded you with a {boostAwardedAmount} boost! It\'s already in your MoneyWheel - keep it up :-)',
 };
 
 const hideAndNavigage = (screen, navigation, hideModal) => {
@@ -60,7 +60,7 @@ const BoostResultModal = ({
             <View style={styles.header}>
               <Image
                 style={styles.image}
-                source={require('../../../assets/group_7.png')}
+                source={require('../../../assets/boost-success-smiley.png')}
                 resizeMode="contain"
               />
               <TouchableOpacity onPress={hideModal} style={styles.closeDialog}>
@@ -111,8 +111,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   image: {
-    height: 100,
-    width: 100,
+    height: 78,
+    width: 127,
   },
   closeDialog: {
     position: 'absolute',
@@ -120,6 +120,7 @@ const styles = StyleSheet.create({
     right: 8,
   },
   textTitle: {
+    marginTop: 18,
     color: Colors.DARK_GRAY,
     fontSize: 18,
     fontFamily: 'poppins-semibold',

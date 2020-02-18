@@ -317,7 +317,7 @@ class AddCash extends React.Component {
         <Button
           testID="add-cash-next-btn"
           accessibilityLabel="add-cash-next-btn"
-          title="NEXT: PAYMENT"
+          title="MAKE PAYMENT"
           loading={this.state.loading}
           titleStyle={styles.buttonTitleStyle}
           buttonStyle={styles.buttonStyle}

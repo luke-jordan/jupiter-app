@@ -75,3 +75,8 @@ typings/
 .apk
 .apks
 .jks
+
+# Universal linking files
+assetlinks.json
+apple-app-site-association
+

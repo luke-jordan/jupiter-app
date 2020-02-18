@@ -84,7 +84,7 @@ export default class Onboarding extends React.Component {
       case 1:
         return 'Yep, it’s that easy. Once you add money in your Jupiter account, you start earning interest immediately. From your very first R1, straight up earnings.';
       case 2:
-        return 'You always have access to your money, so you can withdraw funds at any time. Perfect for that little (or huge) unplanned expense.';
+        return 'You always have access to your money, so you can instruct us to withdraw funds at any time. Perfect for that little (or huge) unplanned expense.';
       case 3:
         return 'Get rewarded for saving, not spending. Jupiter exists to help you build good saving habits. So, every time you save, you get rewarded for it—just like that.';
     }

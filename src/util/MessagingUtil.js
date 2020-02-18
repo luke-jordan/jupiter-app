@@ -91,40 +91,5 @@ export const MessagingUtil = {
       }
     }
   },
-
-  async sendTapGameResults(taps, authenticationToken) {
-    const gameId = await MessagingUtil.getNextMessageId();
-    const game = await MessagingUtil.getMessage(gameId);
-    if (!gameId || !game) {
-      return false;
-    } else {
-      try {
-        const result = await fetch(`${Endpoints.CORE}boost/respond`, {
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-            Authorization: `Bearer ${authenticationToken}`,
-          },
-          method: 'POST',
-          body: JSON.stringify({
-            boostId: game.actionContext.boostId,
-            screenClicks: taps,
-          }),
-        });
-        if (result.ok) {
-          const resultJson = await result.json();
-          // console.log("resultJson:", resultJson);
-          if (resultJson.result.includes('SUCCESS')) {
-            return true;
-          } else {
-            return false;
-          }
-        } else {
-          throw result;
-        }
-      } catch (error) {
-        console.log('Error sending game results!', JSON.stringify(error));
-      }
-    }
-  },
+  
 };

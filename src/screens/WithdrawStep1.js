@@ -160,7 +160,7 @@ export default class Withdraw extends React.Component {
             you, in the same name as your Jupiter account. By law we cannot
             transfer into an account in any other name. If your bank is not
             listed, please{' '}
-            <Text style={styles.textAsButton}> contact support</Text>
+            <Text style={styles.textAsButton} onPress={this.onPressSupport}> contact support</Text>
           </Text>
           <View style={styles.inputWrapper}>
             <Text style={styles.labelStyle}>Bank</Text>

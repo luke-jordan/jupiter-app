@@ -327,7 +327,7 @@ export default class Register extends React.Component {
               />
               {this.state.hasErrors ? null : (
                 <Text style={styles.noteMessage}>
-                  Please enter your legal names (i.e., the same as on your ID)
+                  Please enter your legal names (i.e. the same as on your ID)
                 </Text>
               )}
               {this.state.errors && this.state.errors.firstName ? (
@@ -386,7 +386,7 @@ export default class Register extends React.Component {
             </View>
             <View style={styles.profileField}>
               <Text style={styles.profileFieldTitle}>
-                Email Address or Phone number
+                Email adress or Phone number
               </Text>
               <Input
                 testID="register-email-or-phone"
@@ -426,7 +426,7 @@ export default class Register extends React.Component {
             <Text style={styles.disclaimer}>
               Continuing means you’ve read and agreed to Jupiter’s{' '}
               <Text style={styles.disclaimerButton} onPress={this.onPressTerms}>
-                T’C & C’s.
+                Ts &amp; Cs.
               </Text>
             </Text>
             <Text

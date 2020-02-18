@@ -173,10 +173,8 @@ class BalanceNumber extends React.Component {
   }
 
   animateToEndOfDayBalance() {
-    const animationDuration =
-      moment()
-        .endOf('day')
-        .valueOf() - moment().valueOf();
+
+    const animationDuration = moment().endOf('day').valueOf() - moment().valueOf();
     const animationStartNumber = this.state.lastShownBalance;
     // this prevents an accidental decline (e.g., on day changeover), and is valid, since interest mechanics
     // dictate that the only way a balance should decline is via withdrawal, i.e., change in server balance, so end of day target always higher
@@ -204,6 +202,10 @@ class BalanceNumber extends React.Component {
       animationInterval,
       animationDuration,
     });
+
+    if (this.props.onSlowAnimationStarted) {
+      this.props.onSlowAnimationStarted();
+    }
   }
 
   render() {
