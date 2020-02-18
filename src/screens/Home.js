@@ -6,51 +6,50 @@ import * as Permissions from 'expo-permissions';
 import moment from 'moment';
 import React from 'react';
 import { connect } from 'react-redux';
-import {
-  Alert,
-  Animated,
-  AsyncStorage,
-  Dimensions,
-  Easing,
-  Image,
-  Linking,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Alert, Animated, AsyncStorage, Dimensions, Easing, Image, Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Icon } from 'react-native-elements';
-import {
-  FlingGestureHandler,
-  Directions,
-  State,
-} from 'react-native-gesture-handler';
 
 // import VersionCheck from 'react-native-version-check-expo';
 import { NavigationEvents } from 'react-navigation';
 
-import { Colors, Sizes, Endpoints } from '../util/Values';
-import NavigationBar from '../elements/NavigationBar';
+import { Colors, Endpoints } from '../util/Values';
 import { NotificationsUtil } from '../util/NotificationsUtil';
 import { MessagingUtil } from '../util/MessagingUtil';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
-import { getDivisor } from '../util/AmountUtil';
+import { getDivisor, extractAmount, standardFormatAmount } from '../util/AmountUtil';
 
 import BalanceNumber from '../elements/BalanceNumber';
+import NavigationBar from '../elements/NavigationBar';
+import MessageCard from '../elements/MessageCard';
 
-import { updateBoostCount } from '../modules/boost/boost.actions';
+// import BoostModalChallenge from '../elements/boost/BoostChallengeModal';
+import BoostResultModal from '../elements/boost/BoostResultModal';
+// import BoostOfferModal from '../elements/boost/BoostOfferModal';
 
-import {
-  updateServerBalance,
-  updateShownBalance,
-} from '../modules/balance/balance.actions';
+import { boostService } from '../modules/boost/boost.service';
+import { updateServerBalance, updateShownBalance } from '../modules/balance/balance.actions';
+import { updateBoostCount, updateBoostViewed, updateMessagesAvailable, updateMessageSequence, updateMessageViewed } from '../modules/boost/boost.actions';
+import { getViewedBoosts, hasViewedFallback, getNextMessage, getAvailableMessages } from '../modules/boost/boost.reducer';
+
+import BoostGameModal from '../elements/boost/BoostGameModal';
 
 const mapDispatchToProps = {
   updateBoostCount,
   updateServerBalance,
   updateShownBalance,
+  updateBoostViewed,
+  updateMessagesAvailable,
+  updateMessageSequence,
+  updateMessageViewed,
 };
+
+const mapStateToProps = state => ({
+  viewedBoosts: getViewedBoosts(state),
+  hasShownFallback: hasViewedFallback(state),
+  nextMessage: getNextMessage(state),
+  availableMessages: getAvailableMessages(state),
+});
 
 const { height, width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
@@ -74,7 +73,8 @@ class Home extends React.Component {
 
       hasMessage: false,
       messageDetails: null,
-      gameModalDetails: null,
+      gameParams: null,
+      gameInProgress: false,
       tapScreenGameMode: false,
       chaseArrowGameMode: false,
 
@@ -93,7 +93,7 @@ class Home extends React.Component {
       if (!this.props.token) {
         const storedInfo = await AsyncStorage.getItem('userInfo');
         const userInfo = JSON.parse(storedInfo);
-        this.props.updateAuthToken(userInfo.token);  
+        this.props.updateAuthToken(userInfo.token);
       }
     }
 
@@ -118,6 +118,7 @@ class Home extends React.Component {
 
   async showInitialData() {
     let info = this.props.navigation.getParam('userInfo');
+    const { params } = this.props.navigation.state;
     if (!info) {
       info = await AsyncStorage.getItem('userInfo');
       if (!info) {
@@ -126,21 +127,21 @@ class Home extends React.Component {
         info = JSON.parse(info);
       }
     }
+    // check params if we have params.showModal we show modal with game
+    if (params) {
+      await this.setState({
+        token: info.token,
+        firstName: info.profile.personalName,
+      });
+    } else {
+      await this.setState({
+        token: info.token,
+        firstName: info.profile.personalName,
+      });
+    }
 
-    await this.setState({
-      token: info.token,
-      firstName: info.profile.personalName,
-    });
-
-    if (
-      info.profile.kycStatus === 'FAILED_VERIFICATION' ||
-      info.profile.kycStatus === 'REVIEW_FAILED'
-    ) {
-      NavigationUtil.navigateWithoutBackstack(
-        this.props.navigation,
-        'FailedVerification',
-        { fromHome: true }
-      );
+    if (info.profile.kycStatus === 'FAILED_VERIFICATION' || info.profile.kycStatus === 'REVIEW_FAILED') {
+      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'FailedVerification', { fromHome: true });
       return;
     }
 
@@ -152,7 +153,7 @@ class Home extends React.Component {
     this.props.updateServerBalance(info.balance);
 
     this.fetchCurrentBalanceFromServer();
-    this.fetchMessagesIfNeeded();
+    this.checkForTriggeredBoost();
   }
 
   showLogoutAlert = () => {
@@ -180,7 +181,6 @@ class Home extends React.Component {
       totalPendingAmount,
     });
   };
-
 
   fetchCurrentBalanceFromServer = async () => {
     if (this.state.loading) return;
@@ -226,7 +226,7 @@ class Home extends React.Component {
     } else {
       info = JSON.parse(info);
     }
-    if (response) {
+    if (response && info) {
       info.balance = response;
       await AsyncStorage.setItem('userInfo', JSON.stringify(info));
       this.props.updateServerBalance(response);
@@ -242,6 +242,11 @@ class Home extends React.Component {
       NavigationUtil.logout(this.props.navigation);
     }
 
+    if (this.state.lastFetchTimeMillis === 0) {
+      // have not fetched before, so do not do so
+      return;
+    }
+
     const { balance } = JSON.parse(info);
     this.props.updateServerBalance(balance);
 
@@ -249,7 +254,7 @@ class Home extends React.Component {
     // console.log('Time since fetch: ', millisSinceLastFetch);
     if (millisSinceLastFetch > TIME_BETWEEN_FETCH) {
       // console.log('Enough time elapsed, check for new balance');
-      await this.fetchCurrentBalanceFromServer();
+      await Promise.all([this.fetchCurrentBalanceFromServer(), this.checkForTriggeredBoost(), this.fetchMessagesIfNeeded()]);
     }
   }
 
@@ -273,9 +278,7 @@ class Home extends React.Component {
 
   async handleNotificationsModule() {
     this.registerForPushNotifications();
-    this._notificationSubscription = Notifications.addListener(
-      this.handleNotification
-    );
+    this._notificationSubscription = Notifications.addListener(this.handleNotification);
   }
 
   handleNotification = notification => {
@@ -309,75 +312,137 @@ class Home extends React.Component {
     }
   };
 
-  async fetchMessagesIfNeeded() {
-    const gameId = await MessagingUtil.getGameId();
-    if (gameId) {
-      const game = await MessagingUtil.getGame(gameId);
-      if (game) this.showGame(game);
-    } else {
-      const data = await MessagingUtil.fetchMessagesAndGetTop(this.state.token);
-      if (data) this.showGame(data);
+  async checkForTriggeredBoost() {
+    // note : we do the check regardless of whether boost count is above 0, because if, e.g., the user
+    // claims a boost right after they add the cash, then we will have a race condition between this and balance update
+    try {
+      const result = await fetch(`${Endpoints.CORE}boost/display`, {
+        headers: {
+          Authorization: `Bearer ${this.state.token}`,
+        },
+        method: 'GET',
+      });
+
+      if (result.ok) {
+        const resultJson = await result.json();
+        this.handleBoostCheckResult(resultJson);    
+      } else {
+        throw result;
+      }
+    } catch (error) {
+      console.log('Error fetching changed boost!', error.message);
     }
+  }
+
+  handleBoostCheckResult(boostArray) {
+    if (!Array.isArray(boostArray) || boostArray.length === 0) {
+      return;
+    }
+
+    const { viewedBoosts } = this.props;
+    const statusNotViewedFilter = (boost, status) => boost.boostStatus === status &&
+      (Object.keys(viewedBoosts).indexOf(boost.boostId) < 0 || viewedBoosts[boost.boostId].indexOf(status) < 0); 
+
+    const redeemedBoosts = boostArray.filter((boost) => statusNotViewedFilter(boost, 'REDEEMED'));
+    
+    if (redeemedBoosts.length > 0) {
+      const boostToView = redeemedBoosts[0]; // i.e., first one
+      this.setState({ 
+        showBoostResultModal: true,
+        boostResultDetails: boostToView, 
+      },
+      () => this.props.updateBoostViewed({ boostId: boostToView.boostId, viewedStatus: 'REDEEMED' }));
+      return;
+    }
+
+    const unlockedGames = boostArray.filter((boost) => statusNotViewedFilter(boost, 'UNLOCKED') && boost.boostType === 'GAME');
+    if (unlockedGames.length > 0) {
+      // if this is a game then bring up the game dialogue; otherwise ignore it (for now)
+      this.showGameUnlocked(unlockedGames[0]);
+      this.props.updateBoostViewed({ boostId: unlockedGames[0].boostId, viewedStatus: 'UNLOCKED' });
+    }
+  }
+
+  hideBoostResultModal() {
+    this.setState({ showBoostResultModal: false }, () => {
+      this.checkForTriggeredBoost(); // in case there is another one pending in the meantime
+    });
+  }
+
+  async fetchMessagesIfNeeded() {
+    const { nextMessage } = this.props;
+    if (nextMessage) {
+      this.showMessage(nextMessage);
+    } else {
+      const messageResult = await MessagingUtil.fetchMessagesAndGetTop(this.state.token);;
+      if (!messageResult) { // Sentry says this happens sometimes (must be state mgmt somewhere)
+        return;
+      }
+      const { availableMessages, messageSequence } = messageResult;
+      this.props.updateMessagesAvailable(availableMessages);
+      this.props.updateMessageSequence(messageSequence);
+      this.showMessageOrFallback(this.props.nextMessage);
+    }
+  }
+
+  showMessageOrFallback(message) {
+    if (message) {
+      this.showMessage(message);
+    } else if (!this.props.hasShownFallback) {
+      this.showMessage(MessagingUtil.getFallbackMessage());
+    }
+  }
+
+  showMessage(message) {
+    if (message.display.type.includes('CARD')) {
+      this.setState({
+        hasMessage: true,
+        messageDetails: message,
+      });
+    }
+    this.props.updateMessageViewed(message);
   }
 
   onFlingMessage() {
     this.setState({
       hasMessage: false,
     });
-    MessagingUtil.dismissedGame(this.state.token);
-    AsyncStorage.removeItem('gameId');
-    AsyncStorage.removeItem('currentGames');
+    MessagingUtil.tellServerMessageAction('DISMISSED', this.state.messageDetails.messageId, this.state.token);
   }
 
-  getMessageCardButtonText(action) {
-    switch (action) {
-      case 'ADD_CASH':
-        return 'ADD CASH';
-
-      case 'VIEW_HISTORY':
-        return 'VIEW HISTORY';
-
-      case 'VISIT_WEB':
-        return 'FOLLOW LINK';
-
-      default:
-        return '';
+  onPressMsgAction = action => {
+    this.setState({ hasMessage: false });
+    const { messageDetails } = this.state;
+    
+    if (messageDetails) {
+      MessagingUtil.tellServerMessageAction('ACTED', messageDetails.messageId, this.state.token);
     }
-  }
 
-  getMessageCardIcon(iconType) {
-    switch (iconType) {
-      case 'BOOST_ROCKET':
-        return require('../../assets/rocket.png');
-
-      case 'UNLOCKED':
-        return require('../../assets/unlocked.png');
-
-      default:
-        return require('../../assets/notification.png');
-    }
-  }
-
-  // onCloseDialog = () => {
-  //   this.setState({
-  //     updateRequiredDialogVisible: false,
-  //     updateAvailableDialogVisible: false,
-  //   });
-  //   return true;
-  // };
-
-  onPressModalAction = action => {
+    const actionContext = messageDetails ? messageDetails.actionContext : null;
+    console.log('Processing message action, message details: ', messageDetails);
+    
     switch (action) {
-      case 'ADD_CASH':
-        this.props.navigation.navigate('AddCash');
-        break;
+      case 'ADD_CASH': {
+          const addCashEmbeddedAmount = actionContext ? actionContext.addCashPreFilled : null;
+          if (addCashEmbeddedAmount) {
+            const preFilledAmount = extractAmount(addCashEmbeddedAmount, 'WHOLE_CURRENCY');
+            this.props.navigation.navigate('AddCash', { preFilledAmount });
+          } else {
+            this.props.navigation.navigate('AddCash');
+          }
+          break;
+      }
 
       case 'VIEW_HISTORY':
         this.props.navigation.navigate('History');
         break;
 
       case 'VISIT_WEB':
-        Linking.openURL('https://jupitersave.com'); // TODO : make follow actual link
+        if (actionContext && actionContext.urlToVisit) {
+          Linking.openURL(actionContext.urlToVisit);
+        } else {
+          Linking.openURL('https://jupitersave.com')
+        }
         break;
 
       default:
@@ -406,101 +471,65 @@ class Home extends React.Component {
     );
   }
 
-  renderMessageCard() {
-    const { messageDetails } = this.state;
-    if (!messageDetails) {
-      return null;
-    }
-    const isEmphasis =
-      messageDetails.display.titleType &&
-      messageDetails.display.titleType.includes('EMPHASIS');
-    const messageActionText = this.getMessageCardButtonText(
-      messageDetails.actionToTake
-    );
-    return (
-      <FlingGestureHandler
-        direction={Directions.RIGHT}
-        onHandlerStateChange={({ nativeEvent }) => {
-          if (nativeEvent.state === State.ACTIVE) {
-            this.onFlingMessage(nativeEvent);
-          }
-        }}
-      >
-        <View style={styles.messageCard}>
-          <View
-            style={
-              isEmphasis
-                ? styles.messageCardHeaderEmphasis
-                : styles.messageCardHeader
-            }
-          >
-            {!isEmphasis ? (
-              <Image
-                style={styles.messageCardIcon}
-                source={this.getMessageCardIcon(
-                  messageDetails.display.iconType
-                )}
-              />
-            ) : null}
-            <Text
-              style={
-                isEmphasis
-                  ? styles.messageCardTitleEmphasis
-                  : styles.messageCardTitle
-              }
-            >
-              {messageDetails.title}
-            </Text>
-            {isEmphasis ? (
-              <Image
-                style={styles.messageCardIconEmphasis}
-                source={this.getMessageCardIcon(
-                  messageDetails.display.iconType
-                )}
-              />
-            ) : null}
-          </View>
-          <Text style={styles.messageCardText}>{messageDetails.body}</Text>
-          {messageActionText && messageActionText.length > 0 ? (
-            <TouchableOpacity
-              style={styles.messageCardButton}
-              onPress={() =>
-                this.onPressModalAction(messageDetails.actionToTake)
-              }
-            >
-              <Text style={styles.messageCardButtonText}>
-                {messageActionText}
-              </Text>
-              <Icon
-                name="chevron-right"
-                type="evilicon"
-                size={30}
-                color={Colors.PURPLE}
-              />
-            </TouchableOpacity>
-          ) : null}
-        </View>
-      </FlingGestureHandler>
-    );
-  }
-
   // ////////////////////////////////////////////////////////////////////////////////////
   // ///////////////////  GAME HANDLING /////////////////////////////////////////////////
   // ////////////////////////////////////////////////////////////////////////////////////
 
-  async showGame(game) {
-    if (game.display.type.includes('CARD')) {
-      this.setState({
-        hasMessage: true,
-        messageDetails: game,
-      });
-    } else if (game.display.type.includes('MODAL')) {
-      this.setState({
-        // hasGameModal: true,
-        gameModalDetails: game,
-      });
-    }
+  showGameUnlocked(boostDetails) {
+    const boostAmount = standardFormatAmount(boostDetails.boostAmount, boostDetails.boostUnit, boostDetails.boostCurrency);
+    const gameParams = { ...boostDetails.gameParams, boostId: boostDetails.boostId, boostAmount };
+    console.log('Showing game with params: ', boostDetails.gameParams);
+    this.setState({
+      showGameDialog: true,
+      gameParams,
+    });
   }
+
+  onPressPlayLater = () => {
+    this.setState({
+      showGameDialog: false,
+    });
+    // TODO show gameDetails.actionContext.gameParams.waitMessage maybe?
+  };
+
+  onPressStartGame = () => {
+    const { gameParams } = this.state;
+    // console.log('Starting a game: ', gameParams);
+    if (gameParams.gameType.includes('TAP_SCREEN')) {
+      // console.log('Starting tap screen game!');
+      this.setState({
+        showGameDialog: false,
+        gameInProgress: true,
+        tapScreenGameMode: true,
+        tapScreenGameTimer: gameParams.timeLimitSeconds,
+      });
+      this.tapScreenGameTaps = 0;
+      setTimeout(() => {
+        this.handleTapScreenGameEnd();
+      }, gameParams.timeLimitSeconds * 1000);
+      setTimeout(() => {
+        this.decrementTapScreenGameTimer();
+      }, 1000);
+    } else if (gameParams.gameType.includes('CHASE_ARROW')) {
+      this.setState({
+        showGameDialog: false,
+        gameInProgress: true,
+        chaseArrowGameMode: true,
+        chaseArrowGameTimer: gameParams.timeLimitSeconds,
+        // "arrowFuzziness": "10%",
+        gameRotation: new Animated.Value(0),
+      });
+      this.chaseArrowGameTaps = 0;
+      const { arrowSpeedMultiplier } = gameParams;
+      this.rotateGameCircle(arrowSpeedMultiplier);
+      setTimeout(() => {
+        this.handleChaseArrrowGameEnd();
+      }, gameParams.timeLimitSeconds * 1000);
+      setTimeout(() => {
+        this.decrementChaseArrowGameTimer();
+      }, 1000);
+    }
+  };
 
   rotateGameCircle(arrowSpeedMultiplier) {
     const rotationDuration = CIRCLE_ROTATION_DURATION / arrowSpeedMultiplier;
@@ -517,7 +546,7 @@ class Home extends React.Component {
         this.rotateGameCircle(arrowSpeedMultiplier);
       }
     });
-  }
+  };
 
   scaleCircle() {
     Animated.timing(this.state.circleScale, {
@@ -529,50 +558,6 @@ class Home extends React.Component {
         circleScale: new Animated.Value(0),
       });
     });
-  }
-
-  onPressPlayLater = () => {
-    // this.setState({
-    //   hasGameModal: false,
-    // });
-    // TODO show gameDetails.actionContext.gameParams.waitMessage maybe?
-  };
-
-  onPressStartGame = () => {
-    const game = this.state.gameModalDetails;
-    // console.log(game);
-    // this.setState({
-    //   hasGameModal: false,
-    // });
-    if (game.actionContext.gameParams.gameType.includes('TAP_SCREEN')) {
-      this.setState({
-        tapScreenGameMode: true,
-        tapScreenGameTimer: game.actionContext.gameParams.timeLimitSeconds,
-      });
-      this.tapScreenGameTaps = 0;
-      setTimeout(() => {
-        this.handleTapScreenGameEnd();
-      }, game.actionContext.gameParams.timeLimitSeconds * 1000);
-      setTimeout(() => {
-        this.decrementTapScreenGameTimer();
-      }, 1000);
-    } else if (game.actionContext.gameParams.gameType.includes('CHASE_ARROW')) {
-      this.setState({
-        chaseArrowGameMode: true,
-        chaseArrowGameTimer: game.actionContext.gameParams.timeLimitSeconds,
-        // "arrowFuzziness": "10%",
-        gameRotation: new Animated.Value(0),
-      });
-      this.chaseArrowGameTaps = 0;
-      const { arrowSpeedMultiplier } = game.actionContext.gameParams;
-      this.rotateGameCircle(arrowSpeedMultiplier);
-      setTimeout(() => {
-        this.handleChaseArrrowGameEnd();
-      }, game.actionContext.gameParams.timeLimitSeconds * 1000);
-      setTimeout(() => {
-        this.decrementChaseArrowGameTimer();
-      }, 1000);
-    }
   };
 
   decrementTapScreenGameTimer = () => {
@@ -582,15 +567,9 @@ class Home extends React.Component {
     this.setState({ tapScreenGameTimer: this.state.tapScreenGameTimer - 1 });
   };
 
-  handleTapScreenGameEnd = async () => {
-    this.setState({ tapScreenGameMode: false });
-
-    const nextStepId = this.state.gameModalDetails.actionContext.gameParams
-      .finishedMessage;
-    MessagingUtil.setGameId(nextStepId);
-    const nextStep = await MessagingUtil.getGame(nextStepId);
-    if (nextStep) this.showGame(nextStep);
-    MessagingUtil.sendTapGameResults(this.tapScreenGameTaps, this.state.token);
+  handleTapScreenGameEnd = () => {
+    this.setState({ tapScreenGameMode: false, gameInProgress: false });
+    this.submitGameResults(this.tapScreenGameTaps);
   };
 
   decrementChaseArrowGameTimer = () => {
@@ -600,16 +579,44 @@ class Home extends React.Component {
     this.setState({ chaseArrowGameTimer: this.state.chaseArrowGameTimer - 1 });
   };
 
-  handleChaseArrrowGameEnd = async () => {
-    this.setState({ chaseArrowGameMode: false });
-
-    const nextStepId = this.state.gameModalDetails.actionContext.gameParams
-      .finishedMessage;
-    MessagingUtil.setGameId(nextStepId);
-    const nextStep = await MessagingUtil.getGame(nextStepId);
-    if (nextStep) this.showGame(nextStep);
-    MessagingUtil.sendTapGameResults(this.chaseArrowGameTaps, this.state.token);
+  handleChaseArrrowGameEnd = () => {
+    this.setState({ chaseArrowGameMode: false, gameInProgress: false });
+    this.submitGameResults(this.chaseArrowGameTaps);    
   };
+
+  async submitGameResults(numberOfTaps) {
+
+    // const nextStepId = this.state.gameParams.finishedMessage;
+    // const nextStep = this.props.availableMessages[nextStepId];
+    // if (nextStep) this.showMessage(nextStep);
+
+    const { token, gameParams } = this.state;
+    const resultOptions = { 
+      numberTaps: numberOfTaps, 
+      timeTaken: gameParams.timeLimitSeconds,
+      boostId: gameParams.boostId,
+      authenticationToken: token,
+    };
+
+    const { gameResult, amountWon, statusMet } = await boostService.sendTapGameResults(resultOptions);
+    const amountWonToPass = amountWon ? standardFormatAmount(amountWon.amount, amountWon.unit, amountWon.currency) : null;
+    // we replace them with this
+    const gameResultParams = {
+      gameResult,
+      amountWon: amountWonToPass,
+      numberOfTaps,
+      timeTaken: gameParams.timeLimitSeconds,
+    };
+
+    if (Array.isArray(statusMet) && statusMet.length > 0) {
+      statusMet.forEach((viewedStatus) => this.props.updateBoostViewed({ boostId: gameParams.boostId, viewedStatus }));
+    }
+
+    this.setState({
+      gameParams: gameResultParams,
+      showGameDialog: true,
+    });
+  }
 
   onPressTapScreenGame = () => {
     this.tapScreenGameTaps += 1;
@@ -626,14 +633,28 @@ class Home extends React.Component {
   };
 
   onCloseGameDialog = () => {
-    // this.setState({
-    //   hasGameModal: false,
-    // });
-    MessagingUtil.dismissedGame(this.state.token);
-    AsyncStorage.removeItem('gameId');
-    AsyncStorage.removeItem('currentGames');
+    // MessagingUtil.tellServerMessageAction('DISMISSED', this.state.gameMessageId, this.state.token);
+    this.setState({ showGameDialog: false });
   };
 
+  /**
+   * handler for hide modal with game
+   */
+  hideBoostChallengeModal = async () => {
+    await this.setState({ showGameDialog: false });
+  };
+
+  getGameDetailsBody(body) {
+    let taps = 0;
+    if (this.tapScreenGameTaps && this.tapScreenGameTaps > 0)
+      taps = this.tapScreenGameTaps;
+    else if (this.chaseArrowGameTaps && this.chaseArrowGameTaps > 0)
+      taps = this.chaseArrowGameTaps;
+    if (body.includes('#{numberUserTaps}')) {
+      body = body.replace('#{numberUserTaps}', taps);
+    }
+    return body;
+  }
 
   onPressViewOtherBoosts = () => {
     this.onCloseGameDialog();
@@ -778,10 +799,12 @@ class Home extends React.Component {
                 <BalanceNumber
                   balanceStyle={styles.balance}
                   currencyStyle={styles.currency}
+                  onSlowAnimationStarted={() => this.fetchMessagesIfNeeded()}
                 />
               )}
 
-              {this.state.hasPendingTransactions ? this.renderPendingBalance() : null}
+              {!this.state.gameInProgress && this.state.hasPendingTransactions ? this.renderPendingBalance() : null}
+
               {/* {<View style={styles.endOfMonthBalanceWrapper}>
                 <Text style={styles.endOfMonthBalance}>+R{this.state.expectedToAdd}</Text>
                   <Icon
@@ -794,21 +817,49 @@ class Home extends React.Component {
               <Text style={styles.endOfMonthDesc}>Due end of month</Text>} */}
             </View>
 
-            {this.state.hasMessage ? this.renderMessageCard() : null}
+            {/* TODO: clean this up */}
+            {this.state.hasMessage && !this.state.showGameDialog && !this.state.showBoostResultModal && !this.state.gameInProgress && (
+              <MessageCard 
+                messageDetails={this.state.messageDetails}
+                onFlingMessage={() => this.onFlingMessage()}
+                onPressActionButton={(actionToTake) => this.onPressMsgAction(actionToTake)}
+              />
+            )}
 
             <NavigationBar navigation={this.props.navigation} currentTab={0} />
           </LinearGradient>
         </View>
 
-        {/* <Overlay
-          isVisible={this.state.hasGameModal}
-          height="auto"
-          width="auto"
-          onHardwareBackPress={this.onCloseGameDialog}
-        >
-          {this.renderGameDialog()}
-        </Overlay> */}
+        {/* {this.state.showBoostChallengeModal && (
+          <BoostModalChallenge
+            showModal={this.state.showBoostChallengeModal}
+            hideModal={this.hideBoostChallengeModal}
+            startGame={() => {}}
+          />
+        )} */}
 
+        {this.state.showGameDialog && (
+          <BoostGameModal
+            gameDetails={this.state.gameParams}
+            onPressStartGame={this.onPressStartGame}
+            onPressPlayLater={this.onPressPlayLater}
+            onCloseGameDialog={this.onCloseGameDialog}
+            onPressViewOtherBoosts={this.onPressViewOtherBoosts}
+          />
+        )}
+
+        {this.state.showBoostResultModal && (
+          <BoostResultModal
+            showModal={this.state.showBoostResultModal}
+            hideModal={() => this.hideBoostResultModal()}
+            boostDetails={this.state.boostResultDetails}
+            navigation={this.props.navigation}
+          />
+        )}
+
+        {this.state.tapScreenGameMode && (
+          <TouchableOpacity style={styles.tapScreenGameWrapper} onPress={this.onPressTapScreenGame} />
+        )}
       </View>
     );
   }
@@ -817,6 +868,13 @@ class Home extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  tapScreenGameWrapper: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
   gradientWrapper: {
     flex: 1,
@@ -951,75 +1009,6 @@ const styles = StyleSheet.create({
     fontSize: 4 * FONT_UNIT,
     fontFamily: 'poppins-regular',
   },
-  messageCard: {
-    minHeight: height * 0.23,
-    width: '95%',
-    backgroundColor: COLOR_WHITE,
-    marginBottom: -(
-      Sizes.NAVIGATION_BAR_HEIGHT - Sizes.VISIBLE_NAVIGATION_BAR_HEIGHT
-    ),
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-  },
-  messageCardHeaderEmphasis: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-    backgroundColor: Colors.LIGHT_BLUE,
-    borderTopLeftRadius: 5,
-    borderTopRightRadius: 5,
-  },
-  messageCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-    padding: 15,
-  },
-  messageCardIcon: {
-    marginHorizontal: 10,
-  },
-  messageCardIconEmphasis: {
-    marginHorizontal: 10,
-    position: 'absolute',
-    top: -10,
-    right: -10,
-  },
-  messageCardTitleEmphasis: {
-    fontFamily: 'poppins-semibold',
-    fontSize: 3.7 * FONT_UNIT,
-    color: COLOR_WHITE,
-    paddingVertical: 10,
-    marginLeft: 10,
-  },
-  messageCardTitle: {
-    fontFamily: 'poppins-semibold',
-    fontSize: 3.7 * FONT_UNIT,
-  },
-  messageCardText: {
-    fontFamily: 'poppins-regular',
-    fontSize: 3.2 * FONT_UNIT,
-    paddingHorizontal: 15,
-    paddingTop: 5,
-  },
-  messageCardButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingVertical: 10,
-  },
-  messageCardButtonText: {
-    fontFamily: 'poppins-semibold',
-    fontSize: 3.7 * FONT_UNIT,
-    color: Colors.PURPLE,
-    marginRight: -5,
-    padding: 10,
-    paddingBottom: 6,
-    borderStyle: 'solid',
-    borderWidth: 2,
-    borderColor: Colors.PURPLE,
-    borderRadius: 4,
-  },
 });
 
-export default connect(null, mapDispatchToProps)(Home);
+export default connect(mapStateToProps, mapDispatchToProps)(Home);

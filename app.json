@@ -8,7 +8,7 @@
       "ios",
       "android"
     ],
-    "version": "0.0.11a",
+    "version": "0.0.15",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "jupiter",
@@ -24,21 +24,22 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.jupitersave.app"
+      "bundleIdentifier": "com.jupitersave.app",
+      "buildNumber": "1.0.0"
     },
     "android": {
       "package": "com.jupitersave.app",
-      "versionCode": 11,
+      "versionCode": 15,
       "permissions": [],
       "intentFilters": [
         {
           "action": "VIEW",
+          "autoVerify": true,
           "data": [
             {
               "scheme": "https",
-              "host": "*.jupitersave.com",
-              "pathPrefix": "/message"
+              "host": "message.jupitersave.com",
+              "pathPrefix": "/uni/*"
             }
           ],
           "category": [

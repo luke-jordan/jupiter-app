@@ -24,7 +24,9 @@ export default class AnimatedNumber extends React.Component {
 
   componentDidUpdate(prevProps) {
     // if initial or target changes, we recalibrate; note means setting 'initial' back to zero is not going to work, may need future override
-    const corePropChanged = CORE_PROPS.find((key) => this.props[key] !== prevProps[key]);
+    const corePropChanged = CORE_PROPS.find(
+      key => this.props[key] !== prevProps[key]
+    );
     if (corePropChanged) {
       // console.log(`Animated number core prop changed: ${corePropChanged}, initial: ${prevProps[corePropChanged]}, new: ${this.props[corePropChanged]}`);
       this.setCoreParamsAndAnimate();
@@ -37,11 +39,13 @@ export default class AnimatedNumber extends React.Component {
     this.setState({ isUnmounted: true });
   }
 
-  // basically two ways to set this, either pass in duration & interval and we figure out step size; or pass in stepsize and duration and 
+  // basically two ways to set this, either pass in duration & interval and we figure out step size; or pass in stepsize and duration and
   // we figure out the interval, that's it
   setCoreParamsAndAnimate() {
     const diff = Math.abs(this.props.target - this.props.initial);
-    let steps; let stepSize; let interval = 0;
+    let steps;
+    let stepSize;
+    let interval = 0;
     if (this.props.interval) {
       steps = this.props.duration / this.props.interval;
       stepSize = diff / steps;
@@ -49,7 +53,9 @@ export default class AnimatedNumber extends React.Component {
     } else {
       steps = diff / this.props.stepSize;
       stepSize = this.props.stepSize;
-      interval = this.props.duration ? this.props.duration / steps : DEFAULT_INTERVAL_MSECS;
+      interval = this.props.duration
+        ? this.props.duration / steps
+        : DEFAULT_INTERVAL_MSECS;
     }
     console.log(`To cover difference of ${diff}, with step size, ${stepSize}, need ${steps} steps`);
     this.setState({
@@ -72,23 +78,32 @@ export default class AnimatedNumber extends React.Component {
       return;
     }
     const startTime = moment();
-    const candidateNextNumber = this.state.currentNumber + this.state.stepSize * (this.state.isIncrement ? 1 : -1);
+    const candidateNextNumber =
+      this.state.currentNumber +
+      this.state.stepSize * (this.state.isIncrement ? 1 : -1);
 
-    const isAboveOrBelowTarget = this.state.isIncrement 
-      ? candidateNextNumber > this.state.targetNumber : this.state.targetNumber > candidateNextNumber;
-    
-    const nextNumber = isAboveOrBelowTarget ? this.state.targetNumber : candidateNextNumber;
+    const isAboveOrBelowTarget = this.state.isIncrement
+      ? candidateNextNumber > this.state.targetNumber
+      : this.state.targetNumber > candidateNextNumber;
 
-    if (this.state.isUnmounted) { return; }
-    this.setState({
+    const nextNumber = isAboveOrBelowTarget
+      ? this.state.targetNumber
+      : candidateNextNumber;
+
+    if (this.state.isUnmounted) {
+      return;
+    }
+    this.setState(
+      {
         currentNumber: nextNumber,
-      }, () => {
+      },
+      () => {
         if (this.props.onAnimationProgress) {
           this.props.onAnimationProgress(nextNumber);
         }
         setTimeout(() => {
           this.animate();
-        }, Math.max(0, this.state.interval - (moment().valueOf() - startTime.valueOf())));          
+        }, Math.max(0, this.state.interval - (moment().valueOf() - startTime.valueOf())));
       }
     );
   }
@@ -96,7 +111,9 @@ export default class AnimatedNumber extends React.Component {
   render() {
     return (
       <Text style={this.props.style}>
-        {this.props.formatting ? this.props.formatting(this.state.currentNumber) : this.state.currentNumber}
+        {this.props.formatting
+          ? this.props.formatting(this.state.currentNumber)
+          : this.state.currentNumber}
       </Text>
     );
   }

@@ -207,7 +207,7 @@ export default class LimitedUsers extends React.Component {
             onPress={this.onPressLogin}
           >
             {' '}
-            Log in
+            Login
           </Text>
         </Text>
       </KeyboardAvoidingView>

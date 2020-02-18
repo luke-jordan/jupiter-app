@@ -9,25 +9,25 @@ import {
   StyleSheet,
   Text,
   View,
+  TouchableOpacity,
 } from 'react-native';
 import { Button } from 'react-native-elements';
 
+import BoostOfferModal from '../elements/boost/BoostOfferModal';
+
 import NavigationBar from '../elements/NavigationBar';
+import getPermittedTypesOfBoost from '../modules/boost/helpers/getPermittedTypesOfBoost';
+import { BoostStatus } from '../modules/boost/models';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { Sizes, Endpoints, Colors } from '../util/Values';
+import { MessagingUtil } from '../util/MessagingUtil';
+import { equalizeAmounts } from '../modules/boost/helpers/parseAmountValue';
+
+import { extractConditionParameter, getDivisor } from '../util/AmountUtil';
 
 const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
-const BoostStatus = {
-  CREATED: 'CREATED',
-  OFFERED: 'OFFERED',
-  PENDING: 'PENDING',
-  CLAIMED: 'CLAIMED',
-  EXPIRED: 'EXPIRED',
-  REDEEMED: 'REDEEMED',
-  REVOKED: 'REVOKED',
-};
 
 class Boosts extends React.Component {
   constructor(props) {
@@ -52,6 +52,7 @@ class Boosts extends React.Component {
       boosts = JSON.parse(boosts);
       this.setState({
         boosts,
+        token,
         loading: false,
       });
     }
@@ -94,6 +95,14 @@ class Boosts extends React.Component {
       if (condition.includes('social_event')) buttonType = 'social_event';
     }
 
+    // get value from boost item
+    // const getValueFromConditional = boostDetails.statusConditions.REDEEMED[0];
+
+    // split string on 3 parameters
+    // const parameterMatch = getValueFromConditional.match(/#{(.*)}/);
+    // const parameterValue = parameterMatch ? parameterMatch[1] : null;
+    const amount = this.extractStatusThreshold(boostDetails);
+
     if (buttonType === '') {
       return null;
     } else {
@@ -101,11 +110,12 @@ class Boosts extends React.Component {
       let action = null;
       if (buttonType === 'save_event') {
         title = 'ADD CASH';
-        action = this.onPressAddCash;
+        action = () => this.onPressAddCash(amount);
       } else if (buttonType === 'social_event') {
         title = 'INVITE FRIENDS';
         action = this.onPressInviteFriends;
       }
+
       return (
         <Button
           title={title}
@@ -158,7 +168,7 @@ class Boosts extends React.Component {
 
   sortBoosts = boosts => {
     const sortByTime = (a, b) =>
-      moment(a.endTime).isAfter(moment(b.endTime)) && 1;
+      moment(b.endTime).isAfter(moment(a.endTime)) && 1;
     const isOneOf = options => x => options.indexOf(x.boostStatus) !== -1;
 
     const topGroup = boosts
@@ -176,6 +186,29 @@ class Boosts extends React.Component {
     return [...topGroup, ...middleGroup, ...bottomGroup];
   };
 
+  extractStatusThreshold = (boostDetails) => {
+    const { statusConditions } = boostDetails;
+    const redeemConditions = statusConditions.REDEEMED;
+    const saveCondition = redeemConditions.find((condition) => condition.startsWith('save_event_greater_than'));
+    const saveConditionParam = extractConditionParameter(saveCondition);
+    const thresholdNumber = equalizeAmounts(saveConditionParam) / getDivisor('DEFAULT');
+    return thresholdNumber;
+    // return `${getCurrencySymbol(boostDetails.boostCurrency)}${thresholdNumber.toFixed(0)}`;
+  }
+
+  extractBoostModalParameters = (boostDetails) => {
+    const boostThreshold = this.extractStatusThreshold(boostDetails);
+    return { ...boostDetails, boostThreshold };
+  };
+
+  showModalHandler = (boostDetails) => {
+    this.setState({ showModal: true, currentBoostParameters: this.extractBoostModalParameters(boostDetails) });
+  };
+
+  hideModalHandler = () => {
+    this.setState({ showModal: false });
+  };
+
   fetchBoosts = async token => {
     try {
       const result = await fetch(`${Endpoints.CORE}boost/list`, {
@@ -187,6 +220,7 @@ class Boosts extends React.Component {
       if (result.ok) {
         const resultJson = await result.json();
         const boosts = this.sortBoosts(resultJson);
+        // console.log('TCL: Boosts -> boosts', boosts);
         this.setState({
           boosts,
           loading: false,
@@ -200,9 +234,7 @@ class Boosts extends React.Component {
     }
   };
 
-  onPressAddCash = () => {
-    this.props.navigation.navigate('AddCash');
-  };
+  onPressAddCash = amount => this.props.navigation.navigate('AddCash', { preFilledAmount: amount });
 
   onPressInviteFriends = () => {
     this.props.navigation.navigate('Friends');
@@ -232,65 +264,85 @@ class Boosts extends React.Component {
     );
   }
 
-  renderBoostCard(boostDetails, index) {
+  renderBoostCard(boostDetails) {
+    const permittedTypesOfBoost = getPermittedTypesOfBoost(boostDetails);
+    if (permittedTypesOfBoost) {
+      const offeredInstructionStatus = boostDetails.messageInstructionIds.instructions.find(
+        item => item.status === BoostStatus.OFFERED
+      );
+      const { msgInstructionId } = offeredInstructionStatus;
+
+      if (msgInstructionId) {
+        MessagingUtil.fetchInstructionsMessage(
+          this.state.token,
+          msgInstructionId
+        );
+      }
+    }
+
     return (
-      <View
-        opacity={this.getCardOpacity(
-          boostDetails.boostStatus,
-          boostDetails.endTime
-        )}
+      <TouchableOpacity
+        disabled={boostDetails.boostStatus !== BoostStatus.OFFERED}
+        onPress={() => this.showModalHandler(boostDetails)}
+        key={boostDetails.boostId}
         style={[
           styles.boostCard,
           styles.boxShadow,
           this.getHighlightBorder(boostDetails),
         ]}
-        key={index}
       >
-        <View style={styles.boostTopRow}>
-          <Text style={styles.boostTitle}>{boostDetails.label}</Text>
-          <View style={styles.boostIconWrapper}>
-            {boostDetails.boostType !== 'SIMPLE' ||
-            boostDetails.boostStatus === 'REDEEMED' ? (
-              <Image
-                source={this.getBoostIcon(boostDetails)}
-                style={styles.boostIcon}
-              />
-            ) : (
-              <Text style={styles.boostAmount}>
-                R{boostDetails.boostAmount}
-              </Text>
-            )}
-          </View>
-        </View>
-        <View style={styles.boostBottomRow}>
-          <View style={styles.boostBottomRowLeft}>
-            {boostDetails.boostStatus === 'REDEEMED' ||
-            this.isBoostExpired({
-              boostStatus: boostDetails.boostStatus,
-              endTime: boostDetails.endTime,
-            }) ? (
-              <Image
-                source={this.getBoostResultIcon(
-                  boostDetails.boostStatus,
-                  boostDetails.endTime
-                )}
-                style={styles.boostResultIcon}
-              />
-            ) : null}
-            <View style={styles.boostResultTexts}>
-              {this.getAdditionalLabelRow(boostDetails)}
-              <Text style={styles.boostValidityText}>
-                {boostDetails.boostStatus === 'OFFERED' ||
-                boostDetails.boostStatus === 'PENDING'
-                  ? 'Valid until '
-                  : ''}
-                {moment(boostDetails.endTime).format('DD MMM YY')}
-              </Text>
+        <View
+          opacity={this.getCardOpacity(
+            boostDetails.boostStatus,
+            boostDetails.endTime
+          )}
+        >
+          <View style={styles.boostTopRow}>
+            <Text style={styles.boostTitle}>{boostDetails.label}</Text>
+            <View style={styles.boostIconWrapper}>
+              {boostDetails.boostType !== 'SIMPLE' ||
+              boostDetails.boostStatus === 'REDEEMED' ? (
+                <Image
+                  source={this.getBoostIcon(boostDetails)}
+                  style={styles.boostIcon}
+                />
+              ) : (
+                <Text style={styles.boostAmount}>
+                  R{boostDetails.boostAmount}
+                </Text>
+              )}
             </View>
           </View>
-          {this.getBoostButton(boostDetails)}
+          <View style={styles.boostBottomRow}>
+            <View style={styles.boostBottomRowLeft}>
+              {boostDetails.boostStatus === 'REDEEMED' ||
+              this.isBoostExpired({
+                boostStatus: boostDetails.boostStatus,
+                endTime: boostDetails.endTime,
+              }) ? (
+                <Image
+                  source={this.getBoostResultIcon(
+                    boostDetails.boostStatus,
+                    boostDetails.endTime
+                  )}
+                  style={styles.boostResultIcon}
+                />
+              ) : null}
+              <View style={styles.boostResultTexts}>
+                {this.getAdditionalLabelRow(boostDetails)}
+                <Text style={styles.boostValidityText}>
+                  {boostDetails.boostStatus === 'OFFERED' ||
+                  boostDetails.boostStatus === 'PENDING'
+                    ? 'Valid until '
+                    : ''}
+                  {moment(boostDetails.endTime).format('DD MMM YY')}
+                </Text>
+              </View>
+            </View>
+            {this.getBoostButton(boostDetails)}
+          </View>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   }
 
@@ -324,6 +376,7 @@ class Boosts extends React.Component {
   }
 
   render() {
+    const { showModal } = this.state;
     return (
       <View style={styles.container}>
         <View style={styles.header}>
@@ -337,6 +390,15 @@ class Boosts extends React.Component {
           this.renderMainContent()
         )}
         <NavigationBar navigation={this.props.navigation} currentTab={2} />
+        {showModal && (
+          <BoostOfferModal
+            showModal
+            navigation={this.props.navigation}
+            hideModal={() => this.hideModalHandler()}
+            boostDetails={this.state.currentBoostParameters}
+            // boostMessage={this.state.boostMessage}
+          />
+        )}
       </View>
     );
   }

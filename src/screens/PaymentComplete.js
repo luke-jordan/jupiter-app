@@ -13,7 +13,6 @@ import { Button, Icon } from 'react-native-elements';
 
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
-import { MessagingUtil } from '../util/MessagingUtil';
 import { Endpoints, Colors } from '../util/Values';
 
 const { width } = Dimensions.get('window');
@@ -48,8 +47,6 @@ export default class PaymentComplete extends React.Component {
     }
 
     this.fetchProfile(params.token);
-
-    this.checkForActiveGame(params.token);
   }
 
   componentWillUnmount() {
@@ -71,6 +68,7 @@ export default class PaymentComplete extends React.Component {
       this.setState({ loading: false });
       NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', {
         userInfo: this.state.userInfo,
+        showModal: this.state.showModal,
       });
     }
   };
@@ -108,14 +106,6 @@ export default class PaymentComplete extends React.Component {
     this.backHandler.remove();
     this.onPressDone();
     return false;
-  };
-
-  checkForActiveGame = async token => {
-    // TODO this should check for amounts
-    const game = await MessagingUtil.fetchMessagesAndGetTop(token);
-    if (game && game.actionContext && game.actionToTake && game.actionToTake.includes('ADD_CASH')) {
-      MessagingUtil.setGameId(game.actionContext.msgOnSuccess);
-    }
   };
 
   async fetchProfile(token) {

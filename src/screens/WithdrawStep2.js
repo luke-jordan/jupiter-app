@@ -1,13 +1,5 @@
 import React from 'react';
-import {
-  ActivityIndicator,
-  AsyncStorage,
-  StyleSheet,
-  Image,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import {ActivityIndicator, AsyncStorage, StyleSheet, Image, Text, TouchableOpacity, View, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { Button, Icon, Input, Overlay } from 'react-native-elements';
 import moment from 'moment';
 
@@ -64,13 +56,13 @@ export default class Withdraw extends React.Component {
 
   onChangeAmountEnd = () => {
     this.setState({
-      amountToWithdraw: parseFloat(this.state.amountToWithdraw).toFixed(2),
+      amountToWithdraw: parseFloat(this.state.amountToWithdraw).toFixed(0),
     });
     this.amountInputRef.blur();
   };
 
   onPressEditAccount = () => {
-    this.props.navigation.navigate('Account');
+    this.props.navigation.navigate('WithdrawStep1');
   };
 
   getFormattedBalance(balance) {
@@ -195,56 +187,58 @@ export default class Withdraw extends React.Component {
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Withdraw Cash</Text>
         </View>
-        <View style={styles.content}>
-          <View style={styles.topBox}>
-            <Text style={styles.topBoxText}>
-              Cash withdrawn will be paid into:
-            </Text>
-            <Text style={styles.topBoxText}>
-              Bank: <Text style={styles.bold}>{this.state.bank}</Text> | Acc No:{' '}
-              <Text style={styles.bold}>{this.state.accountNumber}</Text>
-            </Text>
-            <Text style={styles.topBoxLink} onPress={this.onPressEditAccount}>
-              Edit Account Details
-            </Text>
-          </View>
-          <View style={styles.midSection}>
-            <Text style={styles.inputLabel}>Enter an amount to withdraw</Text>
-            <View style={styles.inputWrapper}>
-              <View style={styles.inputWrapperLeft}>
-                <Text style={styles.currencyLabel}>{this.state.currency}</Text>
-              </View>
-              <Input
-                keyboardType="numeric"
-                ref={ref => {
-                  this.amountInputRef = ref;
-                }}
-                value={this.state.amountToWithdraw}
-                onChangeText={text => this.onChangeAmount(text)}
-                onEndEditing={() => this.onChangeAmountEnd()}
-                inputContainerStyle={styles.inputContainerStyle}
-                inputStyle={styles.inputStyle}
-                containerStyle={styles.containerStyle}
-              />
-            </View>
-            <Text style={styles.makeSureDisclaimer}>
-              <Text style={styles.bold}>
-                Your current balance is {this.state.currency}
-                {this.getFormattedBalance(this.state.balance)}.{'\n'}
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <View style={styles.content}>
+            <View style={styles.topBox}>
+              <Text style={styles.topBoxText}>
+                Cash withdrawn will be paid into:
               </Text>
-            </Text>
-          </View>
-          <View style={styles.bottomBox}>
-            <View style={styles.bottomBoxImageWrapper}>
-              <Image
-                style={styles.bottomBoxImage}
-                source={require('../../assets/bulb.png')}
-              />
+              <Text style={styles.topBoxText}>
+                Bank: <Text style={styles.bold}>{this.state.bank}</Text> | Acc No:{' '}
+                <Text style={styles.bold}>{this.state.accountNumber}</Text>
+              </Text>
+              <Text style={styles.topBoxLink} onPress={this.onPressEditAccount}>
+                Edit Account Details
+              </Text>
             </View>
-            <Text style={styles.bottomBoxTitle}>{this.state.cardTitle}</Text>
-            <Text style={styles.bottomBoxText}>{this.state.cardBody}</Text>
+            <View style={styles.midSection}>
+              <Text style={styles.inputLabel}>Enter an amount to withdraw</Text>
+              <View style={styles.inputWrapper}>
+                <View style={styles.inputWrapperLeft}>
+                  <Text style={styles.currencyLabel}>{this.state.currency}</Text>
+                </View>
+                <Input
+                  keyboardType="numeric"
+                  ref={ref => {
+                    this.amountInputRef = ref;
+                  }}
+                  value={this.state.amountToWithdraw}
+                  onChangeText={text => this.onChangeAmount(text)}
+                  onEndEditing={() => this.onChangeAmountEnd()}
+                  inputContainerStyle={styles.inputContainerStyle}
+                  inputStyle={styles.inputStyle}
+                  containerStyle={styles.containerStyle}
+                />
+              </View>
+              <Text style={styles.makeSureDisclaimer}>
+                <Text style={styles.bold}>
+                  Your current balance is {this.state.currency}
+                  {this.getFormattedBalance(this.state.balance)}.{'\n'}
+                </Text>
+              </Text>
+            </View>
+            <View style={styles.bottomBox}>
+              <View style={styles.bottomBoxImageWrapper}>
+                <Image
+                  style={styles.bottomBoxImage}
+                  source={require('../../assets/bulb.png')}
+                />
+              </View>
+              <Text style={styles.bottomBoxTitle}>{this.state.cardTitle}</Text>
+              <Text style={styles.bottomBoxText}>{this.state.cardBody}</Text>
+            </View>
           </View>
-        </View>
+        </TouchableWithoutFeedback>
         <Button
           title="WITHDRAW CASH"
           loading={this.state.loading}
