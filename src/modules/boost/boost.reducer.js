@@ -63,6 +63,8 @@ export const getViewedBoosts = state => state[STATE_KEY].boostsViewed;
 
 export const hasViewedFallback = state => state[STATE_KEY].messagesViewed.includes(FALLBACK_MSG_ID);
 
+export const getViewedMessages = state => state[STATE_KEY].messagesViewed;
+
 export const getAvailableMessages = (state) => state[STATE_KEY].availableMessages;
 
 export const getNextMessage = state => {

@@ -24,7 +24,7 @@ import {
 
 // depending on the phone, a shorter interval actually leads to a longer animation, because the animation can't
 // move as fast as desired (given calculations etc), especially at large balances
-const DEFAULT_BALANCE_ANIMATION_INTERVAL = 50;
+const DEFAULT_BALANCE_ANIMATION_INTERVAL = 75;
 const DEFAULT_BALANCE_ANIMATION_DURATION = 3000;
 const DEFAULT_REST_DAY_STEP_SIZE = 100;
 

@@ -1,19 +1,48 @@
 import { Endpoints } from '../util/Values';
-import { FALLBACK_MSG_ID } from '../modules/boost/boost.reducer';
 
-export const MessagingUtil = {
+const FALLBACK_MESSAGES = [
 
-  getFallbackMessage() {
-    return {
-      messageId: FALLBACK_MSG_ID,
+    {
+      messageId: 'ADD_MONEY_ADD_INTEREST',
       display: {
         type: 'CARD',
-        titleType: 'EMPHASIS',
+        iconType: 'UNLOCKED',
       },
       actionToTake: 'ADD_CASH',
       title: 'Add money, earn interest',
-      body: 'Once you add money in your Jupiter account, you start earning interest immediately. From your very first R1, straight up earnings',
-    }
+      body: 'Once you add money in your Jupiter account, you start earning distributions (what banks call interest) immediately. From your very first R1, straight up earnings',
+    },
+  
+    {
+      messageId: 'GET_REWARDED_FOR_SAVING',
+      display: {
+        type: 'CARD',
+        iconType: 'BOOST_ROCKET',
+        titleType: 'EMPHASIS',
+      },
+      actionToTake: 'VIEW_BOOSTS',
+      title: 'Get rewarded for saving',
+      body: 'Jupiter exists to help you build good saving habits and stuff. We offer boosts all the time to help you save more. Just check back in regularly to see available boosts',
+    },
+
+    {
+      messageId: 'SEE_YOUR_HISTORY',
+      display: {
+        type: 'CARD',
+      },
+      actionToTake: 'VIEW_HISTORY',
+      title: 'See your earnings accumulate',
+      body: 'Jupiter allows you to see all the activity on your account, whenever you want -- and to see just how much you\'ve earned. Just head to the history screen!'
+    },
+
+]
+
+const FALLBACK_MSG_IDS = FALLBACK_MESSAGES.map((msg) => msg.messageId);
+
+export const MessagingUtil = {
+
+  getFallbackMessages() {
+    return FALLBACK_MESSAGES;
   },
 
   async fetchMessagesAndGetTop(authenticationToken) {
@@ -67,7 +96,7 @@ export const MessagingUtil = {
   },
 
   async tellServerMessageAction(userAction, messageId, authenticationToken) {
-    if (!messageId || messageId === FALLBACK_MSG_ID) {
+    if (!messageId || FALLBACK_MSG_IDS.includes(messageId)) {
       return false;
     } else {
       try {

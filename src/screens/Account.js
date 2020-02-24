@@ -7,6 +7,7 @@ import {
   AsyncStorage,
   TouchableOpacity,
   Dimensions,
+  ScrollView,
 } from 'react-native';
 import { Icon, Button } from 'react-native-elements';
 import VersionCheck from 'react-native-version-check-expo';
@@ -25,7 +26,6 @@ class Account extends React.Component {
     this.state = {
       profilePic: null,
       loading: false,
-      fullName: '',
       initials: '',
     };
   }
@@ -38,7 +38,6 @@ class Account extends React.Component {
     } else {
       info = JSON.parse(info);
       this.setState({
-        fullName: `${info.profile.personalName} ${info.profile.familyName}`,
         initials: info.profile.personalName[0] + info.profile.familyName[0],
       });
     }
@@ -71,7 +70,7 @@ class Account extends React.Component {
   };
 
   onPressSupport = () => {
-    this.props.navigation.navigate('Support');
+    this.props.navigation.navigate('Support', { originScreen: 'Account' });
   };
 
   renderProfilePicture() {
@@ -93,82 +92,103 @@ class Account extends React.Component {
           <Text style={styles.headerTitle}>Account</Text>
         </View>
         <View style={styles.mainContentWrapper}>
-          <View style={styles.mainContent}>
-            <TouchableOpacity
-              style={[styles.buttonLine, styles.accountButtonLine]}
-              onPress={this.onPressDetails}
-            >
-              <View style={styles.accountLineContent}>
-                {this.renderProfilePicture()}
-                <View style={styles.accountInfo}>
-                  <Text style={styles.nameText}>{this.state.fullName}</Text>
-                  <Text style={styles.detailsText}>View Details</Text>
-                </View>
+          <ScrollView style={styles.mainContent}>
+            {/* <View style={{ width: '100%', marginTop: 20, alignItems: 'center' }}>
+              {this.renderProfilePicture()}
+              <Text style={styles.nameText}>{this.state.fullName}</Text>
+            </View> */}
+            <View style={styles.mainContent}>
+              <View style={styles.sectionContent}>
+                {/* <Text style={styles.sectionHead}>MY ACCOUNT</Text> */}
+                <TouchableOpacity
+                  style={[styles.buttonLine, styles.accountButtonLine]}
+                  onPress={this.onPressDetails}
+                >
+                  <View style={styles.accountLineContent}>
+                    <Image style={styles.accountLineIcon} source={require('../../assets/profile.png')} />
+                    <View style={styles.accountInfo}>
+                      <Text style={styles.accountLineText}>Profile</Text>
+                    </View>
+                  </View>
+                  <Icon
+                    name="chevron-right"
+                    type="evilicon"
+                    size={50}
+                    color={Colors.MEDIUM_GRAY}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.buttonLine, styles.accountButtonLine]}
+                  onPress={this.onPressHistory}
+                >
+                  <View style={styles.accountLineContent}>
+                    <Image style={styles.accountLineIcon} source={require('../../assets/history.png')} />
+                    <View style={styles.accountInfo}>
+                      <Text style={styles.accountLineText}>History</Text>
+                    </View>
+                  </View>
+                  <Icon
+                    name="chevron-right"
+                    type="evilicon"
+                    size={50}
+                    color={Colors.MEDIUM_GRAY}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.buttonLine, styles.accountButtonLine]}
+                  onPress={this.onPressWithdraw}
+                >
+                  <View style={styles.accountLineContent}>
+                    <Image style={styles.accountLineIcon} source={require('../../assets/withdraw.png')} />
+                    <View style={styles.accountInfo}>
+                      <Text style={styles.accountLineText}>Withdraw Cash</Text>
+                    </View>
+                  </View>
+                  <Icon
+                    name="chevron-right"
+                    type="evilicon"
+                    size={50}
+                    color={Colors.MEDIUM_GRAY}
+                  />
+                </TouchableOpacity>
               </View>
-              <Icon
-                name="chevron-right"
-                type="evilicon"
-                size={50}
-                color={Colors.MEDIUM_GRAY}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.buttonLine}
-              onPress={this.onPressHistory}
-            >
-              <Text style={styles.buttonLineText}>History</Text>
-              <Icon
-                name="chevron-right"
-                type="evilicon"
-                size={50}
-                color={Colors.MEDIUM_GRAY}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.buttonLine}
-              onPress={this.onPressWithdraw}
-            >
-              <Text style={styles.buttonLineText}>Withdraw Cash</Text>
-              <Icon
-                name="chevron-right"
-                type="evilicon"
-                size={50}
-                color={Colors.MEDIUM_GRAY}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.buttonLine}
-              onPress={this.onPressTerms}
-            >
-              <Text style={styles.buttonLineText}>Terms & Conditions</Text>
-              <Icon
-                name="chevron-right"
-                type="evilicon"
-                size={50}
-                color={Colors.MEDIUM_GRAY}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.buttonLine}
-              onPress={this.onPressPrivacy}
-            >
-              <Text style={styles.buttonLineText}>Privacy Policy</Text>
-              <Icon
-                name="chevron-right"
-                type="evilicon"
-                size={50}
-                color={Colors.MEDIUM_GRAY}
-              />
-            </TouchableOpacity>
-          </View>
-          <View style={styles.versionLine}>
-            <Text style={styles.versionText}>
-              Version {VersionCheck.getCurrentVersion()}
-            </Text>
-            <Text style={styles.versionText} onPress={this.onPressSupport}>
-              Contact Support
-            </Text>
-          </View>
+              <View style={styles.sectionContent}>
+                <Text style={styles.sectionHead}>ABOUT</Text>
+                <TouchableOpacity
+                  style={styles.buttonLine}
+                  onPress={this.onPressTerms}
+                >
+                  <Text style={styles.buttonLineText}>Terms & Conditions</Text>
+                  <Icon
+                    name="chevron-right"
+                    type="evilicon"
+                    size={50}
+                    color={Colors.MEDIUM_GRAY}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.buttonLine}
+                  onPress={this.onPressPrivacy}
+                >
+                  <Text style={styles.buttonLineText}>Privacy Policy</Text>
+                  <Icon
+                    name="chevron-right"
+                    type="evilicon"
+                    size={50}
+                    color={Colors.MEDIUM_GRAY}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+            <View style={styles.versionLine}>
+              <Text style={styles.versionText}>
+                Version {VersionCheck.getCurrentVersion()}
+              </Text>
+              <Text style={[styles.versionText, styles.supportLink]} onPress={this.onPressSupport}>
+                Contact Support
+              </Text>
+            </View>
+          </ScrollView>
           <Button
             title="LOG OUT"
             loading={this.state.loading}
@@ -216,6 +236,16 @@ const styles = StyleSheet.create({
   },
   mainContent: {
     flex: 1,
+    width: '100%',
+  },
+  sectionContent: {
+    marginTop: 20,
+  },
+  sectionHead: {
+    fontSize: 12, 
+    fontWeight: '500',
+    fontFamily: 'poppins-regular', 
+    marginLeft: 14,
   },
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
@@ -233,15 +263,19 @@ const styles = StyleSheet.create({
     width: '87%',
   },
   versionLine: {
-    width: '90%',
+    width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginVertical: 5,
+    marginVertical: 22,
+    paddingHorizontal: 14,
   },
   versionText: {
     color: Colors.MEDIUM_GRAY,
     fontFamily: 'poppins-regular',
     fontSize: 13,
+  },
+  supportLink: {
+    textDecorationLine: 'underline',
   },
   buttonLine: {
     height: height * 0.075,
@@ -256,12 +290,12 @@ const styles = StyleSheet.create({
   },
   buttonLineText: {
     flex: 1,
-    color: Colors.DARK_GRAY,
+    color: Colors.MEDIUM_GRAY,
     fontFamily: 'poppins-regular',
     fontSize: 17,
   },
   accountButtonLine: {
-    height: height * 0.11,
+    height: height * 0.09,
   },
   accountLineContent: {
     flex: 1,
@@ -285,15 +319,20 @@ const styles = StyleSheet.create({
   accountInfo: {
     flex: 1,
   },
-  nameText: {
-    fontFamily: 'poppins-semibold',
-    fontSize: 18,
-    color: Colors.DARK_GRAY,
-  },
-  detailsText: {
+  // nameText: {
+  //   fontFamily: 'poppins-semibold',
+  //   fontSize: 18,
+  //   color: Colors.DARK_GRAY,
+  // },
+  accountLineText: {
     fontFamily: 'poppins-regular',
-    fontSize: 14,
-    color: Colors.MEDIUM_GRAY,
+    fontSize: 17,
+    color: Colors.NEAR_BLACK,
+  },
+  accountLineIcon: {
+    marginRight: 10,
+    maxWidth: 30,
+    maxHeight: 30,
   },
 });
 

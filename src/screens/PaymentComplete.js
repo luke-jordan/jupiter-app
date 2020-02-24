@@ -13,6 +13,7 @@ import { Button, Icon } from 'react-native-elements';
 
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
+import { getFormattedValue } from '../util/AmountUtil';
 import { Endpoints, Colors } from '../util/Values';
 
 const { width } = Dimensions.get('window');
@@ -25,6 +26,7 @@ export default class PaymentComplete extends React.Component {
       loading: false,
       fetchingProfile: true,
       userInfo: null,
+      isOnboarding: false,
     };
   }
 
@@ -40,6 +42,7 @@ export default class PaymentComplete extends React.Component {
         LoggingUtil.logEvent('USER_COMPLETED_ONBOARD', {
           amountAdded: params.amountAdded,
         });
+        this.setState({ isOnboarding: true });
       }
       LoggingUtil.logEvent('PAYMENT_SUCCEEDED', {
         amountAdded: params.amountAdded,
@@ -72,35 +75,6 @@ export default class PaymentComplete extends React.Component {
       });
     }
   };
-
-  getFormattedBalance(balance, unit) {
-    return (balance / this.getDivisor(unit)).toFixed(2);
-  }
-
-  getDivisor(unit) {
-    switch (unit) {
-      case 'MILLIONTH_CENT':
-        return 100000000;
-
-      case 'TEN_THOUSANDTH_CENT':
-        return 1000000;
-
-      case 'THOUSANDTH_CENT':
-        return 100000;
-
-      case 'HUNDREDTH_CENT':
-        return 10000;
-
-      case 'WHOLE_CENT':
-        return 100;
-
-      case 'WHOLE_CURRENCY':
-        return 1;
-
-      default:
-        return 1;
-    }
-  }
 
   handleHardwareBackPress = () => {
     this.backHandler.remove();
@@ -141,6 +115,14 @@ export default class PaymentComplete extends React.Component {
   render() {
     const { newBalance } = this.props.navigation.state.params;
     const { amountAdded } = this.props.navigation.state.params;
+    
+    const firstRow = this.state.isOnboarding ? 
+      'Congratulations on creating your account. We’re looking forward to watching your savings grow!' :
+      'Congratulations on adding to your savings! We’re looking forward to watching your savings grow!';
+
+    const topUpLabel = this.state.isOnboarding ? 
+      'Your new account has been topped up with:' : 'Your account has been topped up with:';
+
     return (
       <View style={styles.container}>
         <TouchableOpacity style={styles.closeButton} onPress={this.onPressDone}>
@@ -160,13 +142,12 @@ export default class PaymentComplete extends React.Component {
             />
             <Text style={styles.title}>Payment complete</Text>
             <Text style={styles.description}>
-              Congratulations on creating your account. We’re looking forward to
-              watching your savings grow!
+              {firstRow}
             </Text>
           </View>
           <View style={styles.amountsView}>
             <Text style={styles.description}>
-              Your new account has been topped up with:
+              {topUpLabel}
             </Text>
             <Text style={styles.amount}>
               {this.props.amount}R{amountAdded}
@@ -177,7 +158,7 @@ export default class PaymentComplete extends React.Component {
             <Text style={styles.description}>Your balance is now:</Text>
             <Text style={styles.amount}>
               {this.props.balance}R
-              {this.getFormattedBalance(newBalance.amount, newBalance.unit)}
+              {getFormattedValue(newBalance.amount, newBalance.unit)}
             </Text>
           </View>
           <View style={styles.separator} />

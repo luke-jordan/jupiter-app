@@ -9,6 +9,7 @@ export const Colors = {
   DARK_GRAY: '#4D565B',
   MEDIUM_GRAY: '#787F83',
   LIGHT_GRAY: '#EDEDF5',
+  NEAR_BLACK: '#222d33',
   YELLOW: '#FBC943',
   RED: '#CE0D25',
   LIGHT_RED: '#FA7459',
@@ -31,6 +32,10 @@ export const DeviceInfo = {
 };
 
 const isMaster = Boolean(Constants.manifest.releaseChannel === 'master');
+
+export const FallbackSupportNumber = isMaster
+  ? { display: '083 401 3558', link: '27834013558' }
+  : { display: '083 401 3558', link: '27834013558' };
 
 export const Endpoints = isMaster
   ? {
@@ -57,7 +62,7 @@ export const Defaults = isMaster
     }
   : {
       // STAGING
-      LOGIN: 'someone@jupitersave.com',
-      PASS: 'holy_CHRYSALIS_hatching9531',
+      LOGIN: 'anotherguy@jupitersave.com',
+      PASS: '#NewPass1234',
       REFERRAL: 'LETMEIN',
     };

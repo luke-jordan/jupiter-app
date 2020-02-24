@@ -83,6 +83,12 @@ class AddCash extends React.Component {
 
   onPressAddCash = async () => {
     if (this.state.loading) return;
+    
+    if(this.state.amountToAdd.trim().length === 0) {
+      this.setState({ emptyAmountError: true });
+      return;
+    }
+
     this.setState({ loading: true });
 
     if (this.state.isOnboarding) {
@@ -140,11 +146,20 @@ class AddCash extends React.Component {
   };
 
   onChangeAmount = text => {
+    if (['NA', 'NAN'].includes(text.trim().toUpperCase())) {
+      this.setState({
+        amountToAdd: '',
+        notWholeNumber: false,
+      });
+      return;
+    }
+
     const wholeNumberRegex = /^[0-9\b]+$/;
     if (wholeNumberRegex.test(text) || text.trim().length === 0) {
       this.setState({
         amountToAdd: text,
         notWholeNumber: false,
+        emptyAmountError: false,
       });
     } else {
       this.setState({
@@ -154,14 +169,16 @@ class AddCash extends React.Component {
   };
 
   onChangeAmountEnd = () => {
-    this.setState({
-      amountToAdd: parseFloat(this.state.amountToAdd).toFixed(0),
-    });
+    if (this.state.amountToAdd.trim().length > 0) {
+      this.setState({
+        amountToAdd: parseFloat(this.state.amountToAdd).toFixed(0),
+      });
+    }
     this.amountInputRef.blur();
   };
 
   getFormattedBalance(balance) {
-    return (balance / getDivisor(this.state.unit)).toFixed(0);
+    return (balance / getDivisor(this.state.unit)).toFixed(2);
   }
 
   getBankRate(bank) {
@@ -290,6 +307,13 @@ class AddCash extends React.Component {
               </Text>
             </View>
           ) : null}
+          {this.state.emptyAmountError && (
+            <View style={styles.wholeNumberOnlyView}>
+              <Text style={styles.error}>
+                Please enter an amount to proceed
+              </Text>
+            </View>
+          )}
           {this.props.comparatorRates ? (
             <View style={styles.rateComparison}>
               <Text style={styles.rateComparisonTitle}>
@@ -452,13 +476,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   wholeNumberOnlyView: {
-    marginTop: 20,
+    marginTop: 15,
     alignItems: 'center',
   },
   wholeNumberText: {
     fontFamily: 'poppins-regular',
     color: Colors.MEDIUM_GRAY,
     fontSize: 13,
+  },
+  error: {
+    color: Colors.RED,
   },
   rateComparison: {
     width: '90%',

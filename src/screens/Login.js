@@ -42,7 +42,7 @@ export default class Login extends React.Component {
       headers: stdHeaders,
       method: 'POST',
       body: JSON.stringify({
-        phoneOrEmail: this.state.userId,
+        phoneOrEmail: this.state.userId.trim(),
         password: this.state.password,
         deviceId: this.state.deviceId,
         countryCode: 'ZAF',
@@ -85,7 +85,7 @@ export default class Login extends React.Component {
       headers: stdHeaders,
       method: 'POST',
       body: JSON.stringify({
-        phoneOrEmail: this.state.userId,
+        phoneOrEmail: this.state.userId.trim(),
         type: 'LOGIN',
       }),
     });
@@ -94,7 +94,7 @@ export default class Login extends React.Component {
       const resultJson = await result.json();
       this.setState({ loading: true });
       this.props.navigation.navigate('OTPVerification', {
-        userId: this.state.userId,
+        userId: this.state.userId.trim(),
         password: this.state.password,
         channel: resultJson.channel,
         redirection: 'Login',
@@ -113,7 +113,7 @@ export default class Login extends React.Component {
     // Just to clear this so user can always see it is happening
     this.setState({ validationError: false });
 
-    const isValid = ValidationUtil.isValidEmailPhone(this.state.userId);
+    const isValid = ValidationUtil.isValidEmailPhone(this.state.userId.trim());
     if (!isValid) {
       this.setState({ validationError: true });
       return;
@@ -139,7 +139,7 @@ export default class Login extends React.Component {
   };
 
   onPressSupport = () => {
-    this.props.navigation.navigate('Support');
+    this.props.navigation.navigate('Support', { originScreen: 'Login' });
   };
 
   render() {

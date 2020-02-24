@@ -43,7 +43,7 @@ export default class Withdraw extends React.Component {
   }
 
   onPressBack = () => {
-    this.props.navigation.goBack();
+    this.props.navigation.navigate('Account'); // because we may get back here from eg support, and we want to always have a route out
   };
 
   verifyData = () => {
@@ -114,7 +114,7 @@ export default class Withdraw extends React.Component {
   };
 
   onPressSupport = () => {
-    this.props.navigation.navigate('Support');
+    this.props.navigation.navigate('Support', { originScreen: 'WithdrawStep1' });
   };
 
   showError(error) {

@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   ImageBackground,
   View,
+  ScrollView,
 } from 'react-native';
 import { Button, Overlay } from 'react-native-elements';
 import Toast from 'react-native-easy-toast';
@@ -140,7 +141,7 @@ export default class CheckingForPayment extends React.Component {
   };
 
   onPressContact = () => {
-    this.props.navigation.navigate('Support');
+    this.props.navigation.navigate('Support', { originScreen: 'CheckingForPayment', postSubmitNavigateHome: true });
   };
 
   async rotateHourglass() {
@@ -166,8 +167,9 @@ export default class CheckingForPayment extends React.Component {
     const icon = (
       <Image source={require('../../assets/eft.png')} style={styles.eftIcon} />
     );
+
     return (
-      <View style={styles.container}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContainer}>
         <View style={styles.mainContent}>
           <View style={styles.section}>
             <ImageBackground
@@ -229,7 +231,7 @@ export default class CheckingForPayment extends React.Component {
                 style={styles.buttonDescription}
                 onPress={this.onPressAlreadyPaid}
               >
-                Refresh to check for payment
+                Tap to check for payment
               </Text>
             </View>
             <View style={styles.separator} />
@@ -256,6 +258,8 @@ export default class CheckingForPayment extends React.Component {
         <Overlay
           isVisible={this.state.checkingForPayment}
           dialogStyle={styles.dialogStyle}
+          height="auto"
+          width="auto"
           onBackdropPress={() => {}}
           onHardwareBackPress={() => {
             this.setState({ checkingForPayment: false });
@@ -271,7 +275,7 @@ export default class CheckingForPayment extends React.Component {
         </Overlay>
 
         <Toast ref={this.toastRef} opacity={1} style={styles.toast} />
-      </View>
+      </ScrollView>
     );
   }
 }
@@ -279,8 +283,10 @@ export default class CheckingForPayment extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  scrollContainer: {
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'space-between'
   },
   mainContent: {
     flex: 1,
@@ -349,10 +355,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dialogWrapper: {
-    width: '80%',
+    width: '70%',
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 200,
+    paddingHorizontal: 20,
     paddingBottom: 0,
   },
   dialogText: {
@@ -360,7 +367,6 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: Colors.DARK_GRAY,
     marginTop: 10,
-    marginHorizontal: 30,
     textAlign: 'center',
   },
   eftIcon: {

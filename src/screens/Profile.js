@@ -104,7 +104,7 @@ export default class Profile extends React.Component {
   };
 
   onPressSupport = () => {
-    this.props.navigation.navigate('Support');
+    this.props.navigation.navigate('Support', { originScreen: 'Profile' });
   };
 
   fetchProfileForOnboardingUser = async () => {

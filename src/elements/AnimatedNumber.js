@@ -57,7 +57,7 @@ export default class AnimatedNumber extends React.Component {
         ? this.props.duration / steps
         : DEFAULT_INTERVAL_MSECS;
     }
-    console.log(`To cover difference of ${diff}, with step size, ${stepSize}, need ${steps} steps`);
+    // console.log(`To cover difference of ${diff}, with step size, ${stepSize}, need ${steps} steps`);
     this.setState({
       currentNumber: this.props.initial,
       targetNumber: this.props.target,
@@ -65,7 +65,7 @@ export default class AnimatedNumber extends React.Component {
       stepSize,
       isIncrement: this.props.target > this.props.initial,
     }, () => {
-      console.log(`Animating from current number ${this.state.currentNumber}, towards target number ${this.state.targetNumber}`)
+      // console.log(`Animating from current number ${this.state.currentNumber}, towards target number ${this.state.targetNumber}`)
       this.animate();
     });
   }

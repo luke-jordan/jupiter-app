@@ -76,44 +76,66 @@ class Boosts extends React.Component {
     }
   }
 
-  getBoostButton(boostDetails) {
-    if (
-      boostDetails.boostStatus === 'REDEEMED' ||
-      this.isBoostExpired({
-        boostStatus: boostDetails.boostStatus,
-        endTime: boostDetails.endTime,
-      })
-    ) {
+  // note : 'pending' state means no further action from user, so here is the same as redeemed (thus also skipped over)
+  getNextStatus(boostStatus, statusConditionKeys) {
+    if ([BoostStatus.PENDING, BoostStatus.REDEEMED, BoostStatus.EXPIRED, BoostStatus.REVOKED].includes(boostStatus)) {
       return null;
     }
 
-    const conditions = boostDetails.statusConditions.REDEEMED;
-    let buttonType = '';
-    if (conditions && conditions.length > 0) {
-      const condition = conditions[0];
-      if (condition.includes('save_event')) buttonType = 'save_event';
-      if (condition.includes('social_event')) buttonType = 'social_event';
+    const isBoostPreAction = [BoostStatus.CREATED, BoostStatus.OFFERED].includes(boostStatus);
+    if (isBoostPreAction) {
+      return statusConditionKeys.includes(BoostStatus.UNLOCKED) ? BoostStatus.UNLOCKED : BoostStatus.REDEEMED;
     }
 
-    // get value from boost item
-    // const getValueFromConditional = boostDetails.statusConditions.REDEEMED[0];
+    if (boostStatus === BoostStatus.UNLOCKED) {
+      return BoostStatus.REDEEMED;
+    }
+  }
 
-    // split string on 3 parameters
-    // const parameterMatch = getValueFromConditional.match(/#{(.*)}/);
-    // const parameterValue = parameterMatch ? parameterMatch[1] : null;
-    const amount = this.extractStatusThreshold(boostDetails);
+  getNextStatusAndThresholdEvent(boostStatus, statusConditions) {
+    const nextStatus = this.getNextStatus(boostStatus, Object.keys(statusConditions));
+    // console.log('BOOST NEXT STATUS: ', nextStatus);
+    if (!nextStatus) {
+      return null;
+    }
 
-    if (buttonType === '') {
+    const conditions = statusConditions[nextStatus];
+    // console.log('EXTRACTED BOOST CONDITION: ', conditions);
+
+    let thresholdEventType = '';
+    if (conditions && conditions.length > 0) {
+      const condition = conditions[0];
+      if (condition.includes('save_event')) thresholdEventType = 'save_event';
+      if (condition.includes('social_event')) thresholdEventType = 'social_event';
+      if (condition.includes('number_taps')) thresholdEventType = 'game_event';
+    }
+    
+    return { nextStatus, thresholdEventType };
+  }
+
+  getBoostButton(boostDetails) {
+    const isBoostExpired = this.isBoostExpired({ boostStatus: boostDetails.boostStatus, endTime: boostDetails.endTime });
+    if (boostDetails.boostStatus === 'REDEEMED' || isBoostExpired) {
+      return null;
+    }
+
+    const { nextStatus, thresholdEventType } = this.getNextStatusAndThresholdEvent(boostDetails.boostStatus, boostDetails.statusConditions);
+    
+    if (thresholdEventType === '') {
       return null;
     } else {
       let title = '';
       let action = null;
-      if (buttonType === 'save_event') {
+      if (thresholdEventType === 'save_event') {
         title = 'ADD CASH';
+        const amount = this.extractStatusThreshold(boostDetails.statusConditions, nextStatus);
         action = () => this.onPressAddCash(amount);
-      } else if (buttonType === 'social_event') {
+      } else if (thresholdEventType === 'social_event') {
         title = 'INVITE FRIENDS';
         action = this.onPressInviteFriends;
+      } else if (thresholdEventType === 'game_event') {
+        title = 'PLAY GAME';
+        action = () => this.props.navigation.navigate('Home', { showGameUnlockedModal: true, boostDetails });
       }
 
       return (
@@ -151,29 +173,25 @@ class Boosts extends React.Component {
   }
 
   getHighlightBorder(boostDetails) {
-    if (
-      boostDetails.boostStatus !== 'REDEEMED' &&
-      !this.isBoostExpired(boostDetails) &&
-      this.isBoostExpiringSoon(boostDetails.endTime)
-    ) {
+    if ([BoostStatus.UNLOCKED, BoostStatus.PENDING].indexOf(boostDetails.boostStatus) > 0 && !this.isBoostExpired(boostDetails)) {
       return styles.purpleBorder;
     }
     return null;
   }
 
   getCardOpacity(boostStatus, endTime) {
-    if (this.isBoostExpired({ boostStatus, endTime })) return 0.6;
+    if (boostStatus === 'REDEEMED' || this.isBoostExpired({ boostStatus, endTime })) return 0.6;
     return 1;
   }
 
   sortBoosts = boosts => {
     const sortByTime = (a, b) =>
-      moment(b.endTime).isAfter(moment(a.endTime)) && 1;
+      moment(b.startTime).isAfter(moment(a.startTime)) && 1;
     const isOneOf = options => x => options.indexOf(x.boostStatus) !== -1;
 
     const topGroup = boosts
       .filter(
-        isOneOf([BoostStatus.OFFERED, BoostStatus.CREATED, BoostStatus.PENDING])
+        isOneOf([BoostStatus.OFFERED, BoostStatus.CREATED, BoostStatus.UNLOCKED, BoostStatus.PENDING])
       )
       .sort(sortByTime);
     const middleGroup = boosts
@@ -186,28 +204,48 @@ class Boosts extends React.Component {
     return [...topGroup, ...middleGroup, ...bottomGroup];
   };
 
-  extractStatusThreshold = (boostDetails) => {
-    const { statusConditions } = boostDetails;
-    const redeemConditions = statusConditions.REDEEMED;
+  extractStatusThreshold = (statusConditions, boostStatus = BoostStatus.REDEEMED) => {
+    const redeemConditions = statusConditions[boostStatus];
+    if (!redeemConditions) {
+      return null;
+    }
     const saveCondition = redeemConditions.find((condition) => condition.startsWith('save_event_greater_than'));
+    if (!saveCondition) {
+      return null;
+    }
     const saveConditionParam = extractConditionParameter(saveCondition);
+    if (!saveConditionParam) {
+      return null;
+    }
+
     const thresholdNumber = equalizeAmounts(saveConditionParam) / getDivisor('DEFAULT');
     return thresholdNumber;
-    // return `${getCurrencySymbol(boostDetails.boostCurrency)}${thresholdNumber.toFixed(0)}`;
   }
 
-  extractBoostModalParameters = (boostDetails) => {
-    const boostThreshold = this.extractStatusThreshold(boostDetails);
-    return { ...boostDetails, boostThreshold };
-  };
-
-  showModalHandler = (boostDetails) => {
-    this.setState({ showModal: true, currentBoostParameters: this.extractBoostModalParameters(boostDetails) });
+  showModalHandler = (boostModalParams) => {
+    this.setState({ showModal: true, currentBoostParameters: boostModalParams });
   };
 
   hideModalHandler = () => {
     this.setState({ showModal: false });
   };
+
+  handleTappedBoost = (boostDetails) => {
+    const { nextStatus, thresholdEventType } = this.getNextStatusAndThresholdEvent(boostDetails.boostStatus, boostDetails.statusConditions);
+    if (thresholdEventType === 'save_event') {
+      const boostThreshold = this.extractStatusThreshold(boostDetails.statusConditions, nextStatus);
+      const boostModalParams = { ...boostDetails, boostThreshold };
+      this.showModalHandler(boostModalParams);
+      return;
+    }
+
+    if (thresholdEventType === 'game_event') {
+      this.props.navigation.navigate('Home', { showGameUnlockedModal: true, boostDetails });
+    }
+
+    console.log('No handled event, just deal with user tap');
+    return false;
+  }
 
   fetchBoosts = async token => {
     try {
@@ -282,8 +320,8 @@ class Boosts extends React.Component {
 
     return (
       <TouchableOpacity
-        disabled={boostDetails.boostStatus !== BoostStatus.OFFERED}
-        onPress={() => this.showModalHandler(boostDetails)}
+        disabled={boostDetails.boostStatus !== BoostStatus.OFFERED && boostDetails.boostStatus !== BoostStatus.UNLOCKED}
+        onPress={() => this.handleTappedBoost(boostDetails)}
         key={boostDetails.boostId}
         style={[
           styles.boostCard,

@@ -1,12 +1,14 @@
 import React from 'react';
 
-import { View, Image, Text, TouchableOpacity, Dimensions, StyleSheet } from 'react-native';
+import { View, Image, Text, TouchableOpacity, Dimensions, StyleSheet, ScrollView } from 'react-native';
 import { Icon } from 'react-native-elements';
 import { FlingGestureHandler, Directions, State } from 'react-native-gesture-handler';
 
+import * as Animatable from 'react-native-animatable';
+
 import { Colors, Sizes } from '../util/Values';
 
-const { height, width } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
 const MessageCard = ({
@@ -22,6 +24,9 @@ const MessageCard = ({
     
           case 'VIEW_HISTORY':
             return 'VIEW HISTORY';
+
+          case 'VIEW_BOOSTS':
+            return 'VIEW BOOSTS'
     
           case 'VISIT_WEB':
             return 'VISIT SITE';
@@ -50,17 +55,19 @@ const MessageCard = ({
 
       const isEmphasis = messageDetails.display.titleType && messageDetails.display.titleType.includes('EMPHASIS');
       const messageActionText = getMessageCardButtonText(messageDetails.actionToTake);
+      const messageBody = messageDetails.body.replace(/\n\s*\n/g, '\n');
 
       return (
         <FlingGestureHandler
-          direction={Directions.RIGHT}
+          // eslint-disable-next-line no-bitwise
+          direction={Directions.DOWN}
           onHandlerStateChange={({ nativeEvent }) => {
             if (nativeEvent.state === State.ACTIVE) {
               onFlingMessage(nativeEvent);
             }
           }}
         >
-          <View style={styles.messageCard}>
+          <Animatable.View animation="fadeInUp" style={styles.messageCard}>
             <View
               style={
                 isEmphasis
@@ -94,33 +101,35 @@ const MessageCard = ({
                 />
               ) : null}
             </View>
-            <Text style={styles.messageCardText}>{messageDetails.body}</Text>
-            {messageActionText && messageActionText.length > 0 ? (
-              <TouchableOpacity
-                style={styles.messageCardButton}
-                onPress={() =>
-                  onPressActionButton(messageDetails.actionToTake)
-                }
-              >
-                <Text style={styles.messageCardButtonText}>
-                  {messageActionText}
-                </Text>
-                <Icon
-                  name="chevron-right"
-                  type="evilicon"
-                  size={30}
-                  color={Colors.PURPLE}
-                />
-              </TouchableOpacity>
-            ) : null}
-          </View>
+            <ScrollView>
+              <Text style={styles.messageCardText}>{messageBody}</Text>
+              {messageActionText && messageActionText.length > 0 ? (
+                <TouchableOpacity
+                  style={styles.messageCardButton}
+                  onPress={() =>
+                    onPressActionButton(messageDetails.actionToTake)
+                  }
+                >
+                  <Text style={styles.messageCardButtonText}>
+                    {messageActionText}
+                  </Text>
+                  <Icon
+                    name="chevron-right"
+                    type="evilicon"
+                    size={30}
+                    color={Colors.PURPLE}
+                  />
+                </TouchableOpacity>
+              ) : null}
+            </ScrollView>
+          </Animatable.View>
         </FlingGestureHandler>
       );
 };
 
 const styles = StyleSheet.create({
     messageCard: {
-        minHeight: height * 0.23,
+        height: '30%',
         width: '95%',
         backgroundColor: Colors.WHITE,
         marginBottom: -(
@@ -137,12 +146,14 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.LIGHT_BLUE,
         borderTopLeftRadius: 5,
         borderTopRightRadius: 5,
+        paddingRight: 25,
     },
     messageCardHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 10,
-        padding: 15,
+        marginBottom: 8,
+        padding: 10,
+        width: '80%',
     },
     messageCardIcon: {
         marginHorizontal: 10,
@@ -159,16 +170,18 @@ const styles = StyleSheet.create({
         color: Colors.WHITE,
         paddingVertical: 10,
         marginLeft: 10,
+        flexWrap: 'wrap',
     },
     messageCardTitle: {
         fontFamily: 'poppins-semibold',
         fontSize: 3.7 * FONT_UNIT,
+        flexWrap: 'wrap',
     },
     messageCardText: {
         fontFamily: 'poppins-regular',
         fontSize: 3.2 * FONT_UNIT,
         paddingHorizontal: 15,
-        paddingTop: 5,
+        // paddingTop: 5,
     },
     messageCardButton: {
         flexDirection: 'row',

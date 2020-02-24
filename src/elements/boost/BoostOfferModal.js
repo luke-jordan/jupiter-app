@@ -10,6 +10,16 @@ import getSomeActionToTake from '../../modules/boost/helpers/getSomeActionToTake
 
 const closeImage = require('../../../assets/close.png');
 
+const DEFAULT_TITLE = {
+  'SIMPLE': 'Get rewarded for saving!',
+  'GAME': 'Unlock a boost game!',
+}
+
+const DEFAULT_BODY = {
+  'SIMPLE': 'Save {boostThresholdFormatted} before {boostExpiryFormatted} and you will be rewarded with {boostAmountFormatted}. Save now to get your reward!',
+  'GAME': 'Save {boostThresholdFormatted} before {boostExpiryFormatted} and you can play a game that might win you {boostAmountFormatted}. Save now to play!',
+}
+
 const BoostOfferModal = ({
   showModal,
   hideModal,
@@ -18,18 +28,21 @@ const BoostOfferModal = ({
   navigation,
 }) => {
 
-  const { title, actionToTake } = boostMessage;
+  // these provide the ability to customize messages in time, with safe defaults now
+  const title = (boostMessage && boostMessage.title) || DEFAULT_TITLE[boostDetails.boostType] || DEFAULT_TITLE.SIMPLE;
+  const bodyTemplate = (boostMessage && boostMessage.body) || DEFAULT_BODY[boostDetails.boostType] || DEFAULT_BODY.SIMPLE;
+
+  const actionToTake = (boostMessage && boostMessage.actionToTake) || 'ADD_CASH';
   
-  let { body } = boostMessage;
-  
-  const boostThresholdFormatted = `${getCurrencySymbol(boostDetails.boostCurrency)}${boostDetails.boostThreshold.toFixed(0)}`;
+  const boostThresholdFormatted = boostDetails.boostThreshold 
+    ? `${getCurrencySymbol(boostDetails.boostCurrency)}${boostDetails.boostThreshold.toFixed(0)}` : 'ERROR';
   const boostExpiryFormatted = moment(boostDetails.endTime).format('dddd DD MMM [at] hA');
   const currency = getCurrencySymbol(boostDetails.boostCurrency);
   const boostAmountFormatted = `${currency}${getFormattedValue(boostDetails.boostAmount, boostDetails.boostUnit, 0)}`;
     
   const stringParameters = { boostThresholdFormatted, boostExpiryFormatted, boostAmountFormatted };
   
-  body = formatStringTemplate(body, stringParameters);
+  const bodyText = formatStringTemplate(bodyTemplate, stringParameters);
 
   // Get button handler and label depending on the `actionToTake`
   const { onPressHandler, buttonLabel } = getSomeActionToTake(actionToTake);
@@ -55,7 +68,7 @@ const BoostOfferModal = ({
           </View>
           <View style={styles.textContainer}>
             <Text style={styles.textTitle}>{title}</Text>
-            <Text style={styles.content}>{body}</Text>
+            <Text style={styles.content}>{bodyText}</Text>
           </View>
           <Button
             title={buttonLabel}
@@ -79,15 +92,6 @@ const BoostOfferModal = ({
       </Modal>
     </View>
   );
-};
-
-BoostOfferModal.defaultProps = {
-  boostMessage: {
-    title: 'Get rewarded for saving!',
-    body:
-      'Save {boostThresholdFormatted} before {boostExpiryFormatted} and you will be rewarded with {boostAmountFormatted}. Save now to get your reward!',
-    actionToTake: 'ADD_CASH',
-  },
 };
 
 const styles = StyleSheet.create({

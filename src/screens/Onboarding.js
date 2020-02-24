@@ -80,7 +80,7 @@ export default class Onboarding extends React.Component {
   getTabText = index => {
     switch (index) {
       case 0:
-        return 'Welcome to Jupiter, the savings account with a difference. We’re here to help you make the most of your money, by letting you build healthy saving habits and be rewarded along the way.';
+        return 'Welcome to Jupiter, the savings app with a difference. We’re here to help you make the most of your money, by letting you build healthy saving habits and be rewarded along the way.';
       case 1:
         return 'Yep, it’s that easy. Once you add money in your Jupiter account, you start earning interest immediately. From your very first R1, straight up earnings.';
       case 2:

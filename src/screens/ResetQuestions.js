@@ -104,7 +104,7 @@ export default class ResetQuestions extends React.Component {
   };
 
   onPressSupport = () => {
-    this.props.navigation.navigate('Support');
+    this.props.navigation.navigate('Support', { originScreen: 'ResetQuestions '});
   };
 
   showError() {

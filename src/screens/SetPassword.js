@@ -390,8 +390,8 @@ class SetPassword extends React.Component {
                 </Text>
               ) : null}
               <Text style={styles.requirementsMessage}>
-                Passwords must be at least 8 characters long, have at least one
-                uppercase letter, one lowercase letter, one number and one
+                <Text style={styles.requirementsNote}>Note:</Text> Passwords must be at least 8 characters long, with at least: one
+                number, one uppercase letter, one lowercase letter, and one
                 special character (e.g., @, #, !, etc). Set your password tight
                 to keep your money safe!
               </Text>
@@ -553,7 +553,7 @@ const styles = StyleSheet.create({
   profileField: {
     flex: 1,
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: 10,
   },
   profileFieldTitle: {
     fontFamily: 'poppins-semibold',
@@ -577,11 +577,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  requirementsNote: {
+    fontFamily: 'poppins-semibold',
+    color: Colors.DARK_GRAY
+  },
   requirementsMessage: {
     fontFamily: 'poppins-regular',
     color: Colors.MEDIUM_GRAY,
-    fontSize: 13,
-    marginTop: 10,
+    fontSize: 14,
+    marginTop: 8,
     marginBottom: 20,
   },
   errorMessage: {

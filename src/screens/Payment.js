@@ -1,3 +1,4 @@
+/* eslint-disable react/sort-comp */
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import {
@@ -76,6 +77,11 @@ export default class Payment extends React.Component {
     }
   }
 
+  cleanUpListeners() {
+    AppState.removeEventListener('change', this.handleAppStateChange);
+    this.backHandler.remove();
+  }
+
   checkIfPaymentCompleted = async () => {
     this.setState({
       checkingForPayment: true,
@@ -103,7 +109,7 @@ export default class Payment extends React.Component {
           this.navigateToPaymentPending();
         }
         if (resultJson.result.includes('PAYMENT_SUCCEEDED')) {
-          AppState.removeEventListener('change', this.handleAppStateChange);
+          this.cleanUpListeners();
           NavigationUtil.navigateWithoutBackstack(
             this.props.navigation,
             'PaymentComplete',
@@ -125,6 +131,7 @@ export default class Payment extends React.Component {
         this.logPaymentError('Payment received bad status code from server', result);
       }
     } catch (error) {
+      console.log('ERROR THROWN IN PAYMENT: ', error);
       this.setState({ checkingForPayment: false });
       LoggingUtil.logError(error);
       this.navigateToPaymentPending();
@@ -132,15 +139,13 @@ export default class Payment extends React.Component {
   };
 
   handleHardwareBackPress = () => {
-    AppState.removeEventListener('change', this.handleAppStateChange);
-    this.backHandler.remove();
+    this.cleanUpListeners();
     return true;
   };
 
   onPressBack = () => {
     // TODO : consider altering to prevent back
-    AppState.removeEventListener('change', this.handleAppStateChange);
-    this.backHandler.remove();
+    this.cleanUpListeners();
     LoggingUtil.logEvent('USER_WENT_BACK_AT_PAYMENT_LINK');
     this.props.navigation.goBack();
   };
@@ -159,6 +164,7 @@ export default class Payment extends React.Component {
   };
 
   logPaymentError(message, response) {
+    console.log('LOGGING PAYMENT ERROR: ', message);
     const paymentError = new Error(message);
     const serverResponse = response ? JSON.stringify(response) : 'Could not retrieve failing server response';
     if (serverResponse) {
@@ -170,8 +176,10 @@ export default class Payment extends React.Component {
   }
 
   navigateToPaymentPending(bankDetails) {
-    AppState.removeEventListener('change', this.handleAppStateChange);
-    NavigationUtil.navigateWithHomeBackstack(
+    this.cleanUpListeners();
+    
+    const navigationFunction = this.state.isOnboarding ? NavigationUtil.navigateWithoutBackstack : NavigationUtil.navigateWithHomeBackstack;
+    navigationFunction(
       this.props.navigation,
       'CheckingForPayment',
       {

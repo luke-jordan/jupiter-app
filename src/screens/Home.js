@@ -6,7 +6,7 @@ import * as Permissions from 'expo-permissions';
 import moment from 'moment';
 import React from 'react';
 import { connect } from 'react-redux';
-import { Alert, Animated, AsyncStorage, Dimensions, Easing, Image, Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, AsyncStorage, Dimensions, Easing, Image, Linking, StyleSheet, Text, TouchableOpacity, View, Modal } from 'react-native';
 import { Icon } from 'react-native-elements';
 
 // import VersionCheck from 'react-native-version-check-expo';
@@ -23,16 +23,16 @@ import BalanceNumber from '../elements/BalanceNumber';
 import NavigationBar from '../elements/NavigationBar';
 import MessageCard from '../elements/MessageCard';
 
-// import BoostModalChallenge from '../elements/boost/BoostChallengeModal';
 import BoostResultModal from '../elements/boost/BoostResultModal';
 // import BoostOfferModal from '../elements/boost/BoostOfferModal';
 
 import { boostService } from '../modules/boost/boost.service';
 import { updateServerBalance, updateShownBalance } from '../modules/balance/balance.actions';
 import { updateBoostCount, updateBoostViewed, updateMessagesAvailable, updateMessageSequence, updateMessageViewed } from '../modules/boost/boost.actions';
-import { getViewedBoosts, hasViewedFallback, getNextMessage, getAvailableMessages } from '../modules/boost/boost.reducer';
+import { getViewedBoosts, hasViewedFallback, getNextMessage, getAvailableMessages, getViewedMessages } from '../modules/boost/boost.reducer';
 
 import BoostGameModal from '../elements/boost/BoostGameModal';
+import GameResultModal from '../elements/boost/GameResultModal';
 
 const mapDispatchToProps = {
   updateBoostCount,
@@ -49,6 +49,7 @@ const mapStateToProps = state => ({
   hasShownFallback: hasViewedFallback(state),
   nextMessage: getNextMessage(state),
   availableMessages: getAvailableMessages(state),
+  viewedMessages: getViewedMessages(state),
 });
 
 const { height, width } = Dimensions.get('window');
@@ -73,18 +74,34 @@ class Home extends React.Component {
 
       hasMessage: false,
       messageDetails: null,
+      
+      showGameUnlockedModal: false,
+      showGameResultModal: false,
+
       gameParams: null,
       gameInProgress: false,
       tapScreenGameMode: false,
       chaseArrowGameMode: false,
+      showSubmittingModal: false,
 
       lastFetchTimeMillis: 0,
     };
   }
 
   async componentDidMount() {
+    // console.log('HOME MOUNTED');
     this.showInitialData();
     this.rotateCircle();
+  }
+
+  async handleRefocus() {
+    // check params if we have params.showModal we show modal with game
+    if (this.props.navigation.getParam('showGameUnlockedModal')) {
+      this.showGameUnlocked(this.props.navigation.getParam('boostDetails'));
+      this.props.navigation.setParams({ showGameUnlockedModal: false }); // so we don't have an infinite loop
+    } else {
+      this.checkBalanceOnReload();
+    }
   }
 
   /*
@@ -127,17 +144,18 @@ class Home extends React.Component {
         info = JSON.parse(info);
       }
     }
+    
+    // weirdness in react queue means in fact this await is very important (otherwise get caught in loop on no token)
+    // at some point could probably do with a refactor though
+    await this.setState({
+      token: info.token,
+      firstName: info.profile.personalName
+    });
+
     // check params if we have params.showModal we show modal with game
-    if (params) {
-      await this.setState({
-        token: info.token,
-        firstName: info.profile.personalName,
-      });
-    } else {
-      await this.setState({
-        token: info.token,
-        firstName: info.profile.personalName,
-      });
+    if (params && params.showGameUnlockedModal) {
+      this.showGameUnlocked(params.boostDetails);
+      this.props.navigation.setParams({ showGameUnlockeModal: false }); // so we don't have an infinite loop
     }
 
     if (info.profile.kycStatus === 'FAILED_VERIFICATION' || info.profile.kycStatus === 'REVIEW_FAILED') {
@@ -370,6 +388,10 @@ class Home extends React.Component {
   }
 
   async fetchMessagesIfNeeded() {
+    if (this.state.hasMessage) {
+      return;
+    }
+
     const { nextMessage } = this.props;
     if (nextMessage) {
       this.showMessage(nextMessage);
@@ -389,7 +411,16 @@ class Home extends React.Component {
     if (message) {
       this.showMessage(message);
     } else if (!this.props.hasShownFallback) {
-      this.showMessage(MessagingUtil.getFallbackMessage());
+      const shownMessages = this.props.viewedMessages;
+      const fallbackMessages = MessagingUtil.getFallbackMessages();
+      const unseenMessageIds = fallbackMessages.map((msg) => msg.messageId).filter((msgId) => !shownMessages.includes(msgId));
+
+      if (unseenMessageIds.length === 0) {
+        return;
+      }
+
+      const pickedMsgId = unseenMessageIds[Math.floor(Math.random() * unseenMessageIds.length)];
+      this.showMessage(fallbackMessages.find((msg) => msg.messageId === pickedMsgId));
     }
   }
 
@@ -419,7 +450,7 @@ class Home extends React.Component {
     }
 
     const actionContext = messageDetails ? messageDetails.actionContext : null;
-    console.log('Processing message action, message details: ', messageDetails);
+    // console.log('Processing message action, message details: ', messageDetails);
     
     switch (action) {
       case 'ADD_CASH': {
@@ -435,6 +466,10 @@ class Home extends React.Component {
 
       case 'VIEW_HISTORY':
         this.props.navigation.navigate('History');
+        break;
+
+      case 'VIEW_BOOSTS':
+        this.props.navigation.navigate('Boosts');
         break;
 
       case 'VISIT_WEB':
@@ -478,16 +513,16 @@ class Home extends React.Component {
   showGameUnlocked(boostDetails) {
     const boostAmount = standardFormatAmount(boostDetails.boostAmount, boostDetails.boostUnit, boostDetails.boostCurrency);
     const gameParams = { ...boostDetails.gameParams, boostId: boostDetails.boostId, boostAmount };
-    console.log('Showing game with params: ', boostDetails.gameParams);
+    // console.log('Showing game with params: ', boostDetails.gameParams);
     this.setState({
-      showGameDialog: true,
+      showGameUnlockeModal: true,
       gameParams,
     });
   }
 
   onPressPlayLater = () => {
     this.setState({
-      showGameDialog: false,
+      showGameUnlockeModal: false,
     });
     // TODO show gameDetails.actionContext.gameParams.waitMessage maybe?
   };
@@ -498,7 +533,7 @@ class Home extends React.Component {
     if (gameParams.gameType.includes('TAP_SCREEN')) {
       // console.log('Starting tap screen game!');
       this.setState({
-        showGameDialog: false,
+        showGameUnlockeModal: false,
         gameInProgress: true,
         tapScreenGameMode: true,
         tapScreenGameTimer: gameParams.timeLimitSeconds,
@@ -512,7 +547,7 @@ class Home extends React.Component {
       }, 1000);
     } else if (gameParams.gameType.includes('CHASE_ARROW')) {
       this.setState({
-        showGameDialog: false,
+        showGameUnlockeModal: false,
         gameInProgress: true,
         chaseArrowGameMode: true,
         chaseArrowGameTimer: gameParams.timeLimitSeconds,
@@ -568,7 +603,7 @@ class Home extends React.Component {
   };
 
   handleTapScreenGameEnd = () => {
-    this.setState({ tapScreenGameMode: false, gameInProgress: false });
+    this.setState({ tapScreenGameMode: false, gameInProgress: false, showSubmittingModal: true });
     this.submitGameResults(this.tapScreenGameTaps);
   };
 
@@ -580,7 +615,7 @@ class Home extends React.Component {
   };
 
   handleChaseArrrowGameEnd = () => {
-    this.setState({ chaseArrowGameMode: false, gameInProgress: false });
+    this.setState({ chaseArrowGameMode: false, gameInProgress: false, showSubmittingModal: true });
     this.submitGameResults(this.chaseArrowGameTaps);    
   };
 
@@ -599,8 +634,10 @@ class Home extends React.Component {
     };
 
     const { gameResult, amountWon, statusMet } = await boostService.sendTapGameResults(resultOptions);
+    // console.log('Completed sending game results');
+    
     const amountWonToPass = amountWon ? standardFormatAmount(amountWon.amount, amountWon.unit, amountWon.currency) : null;
-    // we replace them with this
+    
     const gameResultParams = {
       gameResult,
       amountWon: amountWonToPass,
@@ -612,10 +649,11 @@ class Home extends React.Component {
       statusMet.forEach((viewedStatus) => this.props.updateBoostViewed({ boostId: gameParams.boostId, viewedStatus }));
     }
 
+    // An Apple thing. Don't ask.
     this.setState({
-      gameParams: gameResultParams,
-      showGameDialog: true,
-    });
+      gameResultParams,
+      showSubmittingModal: false,
+    }, () => { this.setState({ showGameResultModal: true }) });
   }
 
   onPressTapScreenGame = () => {
@@ -634,14 +672,14 @@ class Home extends React.Component {
 
   onCloseGameDialog = () => {
     // MessagingUtil.tellServerMessageAction('DISMISSED', this.state.gameMessageId, this.state.token);
-    this.setState({ showGameDialog: false });
+    this.setState({ showGameUnlockedModal: false, showGameResultModal: false });
   };
 
   /**
    * handler for hide modal with game
    */
   hideBoostChallengeModal = async () => {
-    await this.setState({ showGameDialog: false });
+    await this.setState({ showGameUnlockedModal: false, showGameResultModal: false });
   };
 
   getGameDetailsBody(body) {
@@ -692,6 +730,7 @@ class Home extends React.Component {
       inputRange: [0, 1],
       outputRange: ['0deg', '360deg'],
     });
+
     let circleScale = 1;
     if (this.state.tapScreenGameMode || this.state.chaseArrowGameMode) {
       circleScale = this.state.circleScale.interpolate({
@@ -700,9 +739,16 @@ class Home extends React.Component {
       });
     }
 
+    const showMessage = !(
+      this.state.showGameUnlockedModal || 
+      this.state.showGameResultModal || 
+      this.state.showBoostResultModal || 
+      this.state.gameInProgress
+    );
+
     return (
       <View style={styles.container}>
-        <NavigationEvents onDidFocus={() => this.checkBalanceOnReload()} />
+        <NavigationEvents onDidFocus={() => this.handleRefocus()} />
 
         <View style={styles.gradientWrapper}>
           <LinearGradient
@@ -817,8 +863,7 @@ class Home extends React.Component {
               <Text style={styles.endOfMonthDesc}>Due end of month</Text>} */}
             </View>
 
-            {/* TODO: clean this up */}
-            {this.state.hasMessage && !this.state.showGameDialog && !this.state.showBoostResultModal && !this.state.gameInProgress && (
+            {this.state.hasMessage && showMessage && (
               <MessageCard 
                 messageDetails={this.state.messageDetails}
                 onFlingMessage={() => this.onFlingMessage()}
@@ -830,21 +875,24 @@ class Home extends React.Component {
           </LinearGradient>
         </View>
 
-        {/* {this.state.showBoostChallengeModal && (
-          <BoostModalChallenge
-            showModal={this.state.showBoostChallengeModal}
-            hideModal={this.hideBoostChallengeModal}
-            startGame={() => {}}
-          />
-        )} */}
-
-        {this.state.showGameDialog && (
+        {this.state.showGameUnlockeModal && (
           <BoostGameModal
+            showModal={this.state.showGameUnlockeModal}
             gameDetails={this.state.gameParams}
             onPressStartGame={this.onPressStartGame}
             onPressPlayLater={this.onPressPlayLater}
             onCloseGameDialog={this.onCloseGameDialog}
             onPressViewOtherBoosts={this.onPressViewOtherBoosts}
+          />
+        )}
+
+        {/*  this pains me, but Apple is playing not-nice with too many state flips, hence. clear candidate for refactor */}
+        {this.state.showGameResultModal && (
+          <GameResultModal
+            showModal={this.state.showGameResultModal}
+            gameDetails={this.state.gameResultParams}
+            onPressViewOtherBoosts={this.onPressViewOtherBoosts}
+            onCloseGameDialog={this.onCloseGameDialog}
           />
         )}
 
@@ -855,6 +903,18 @@ class Home extends React.Component {
             boostDetails={this.state.boostResultDetails}
             navigation={this.props.navigation}
           />
+        )}
+
+        {this.state.showSubmittingModal && (
+          <Modal
+            animationType="slide"
+            transparent
+            visible={this.state.showSubmittingModal}
+          >
+            <View style={styles.modalContent}>
+              <Text style={styles.modalText}>Submitting...</Text>
+            </View>
+          </Modal>
         )}
 
         {this.state.tapScreenGameMode && (
@@ -1008,6 +1068,22 @@ const styles = StyleSheet.create({
     color: Colors.GRAY,
     fontSize: 4 * FONT_UNIT,
     fontFamily: 'poppins-regular',
+  },
+  modalContent: {
+    marginTop: 'auto',
+    marginHorizontal: 40,
+    marginBottom: 'auto',
+    minHeight: 120,
+    backgroundColor: Colors.WHITE,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  modalText: {
+    color: Colors.DARK_GRAY,
+    fontSize: 20,
+    fontFamily: 'poppins-semibold',
+    marginTop: 'auto',
+    marginBottom: 'auto',
   },
 });
 

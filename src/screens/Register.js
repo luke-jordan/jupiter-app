@@ -248,7 +248,7 @@ export default class Register extends React.Component {
 
   onPressContactUs = () => {
     this.onHideDialog();
-    this.props.navigation.navigate('Support');
+    this.props.navigation.navigate('Support', { originScreen: 'Register' });
   };
 
   fieldIsMandatory(field) {
@@ -633,7 +633,7 @@ const styles = StyleSheet.create({
   },
   disclaimer: {
     width: '100%',
-    paddingHorizontal: 15,
+    paddingHorizontal: 5,
     fontFamily: 'poppins-semibold',
     color: Colors.DARK_GRAY,
     fontSize: 11,

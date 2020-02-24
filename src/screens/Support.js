@@ -1,8 +1,11 @@
 import React from 'react';
-import { StyleSheet, View, Text, ScrollView, Dimensions } from 'react-native';
-import { Button, Input } from 'react-native-elements';
+
+import { AsyncStorage, StyleSheet, View, Text, TouchableWithoutFeedback, Dimensions, TouchableOpacity, Keyboard, KeyboardAvoidingView } from 'react-native';
+import { Button, Input, Icon } from 'react-native-elements';
 
 import { LoggingUtil } from '../util/LoggingUtil';
+import { ValidationUtil } from '../util/ValidationUtil';
+
 import { Endpoints, Colors } from '../util/Values';
 
 const { width } = Dimensions.get('window');
@@ -19,11 +22,37 @@ export default class Support extends React.Component {
   }
 
   async componentDidMount() {
-    LoggingUtil.logEvent('USER_ENTERED_SUPPORT');
+    const originScreen = this.props.navigation.getParam('originScreen');
+    LoggingUtil.logEvent('USER_ENTERED_SUPPORT', { originScreen });
+    const postSubmitNavigateHome = this.props.navigation.getParam('postSubmitNavigateHome');
+    const screenToNavigatePostSubmit = postSubmitNavigateHome ? 'Home' : originScreen;
+    this.setState({ screenToNavigatePostSubmit });
+
+    const info = await AsyncStorage.getItem('userInfo');
+    const userInfo = typeof info === 'string' && info.length > 0 ? JSON.parse(info) : null;
+    if (userInfo) {
+      const userContactMethod = userInfo.profile.emailAddress || userInfo.profile.phoneNumber || '';
+      this.setState({
+        userContact: userContactMethod,
+      });
+    }
+
+  }
+
+  onFinishContactEdit() {
+    this.setState({
+      hasContactError: !ValidationUtil.isValidEmailPhone(this.state.userContact.trim()),
+    });
   }
 
   onPressSend = async () => {
     if (this.state.loading) return;
+    
+    if (!ValidationUtil.isValidEmailPhone(this.state.userContact.trim())) {
+      this.showContactError();
+      return;
+    }
+    
     this.setState({ loading: true });
     try {
       const result = await fetch(`${Endpoints.AUTH}ineedhelp`, {
@@ -33,7 +62,7 @@ export default class Support extends React.Component {
         },
         method: 'POST',
         body: JSON.stringify({
-          contactDetail: this.state.userContact,
+          contactMethod: this.state.userContact.trim(),
           messageDetails: this.state.requestBody,
         }),
       });
@@ -41,15 +70,15 @@ export default class Support extends React.Component {
         this.setState({ loading: false });
         const resultJson = await result.json();
         if (resultJson.result.includes('SENT')) {
-          this.props.navigation.navigate('SupportRequestSent');
+          this.props.navigation.navigate('SupportRequestSent', { screenToNavigatePostSubmit: this.state.screenToNavigatePostSubmit });
         } else {
-          this.showError();
+          this.navigateToErrorScreen();
         }
       } else {
         throw result;
       }
     } catch (error) {
-      this.showError();
+      this.navigateToErrorScreen();
     }
   };
 
@@ -57,72 +86,86 @@ export default class Support extends React.Component {
     this.props.navigation.goBack();
   };
 
-  showError() {
+  showContactError() {
     this.setState({
       loading: false,
-      hasError: true,
+      hasContactError: true,
     });
+  };
+
+  navigateToErrorScreen() {
+    this.setState({
+      loading: false,
+    });
+    const navigationParams = { showError: true, screenToNavigatePostSubmit: this.state.screenToNavigatePostSubmit };
+    this.props.navigation.navigate('SupportRequestSent', navigationParams);
   }
 
   render() {
     return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Support</Text>
-          <Text style={styles.headerText}>
-            Please describe your problem with as many details as possible. We
-            will make sure to get back to you as soon as we can.
-          </Text>
-        </View>
-        <ScrollView
-          style={styles.mainContent}
-          contentContainerStyle={styles.mainContentContainer}
-        >
-          <View style={styles.inputWrapper}>
-            <Text style={styles.labelStyle}>Your contact (phone or email)</Text>
-            <Input
-              value={this.state.userContact}
-              onChangeText={text => this.setState({ userContact: text })}
-              inputContainerStyle={styles.inputContainerStyle}
-              inputStyle={styles.inputStyle}
-              containerStyle={styles.containerStyle}
+      <KeyboardAvoidingView style={styles.container} contentContainerStyle={styles.container} behavior="padding">
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <View style={styles.wrapper}>
+            <View style={styles.header}>
+              <View style={styles.headerTitleWrapper}>
+                <TouchableOpacity style={styles.headerBackIcon} onPress={this.onPressBack}>
+                  <Icon name="chevron-left" type="evilicon" size={45} color={Colors.MEDIUM_GRAY} />
+                </TouchableOpacity>
+                <Text style={styles.headerTitleText}>Support</Text>
+              </View>
+              <Text style={styles.headerSubTitle}>
+                Please describe your problem with as many details as possible. We
+                will get back to you as soon as we can.
+              </Text>
+            </View>
+            <View style={styles.mainContent}>
+              <View style={styles.inputWrapper}>
+                <Text style={styles.labelStyle}>Your contact (phone or email)</Text>
+                <Input
+                  value={this.state.userContact}
+                  onChangeText={text => this.setState({ userContact: text })}
+                  onEndEditing={() => this.onFinishContactEdit()}
+                  inputContainerStyle={styles.inputContainerStyle}
+                  inputStyle={styles.inputStyle}
+                  containerStyle={styles.containerStyle}
+                />
+                {this.state.hasContactError ? (
+                  <Text style={styles.errorMessage}>
+                    We&apos;re sorry, that doesn&apos;t look like a valid phone or email, and we need 
+                    one to contact you about your issue.
+                  </Text>
+              ) : null}
+              </View>
+              <View style={styles.bodyInputWrapper}>
+                <Text style={styles.labelStyle}>Please describe your problem</Text>
+                <Input
+                  value={this.state.requestBody}
+                  onChangeText={text => this.setState({ requestBody: text })}
+                  multiline
+                  numberOfLines={8}
+                  inputContainerStyle={styles.inputContainerStyle}
+                  inputStyle={[styles.inputStyle, styles.inputStyleBody]}
+                  containerStyle={styles.containerStyle}
+                  textAlignVertical="top"
+                />
+              </View>
+            </View>
+            <Button
+              title="SEND"
+              loading={this.state.loading}
+              titleStyle={styles.buttonTitleStyle}
+              buttonStyle={styles.buttonStyle}
+              containerStyle={styles.buttonContainerStyle}
+              onPress={this.onPressSend}
+              linearGradientProps={{
+                colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+                start: { x: 0, y: 0.5 },
+                end: { x: 1, y: 0.5 },
+              }}
             />
           </View>
-          <View style={styles.inputWrapper}>
-            <Text style={styles.labelStyle}>Where are you stuck?</Text>
-            <Input
-              value={this.state.requestBody}
-              onChangeText={text => this.setState({ requestBody: text })}
-              multiline
-              numberOfLines={10}
-              inputContainerStyle={styles.inputContainerStyle}
-              inputStyle={[styles.inputStyle, styles.inputStyleTop]}
-              containerStyle={styles.containerStyle}
-            />
-          </View>
-        </ScrollView>
-        {this.state.hasError ? (
-          <Text style={styles.errorMessage}>
-            Some of your input might be invalid.
-          </Text>
-        ) : null}
-        <Text style={styles.goback} onPress={this.onPressBack}>
-          Go back
-        </Text>
-        <Button
-          title="SEND"
-          loading={this.state.loading}
-          titleStyle={styles.buttonTitleStyle}
-          buttonStyle={styles.buttonStyle}
-          containerStyle={styles.buttonContainerStyle}
-          onPress={this.onPressSend}
-          linearGradientProps={{
-            colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
-            start: { x: 0, y: 0.5 },
-            end: { x: 1, y: 0.5 },
-          }}
-        />
-      </View>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
     );
   }
 }
@@ -130,6 +173,9 @@ export default class Support extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  wrapper: {
+    flex: 5,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: Colors.BACKGROUND_GRAY,
@@ -141,16 +187,24 @@ const styles = StyleSheet.create({
     paddingBottom: 15,
     paddingHorizontal: 10,
   },
-  headerTitle: {
+  headerTitleWrapper: {
+    flexDirection: 'row',
+    paddingVertical: 5,
+    justifyContent: 'flex-start',
+  },
+  headerBackIcon: {
+    paddingRight: 5,
+    paddingLeft: 2,
+  },
+  headerTitleText: {
     fontFamily: 'poppins-semibold',
-    fontSize: 6.4 * FONT_UNIT,
-    marginBottom: 5,
+    fontSize: 6.5 * FONT_UNIT,
     color: Colors.DARK_GRAY,
   },
-  headerText: {
+  headerSubTitle: {
     fontFamily: 'poppins-regular',
     fontSize: 3.4 * FONT_UNIT,
-    marginBottom: 5,
+    // marginBottom: 5,
     textAlign: 'left',
     width: '100%',
     color: Colors.MEDIUM_GRAY,
@@ -166,16 +220,15 @@ const styles = StyleSheet.create({
     minWidth: 220,
   },
   buttonContainerStyle: {
-    marginVertical: 15,
+    marginBottom: 15,
     justifyContent: 'center',
     width: '90%',
   },
   mainContent: {
     width: '90%',
-  },
-  mainContentContainer: {
     alignItems: 'center',
     paddingVertical: 10,
+    flexGrow: 1,
   },
   labelStyle: {
     fontFamily: 'poppins-semibold',
@@ -189,18 +242,24 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
   },
   inputStyle: {
-    fontFamily: 'poppins-semibold',
+    fontFamily: 'poppins-regular',
   },
-  inputStyleTop: {
+  inputStyleBody: {
     textAlignVertical: 'top',
     marginTop: 5,
+    minHeight: 150,
+    flexGrow: 1,
+    flex: 1,
+  },
+  bodyInputWrapper: {
+    marginTop: 20,
   },
   containerStyle: {
     borderWidth: 1,
     borderRadius: 10,
     borderColor: Colors.GRAY,
     backgroundColor: Colors.WHITE,
-    marginBottom: 20,
+    // marginBottom: 20,
     minHeight: 50,
     alignItems: 'center',
     justifyContent: 'center',
@@ -209,12 +268,6 @@ const styles = StyleSheet.create({
     fontFamily: 'poppins-regular',
     color: Colors.RED,
     fontSize: 12,
-    marginTop: -15, // this is valid because of the exact alignment of other elements - do not reuse in other components
     marginBottom: 20,
-  },
-  goback: {
-    color: Colors.PURPLE,
-    fontFamily: 'poppins-semibold',
-    fontSize: 14,
   },
 });

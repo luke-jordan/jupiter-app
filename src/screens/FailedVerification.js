@@ -20,7 +20,7 @@ export default class FailedVerification extends React.Component {
   }
 
   onPressContactUs = () => {
-    this.props.navigation.navigate('Support');
+    this.props.navigation.navigate('Support', { originScreen: 'FailedVerification' });
   };
 
   onPressEdit = () => {

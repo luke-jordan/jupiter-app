@@ -8,6 +8,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  ScrollView,
 } from 'react-native';
 import { Button, Icon } from 'react-native-elements';
 import Toast from 'react-native-easy-toast';
@@ -75,7 +76,7 @@ export default class EFTPayment extends React.Component {
 
   render() {
     return (
-      <View style={styles.container}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContainer}>
         <TouchableOpacity style={styles.closeButton} onPress={this.onPressDone}>
           <Icon
             name="close"
@@ -191,7 +192,7 @@ export default class EFTPayment extends React.Component {
         </View>
 
         <Toast ref={this.toastRef} opacity={1} style={styles.toast} />
-      </View>
+      </ScrollView>
     );
   }
 }
@@ -199,6 +200,8 @@ export default class EFTPayment extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  scrollContainer: {
     alignItems: 'center',
     justifyContent: 'space-around',
   },
