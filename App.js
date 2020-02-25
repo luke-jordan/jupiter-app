@@ -38,6 +38,8 @@ import SupportRequestSent from './src/screens/SupportRequestSent';
 import History from './src/screens/History';
 import FailedVerification from './src/screens/FailedVerification';
 import EFTPayment from './src/screens/EFTPayment';
+import Stokvel from './src/screens/Stokvel';
+import MoneyMarket from './src/screens/MoneyMarket';
 import configureStore from './src/store/configureStore';
 
 const AppContainer = createAppContainer(
@@ -75,6 +77,8 @@ const AppContainer = createAppContainer(
       History: { screen: History },
       FailedVerification: { screen: FailedVerification },
       EFTPayment: { screen: EFTPayment },
+      Stokvel: { screen: Stokvel },
+      MoneyMarket: { screen: MoneyMarket },
     },
     { initialRouteName: 'Splash', headerMode: 'none' }
   )

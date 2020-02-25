@@ -149,7 +149,7 @@ class Home extends React.Component {
     // at some point could probably do with a refactor though
     await this.setState({
       token: info.token,
-      firstName: info.profile.personalName
+      firstName: info.profile.personalName,
     });
 
     // check params if we have params.showModal we show modal with game

@@ -61,6 +61,14 @@ class Account extends React.Component {
     this.props.navigation.navigate('WithdrawStep1');
   };
 
+  onPressStokvel = () => {
+    this.props.navigation.navigate('Stokvel');
+  }
+
+  onPressMoneyMarket = () => {
+    this.props.navigation.navigate('MoneyMarket');
+  }
+
   onPressTerms = () => {
     this.props.navigation.navigate('Terms');
   };
@@ -154,6 +162,30 @@ class Account extends React.Component {
               </View>
               <View style={styles.sectionContent}>
                 <Text style={styles.sectionHead}>ABOUT</Text>
+                <TouchableOpacity
+                  style={styles.buttonLine}
+                  onPress={this.onPressStokvel}
+                >
+                  <Text style={styles.buttonLineText}>Jupiter Stokvel</Text>
+                  <Icon
+                    name="chevron-right"
+                    type="evilicon"
+                    size={50}
+                    color={Colors.MEDIUM_GRAY}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.buttonLine}
+                  onPress={this.onPressMoneyMarket}
+                >
+                  <Text style={styles.buttonLineText}>Money Market Fund</Text>
+                  <Icon
+                    name="chevron-right"
+                    type="evilicon"
+                    size={50}
+                    color={Colors.MEDIUM_GRAY}
+                  />
+                </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.buttonLine}
                   onPress={this.onPressTerms}
