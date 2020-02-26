@@ -48,7 +48,9 @@ export default class History extends React.Component {
         netSavings: history.netSavings,
         totalEarnings: history.totalEarnings,
         history: history.userHistory,
+        pending: history.userPending,
         loading: false,
+        authToken: token,
       });
     }
     this.fetchHistory(token);
@@ -140,6 +142,7 @@ export default class History extends React.Component {
           netSavings: resultJson.netSavings,
           totalEarnings: resultJson.totalEarnings,
           history: resultJson.userHistory,
+          pending: resultJson.userPending,
           loading: false,
         });
         AsyncStorage.setItem('userHistory', JSON.stringify(resultJson));
@@ -268,20 +271,43 @@ export default class History extends React.Component {
     });
   }
 
+  onClosePendingDialog = () => {
+    this.setState({
+      showPendingModal: false,
+      pendingTransaction: null,
+    })
+  }
+
+  onNavigateToSupportForPending = (preFilledSupportMessage) => {
+    console.log('NAVIGATE TO SUPPORT!');
+    this.setState({ showPendingModal: false });
+    const params = { preFilledSupportMessage, originScreen: 'History' };
+    this.props.navigation.navigate('Support', params);
+  };
+
+  getPendingTxTitle(transactionType) {
+    if (transactionType === 'USER_SAVING_EVENT') {
+      return 'Save with pending payment';
+    }
+
+    if (transactionType === 'WITHDRAWAL') {
+      return 'Withdrawal in process';
+    }
+
+    return 'Transaction';
+  }
 
   renderPendingElement(element) {
     return (
-      <View style={styles.historyItem} key={element.transactionId}>
-        <TouchableOpacity onPress={() => this.onPressItem(element)}>
-          <Image style={styles.historyItemIcon} source={pendingIcon} />
+      <View style={styles.historyItem} key={element.details.transactionId}>
+        <TouchableOpacity onPress={() => this.onPressPendingItem(element)}>
+          <Image style={styles.pendingItemIcon} source={pendingIcon} />
         </TouchableOpacity>
         <View style={styles.historyItemInfo}>
-          <Text style={styles.historyTitle}>{this.getItemTitle(element.type)}</Text>
-          {element.details.humanReference ? (
-            <Text style={styles.historyDesc}>
-              {element.details.humanReference}
-            </Text>
-          ) : null}
+          <TouchableOpacity onPress={() => this.onPressPendingItem(element)}>
+            <Text style={styles.historyTitle}>{this.getPendingTxTitle(element.details.transactionType)}</Text>
+            <Text style={styles.historyDesc}>{element.details.humanReference}</Text>
+          </TouchableOpacity>
         </View>
         <Text style={element.details.amount > 0 ? styles.historyAmountHighlight : styles.historyAmount}>
           {this.getItemAmount(
@@ -290,11 +316,11 @@ export default class History extends React.Component {
             element.details.currency
           )}
         </Text>
-        <TouchableOpacity onPress={() => this.onPressItem(element)}>
+        <TouchableOpacity style={{ marginRight: 10 }} onPress={() => this.onPressPendingItem(element)}>
           <Icon
             name="dots-three-horizontal"
             type="entypo"
-            size={45}
+            size={25}
             color={Colors.DARK_GRAY}
           />
         </TouchableOpacity>
@@ -303,14 +329,15 @@ export default class History extends React.Component {
   }
 
   renderPending() {
-    if (this.state.pending && this.state.pending.length > 0) {
+    if (Array.isArray(this.state.pending) && this.state.pending.length > 0) {
       // we don't need to do days here, as there will not be many
       return (
         <View style={styles.dayInfo}>
-          <Text style={styles.dayHeader}>Pending</Text>
+          <Text style={styles.pendingHeader}>Pending</Text>
           <View style={styles.dayHistoryWrapper}>
             {this.state.pending.map((item) => this.renderPendingElement(item))}
           </View>
+          <Text style={styles.pendingHeader}>Completed</Text>
         </View>
 
       )
@@ -372,6 +399,9 @@ export default class History extends React.Component {
           <PendingTransactionModal
             showModal={this.state.showPendingModal}
             transaction={this.state.pendingTransaction}
+            onRequestClose={this.onClosePendingDialog}
+            navigateToSupport={this.onNavigateToSupportForPending}
+            authToken={this.state.authToken}
           />
         )}
       </View>
@@ -448,6 +478,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.PURPLE,
   },
+  pendingHeader: {
+    marginTop: 15,
+    width: '100%',
+    fontFamily: 'poppins-semibold',
+    fontSize: 16,
+    color: Colors.RED,
+  },
   historyItem: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -456,6 +493,10 @@ const styles = StyleSheet.create({
   },
   historyItemIcon: {
     marginHorizontal: 10,
+  },
+  pendingItemIcon: {
+    marginHorizontal: 10,
+    marginVertical: 5,
   },
   historyItemInfo: {
     flex: 1,
