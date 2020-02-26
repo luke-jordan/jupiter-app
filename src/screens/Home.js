@@ -493,7 +493,7 @@ class Home extends React.Component {
     const icon = isWithdrawal ? require('../../assets/withdrawal_home.png') : require('../../assets/add_home.png');
     const amount = `R${Math.abs(this.state.totalPendingAmount).toFixed(0)}`;
     return (
-      <TouchableOpacity style={styles.pendingItemsHolder}>
+      <TouchableOpacity style={styles.pendingItemsHolder} onPress={() => this.props.navigation.navigate('History')}>
         <View style={styles.endOfMonthBalanceWrapper}>
           <Image style={styles.pendingItemsIcon} source={icon} />
           <Text style={styles.endOfMonthBalance}>

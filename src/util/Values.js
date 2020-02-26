@@ -34,8 +34,8 @@ export const DeviceInfo = {
 const isMaster = Boolean(Constants.manifest.releaseChannel === 'master');
 
 export const FallbackSupportNumber = isMaster
-  ? { display: '083 401 3558', link: '27834013558' }
-  : { display: '083 401 3558', link: '27834013558' };
+  ? { display: '073 659 3063', link: '27736593063' }
+  : { display: '073 659 3063', link: '27736593063' };
 
 export const Endpoints = isMaster
   ? {

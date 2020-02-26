@@ -17,8 +17,11 @@ import { LoggingUtil } from '../util/LoggingUtil';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { getDivisor, getCurrencySymbol } from '../util/AmountUtil';
 import { Endpoints, Colors } from '../util/Values';
+import PendingTransactionModal from '../elements/PendingTransactionModal';
 
 const HIGHLIGHTED_TYPES = ['USER_SAVING_EVENT', 'BOOST_REDEMPTION', 'CAPITALIZATION'];
+
+const pendingIcon = require('../../assets/pending-clock.png');
 
 export default class History extends React.Component {
   constructor(props) {
@@ -258,6 +261,64 @@ export default class History extends React.Component {
     }
   }
 
+  onPressPendingItem(element) {
+    this.setState({
+      showPendingModal: true,
+      pendingTransaction: element,
+    });
+  }
+
+
+  renderPendingElement(element) {
+    return (
+      <View style={styles.historyItem} key={element.transactionId}>
+        <TouchableOpacity onPress={() => this.onPressItem(element)}>
+          <Image style={styles.historyItemIcon} source={pendingIcon} />
+        </TouchableOpacity>
+        <View style={styles.historyItemInfo}>
+          <Text style={styles.historyTitle}>{this.getItemTitle(element.type)}</Text>
+          {element.details.humanReference ? (
+            <Text style={styles.historyDesc}>
+              {element.details.humanReference}
+            </Text>
+          ) : null}
+        </View>
+        <Text style={element.details.amount > 0 ? styles.historyAmountHighlight : styles.historyAmount}>
+          {this.getItemAmount(
+            element.details.amount,
+            element.details.unit,
+            element.details.currency
+          )}
+        </Text>
+        <TouchableOpacity onPress={() => this.onPressItem(element)}>
+          <Icon
+            name="dots-three-horizontal"
+            type="entypo"
+            size={45}
+            color={Colors.DARK_GRAY}
+          />
+        </TouchableOpacity>
+      </View>
+    )
+  }
+
+  renderPending() {
+    if (this.state.pending && this.state.pending.length > 0) {
+      // we don't need to do days here, as there will not be many
+      return (
+        <View style={styles.dayInfo}>
+          <Text style={styles.dayHeader}>Pending</Text>
+          <View style={styles.dayHistoryWrapper}>
+            {this.state.pending.map((item) => this.renderPendingElement(item))}
+          </View>
+        </View>
+
+      )
+    }
+
+    return null;
+  }
+
   render() {
     return (
       <View style={styles.container}>
@@ -302,9 +363,16 @@ export default class History extends React.Component {
               style={styles.scrollView}
               contentContainerStyle={styles.mainContent}
             >
+              {this.renderPending()}
               {this.renderHistory()}
             </ScrollView>
           </View>
+        )}
+        {this.state.showPendingModal && (
+          <PendingTransactionModal
+            showModal={this.state.showPendingModal}
+            transaction={this.state.pendingTransaction}
+          />
         )}
       </View>
     );
