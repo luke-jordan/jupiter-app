@@ -32,7 +32,7 @@ const FALLBACK_MESSAGES = [
       },
       actionToTake: 'VIEW_HISTORY',
       title: 'See your earnings accumulate',
-      body: 'Jupiter allows you to see all the activity on your account, whenever you want -- and to see just how much you\'ve earned. Just head to the history screen!'
+      body: 'Jupiter allows you to see all the activity on your account, whenever you want -- and to see just how much you\'ve earned. Just head to the history screen!',
     },
 
 ]

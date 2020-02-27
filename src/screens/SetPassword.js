@@ -579,7 +579,7 @@ const styles = StyleSheet.create({
   },
   requirementsNote: {
     fontFamily: 'poppins-semibold',
-    color: Colors.DARK_GRAY
+    color: Colors.DARK_GRAY,
   },
   requirementsMessage: {
     fontFamily: 'poppins-regular',

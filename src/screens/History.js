@@ -13,18 +13,24 @@ import {
 } from 'react-native';
 import { Icon } from 'react-native-elements';
 
+import * as Animatable from 'react-native-animatable';
+
 import { LoggingUtil } from '../util/LoggingUtil';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { getDivisor, getCurrencySymbol } from '../util/AmountUtil';
 import { Endpoints, Colors } from '../util/Values';
+import PendingTransactionModal from '../elements/PendingTransactionModal';
 
 const HIGHLIGHTED_TYPES = ['USER_SAVING_EVENT', 'BOOST_REDEMPTION', 'CAPITALIZATION'];
+
+const pendingIcon = require('../../assets/pending-clock.png');
 
 export default class History extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
       loading: true,
+      fetching: false,
     };
   }
 
@@ -45,7 +51,9 @@ export default class History extends React.Component {
         netSavings: history.netSavings,
         totalEarnings: history.totalEarnings,
         history: history.userHistory,
+        pending: history.userPending,
         loading: false,
+        authToken: token,
       });
     }
     this.fetchHistory(token);
@@ -103,10 +111,7 @@ export default class History extends React.Component {
         return 'Changed your profile details';
 
       default: {
-        const result = type
-          .split('_')
-          .map(word => word.toLowerCase())
-          .join(' ');
+        const result = type.split('_').map(word => word.toLowerCase()).join(' ');
         return result.charAt(0).toUpperCase() + result.substr(1);
       }
     }
@@ -123,11 +128,26 @@ export default class History extends React.Component {
     return (balance / getDivisor(unit)).toFixed(2);
   }
 
-  fetchHistory = async token => {
+  getPendingTxTitle(transactionType) {
+    if (transactionType === 'USER_SAVING_EVENT') {
+      return 'Save with pending payment';
+    }
+
+    if (transactionType === 'WITHDRAWAL') {
+      return 'Withdrawal in process';
+    }
+
+    return 'Transaction';
+  }
+
+  fetchHistory = async () => {
     try {
+      if (this.state.fetching) return true;
+      this.setState({ fetching: true });
+
       const result = await fetch(`${Endpoints.CORE}history/list`, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${this.state.authToken}`,
         },
         method: 'GET',
       });
@@ -137,19 +157,40 @@ export default class History extends React.Component {
           netSavings: resultJson.netSavings,
           totalEarnings: resultJson.totalEarnings,
           history: resultJson.userHistory,
+          pending: resultJson.userPending,
           loading: false,
+          fetching: false,
         });
         AsyncStorage.setItem('userHistory', JSON.stringify(resultJson));
       } else {
         throw result;
       }
     } catch (error) {
-      this.setState({ loading: false });
+      console.log('ERROR FETCHING HISTORY: ', JSON.stringify(error));
+      this.setState({ loading: false, fetching: false });
     }
   };
 
   onPressBack = () => {
     this.props.navigation.goBack();
+  };
+
+  onClosePendingDialog = (fetchHistory = false) => {
+    this.setState({
+      showPendingModal: false,
+      pendingTransaction: null,
+    });
+
+    if (fetchHistory) {
+      this.fetchHistory();
+    }
+  }
+
+  onNavigateToSupportForPending = (preFilledSupportMessage) => {
+    console.log('NAVIGATE TO SUPPORT!');
+    this.setState({ showPendingModal: false });
+    const params = { preFilledSupportMessage, originScreen: 'History' };
+    this.props.navigation.navigate('Support', params);
   };
 
   renderDayHeader(day) {
@@ -258,6 +299,62 @@ export default class History extends React.Component {
     }
   }
 
+  onPressPendingItem(element) {
+    this.setState({
+      showPendingModal: true,
+      pendingTransaction: element,
+    });
+  }
+
+  renderPendingElement(element) {
+    return (
+      <View style={styles.historyItem} key={element.details.transactionId}>
+        <TouchableOpacity onPress={() => this.onPressPendingItem(element)}>
+          <Image style={styles.pendingItemIcon} source={pendingIcon} />
+        </TouchableOpacity>
+        <View style={styles.historyItemInfo}>
+          <TouchableOpacity onPress={() => this.onPressPendingItem(element)}>
+            <Text style={styles.historyTitle}>{this.getPendingTxTitle(element.details.transactionType)}</Text>
+            <Text style={styles.historyDesc}>{element.details.humanReference}</Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={element.details.amount > 0 ? styles.historyAmountHighlight : styles.historyAmount}>
+          {this.getItemAmount(
+            element.details.amount,
+            element.details.unit,
+            element.details.currency
+          )}
+        </Text>
+        <TouchableOpacity style={{ marginRight: 10 }} onPress={() => this.onPressPendingItem(element)}>
+          <Icon
+            name="dots-three-horizontal"
+            type="entypo"
+            size={25}
+            color={Colors.DARK_GRAY}
+          />
+        </TouchableOpacity>
+      </View>
+    )
+  }
+
+  renderPending() {
+    if (Array.isArray(this.state.pending) && this.state.pending.length > 0) {
+      // we don't need to do days here, as there will not be many
+      return (
+        <View style={styles.dayInfo}>
+          <Text style={styles.pendingHeader}>Pending</Text>
+          <View style={styles.dayHistoryWrapper}>
+            {this.state.pending.map((item) => this.renderPendingElement(item))}
+          </View>
+          <Text style={styles.pendingHeader}>Completed</Text>
+        </View>
+
+      )
+    }
+
+    return null;
+  }
+
   render() {
     return (
       <View style={styles.container}>
@@ -302,9 +399,24 @@ export default class History extends React.Component {
               style={styles.scrollView}
               contentContainerStyle={styles.mainContent}
             >
+              { this.state.fetching && (
+                <Animatable.View animation="fadeInDown" style={styles.fetchingNoteContainer}>
+                  <Text style={styles.fetchingNote}>Fetching pending + completed transactions</Text>
+                </Animatable.View>
+              )}
+              {this.renderPending()}
               {this.renderHistory()}
             </ScrollView>
           </View>
+        )}
+        {this.state.showPendingModal && (
+          <PendingTransactionModal
+            showModal={this.state.showPendingModal}
+            transaction={this.state.pendingTransaction}
+            onRequestClose={this.onClosePendingDialog}
+            navigateToSupport={this.onNavigateToSupportForPending}
+            authToken={this.state.authToken}
+          />
         )}
       </View>
     );
@@ -367,6 +479,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.MEDIUM_GRAY,
   },
+  fetchingNoteContainer: {
+    backgroundColor: Colors.WHITE,
+  },
+  fetchingNote: {
+    fontFamily: 'poppins-semibold',
+    marginVertical: 10,
+    fontSize: 16,
+    color: Colors.PURPLE,
+  },
   separator: {
     height: '80%',
     backgroundColor: Colors.GRAY,
@@ -380,6 +501,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.PURPLE,
   },
+  pendingHeader: {
+    marginTop: 15,
+    width: '100%',
+    fontFamily: 'poppins-semibold',
+    fontSize: 16,
+    color: Colors.RED,
+  },
   historyItem: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -388,6 +516,10 @@ const styles = StyleSheet.create({
   },
   historyItemIcon: {
     marginHorizontal: 10,
+  },
+  pendingItemIcon: {
+    marginHorizontal: 10,
+    marginVertical: 5,
   },
   historyItemInfo: {
     flex: 1,
