@@ -24,9 +24,12 @@ export default class Support extends React.Component {
   async componentDidMount() {
     const originScreen = this.props.navigation.getParam('originScreen');
     LoggingUtil.logEvent('USER_ENTERED_SUPPORT', { originScreen });
+    
     const postSubmitNavigateHome = this.props.navigation.getParam('postSubmitNavigateHome');
     const screenToNavigatePostSubmit = postSubmitNavigateHome ? 'Home' : originScreen;
-    this.setState({ screenToNavigatePostSubmit });
+    
+    const requestBody = this.props.navigation.getParam('preFilledSupportMessage') || '';
+    this.setState({ screenToNavigatePostSubmit, requestBody });
 
     const info = await AsyncStorage.getItem('userInfo');
     const userInfo = typeof info === 'string' && info.length > 0 ? JSON.parse(info) : null;

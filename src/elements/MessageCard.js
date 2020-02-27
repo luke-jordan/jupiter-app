@@ -1,7 +1,6 @@
 import React from 'react';
 
 import { View, Image, Text, TouchableOpacity, Dimensions, StyleSheet, ScrollView } from 'react-native';
-import { Icon } from 'react-native-elements';
 import { FlingGestureHandler, Directions, State } from 'react-native-gesture-handler';
 
 import * as Animatable from 'react-native-animatable';
@@ -113,12 +112,6 @@ const MessageCard = ({
                   <Text style={styles.messageCardButtonText}>
                     {messageActionText}
                   </Text>
-                  <Icon
-                    name="chevron-right"
-                    type="evilicon"
-                    size={30}
-                    color={Colors.PURPLE}
-                  />
                 </TouchableOpacity>
               ) : null}
             </ScrollView>
@@ -193,7 +186,7 @@ const styles = StyleSheet.create({
         fontFamily: 'poppins-semibold',
         fontSize: 3.7 * FONT_UNIT,
         color: Colors.PURPLE,
-        marginRight: -5,
+        marginRight: 15,
         padding: 10,
         paddingBottom: 6,
         borderStyle: 'solid',
