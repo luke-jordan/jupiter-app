@@ -13,6 +13,8 @@ import {
 } from 'react-native';
 import { Icon } from 'react-native-elements';
 
+import * as Animatable from 'react-native-animatable';
+
 import { LoggingUtil } from '../util/LoggingUtil';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { getDivisor, getCurrencySymbol } from '../util/AmountUtil';
@@ -28,6 +30,7 @@ export default class History extends React.Component {
     super(props);
     this.state = {
       loading: true,
+      fetching: false,
     };
   }
 
@@ -108,10 +111,7 @@ export default class History extends React.Component {
         return 'Changed your profile details';
 
       default: {
-        const result = type
-          .split('_')
-          .map(word => word.toLowerCase())
-          .join(' ');
+        const result = type.split('_').map(word => word.toLowerCase()).join(' ');
         return result.charAt(0).toUpperCase() + result.substr(1);
       }
     }
@@ -128,11 +128,26 @@ export default class History extends React.Component {
     return (balance / getDivisor(unit)).toFixed(2);
   }
 
-  fetchHistory = async token => {
+  getPendingTxTitle(transactionType) {
+    if (transactionType === 'USER_SAVING_EVENT') {
+      return 'Save with pending payment';
+    }
+
+    if (transactionType === 'WITHDRAWAL') {
+      return 'Withdrawal in process';
+    }
+
+    return 'Transaction';
+  }
+
+  fetchHistory = async () => {
     try {
+      if (this.state.fetching) return true;
+      this.setState({ fetching: true });
+
       const result = await fetch(`${Endpoints.CORE}history/list`, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${this.state.authToken}`,
         },
         method: 'GET',
       });
@@ -144,18 +159,38 @@ export default class History extends React.Component {
           history: resultJson.userHistory,
           pending: resultJson.userPending,
           loading: false,
+          fetching: false,
         });
         AsyncStorage.setItem('userHistory', JSON.stringify(resultJson));
       } else {
         throw result;
       }
     } catch (error) {
-      this.setState({ loading: false });
+      console.log('ERROR FETCHING HISTORY: ', JSON.stringify(error));
+      this.setState({ loading: false, fetching: false });
     }
   };
 
   onPressBack = () => {
     this.props.navigation.goBack();
+  };
+
+  onClosePendingDialog = (fetchHistory = false) => {
+    this.setState({
+      showPendingModal: false,
+      pendingTransaction: null,
+    });
+
+    if (fetchHistory) {
+      this.fetchHistory();
+    }
+  }
+
+  onNavigateToSupportForPending = (preFilledSupportMessage) => {
+    console.log('NAVIGATE TO SUPPORT!');
+    this.setState({ showPendingModal: false });
+    const params = { preFilledSupportMessage, originScreen: 'History' };
+    this.props.navigation.navigate('Support', params);
   };
 
   renderDayHeader(day) {
@@ -271,32 +306,6 @@ export default class History extends React.Component {
     });
   }
 
-  onClosePendingDialog = () => {
-    this.setState({
-      showPendingModal: false,
-      pendingTransaction: null,
-    })
-  }
-
-  onNavigateToSupportForPending = (preFilledSupportMessage) => {
-    console.log('NAVIGATE TO SUPPORT!');
-    this.setState({ showPendingModal: false });
-    const params = { preFilledSupportMessage, originScreen: 'History' };
-    this.props.navigation.navigate('Support', params);
-  };
-
-  getPendingTxTitle(transactionType) {
-    if (transactionType === 'USER_SAVING_EVENT') {
-      return 'Save with pending payment';
-    }
-
-    if (transactionType === 'WITHDRAWAL') {
-      return 'Withdrawal in process';
-    }
-
-    return 'Transaction';
-  }
-
   renderPendingElement(element) {
     return (
       <View style={styles.historyItem} key={element.details.transactionId}>
@@ -390,6 +399,11 @@ export default class History extends React.Component {
               style={styles.scrollView}
               contentContainerStyle={styles.mainContent}
             >
+              { this.state.fetching && (
+                <Animatable.View animation="fadeInDown" style={styles.fetchingNoteContainer}>
+                  <Text style={styles.fetchingNote}>Fetching pending + completed transactions</Text>
+                </Animatable.View>
+              )}
               {this.renderPending()}
               {this.renderHistory()}
             </ScrollView>
@@ -464,6 +478,15 @@ const styles = StyleSheet.create({
     fontFamily: 'poppins-regular',
     fontSize: 14,
     color: Colors.MEDIUM_GRAY,
+  },
+  fetchingNoteContainer: {
+    backgroundColor: Colors.WHITE,
+  },
+  fetchingNote: {
+    fontFamily: 'poppins-semibold',
+    marginVertical: 10,
+    fontSize: 16,
+    color: Colors.PURPLE,
   },
   separator: {
     height: '80%',

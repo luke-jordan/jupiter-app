@@ -13,7 +13,12 @@ export default class PendingTransactionModal extends React.PureComponent {
     this.state = {
       recheckingTx: false,
       cancellingTx: false,
+      transactionComplete: false,
     }
+  }
+
+  onPressCloseOrDone = () => {
+    this.props.onRequestClose(this.state.transactionComplete);
   }
 
   getBodyText() {
@@ -23,9 +28,9 @@ export default class PendingTransactionModal extends React.PureComponent {
     }
 
     if (transactionType === 'WITHDRAWAL') {
-      return 'This withdrawal is still marked as pending, because the EFT is being processed to your account. We do not show the ' +
-        'withdrawal as complete until the EFT has left the Jupiter Stokvel account. You can try checking again, request support to ' +
-        'speed up the process, or, best yet, have second thoughts and leave your cash to make more interest';
+      return 'The withdrawal is still pending, because the EFT is being processed to your account. We do not show the ' +
+        'withdrawal as complete until the EFT has left the Jupiter Stokvel account. You can check again, request support to ' +
+        'expedite, or, best yet, have second thoughts and leave your cash to make more interest';
     }
 
     return 'This is a pending transaction. Choose an action to take: ';
@@ -73,7 +78,7 @@ export default class PendingTransactionModal extends React.PureComponent {
 
       const { result: checkResult } = resultJson;
 
-      let resultText = 'Sorry, it looks like the save is still being processed';
+      let resultText = 'Sorry, it looks like the transaction is still being processed';
       let transactionComplete = false;
 
       switch (checkResult) {
@@ -86,8 +91,21 @@ export default class PendingTransactionModal extends React.PureComponent {
           transactionComplete = true;
           break;
         case 'PAYMENT_PENDING':
-          resultText = 'Sorry, it looks like the transfer for this save is still being processed. Check again later, or notify support';
+          resultText = 'Sorry, it looks like the transfer for this save is still being processed. Please check again later, or notify support.';
+          transactionComplete = false;
+          break;
+        case 'WITHDRAWAL_PENDING':
+          resultText = 'Sorry, your withdrawal is still being processed. Feel free to contact us via the support form to ask for it to be expedited.';
+          transactionComplete = false;
+          break;
+        case 'WITHDRAWAL_SETTLED':
+          resultText = 'Your withdrawal has been completed--the EFT has left our account. If it is not in your account already, please allow the usual time for EFTs to come through';
           transactionComplete = true;
+          break;
+        case 'ADMIN_CANCELLED':
+        case 'USER_CANCELLED':
+          resultText = 'This transaction has already been cancelled.' // todo add more information & maybe keep notify support
+          transactionComplete = false;
           break;
       };
 
@@ -95,6 +113,7 @@ export default class PendingTransactionModal extends React.PureComponent {
         resultBody: true,
         resultText,
         hideCheck: true,
+        transactionComplete,
         recheckingTx: false,
       });
 
@@ -121,17 +140,32 @@ export default class PendingTransactionModal extends React.PureComponent {
       }
 
       const resultJson = await result.json();
-      console.log('Result of cancellation: ', resultJson);
+      // console.log('Result of cancellation: ', resultJson);
 
-      // if (resultJson.result === 'SUCCESS') {
-      //   this.setState({
-      //     operationCompleted: true,
-      //     operationPerformed: 'CANCEL'
-      //   });
-      // }
+      const { transactionType } = this.props.transaction.details;
+      
+      // eslint-disable-next-line no-nested-ternary
+      const transactionLabel = transactionType === 'USER_SAVING_EVENT' ? 'save' : 
+        (transactionType === 'WITHDRAWAL' ? 'withdrawal' : 'transaction');
 
-      this.setState({ cancellingTx: false });
-      this.props.onRequestClose();
+      if (resultJson.result === 'SUCCESS') {
+        this.setState({
+          cancellingTx: false,
+          transactionComplete: true,
+          hideCheck: true,
+          resultBody: true,
+          resultText: `This ${transactionLabel} has now been cancelled`,
+        });
+      } else {
+        this.setState({
+          cancellingTx: false,
+          transactionComplete: false,
+          hideCheck: true,
+          resultBody: true,
+          resultText: `Sorry, there was an error cancelling the ${transactionLabel}.`,
+        });
+      }
+
     } catch (error) {
       console.log('Error in cancelling TX request: ', JSON.stringify(error));
       this.setState({ cancellingTx: false });
@@ -146,62 +180,92 @@ export default class PendingTransactionModal extends React.PureComponent {
         height="auto"
         width="auto"
         isVisible={this.props.showModal}
-        onBackdropPress={this.props.onRequestClose}
-        onHardwareBackPress={this.props.onRequestClose}
+        onBackdropPress={this.onPressCloseOrDone}
+        onHardwareBackPress={this.onPressCloseOrDone}
       >
         <View style={styles.dialogView}>
           <View style={styles.dialogHeader}>
             <Text style={styles.dialogTitle}>Pending Transaction</Text>
-            <TouchableOpacity onPress={this.props.onRequestClose} style={styles.closeDialog}>
+            <TouchableOpacity onPress={this.onPressCloseOrDone} style={styles.closeDialog}>
               <Image source={require('../../assets/close.png')} />
             </TouchableOpacity>
           </View>
           
           <View style={styles.dialogBodyContainer}>
-            <Text style={styles.dialogBody}>
-              {this.getBodyText()}
-            </Text>
 
-            <Button
-              title="CHECK AGAIN"
-              loading={this.state.recheckingTx}
-              titleStyle={styles.buttonTitleStyle}
-              buttonStyle={styles.buttonStyle}
-              containerStyle={styles.buttonContainerStyle}
-              onPress={this.recheckPendingTransaction}
-              linearGradientProps={{
-                colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
-                start: { x: 0, y: 0.5 },
-                end: { x: 1, y: 0.5 },
-              }}
-            />
+            {!this.state.resultBody && (
+              <Text style={styles.dialogBody}>
+                {this.getBodyText()}
+              </Text>
+            )}
 
-            <Button
-              title="NOTIFY SUPPORT"
-              titleStyle={styles.buttonTitleStyle}
-              buttonStyle={styles.buttonStyle}
-              containerStyle={styles.buttonContainerStyle}
-              onPress={this.remindSupportOfPending}
-              linearGradientProps={{
-                colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
-                start: { x: 0, y: 0.5 },
-                end: { x: 1, y: 0.5 },
-              }}
-            />
+            {this.state.resultBody && (
+              <Text style={styles.dialogBody}>
+                {this.state.resultText}
+              </Text>
+            )}
 
-            <Button
-              title={this.getCancelText()}
-              loading={this.state.cancellingTx}
-              titleStyle={styles.buttonTitleStyle}
-              buttonStyle={styles.buttonStyle}
-              containerStyle={styles.buttonContainerStyle}
-              onPress={this.cancelPendingTransaction}
-              linearGradientProps={{
-                colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
-                start: { x: 0, y: 0.5 },
-                end: { x: 1, y: 0.5 },
-              }}
-            />
+            {!this.state.hideCheck && (
+              <Button
+                title="CHECK AGAIN"
+                loading={this.state.recheckingTx}
+                titleStyle={styles.buttonTitleStyle}
+                buttonStyle={styles.buttonStyle}
+                containerStyle={styles.buttonContainerStyle}
+                onPress={this.recheckPendingTransaction}
+                linearGradientProps={{
+                  colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+                  start: { x: 0, y: 0.5 },
+                  end: { x: 1, y: 0.5 },
+                }}
+              />
+            )}
+
+            {!this.state.transactionComplete && (
+              <Button
+                title="NOTIFY SUPPORT"
+                titleStyle={styles.buttonTitleStyle}
+                buttonStyle={styles.buttonStyle}
+                containerStyle={styles.buttonContainerStyle}
+                onPress={this.remindSupportOfPending}
+                linearGradientProps={{
+                  colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+                  start: { x: 0, y: 0.5 },
+                  end: { x: 1, y: 0.5 },
+                }}
+              />
+            )}
+
+            {!this.state.transactionComplete && (
+              <Button
+                title={this.getCancelText()}
+                loading={this.state.cancellingTx}
+                titleStyle={styles.buttonTitleStyle}
+                buttonStyle={styles.buttonStyle}
+                containerStyle={styles.buttonContainerStyle}
+                onPress={this.cancelPendingTransaction}
+                linearGradientProps={{
+                  colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+                  start: { x: 0, y: 0.5 },
+                  end: { x: 1, y: 0.5 },
+                }}
+              />
+            )}
+
+            {this.state.transactionComplete && (
+              <Button
+                title="DONE"
+                titleStyle={styles.buttonTitleStyle}
+                buttonStyle={styles.buttonStyle}
+                containerStyle={styles.buttonContainerStyle}
+                onPress={this.onPressCloseOrDone}
+                linearGradientProps={{
+                  colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+                  start: { x: 0, y: 0.5 },
+                  end: { x: 1, y: 0.5 },
+                }}
+              />
+            )}
 
           </View>
         </View>
@@ -260,4 +324,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     marginTop: 10,
   },
-})
+});

@@ -184,7 +184,7 @@ class Home extends React.Component {
   }
 
   handlePendingTransactions = (balanceResult) => {
-    if (!balanceResult || !Array.isArray(balanceResult.pendingTransactions)) {
+    if (!balanceResult || !Array.isArray(balanceResult.pendingTransactions) || balanceResult.pendingTransactions.length === 0) {
       this.setState({ hasPendingTransactions: false });
       return;
     }
@@ -192,11 +192,16 @@ class Home extends React.Component {
     const { pendingTransactions } = balanceResult;
     const equalizeTx = (transaction) => transaction.amount / getDivisor(transaction.unit);
     const totalPendingAmount = pendingTransactions.reduce((sum, tx) => sum + equalizeTx(tx), 0);
+    console.log('Pending transactions: ', pendingTransactions);
+    const pendingHasWithdrawals = pendingTransactions.some((tx) => tx.transactionType === 'WITHDRAWAL');
+    const pendingHasSaves = pendingTransactions.some((tx) => tx.transactionType === 'USER_SAVING_EVENT');
 
     this.setState({
       hasPendingTransactions: true,
       numberPendingTx: pendingTransactions.length,
       totalPendingAmount,
+      pendingHasSaves,
+      pendingHasWithdrawals,
     });
   };
 
@@ -486,8 +491,14 @@ class Home extends React.Component {
   };
 
   renderPendingBalance() {
+    let descriptor = 'transaction';
+    if (this.state.pendingHasSaves && !this.state.pendingHasWithdrawals) {
+      descriptor = 'save';
+    } else if (this.state.pendingHasWithdrawals && !this.state.pendingHasSaves) {
+      descriptor = 'withdrawal';
+    }
+    
     const isWithdrawal = this.state.totalPendingAmount < 0;
-    const descriptor = isWithdrawal ? 'withdrawal' : 'save';
     const label = this.state.numberPendingTx === 1 ? `Pending ${descriptor}` :
             `${isWithdrawal ? '' : '+ '}${this.state.numberPendingTx} pending ${descriptor}s`;
     const icon = isWithdrawal ? require('../../assets/withdrawal_home.png') : require('../../assets/add_home.png');
