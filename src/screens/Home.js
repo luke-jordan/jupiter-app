@@ -26,6 +26,8 @@ import MessageCard from '../elements/MessageCard';
 import BoostResultModal from '../elements/boost/BoostResultModal';
 // import BoostOfferModal from '../elements/boost/BoostOfferModal';
 
+import { updateAuthToken } from '../modules/auth/auth.actions';
+
 import { boostService } from '../modules/boost/boost.service';
 import { updateServerBalance, updateShownBalance } from '../modules/balance/balance.actions';
 import { updateBoostCount, updateBoostViewed, updateMessagesAvailable, updateMessageSequence, updateMessageViewed } from '../modules/boost/boost.actions';
@@ -42,6 +44,7 @@ const mapDispatchToProps = {
   updateMessagesAvailable,
   updateMessageSequence,
   updateMessageViewed,
+  updateAuthToken,
 };
 
 const mapStateToProps = state => ({
@@ -151,6 +154,7 @@ class Home extends React.Component {
       token: info.token,
       firstName: info.profile.personalName,
     });
+    this.props.updateAuthToken(info.token);
 
     // check params if we have params.showModal we show modal with game
     if (params && params.showGameUnlockedModal) {
@@ -160,6 +164,11 @@ class Home extends React.Component {
 
     if (info.profile.kycStatus === 'FAILED_VERIFICATION' || info.profile.kycStatus === 'REVIEW_FAILED') {
       NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'FailedVerification', { fromHome: true });
+      return;
+    }
+
+    if (!info.profile.regulatoryStatus || info.profile.regulatoryStatus === 'REQUIRES_AGREEMENT') {
+      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'OnboardRegulation');
       return;
     }
 

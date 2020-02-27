@@ -31,22 +31,28 @@ export const NavigationUtil = {
   },
 
   directBasedOnProfile(profileData) {
+    if (!profileData) {
+      return { screen: 'Splash', params: {}};
+    }
+
     let screen = '';
     let params = {};
 
-    if (
-      profileData &&
-      profileData.profile &&
-      (profileData.profile.kycStatus === 'FAILED_VERIFICATION' ||
-        profileData.profile.kycStatus === 'REVIEW_FAILED')
-    ) {
+    const hasProfileButNeedsKyc = profileData.profile &&
+      (['FAILED_VERIFICATION', 'REVIEW_FAILED'].includes(profileData.profile.kycStatus));
+    
+    const { onboardStepsRemaining } = profileData;
+
+    const mustStillGiveRegulatoryApproval = onboardStepsRemaining && onboardStepsRemaining.includes('AGREE_REGULATORY');
+    const mustStillAddCash = onboardStepsRemaining && onboardStepsRemaining.includes('ADD_CASH');
+
+    if (hasProfileButNeedsKyc) {
       screen = 'FailedVerification';
       params = { fromHome: true };
-    } else if (
-      profileData &&
-      profileData.onboardStepsRemaining &&
-      profileData.onboardStepsRemaining.includes('ADD_CASH')
-    ) {
+    } else if (mustStillGiveRegulatoryApproval) {
+      screen = 'OnboardRegulation';
+      params = { isOnboarding: mustStillAddCash, userInfo: profileData };
+    } else if (mustStillAddCash) {
       screen = 'PendingRegistrationSteps';
       params = { userInfo: profileData };
     } else {

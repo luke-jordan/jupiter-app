@@ -120,7 +120,6 @@ export default class PendingTransactionModal extends React.PureComponent {
     } catch (error) {
       console.log('Error in pending TX request: ', JSON.stringify(error));
       this.setState({ recheckingTx: false });
-      this.props.onErrorInRequest(error);
     }
   }
 
@@ -169,7 +168,7 @@ export default class PendingTransactionModal extends React.PureComponent {
     } catch (error) {
       console.log('Error in cancelling TX request: ', JSON.stringify(error));
       this.setState({ cancellingTx: false });
-      this.props.onErrorInRequest(error);
+      // this.props.onErrorInRequest(error);
     }
   }
 

@@ -101,10 +101,7 @@ class AddCash extends React.Component {
       });
     }
     try {
-      AsyncStorage.setItem(
-        'lastSaveAmount',
-        parseFloat(this.state.amountToAdd).toFixed(0)
-      );
+      AsyncStorage.setItem('lastSaveAmount', parseFloat(this.state.amountToAdd).toFixed(0));
       const result = await fetch(`${Endpoints.CORE}addcash/initiate`, {
         headers: {
           'Content-Type': 'application/json',
@@ -119,6 +116,7 @@ class AddCash extends React.Component {
           unit: 'HUNDREDTH_CENT',
         }),
       });
+
       if (result.ok) {
         const resultJson = await result.json();
         this.setState({ loading: false });
@@ -135,6 +133,7 @@ class AddCash extends React.Component {
       } else {
         throw result;
       }
+      
     } catch (error) {
       console.log('Add cash failed: ', error);
       LoggingUtil.logEvent('ADD_CASH_FAILED_UNKNOWN', {
@@ -200,13 +199,8 @@ class AddCash extends React.Component {
   }
 
   getReferenceRate() {
-    if (
-      this.props.comparatorRates &&
-      this.props.comparatorRates.referenceRate
-    ) {
-      return parseFloat(this.props.comparatorRates.referenceRate / 100).toFixed(
-        2
-      );
+    if (this.props.comparatorRates && this.props.comparatorRates.referenceRate) {
+      return parseFloat(this.props.comparatorRates.referenceRate / 100).toFixed(2);
     }
 
     return '';
@@ -317,7 +311,7 @@ class AddCash extends React.Component {
           {this.props.comparatorRates ? (
             <View style={styles.rateComparison}>
               <Text style={styles.rateComparisonTitle}>
-                Compare our interest rate
+                Wondering if you&apos;re getting a good rate? We&apos;ve made comparing immediate access saving products easy for you
               </Text>
               <View style={styles.rateComparisonBox}>
                 <View style={styles.rateLine}>
@@ -489,12 +483,12 @@ const styles = StyleSheet.create({
   },
   rateComparison: {
     width: '90%',
-    marginVertical: 30,
+    marginVertical: 15,
   },
   rateComparisonTitle: {
     fontFamily: 'poppins-semibold',
     color: Colors.DARK_GRAY,
-    fontSize: 16,
+    fontSize: 13,
     marginBottom: 10,
   },
   rateComparisonBox: {

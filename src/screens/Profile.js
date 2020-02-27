@@ -153,26 +153,17 @@ export default class Profile extends React.Component {
             info.profile.kycStatus = resultJson.updatedKycStatus;
             await AsyncStorage.setItem('userInfo', JSON.stringify(info));
             this.setState({ loading: false });
-            const { screen, params } = NavigationUtil.directBasedOnProfile(
-              info
-            );
-            NavigationUtil.navigateWithoutBackstack(
-              this.props.navigation,
-              screen,
-              params
-            );
+
+            const { screen, params } = NavigationUtil.directBasedOnProfile(info);
+            NavigationUtil.navigateWithoutBackstack(this.props.navigation, screen, params);
           } else {
-            // we must be in the condition of user not having completed onboarding; instead of straight to cash,
-            // take them to the onboarding steps remaining screen, straight to add cash being abrupt, but first get & store profile
+            // we must be in the condition of user not having completed onboarding; 
+            // we used to take them to the onboard remaining steps screen to have a gentler transition to add cash
+            // but now we are going to take them to the regulatory screen, as the most natural transition
             const profileInfo = await this.fetchProfileForOnboardingUser();
-            const { screen, params } = NavigationUtil.directBasedOnProfile(
-              profileInfo
-            );
-            NavigationUtil.navigateWithoutBackstack(
-              this.props.navigation,
-              screen,
-              params
-            );
+            const { screen, params } = NavigationUtil.directBasedOnProfile(profileInfo);
+
+            NavigationUtil.navigateWithoutBackstack(this.props.navigation, screen, params);
           }
         } else {
           this.setState({ hasRepeatingError: true, loading: false });

@@ -53,10 +53,10 @@ export default class History extends React.Component {
         history: history.userHistory,
         pending: history.userPending,
         loading: false,
-        authToken: token,
       });
     }
-    this.fetchHistory(token);
+
+    this.setState({ authToken: token }, () => this.fetchHistory());
   }
 
   onPressBack = () => {
@@ -401,7 +401,7 @@ export default class History extends React.Component {
             >
               { this.state.fetching && (
                 <Animatable.View animation="fadeInDown" style={styles.fetchingNoteContainer}>
-                  <Text style={styles.fetchingNote}>Fetching pending + completed transactions</Text>
+                  <Text style={styles.fetchingNote}>Fetching latest transactions&hellip;</Text>
                 </Animatable.View>
               )}
               {this.renderPending()}
@@ -455,6 +455,9 @@ const styles = StyleSheet.create({
   mainContent: {
     alignItems: 'center',
     justifyContent: 'center',
+    // marginHorizontal: 15,
+  },
+  dayInfo: {
     marginHorizontal: 15,
   },
   savingsView: {
@@ -480,7 +483,9 @@ const styles = StyleSheet.create({
     color: Colors.MEDIUM_GRAY,
   },
   fetchingNoteContainer: {
+    width: '100%',
     backgroundColor: Colors.WHITE,
+    paddingHorizontal: 10,
   },
   fetchingNote: {
     fontFamily: 'poppins-semibold',

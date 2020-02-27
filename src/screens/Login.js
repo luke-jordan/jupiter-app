@@ -60,9 +60,8 @@ export default class Login extends React.Component {
           AsyncStorage.setItem('userInfo', JSON.stringify(resultJson)), 
           AsyncStorage.setItem('hasOnboarded', 'true'),
         ]);
-        NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', {
-          userInfo: resultJson,
-        });
+        const { screen, params } = NavigationUtil.directBasedOnProfile(resultJson);
+        NavigationUtil.navigateWithoutBackstack(this.props.navigation, screen, params);
       }
     } else if (result.status === 403) {
       LoggingUtil.logEvent('LOGIN_FAILED_403');

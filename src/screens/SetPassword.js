@@ -190,6 +190,8 @@ class SetPassword extends React.Component {
         ) {
           const { params } = this.props.navigation.state;
           LoggingUtil.logEvent('USER_FAILED_KYC_CHECK_ONBOARD');
+
+          this.props.updateAuthToken(resultJson.token);
           this.props.navigation.navigate('FailedVerification', {
             idNumber: params.idNumber,
             firstName: params.firstName,
@@ -204,10 +206,8 @@ class SetPassword extends React.Component {
         if (resultJson.result.includes('SUCCESS')) {
           this.props.updateAuthToken(resultJson.token);
 
-          this.props.navigation.navigate('AddCash', {
+          this.props.navigation.navigate('OnboardRegulation', {
             isOnboarding: true,
-            systemWideUserId: resultJson.systemWideUserId,
-            token: resultJson.token,
             accountId: resultJson.accountId[0],
           });
         } else {

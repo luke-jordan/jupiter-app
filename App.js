@@ -40,6 +40,7 @@ import FailedVerification from './src/screens/FailedVerification';
 import EFTPayment from './src/screens/EFTPayment';
 import Stokvel from './src/screens/Stokvel';
 import MoneyMarket from './src/screens/MoneyMarket';
+import OnboardRegulation from './src/screens/OnboardRegulation';
 import configureStore from './src/store/configureStore';
 
 const AppContainer = createAppContainer(
@@ -79,6 +80,7 @@ const AppContainer = createAppContainer(
       EFTPayment: { screen: EFTPayment },
       Stokvel: { screen: Stokvel },
       MoneyMarket: { screen: MoneyMarket },
+      OnboardRegulation: { screen: OnboardRegulation },
     },
     { initialRouteName: 'Splash', headerMode: 'none' }
   )
@@ -122,6 +124,6 @@ export default class App extends React.Component {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    marginTop: Platform.OS == 'android' ? 30 : 0,
+    marginTop: Platform.OS === 'android' ? 30 : 0,
   },
 });

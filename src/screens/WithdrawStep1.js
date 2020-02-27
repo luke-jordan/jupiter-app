@@ -114,7 +114,8 @@ export default class Withdraw extends React.Component {
   };
 
   onPressSupport = () => {
-    this.props.navigation.navigate('Support', { originScreen: 'WithdrawStep1' });
+    const preFilledSupportMessage = 'Please withdraw from my account into a bank not listed on the withdraw screen';
+    this.props.navigation.navigate('Support', { originScreen: 'WithdrawStep1', preFilledSupportMessage });
   };
 
   showError(error) {
@@ -233,6 +234,10 @@ export default class Withdraw extends React.Component {
               </Text>
             ) : null}
           </View>
+          <Text style={styles.note}>
+              We process your withdrawal as soon as you request it, but 
+              it can take up to 2 days for your money to reflect in your bank account
+          </Text>
         </ScrollView>
         {this.state.errors && this.state.errors.generalError ? (
           <Text style={styles.generalError}>
@@ -315,7 +320,7 @@ const styles = StyleSheet.create({
     fontFamily: 'poppins-semibold',
   },
   inputWrapper: {
-    marginTop: 10,
+    marginTop: 8,
     alignItems: 'center',
   },
   labelStyle: {
