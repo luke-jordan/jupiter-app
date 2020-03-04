@@ -1,11 +1,11 @@
 # .circleci/config.yml
 
-version: 2
+version: 2.1
 
 jobs:
   build:
     macos:
-      xcode: "11.3"
+      xcode: 11.4.0
     environment:
       FL_OUTPUT_DIR: output
       FASTLANE_LANE: test
