@@ -1,95 +1,160 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity } from 'react-native';
-import { Colors, Endpoints } from '../util/Values';
-import { Input, Button } from 'react-native-elements';
+import {
+  StyleSheet,
+  View,
+  Image,
+  Text,
+  AsyncStorage,
+  TouchableOpacity,
+} from 'react-native';
+import { Input, Button, Overlay } from 'react-native-elements';
+
+import { Colors, Endpoints, DeviceInfo } from '../util/Values';
 import { NavigationUtil } from '../util/NavigationUtil';
-import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
 
 export default class OTPVerification extends React.Component {
-
   constructor(props) {
     super(props);
     this.state = {
-      channel: 'UNKNOWN',
       pin: [null, null, null, null],
       loading: false,
       dialogVisible: false,
-      otpMethod: "phone",
       otpError: false,
-      passwordError: false,
-      header: 'Please enter the one time pin sent to you'
+      header: 'Please enter the one time pin sent to you',
+      deviceId: DeviceInfo.DEVICE_ID,
     };
   }
 
   async componentDidMount() {
-    //TODO show phone / email in this.state.otpMethod properly according to the backend response
+    // TODO show phone / email in this.state.otpMethod properly according to the backend response
     const channel = this.props.navigation.getParam('channel');
-    console.info('OTP started, with channel received: ', channel);
     if (channel === 'EMAIL' || channel === 'PHONE') {
       this.setState({
-        otpMethod: channel.toLowerCase(),
-        header: `Please enter the one time pin sent to your ${channel.toLowerCase()}`
+        header: `Please enter the one time pin sent to your ${channel.toLowerCase()}`,
       });
     }
   }
 
-  async handleLogin(userId) {
+  onPressContinue = async () => {
+    if (this.state.loading) return;
+    this.setState({ loading: true });
+    const userId = this.props.navigation.getParam('userId');
+    const redirection = this.props.navigation.getParam('redirection');
+    if (redirection.includes('Login')) {
+      this.handleLogin(userId);
+    } else if (redirection.includes('Reset')) {
+      const systemWideUserId = this.props.navigation.getParam('systemWideUserId');
+      this.handlePassReset(userId, systemWideUserId);
+    } else {
+      this.setState({ loading: false });
+    }
+  };
+
+  onPressResend = async () => {
+    if (this.state.loading) return;
+    this.setState({ loading: true });
+    const userId = this.props.navigation.getParam('userId');
+    const redirection = this.props.navigation.getParam('redirection');
+    let type = 'LOGIN';
+    if (redirection.includes('Reset')) {
+      type = 'RESET';
+      // } else if (redirection.includes('')) {
+    }
     try {
-      console.info('About to do login, without password, works?');
-      let result = await fetch(Endpoints.AUTH + 'login', {
+      const result = await fetch(`${Endpoints.AUTH}otp/generate`, {
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          Accept: 'application/json',
         },
         method: 'POST',
         body: JSON.stringify({
-          "phoneOrEmail": userId,
-          "otp": this.state.pin.join(""),
+          phoneOrEmail: userId,
+          type,
         }),
       });
       if (result.ok) {
-        let resultJson = await result.json();
-        this.setState({loading: false});
-        if (resultJson && resultJson.onboardStepsRemaining && resultJson.onboardStepsRemaining.includes("ADD_CASH")) {
-          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'PendingRegistrationSteps', { userInfo: resultJson });
-        } else {
-          AsyncStorage.setItem('userInfo', JSON.stringify(resultJson));
-          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', { userInfo: resultJson });
-        }
+        this.setState({ loading: false });
       } else {
-        let resultJson = await result.json();
-        if (Array.isArray(resultJson)) {
-          this.setState({
-            loading: false,
-            otpError: resultJson.indexOf("OTP_ERROR") > -1,
-            passwordError: resultJson.indexOf("PASSWORD_ERROR") > -1,
-          });
-        } else {
-          this.setState({loading: false});
-        }
+        throw result;
       }
     } catch (error) {
-      console.log("error!", await error.text());
-      this.setState({loading: false});
+      this.setState({ loading: false });
     }
+  };
 
-  }
+  onPressHelp = () => {
+    this.setState({
+      dialogVisible: true,
+    });
+  };
+
+  onPressContactUs = () => {
+    this.onHideDialog();
+  };
+
+  onHideDialog = () => {
+    this.setState({
+      dialogVisible: false,
+    });
+    return true;
+  };
+
+  onChangePinField = (text, index) => {
+    const { pin } = this.state;
+    const deletion = text.length === 0;
+    if (deletion) {
+      pin[index] = null;
+    } else {
+      const num = parseInt(text[text.length - 1]);
+      if (num >= 0 && num <= 9) {
+        pin[index] = text[text.length - 1];
+      }
+    }
+    this.setState({
+      otpError: false,
+      pin,
+    });
+    switch (index) {
+      case 0:
+        if (!deletion) this.inputRefs1.focus();
+        break;
+
+      case 1:
+        if (deletion) this.inputRefs0.focus();
+        else this.inputRefs2.focus();
+        break;
+
+      case 2:
+        if (deletion) this.inputRefs1.focus();
+        else this.inputRefs3.focus();
+        break;
+
+      case 3:
+        if (deletion) this.inputRefs2.focus();
+        else this.inputRefs3.blur();
+        break;
+
+      default:
+        break;
+    }
+  };
 
   async handlePassReset(userId, systemWideUserId) {
     try {
-      let otpResult = await fetch(Endpoints.AUTH + 'otp/verify', {
+      const otpResult = await fetch(`${Endpoints.AUTH}otp/verify`, {
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          Accept: 'application/json',
         },
         method: 'POST',
         body: JSON.stringify({
-          "systemWideUserId": systemWideUserId,
-          "otp": this.state.pin.join(""),
+          systemWideUserId,
+          otp: this.state.pin.join(''),
+          deviceId: this.state.deviceId,
         }),
       });
       if (otpResult.ok) {
-        let otpResultJson = await otpResult.json();
+        const otpResultJson = await otpResult.json();
         if (!otpResultJson.verified) {
           throw otpResult;
         }
@@ -97,147 +162,82 @@ export default class OTPVerification extends React.Component {
         throw otpResult;
       }
 
-      let result = await fetch(Endpoints.AUTH + 'password/reset/obtainqs?phoneOrEmail=' + userId, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        method: 'GET',
-      });
+      const result = await fetch(
+        `${Endpoints.AUTH}password/reset/obtainqs?phoneOrEmail=${userId}`, {
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          method: 'GET',
+        }
+      );
       if (result.ok) {
-        let resultJson = await result.json();
-        this.setState({loading: false});
-        if (resultJson.flags && resultJson.flags.includes("CAN_SKIP_QUESTIONS")) {
-          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'SetPassword', { systemWideUserId: resultJson.systemWideUserId, isReset: true });
+        const resultJson = await result.json();
+        this.setState({ loading: false });
+        if (resultJson.flags && resultJson.flags.includes('CAN_SKIP_QUESTIONS')) {
+          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'SetPassword',
+            { systemWideUserId: resultJson.systemWideUserId, isReset: true }
+          );
         } else {
           NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'ResetQuestions', { questions: resultJson });
         }
       } else {
-        let resultJson = await result.json();
+        const resultJson = await result.json();
         if (Array.isArray(resultJson)) {
           this.setState({
             loading: false,
-            otpError: resultJson.indexOf("OTP_ERROR") > -1,
-            passwordError: resultJson.indexOf("PASSWORD_ERROR") > -1,
+            otpError: resultJson.indexOf('OTP_ERROR') > -1,
           });
         } else {
           this.setState({
             loading: false,
-            otpError: true
+            otpError: true,
           });
         }
       }
     } catch (error) {
-      console.log("error!", await error.text());
-      this.setState({loading: false});
-    }
-
-  }
-
-  onPressContinue = async () => {
-    if (this.state.loading) return;
-    this.setState({loading: true});
-    let userId = this.props.navigation.getParam("userId");
-    let redirection = this.props.navigation.getParam("redirection");
-    if (redirection.includes('Login')) {
-      this.handleLogin(userId);
-    } else if (redirection.includes('Reset')) {
-      let systemWideUserId = this.props.navigation.getParam("systemWideUserId");
-      this.handlePassReset(userId, systemWideUserId);
-    } else {
-      this.setState({loading: false});
+      this.setState({ loading: false, otpError: true });
     }
   }
 
-  onPressResend = async () => {
-    if (this.state.loading) return;
-    this.setState({loading: true});
-    let userId = this.props.navigation.getParam("userId");
-    let redirection = this.props.navigation.getParam("redirection");
-    let type = "LOGIN";
-    if (redirection.includes('Reset')) {
-      type = "RESET";
-    // } else if (redirection.includes('')) {
-
-    }
+  async handleLogin(userId) {
     try {
-      let result = await fetch(Endpoints.AUTH + 'otp/generate', {
+      const result = await fetch(`${Endpoints.AUTH}login`, {
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          Accept: 'application/json',
         },
         method: 'POST',
         body: JSON.stringify({
-          "phoneOrEmail": userId,
-          "type": type,
+          phoneOrEmail: userId,
+          otp: this.state.pin.join(''),
+          deviceId: this.state.deviceId,
         }),
       });
+
       if (result.ok) {
-        this.setState({loading: false});
+        const resultJson = await result.json();
+        this.setState({ loading: false });
+        await Promise.all([
+          AsyncStorage.setItem('userInfo', JSON.stringify(resultJson)),
+          AsyncStorage.setItem('hasOnboarded', 'true'),
+        ]);
+        const { screen, params } = NavigationUtil.directBasedOnProfile(resultJson, false);
+        NavigationUtil.navigateWithoutBackstack(this.props.navigation, screen, params);
       } else {
-        throw result;
+        const resultJson = await result.json();
+        if (Array.isArray(resultJson)) {
+          this.setState({
+            loading: false,
+            otpError: resultJson.indexOf('OTP_ERROR') > -1,
+          });
+        } else {
+          this.setState({ loading: false });
+        }
       }
     } catch (error) {
-      console.log("error!", error);
-      this.setState({loading: false});
-    }
-  }
-
-  onPressHelp = () => {
-    this.setState({
-      dialogVisible: true,
-    });
-  }
-
-  onPressContactUs = () => {
-    this.onHideDialog();
-  }
-
-  onHideDialog = () => {
-    this.setState({
-      dialogVisible: false,
-    });
-    return true;
-  }
-
-  onChangePinField = (text, index) => {
-    let pin = this.state.pin;
-    let deletion = text.length == 0;
-    if (deletion) {
-      pin[index] = null;
-    } else {
-      let num = parseInt(text[text.length - 1]);
-      if (num >= 0 && num <= 9) {
-        pin[index] = text[text.length - 1];
-      }
-    }
-    this.setState({
-      otpError: false,
-      passwordError: false,
-      pin,
-    });
-    switch (index) {
-      case 0:
-      if (!deletion) this.inputRefs1.focus();
-      break;
-
-      case 1:
-      if (deletion) this.inputRefs0.focus();
-      else this.inputRefs2.focus();
-      break;
-
-      case 2:
-      if (deletion) this.inputRefs1.focus();
-      else this.inputRefs3.focus();
-      break;
-
-      case 3:
-      if (deletion) this.inputRefs2.focus();
-      else this.inputRefs3.blur();
-      break;
-
-      default:
-      break;
+      console.log('Error: ', error);
+      this.setState({ loading: false });
     }
   }
 
@@ -245,69 +245,72 @@ export default class OTPVerification extends React.Component {
     return (
       <View style={styles.container}>
         <View style={styles.headerImageWrapper}>
-          <Image style={styles.headerImage} source={require('../../assets/otp_phone_illi.png')}/>
+          <Image
+            style={styles.headerImage}
+            source={require('../../assets/otp_phone_illi.png')}
+          />
         </View>
         <View style={styles.mainContent}>
           <Text style={styles.labelStyle}>{this.state.header}</Text>
           <View style={styles.pinInputs}>
             <Input
-              testID='otp-index-1'
-              accessibilityLabel='otp-index-1'
-              ref={ref => this.inputRefs0 = ref}
-              keyboardType='numeric'
-              secureTextEntry={true}
-              value={this.state.pin[0] ? this.state.pin[0].toString() : ""}
-              onChangeText={(text) => this.onChangePinField(text, 0)}
+              testID="otp-index-1"
+              accessibilityLabel="otp-index-1"
+              ref={ref => (this.inputRefs0 = ref)}
+              keyboardType="numeric"
+              secureTextEntry
+              value={this.state.pin[0] ? this.state.pin[0].toString() : ''}
+              onChangeText={text => this.onChangePinField(text, 0)}
               inputContainerStyle={styles.inputContainerStyle}
               inputStyle={styles.inputStyle}
               containerStyle={styles.containerStyle}
             />
             <Input
-              testID='otp-index-2'
-              accessibilityLabel='otp-index-2'
-              ref={ref => this.inputRefs1 = ref}
-              keyboardType='numeric'
-              secureTextEntry={true}
-              value={this.state.pin[1] ? this.state.pin[1].toString() : ""}
-              onChangeText={(text) => this.onChangePinField(text, 1)}
+              testID="otp-index-2"
+              accessibilityLabel="otp-index-2"
+              ref={ref => (this.inputRefs1 = ref)}
+              keyboardType="numeric"
+              secureTextEntry
+              value={this.state.pin[1] ? this.state.pin[1].toString() : ''}
+              onChangeText={text => this.onChangePinField(text, 1)}
               inputContainerStyle={styles.inputContainerStyle}
               inputStyle={styles.inputStyle}
               containerStyle={styles.containerStyle}
             />
             <Input
-              testID='otp-index-3'
-              accessibilityLabel='otp-index-3'
-              ref={ref => this.inputRefs2 = ref}
-              keyboardType='numeric'
-              secureTextEntry={true}
-              value={this.state.pin[2] ? this.state.pin[2].toString() : ""}
-              onChangeText={(text) => this.onChangePinField(text, 2)}
+              testID="otp-index-3"
+              accessibilityLabel="otp-index-3"
+              ref={ref => (this.inputRefs2 = ref)}
+              keyboardType="numeric"
+              secureTextEntry
+              value={this.state.pin[2] ? this.state.pin[2].toString() : ''}
+              onChangeText={text => this.onChangePinField(text, 2)}
               inputContainerStyle={styles.inputContainerStyle}
               inputStyle={styles.inputStyle}
               containerStyle={styles.containerStyle}
             />
             <Input
-              testID='otp-index-4'
-              accessibilityLabel='otp-index-4'
-              ref={ref => this.inputRefs3 = ref}
-              keyboardType='numeric'
-              secureTextEntry={true}
-              value={this.state.pin[3] ? this.state.pin[3].toString() : ""}
-              onChangeText={(text) => this.onChangePinField(text, 3)}
+              testID="otp-index-4"
+              accessibilityLabel="otp-index-4"
+              ref={ref => (this.inputRefs3 = ref)}
+              keyboardType="numeric"
+              secureTextEntry
+              value={this.state.pin[3] ? this.state.pin[3].toString() : ''}
+              onChangeText={text => this.onChangePinField(text, 3)}
               inputContainerStyle={styles.inputContainerStyle}
               inputStyle={styles.inputStyle}
               containerStyle={styles.containerStyle}
             />
           </View>
-          {
-            this.state.otpError ?
-            <Text style={styles.redText}>The OTP you entered is not valid.</Text>
-            : null
-          }
+          {this.state.otpError ? (
+            <Text style={styles.redText}>
+              Sorry, the OTP you entered is not valid.
+            </Text>
+          ) : null}
         </View>
         <Button
-          testID='otp-continue-btn'
-          accessibilityLabel='otp-continue-btn'
+          testID="otp-continue-btn"
+          accessibilityLabel="otp-continue-btn"
           title="CONTINUE"
           loading={this.state.loading}
           titleStyle={styles.buttonTitleStyle}
@@ -318,40 +321,54 @@ export default class OTPVerification extends React.Component {
             colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
             start: { x: 0, y: 0.5 },
             end: { x: 1, y: 0.5 },
-          }} />
+          }}
+        />
         <View style={styles.signUpLink}>
-          <Text style={styles.noAccText}>Didn&apos;t receive the OTP pin?
-            <Text style={styles.noAccButton} onPress={this.onPressResend}> Resend</Text>
+          <Text style={styles.noAccText}>
+            Didn&apos;t receive the OTP pin?
+            <Text style={styles.noAccButton} onPress={this.onPressResend}>
+              {' '}
+              Resend
+            </Text>
           </Text>
-          <Text style={styles.noAccText}>What is a one-time password?
-            <Text style={styles.noAccButton} onPress={this.onPressHelp}> Help</Text>
+          <Text style={styles.noAccText}>
+            What is a one-time password?
+            <Text style={styles.noAccButton} onPress={this.onPressHelp}>
+              {' '}
+              Help
+            </Text>
           </Text>
         </View>
 
-        <Dialog
-          visible={this.state.dialogVisible}
-          dialogStyle={styles.editPicDialog}
-          dialogAnimation={new SlideAnimation({
-            slideFrom: 'bottom',
-          })}
-          onTouchOutside={this.onHideDialog}
+        <Overlay
+          isVisible={this.state.dialogVisible}
+          height="auto"
+          width="auto"
+          onBackdropPress={this.onHideDialog}
           onHardwareBackPress={this.onHideDialog}
         >
-          <DialogContent style={styles.dialogWrapper}>
+          <View style={styles.dialogWrapper}>
             <View style={styles.helpDialog}>
               <Text style={styles.helpTitle}>Help</Text>
               <Text style={styles.helpContent}>
-                A one-time password (OTP) is a password that is valid for only one login session, or transaction on a digital device.
-                {"\n\n"}
-                Check that you haven’t entered an incorrect OTP or resend a new pin.
+                A one-time password (OTP) is a password that is valid for only
+                one login session, or transaction on a digital device.
+                {'\n\n'}
+                Check that you haven’t entered an incorrect OTP or resend a new
+                pin.
               </Text>
-              <Text style={styles.helpLink} onPress={this.onPressContactUs}>Contact Us</Text>
-              <TouchableOpacity style={styles.closeDialog} onPress={this.onHideDialog} >
-                <Image source={require('../../assets/close.png')}/>
+              <Text style={styles.helpLink} onPress={this.onPressContactUs}>
+                Contact Us
+              </Text>
+              <TouchableOpacity
+                style={styles.closeDialog}
+                onPress={this.onHideDialog}
+              >
+                <Image source={require('../../assets/close.png')} />
               </TouchableOpacity>
             </View>
-          </DialogContent>
-        </Dialog>
+          </View>
+        </Overlay>
       </View>
     );
   }
@@ -405,12 +422,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     textAlign: 'center',
   },
-  otpText: {
-    fontFamily: 'poppins-semibold',
-    fontSize: 20,
-    color: Colors.PURPLE,
-    textAlign: 'center',
-  },
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
     fontSize: 19,
@@ -426,10 +437,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: '80%',
   },
-  // textAsButton: {
-  //   fontFamily: 'poppins-semibold',
-  //   color: Colors.PURPLE,
-  // },
   signUpLink: {
     alignItems: 'center',
     marginBottom: 10,

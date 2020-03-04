@@ -1,113 +1,206 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Dimensions } from 'react-native';
+import {
+  ActivityIndicator,
+  AsyncStorage,
+  Image,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+  View,
+} from 'react-native';
+import { Button, Input, Icon, Overlay } from 'react-native-elements';
+
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
-import { Endpoints } from '../util/Values';
-import { Input, Button, Icon } from 'react-native-elements';
-import { Colors } from '../util/Values';
-import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
+import { Endpoints, Colors } from '../util/Values';
 
-let {height, width} = Dimensions.get('window');
+const { height, width } = Dimensions.get('window');
 const PROFILE_PIC_SIZE = 0.16 * width;
 
 export default class Profile extends React.Component {
-
   constructor(props) {
     super(props);
+
+    const failedVerification = this.props.navigation.getParam('failedVerification');
     this.state = {
       profilePic: null,
       loading: false,
-      firstName: "",
-      lastName: "",
-      idNumber: "",
-      email: "",
-      phoneNumber: "",
-      initials: "",
+      firstName: '',
+      lastName: '',
+      idNumber: '',
+      initials: '',
       dialogVisible: false,
       chooseFromLibraryLoading: false,
       takePhotoLoading: false,
+      failedVerification,
     };
   }
 
   async componentDidMount() {
     LoggingUtil.logEvent('USER_ENTERED_PROFILE_SCREEN');
-    let info = await AsyncStorage.getItem('userInfo');
-    if (!info) {
-      NavigationUtil.logout(this.props.navigation);
+    const rawInfo = await AsyncStorage.getItem('userInfo');
+    if (this.state.failedVerification) {
+      const info = this.props.navigation.getParam('info') || (rawInfo ? JSON.parse(rawInfo) : {});
+      const initials = info.firstName && info.lastName ? info.firstName[0] + info.lastName[0] : 'A'; 
+      this.setState({
+        firstName: info.firstName,
+        lastName: info.lastName,
+        idNumber: info.idNumber,
+        initials,
+        token: info.token,
+      });
     } else {
-      info = JSON.parse(info);
-      console.log(info);
+      const info = JSON.parse(rawInfo);
       this.setState({
         firstName: info.profile.personalName,
         lastName: info.profile.familyName,
         idNumber: info.profile.nationalId,
-        email: info.profile.email,
-        phoneNumber: info.profile.phoneNumber,
         tempEmail: info.profile.email,
-        tempPhoneNumber: info.profile.phoneNumber,
         initials: info.profile.personalName[0] + info.profile.familyName[0],
         systemWideUserId: info.systemWideUserId,
         token: info.token,
+        userLoggedIn: true,
       });
     }
+
   }
 
   onPressBack = () => {
     this.props.navigation.goBack();
-  }
+  };
 
   onPressChangePassword = () => {
-    this.props.navigation.navigate("ChangePassword", {
+    this.props.navigation.navigate('ChangePassword', {
       systemWideUserId: this.state.systemWideUserId,
       token: this.state.token,
     });
-  }
+  };
 
   onPressEditPic = () => {
     this.setState({
       dialogVisible: true,
     });
-  }
+  };
+
+  onHideDialog = () => {
+    this.setState({ dialogVisible: false });
+    return true;
+  };
+
+  onPressTakePhoto = () => {
+    // eslint-disable-next-line no-useless-return
+    if (this.state.takePhotoLoading) return;
+  };
+
+  onPressChooseFromLibrary = () => {
+    // eslint-disable-next-line no-useless-return
+    if (this.state.chooseFromLibraryLoading) return;
+  };
+
+  onPressSupport = () => {
+    this.props.navigation.navigate('Support', { originScreen: 'Profile' });
+  };
+
+  fetchProfileForOnboardingUser = async () => {
+    const result = await fetch(`${Endpoints.AUTH}profile/fetch`, {
+      headers: {
+        Authorization: `Bearer ${this.state.token}`,
+      },
+      method: 'GET',
+    });
+    if (result.ok) {
+      const resultJson = await result.json();
+      await AsyncStorage.setItem('userInfo', JSON.stringify(resultJson));
+      return resultJson;
+    } else {
+      throw result;
+    }
+  };
+
+  onPressSave = async () => {
+    if (this.state.loading) return;
+    this.setState({ loading: true });
+    try {
+      const payload = {
+        personalName: this.state.firstName,
+        familyName: this.state.lastName,
+        nationalId: this.state.idNumber,
+      };
+
+      console.log('HUH, TOKEN: ', this.state.token);
+      const result = await fetch(`${Endpoints.AUTH}profile/update`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          Authorization: `Bearer ${this.state.token}`,
+        },
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+
+      if (result.ok) {
+        const resultJson = await result.json();
+        if (resultJson.updatedKycStatus === 'VERIFIED_AS_PERSON') {
+          if (this.state.userLoggedIn) {
+            // update the stored profile and continue
+            let info = await AsyncStorage.getItem('userInfo');
+            info = JSON.parse(info);
+            info.profile.kycStatus = resultJson.updatedKycStatus;
+            await AsyncStorage.setItem('userInfo', JSON.stringify(info));
+            this.setState({ loading: false });
+
+            const { screen, params } = NavigationUtil.directBasedOnProfile(info);
+            NavigationUtil.navigateWithoutBackstack(this.props.navigation, screen, params);
+          } else {
+            // we must be in the condition of user not having completed onboarding; 
+            // we used to take them to the onboard remaining steps screen to have a gentler transition to add cash
+            // but now we are going to take them to the regulatory screen, as the most natural transition
+            const profileInfo = await this.fetchProfileForOnboardingUser();
+            const { screen, params } = NavigationUtil.directBasedOnProfile(profileInfo);
+
+            NavigationUtil.navigateWithoutBackstack(this.props.navigation, screen, params);
+          }
+        } else {
+          this.setState({ hasRepeatingError: true, loading: false });
+        }
+      } else {
+        throw result;
+      }
+    } catch (error) {
+      this.setState({ loading: false, hasRepeatingError: true });
+      // console.log("error", JSON.stringify(error, null, "\t"));
+      // TODO handle properly
+    }
+  };
+
+  onPressLogout = () => {
+    NavigationUtil.logout(this.props.navigation);
+  };
 
   renderProfilePicture() {
     if (this.state.profilePic) {
-      return (
-        <Image style={styles.profilePic}/>
-      );
+      return <Image style={styles.profilePic} />;
     } else {
       return (
         <View style={styles.profilePic}>
           <Text style={styles.profilePicText}>{this.state.initials}</Text>
         </View>
-      )
+      );
     }
-  }
-
-  onHideDialog = () => {
-    this.setState({ dialogVisible: false });
-    return true;
-  }
-
-  onPressTakePhoto = () => {
-    if (this.state.takePhotoLoading) return;
-  }
-
-  onPressChooseFromLibrary = () => {
-    if (this.state.chooseFromLibraryLoading) return;
-  }
-
-  onPressSupport = () => {
-    this.props.navigation.navigate('Support');
   }
 
   render() {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity style={styles.headerButton} onPress={this.onPressBack} >
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={this.onPressBack}
+          >
             <Icon
-              name='chevron-left'
-              type='evilicon'
+              name="chevron-left"
+              type="evilicon"
               size={45}
               color={Colors.GRAY}
             />
@@ -117,68 +210,103 @@ export default class Profile extends React.Component {
         <View style={styles.mainContent}>
           <View style={styles.picWrapper}>
             {this.renderProfilePicture()}
-            {
-              /*
+            {/*
               Uncomment this once we want to implement the edit picture feature
               <Text style={styles.editText} onPress={this.onPressEditPic}>edit</Text>
-              */
-            }
+              */}
           </View>
           <View style={styles.profileInfoWrapper}>
             <View style={styles.profileInfo}>
               <View style={styles.profileField}>
                 <Input
-                  label="First Name*"
-                  editable={false}
+                  label={`First Name${
+                    !this.state.failedVerification ? '*' : ''
+                  }`}
+                  editable={this.state.failedVerification}
                   value={this.state.firstName}
-                  onChangeText={(text) => {this.setState({firstName: text})}}
+                  onChangeText={text => {
+                    this.setState({ firstName: text });
+                  }}
                   labelStyle={styles.profileFieldTitle}
                   inputContainerStyle={styles.inputContainerStyle}
-                  inputStyle={[styles.profileFieldValue, this.state.errors && this.state.errors.firstName ? styles.redText : null]}
+                  inputStyle={[
+                    styles.profileFieldValue,
+                    this.state.errors && this.state.errors.firstName
+                      ? styles.redText
+                      : null,
+                  ]}
                   containerStyle={styles.containerStyle}
                 />
               </View>
-              <View style={styles.separator}/>
+              <View style={styles.separator} />
               <View style={styles.profileField}>
                 <Input
-                  label="Last Name*"
-                  editable={false}
+                  label={`Last Name${
+                    !this.state.failedVerification ? '*' : ''
+                  }`}
+                  editable={this.state.failedVerification}
                   value={this.state.lastName}
-                  onChangeText={(text) => {this.setState({lastName: text})}}
+                  onChangeText={text => {
+                    this.setState({ lastName: text });
+                  }}
                   labelStyle={styles.profileFieldTitle}
                   inputContainerStyle={styles.inputContainerStyle}
-                  inputStyle={[styles.profileFieldValue, this.state.errors && this.state.errors.lastName ? styles.redText : null]}
+                  inputStyle={[
+                    styles.profileFieldValue,
+                    this.state.errors && this.state.errors.lastName
+                      ? styles.redText
+                      : null,
+                  ]}
                   containerStyle={styles.containerStyle}
                 />
               </View>
-              <View style={styles.separator}/>
+              <View style={styles.separator} />
               <View style={styles.profileField}>
                 <Input
-                  label="ID Number*"
-                  editable={false}
+                  label={`ID number${
+                    !this.state.failedVerification ? '*' : ''
+                  }`}
+                  editable={this.state.failedVerification}
                   value={this.state.idNumber}
-                  onChangeText={(text) => {this.setState({idNumber: text})}}
+                  onChangeText={text => {
+                    this.setState({ idNumber: text });
+                  }}
                   labelStyle={styles.profileFieldTitle}
                   inputContainerStyle={styles.inputContainerStyle}
-                  inputStyle={[styles.profileFieldValue, this.state.errors && this.state.errors.idNumber ? styles.redText : null]}
+                  inputStyle={[
+                    styles.profileFieldValue,
+                    this.state.errors && this.state.errors.idNumber
+                      ? styles.redText
+                      : null,
+                  ]}
                   containerStyle={styles.containerStyle}
                 />
               </View>
-              <View style={styles.separator}/>
-              <View style={styles.profileField}>
-                <Input
-                  label="Email Address / Phone Number*"
-                  editable={false}
-                  value={this.state.tempEmail}
-                  onChangeText={(text) => {this.setState({tempEmail: text})}}
-                  labelStyle={styles.profileFieldTitle}
-                  inputContainerStyle={styles.inputContainerStyle}
-                  inputStyle={[styles.profileFieldValue, this.state.errors && this.state.errors.idNumber ? styles.redText : null]}
-                  containerStyle={styles.containerStyle}
-                />
-              </View>
-              {
-                /*
+              {!this.state.failedVerification ? (
+                <View style={styles.separator} />
+              ) : null}
+              {!this.state.failedVerification ? (
+                <View style={styles.profileField}>
+                  <Input
+                    label="Email Address / Phone Number*"
+                    editable={false}
+                    value={this.state.tempEmail}
+                    onChangeText={text => {
+                      this.setState({ tempEmail: text });
+                    }}
+                    labelStyle={styles.profileFieldTitle}
+                    inputContainerStyle={styles.inputContainerStyle}
+                    inputStyle={[
+                      styles.profileFieldValue,
+                      this.state.errors && this.state.errors.idNumber
+                        ? styles.redText
+                        : null,
+                    ]}
+                    containerStyle={styles.containerStyle}
+                  />
+                </View>
+              ) : null}
+              {/*
                 <View style={styles.profileField}>
                   <Input
                     label="Email Address"
@@ -202,32 +330,108 @@ export default class Profile extends React.Component {
                     containerStyle={styles.containerStyle}
                   />
                 </View>
-                */
-              }
+                */}
             </View>
-            <Text style={styles.disclaimer} onPress={this.onPressSupport}>*In order to update any of the those fields please contact us <Text style={styles.disclaimerBold}>using the support form.</Text></Text>
+            <View>
+              {this.state.hasRepeatingError ? (
+                <Text
+                  style={[styles.disclaimer, styles.redText]}
+                  onPress={this.onPressSupport}
+                >
+                  Sorry, your details still failed the ID verification check. If
+                  you believe they are correct,{' '}
+                  <Text style={styles.disclaimerBold}>
+                    please contact support
+                  </Text>
+                  .
+                </Text>
+              ) : (
+                <View>
+                  {this.state.failedVerification ? (
+                    <Text style={styles.disclaimer}>
+                      If your details are correct, please{' '}
+                      <Text
+                        style={styles.disclaimerBold}
+                        onPress={this.onPressSupport}
+                      >
+                        contact support
+                      </Text>
+                      .
+                    </Text>
+                  ) : (
+                    <Text style={styles.disclaimer}>
+                      *In order to update any of the those fields please contact
+                      us{' '}
+                      <Text
+                        style={styles.disclaimerBold}
+                        onPress={this.onPressSupport}
+                      >
+                        using the support form.
+                      </Text>
+                    </Text>
+                  )}
+                </View>
+              )}
+            </View>
           </View>
-          <TouchableOpacity style={styles.buttonLine} onPress={this.onPressChangePassword}>
-            <Text style={styles.buttonLineText}>Change Password</Text>
-            <Icon
-              name='chevron-right'
-              type='evilicon'
-              size={50}
-              color={Colors.MEDIUM_GRAY}
-            />
-          </TouchableOpacity>
+          <View style={styles.buttonsContainer}>
+            <TouchableOpacity
+              style={styles.buttonLine}
+              onPress={this.onPressSave}
+            >
+              <Text style={styles.buttonLineText}>Save Changes</Text>
+              {this.state.loading ? (
+                <ActivityIndicator
+                  style={styles.spinner}
+                  color={Colors.MEDIUM_GRAY}
+                />
+              ) : (
+                <Icon
+                  name="chevron-right"
+                  type="evilicon"
+                  size={50}
+                  color={Colors.MEDIUM_GRAY}
+                />
+              )}
+            </TouchableOpacity>
+            {this.state.failedVerification ? (
+              <TouchableOpacity
+                style={styles.buttonLine}
+                onPress={this.onPressLogout}
+              >
+                <Text style={styles.buttonLineText}>Logout</Text>
+                <Icon
+                  name="chevron-right"
+                  type="evilicon"
+                  size={50}
+                  color={Colors.MEDIUM_GRAY}
+                />
+              </TouchableOpacity>
+            ) : null}
+            {!this.state.failedVerification ? (
+              <TouchableOpacity
+                style={styles.buttonLine}
+                onPress={this.onPressChangePassword}
+              >
+                <Text style={styles.buttonLineText}>Change Password</Text>
+                <Icon
+                  name="chevron-right"
+                  type="evilicon"
+                  size={50}
+                  color={Colors.MEDIUM_GRAY}
+                />
+              </TouchableOpacity>
+            ) : null}
+          </View>
         </View>
 
-        <Dialog
-          visible={this.state.dialogVisible}
-          dialogStyle={styles.editPicDialog}
-          dialogAnimation={new SlideAnimation({
-            slideFrom: 'bottom',
-          })}
-          onTouchOutside={this.onHideDialog}
+        <Overlay
+          isVisible={this.state.dialogVisible}
+          containerStyle={styles.editPicDialog}
+          onBackdropPress={this.onHideDialog}
           onHardwareBackPress={this.onHideDialog}
         >
-          <DialogContent style={styles.dialogContent}>
+          <View style={styles.dialogContent}>
             <Text style={styles.editPicDialogTitle}>Select a photo</Text>
             <Button
               title="TAKE PHOTO"
@@ -240,7 +444,8 @@ export default class Profile extends React.Component {
                 colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
                 start: { x: 0, y: 0.5 },
                 end: { x: 1, y: 0.5 },
-              }} />
+              }}
+            />
             <Button
               title="CHOOSE FROM LIBRARY"
               loading={this.state.chooseFromLibraryLoading}
@@ -252,10 +457,16 @@ export default class Profile extends React.Component {
                 colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
                 start: { x: 0, y: 0.5 },
                 end: { x: 1, y: 0.5 },
-              }} />
-            <Text style={styles.editPicDialogCancel} onPress={this.onHideDialog}>Cancel</Text>
-          </DialogContent>
-        </Dialog>
+              }}
+            />
+            <Text
+              style={styles.editPicDialogCancel}
+              onPress={this.onHideDialog}
+            >
+              Cancel
+            </Text>
+          </View>
+        </Overlay>
       </View>
     );
   }
@@ -320,12 +531,12 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: Colors.WHITE,
   },
-  editText: {
-    marginTop: 5,
-    fontSize: 15,
-    fontFamily: 'poppins-semibold',
-    color: Colors.MEDIUM_GRAY,
-  },
+  // editText: {
+  //   marginTop: 5,
+  //   fontSize: 15,
+  //   fontFamily: 'poppins-semibold',
+  //   color: Colors.MEDIUM_GRAY,
+  // },
   profileInfoWrapper: {
     height: '50%',
     width: '100%',
@@ -343,8 +554,8 @@ const styles = StyleSheet.create({
     fontFamily: 'poppins-regular',
     color: Colors.MEDIUM_GRAY,
     fontSize: 12.5,
-    width: '88%',
     marginTop: 5,
+    paddingHorizontal: 18,
   },
   disclaimerBold: {
     fontFamily: 'poppins-semibold',
@@ -410,7 +621,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: 'poppins-semibold',
   },
-  inputContainerStyle :{
+  inputContainerStyle: {
     borderBottomWidth: 0,
   },
   containerStyle: {
@@ -419,5 +630,8 @@ const styles = StyleSheet.create({
   },
   redText: {
     color: Colors.RED,
+  },
+  spinner: {
+    marginRight: 15,
   },
 });

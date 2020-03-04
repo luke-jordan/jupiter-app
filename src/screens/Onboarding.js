@@ -1,16 +1,22 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, TouchableOpacity, Dimensions } from 'react-native';
-// import { reloadIfUpdateAvailable } from '../util/ExpoPublishUtil';
+import {
+  Dimensions,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import Swiper from 'react-native-swiper';
+
 import { Button, Icon } from 'react-native-elements';
 import { Colors } from '../util/Values';
 import { LoggingUtil } from '../util/LoggingUtil';
-import Swiper from 'react-native-swiper';
 
 const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
 export default class Onboarding extends React.Component {
-
   constructor(props) {
     super(props);
     this.state = {
@@ -19,82 +25,79 @@ export default class Onboarding extends React.Component {
   }
 
   async componentDidMount() {
-    LoggingUtil.logEvent("USER_VISITED_SCREEN", {"intro_screen_name": this.getTabTitle(0)});
+    LoggingUtil.logEvent('USER_ENTERED_INTRO');
   }
 
   onPressNext = async () => {
     if (this.state.loading) return;
     if (this.swiperRef && this.state.currentTab < 3) {
-      LoggingUtil.logEvent("USER_VISITED_SCREEN", {"intro_screen_name": this.getTabTitle(this.state.currentTab + 1)});
+      LoggingUtil.logEvent('USER_VISITED_SCREEN', {
+        intro_screen_name: this.getTabTitle(this.state.currentTab + 1),
+      });
       this.swiperRef.scrollBy(1, true);
-    } else if (this.state.currentTab == 3) {
+    } else if (this.state.currentTab === 3) {
       this.props.navigation.navigate('LimitedUsers');
     }
-  }
+  };
 
-  onIndexChanged = (index) => {
+  onIndexChanged = index => {
     this.setState({
       currentTab: index,
     });
-  }
+  };
 
   onPressSkip = async () => {
-    LoggingUtil.logEvent("USER_SKIPPED_INTRO");
+    LoggingUtil.logEvent('USER_SKIPPED_INTRO');
     this.props.navigation.navigate('LimitedUsers');
-  }
+  };
 
-  getTabTitle = (index) => {
+  getTabTitle = index => {
     switch (index) {
       case 0:
-      return "A new way to grow";
-
+        return 'A new way to grow';
       case 1:
-      return "Add money, earn interest";
-
+        return 'Add money, earn interest';
       case 2:
-      return "Your cash stays your cash";
-
+        return 'Your cash stays your cash';
       case 3:
-      return "You save, you win";
+        return 'You save, you win';
     }
-  }
+  };
 
-  getTabImage = (index) => {
+  getTabImage = index => {
     switch (index) {
       case 0:
-      return require('../../assets/group_6.png');
-
+        return require('../../assets/group_6.png');
       case 1:
-      return require('../../assets/group_9.png');
-
+        return require('../../assets/group_9.png');
       case 2:
-      return require('../../assets/group_8.png');
-
+        return require('../../assets/group_8.png');
       case 3:
-      return require('../../assets/group_66.png');
+        return require('../../assets/group_66.png');
     }
-  }
+  };
 
-  getTabText = (index) => {
+  getTabText = index => {
     switch (index) {
       case 0:
-      return 'Welcome to Jupiter, the savings account with a difference. We’re here to help you make the most of your money, by letting you build healthy saving habits and be rewarded along the way.';
-
+        return 'Welcome to Jupiter, the savings app with a difference. We’re here to help you make the most of your money, by letting you build healthy saving habits and be rewarded along the way.';
       case 1:
-      return 'Yep, it’s that easy. Once you add money in your Jupiter account, you start earning interest immediately. From your very first R1, straight up earnings.';
-
+        return 'Yep, it’s that easy. Once you add money in your Jupiter account, you start earning interest immediately. From your very first R1, straight up earnings.';
       case 2:
-      return 'You always have access to your money, so you can withdraw funds at any time. Perfect for that little (or huge) unplanned expense.';
-
+        return 'You always have access to your money, so you can instruct us to withdraw funds at any time. Perfect for that little (or huge) unplanned expense.';
       case 3:
-      return 'Get rewarded for saving, not spending. Jupiter exists to help you build good saving habits. So, every time you save, you get rewarded for it—just like that.';
+        return 'Get rewarded for saving, not spending. Jupiter exists to help you build good saving habits. So, every time you save, you get rewarded for it—just like that.';
     }
-  }
+  };
 
   renderTab(item, index) {
     return (
       <View style={styles.slide} key={index}>
-        <Image style={styles.tabImage} source={this.getTabImage(index)} resizeMode="contain"/>
+        <Image
+          style={styles.tabImage}
+          source={this.getTabImage(index)}
+          resizeMode="contain"
+        />
         <Text style={styles.tabTitle}>{this.getTabTitle(index)}</Text>
         <Text style={styles.tabDescription}>{this.getTabText(index)}</Text>
       </View>
@@ -107,25 +110,33 @@ export default class Onboarding extends React.Component {
         <TouchableOpacity style={styles.skipButton} onPress={this.onPressSkip}>
           <Text style={styles.skipButtonText}>SKIP INTRO</Text>
           <Icon
-            name='chevron-right'
-            type='evilicon'
+            name="chevron-right"
+            type="evilicon"
             size={30}
             color={Colors.PURPLE}
           />
         </TouchableOpacity>
-        <Swiper containerStyle={styles.wrapper}
-          ref={(ref) => {this.swiperRef = ref;}}
-          onIndexChanged={(index) => this.onIndexChanged(index)}
-          loop={false} index={this.state.currentTab}
+        <Swiper
+          containerStyle={styles.wrapper}
+          ref={ref => {
+            this.swiperRef = ref;
+          }}
+          onIndexChanged={index => this.onIndexChanged(index)}
+          loop={false}
+          index={this.state.currentTab}
           activeDotColor={Colors.PURPLE}
-          dotStyle={styles.dotStyle} activeDotStyle={styles.activeDotStyle}>
-          {["Tab1", "Tab2", "Tab3", "Tab4"].map((item, index) => this.renderTab(item, index))}
+          dotStyle={styles.dotStyle}
+          activeDotStyle={styles.activeDotStyle}
+        >
+          {['Tab1', 'Tab2', 'Tab3', 'Tab4'].map((item, index) =>
+            this.renderTab(item, index)
+          )}
         </Swiper>
         <View style={styles.nextButtonWrapper}>
           <Button
-            testID='onboarding-button'
-            accessibilityLabel='onboarding-button'
-            title={this.state.currentTab == 3 ? "START SAVING" : "NEXT"}
+            testID="onboarding-button"
+            accessibilityLabel="onboarding-button"
+            title={this.state.currentTab === 3 ? 'START SAVING' : 'NEXT'}
             loading={this.state.loading}
             titleStyle={styles.buttonTitleStyle}
             buttonStyle={styles.buttonStyle}
@@ -135,7 +146,8 @@ export default class Onboarding extends React.Component {
               colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
               start: { x: 0, y: 0.5 },
               end: { x: 1, y: 0.5 },
-            }} />
+            }}
+          />
         </View>
       </View>
     );
@@ -149,16 +161,19 @@ const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
     width: '100%',
+    maxHeight: '68%',
   },
   activeDotStyle: {
     width: 14,
     height: 14,
     borderRadius: 14 / 2,
+    marginTop: 10,
   },
   dotStyle: {
     width: 12,
     height: 12,
     borderRadius: 12 / 2,
+    marginTop: 10,
   },
   slide: {
     flex: 1,
@@ -178,6 +193,7 @@ const styles = StyleSheet.create({
   tabDescription: {
     fontFamily: 'poppins-regular',
     fontSize: 4 * FONT_UNIT,
+    marginBottom: 10,
   },
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',

@@ -1,22 +1,50 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, Dimensions, Clipboard, TouchableOpacity, Share } from 'react-native';
+import { connect } from 'react-redux';
+
+import {
+  AsyncStorage,
+  Dimensions,
+  Clipboard,
+  Image,
+  Share,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import Toast from 'react-native-easy-toast';
+import { Button } from 'react-native-elements';
+
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
-import { Colors } from '../util/Values';
+import { Endpoints, Colors } from '../util/Values';
+import { standardFormatAmount, formatStringTemplate } from '../util/AmountUtil';
+
 import NavigationBar from '../elements/NavigationBar';
-import { Button } from 'react-native-elements';
-import Toast from 'react-native-easy-toast';
+
+import { getComparatorRates } from '../modules/balance/balance.reducer';
 
 const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
-export default class Friends extends React.Component {
+const mapStateToProps = state => ({
+  comparatorRates: getComparatorRates(state),
+});
 
+const BODY_TEXT_NO_AMOUNT_DEFAULT = `Invite your friends to Jupiter using your unique referral code! Just click the button below, ` +
+  `choose how you want to share the message and use our message (or create your own) - and that's it!`;
+const BODY_TEXT_W_AMOUNT_DEFAULT = `Invite your friends to Jupiter using the referral code below. We’ll add {boostAmount} to your balance ` +
+  `each time one of them signs up and starts saving! `;
+
+
+class Friends extends React.Component {
   constructor(props) {
     super(props);
+    this.toastRef = React.createRef(null);
     this.state = {
-      shareCode: "",
-      shareLink: "https://jupiter.com/share/something",
+      shareCode: '',
+      shareLink: 'https://jupitersave.com/',
+      bodyText: BODY_TEXT_NO_AMOUNT_DEFAULT,
     };
   }
 
@@ -27,48 +55,122 @@ export default class Friends extends React.Component {
       NavigationUtil.logout(this.props.navigation);
     } else {
       info = JSON.parse(info);
-      this.setState({
-        shareCode: info.profile.referralCode,
+      this.setUpReferralVariables(info.profile);
+    }
+  }
+
+  async setUpReferralVariables(userProfile) {
+    this.setState({
+      shareCode: userProfile.referralCode,
+    });
+
+    try {
+      const result = await fetch(`${Endpoints.CORE}referral/verify`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        method: 'POST',
+        body: JSON.stringify({
+          referralCode: userProfile.referralCode,
+          countryCode: 'ZAF',
+          includeFloatDefaults: true,
+        }),
       });
+      if (result.ok) {
+        const { codeDetails } = await result.json();
+        if (codeDetails) {
+          this.setParamsFromCodeDetails(codeDetails);
+        }
+      } else {
+        throw result;
+      }
+    } catch (error) {
+      console.log('Error fetching referral details: ', JSON.stringify(error));
+    }
+  }
+
+  setParamsFromCodeDetails = codeDetails => {
+    const { context, floatDefaults } = codeDetails;
+
+    if (context.shareLink || floatDefaults.shareLink) {
+      this.setState({ shareLink: context.shareLink || floatDefaults.shareLink });
+    }
+    
+    let referralBoostAvailable = false;
+    let referralBoostDict = {};
+    if (context && typeof context.boostAmountOffered === 'string' && context.boostAmountOffered.length > 0) {
+      try {
+        const [boostAmount, boostUnit, boostCurrency] = context.boostAmountOffered.split('::');
+        referralBoostAvailable = parseInt(boostAmount, 10) > 0;
+        referralBoostDict = { amount: parseInt(boostAmount, 10), unit: boostUnit, currency: boostCurrency };
+      } catch (error) {
+        console.log('Server sent malformed boost amount string');
+      }
     }
 
+    if (referralBoostAvailable) {
+      const bodyTextTemplate = context.bodyTextAmountTemplate || floatDefaults.bodyTextAmountTemplate || BODY_TEXT_W_AMOUNT_DEFAULT; 
+      const boostAmountFormatted = standardFormatAmount(referralBoostDict.amount, referralBoostDict.unit, referralBoostDict.currency);
+      const formattedText = formatStringTemplate(bodyTextTemplate, { boostAmount: boostAmountFormatted }); 
+      this.setState({ bodyText: formattedText });
+    } else {
+      const bodyText = context.bodyTextNoAmountTemplate || floatDefaults.bodyTextNoAmountTemplate || BODY_TEXT_NO_AMOUNT_DEFAULT;
+      this.setState({ bodyText });
+    }
   }
 
   onPressShare = async () => {
-    if (this.state.loading) return;
-    this.setState({loading: true});
+    // if (this.state.loading) return;
+    // this.setState({ loading: true });
+
+    const currentRate = parseFloat(this.props.comparatorRates.referenceRate / 100).toFixed(0);
+
+    const shareMessage = `I’d love for you to join me on the Jupiter savings app. Jupiter REWARDS us for SAVING & building our wealth, ` +
+      `not for spending. We earn ${currentRate}% per year on any savings amount, and can withdraw anytime – with no fees! ` + 
+      `\n\nUse my referral code ${this.state.shareCode} to sign up, by downloading at: ${this.state.shareLink}`;
+
     try {
-      const result = await Share.share({
-        message: `I’d love for you to join me as a friend on the Jupiter app. Jupiter makes saving at good rates, with no lock up, easy and enticing for everyone! As friends we can earn extra rewards and encourage each other to save more! Just use my referral code ${this.state.shareCode} to sign up. Download here: ${this.state.shareLink}`,
-      });
-      console.log('Result of share: ', result);
-      LoggingUtil.logEvent("USER_SHARED_REFERRAL_CODE");
+      await Share.share({ message: shareMessage });
+      this.setState({ loading: false });
+      LoggingUtil.logEvent('USER_SHARED_REFERRAL_CODE');
     } catch (error) {
-      //handle somehow?
+      // this.setState({ loading: false });
     }
-    this.setState({loading: false});
-  }
+    // this.setState({ loading: false });
+  };
 
   onPressCopy = () => {
     Clipboard.setString(this.state.shareCode);
-    this.refs.toast.show('Copied to clipboard!');
-  }
+    this.toastRef.current.show('Copied to clipboard!');
+  };
 
   render() {
     return (
       <View style={styles.container}>
         <View style={styles.mainContent}>
-          <Image style={styles.image} source={require('../../assets/group_77.png')} resizeMode="contain"/>
-          <Text style={styles.title}>Jupiter will be launching the ability to save with your friends soon</Text>
-          <Text style={styles.description}><Text style={styles.bold}>While you wait - </Text>
-            Invite your friends to Jupiter using the referral code below. We’ll add <Text style={styles.bold}>R20.00</Text> to your balance each time one of them signs up and starts saving!
+          <Image
+            style={styles.image}
+            source={require('../../assets/group_77.png')}
+            resizeMode="contain"
+          />
+          <Text style={styles.title}>
+            Jupiter will be launching the ability to save with your friends soon
+          </Text>
+          <Text style={styles.description}>
+            <Text style={styles.bold}>While you wait - </Text>
+            {this.state.bodyText}
           </Text>
         </View>
         <View style={styles.input}>
           <View style={styles.shareLine}>
             <Text style={styles.shareCode}>{this.state.shareCode}</Text>
             <TouchableOpacity onPress={this.onPressCopy}>
-              <Image style={styles.copyIcon} source={require('../../assets/copy.png')} resizeMode="contain"/>
+              <Image
+                style={styles.copyIcon}
+                source={require('../../assets/copy.png')}
+                resizeMode="contain"
+              />
             </TouchableOpacity>
           </View>
           <Button
@@ -82,10 +184,11 @@ export default class Friends extends React.Component {
               colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
               start: { x: 0, y: 0.5 },
               end: { x: 1, y: 0.5 },
-            }}/>
+            }}
+          />
         </View>
         <NavigationBar navigation={this.props.navigation} currentTab={1} />
-        <Toast ref="toast" opacity={1} style={styles.toast}/>
+        <Toast ref={this.toastRef} opacity={1} style={styles.toast} />
       </View>
     );
   }
@@ -170,5 +273,6 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
   },
-
 });
+
+export default connect(mapStateToProps)(Friends);

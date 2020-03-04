@@ -1,20 +1,18 @@
 import React from 'react';
 import { StyleSheet, View, Image, Text, Dimensions } from 'react-native';
+import { Button } from 'react-native-elements';
+
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Colors } from '../util/Values';
-import { Button } from 'react-native-elements';
 
-let { width } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
 export default class ResetComplete extends React.Component {
-
   constructor(props) {
     super(props);
-    this.state = {
-
-    };
+    this.state = {};
   }
 
   async componentDidMount() {
@@ -23,14 +21,20 @@ export default class ResetComplete extends React.Component {
 
   onPressLogin = () => {
     NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Login');
-  }
+  };
 
   render() {
     return (
       <View style={styles.container}>
-        <Image style={styles.image} source={require('../../assets/check.png')} resizeMode="contain"/>
+        <Image
+          style={styles.image}
+          source={require('../../assets/check.png')}
+          resizeMode="contain"
+        />
         <Text style={styles.title}>Your password has been reset</Text>
-        <Text style={styles.description}>You can now log in with your new password and get saving!</Text>
+        <Text style={styles.description}>
+          You can now log in with your new password and get saving!
+        </Text>
         <Button
           title="LOG IN"
           loading={this.state.loading}
@@ -42,7 +46,8 @@ export default class ResetComplete extends React.Component {
             colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
             start: { x: 0, y: 0.5 },
             end: { x: 1, y: 0.5 },
-          }} />
+          }}
+        />
       </View>
     );
   }

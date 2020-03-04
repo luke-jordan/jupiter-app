@@ -1,11 +1,11 @@
 import React from 'react';
-import { Platform } from 'react-native';
+import { Platform, StyleSheet, SafeAreaView, AppState } from 'react-native';
 import { createStackNavigator, createAppContainer } from 'react-navigation';
-import { StyleSheet, SafeAreaView, AppState } from 'react-native';
-import { LoggingUtil } from './src/util/LoggingUtil';
+import { Provider } from 'react-redux';
 import * as Sentry from 'sentry-expo';
-import { Endpoints } from './src/util/Values';
 
+import { LoggingUtil } from './src/util/LoggingUtil';
+import { Endpoints } from './src/util/Values';
 import Splash from './src/screens/Splash';
 import Login from './src/screens/Login';
 import OTPVerification from './src/screens/OTPVerification';
@@ -23,7 +23,8 @@ import Profile from './src/screens/Profile';
 import Register from './src/screens/Register';
 import SetPassword from './src/screens/SetPassword';
 import Payment from './src/screens/Payment';
-import CheckingForPayment from './src/screens/CheckingForPayment';
+import SelectTransferMethod from './src/screens/SelectTransferMethod';
+import PendingInstantTransfer from './src/screens/PendingInstantTransfer';
 import PaymentComplete from './src/screens/PaymentComplete';
 import PendingRegistrationSteps from './src/screens/PendingRegistrationSteps';
 import ResetPassword from './src/screens/ResetPassword';
@@ -36,6 +37,13 @@ import ChangePassword from './src/screens/ChangePassword';
 import Support from './src/screens/Support';
 import SupportRequestSent from './src/screens/SupportRequestSent';
 import History from './src/screens/History';
+import FailedVerification from './src/screens/FailedVerification';
+import EFTPayment from './src/screens/EFTPayment';
+import PendingManualTransfer from './src/screens/PendingManualTransfer';
+import Stokvel from './src/screens/Stokvel';
+import MoneyMarket from './src/screens/MoneyMarket';
+import OnboardRegulation from './src/screens/OnboardRegulation';
+import configureStore from './src/store/configureStore';
 
 const AppContainer = createAppContainer(
   createStackNavigator(
@@ -57,7 +65,8 @@ const AppContainer = createAppContainer(
       Register: { screen: Register },
       SetPassword: { screen: SetPassword },
       Payment: { screen: Payment },
-      CheckingForPayment: { screen: CheckingForPayment },
+      SelectTransferMethod: { screen: SelectTransferMethod },
+      PendingInstantTransfer: { screen: PendingInstantTransfer },
       PaymentComplete: { screen: PaymentComplete },
       PendingRegistrationSteps: { screen: PendingRegistrationSteps },
       ResetPassword: { screen: ResetPassword },
@@ -70,18 +79,23 @@ const AppContainer = createAppContainer(
       Support: { screen: Support },
       SupportRequestSent: { screen: SupportRequestSent },
       History: { screen: History },
+      FailedVerification: { screen: FailedVerification },
+      EFTPayment: { screen: EFTPayment },
+      PendingManualTransfer: { screen: PendingManualTransfer },
+      Stokvel: { screen: Stokvel },
+      MoneyMarket: { screen: MoneyMarket },
+      OnboardRegulation: { screen: OnboardRegulation },
     },
-    { initialRouteName: "Splash", headerMode: 'none' }
+    { initialRouteName: 'Splash', headerMode: 'none' }
   )
 );
 
 export default class App extends React.Component {
-
   componentDidMount() {
     Sentry.init({
       dsn: Endpoints.SENTRY,
       enableInExpoDevelopment: true,
-      debug: true
+      debug: true,
     });
     AppState.addEventListener('change', this.handleAppStateChange);
   }
@@ -90,27 +104,30 @@ export default class App extends React.Component {
     AppState.removeEventListener('change', this.handleAppStateChange);
   }
 
-  handleAppStateChange = (nextAppState) => {
+  handleAppStateChange = nextAppState => {
     if (nextAppState === 'inactive') {
-      LoggingUtil.logEvent("USER_EXITED_APP");
+      LoggingUtil.logEvent('USER_EXITED_APP');
     } else if (nextAppState === 'active') {
-      //we are currently logging the USER_OPENED_APP after initialization to avoid conflicts, but here would be another spot to do that
+      // we are currently logging the USER_OPENED_APP after initialization to avoid conflicts, but here would be another spot to do that
     }
-  }
+  };
 
   render() {
+    const store = configureStore();
+
     return (
       <SafeAreaView style={styles.safeArea} behavior="padding">
-        <AppContainer/>
+        <Provider store={store}>
+          <AppContainer />
+        </Provider>
       </SafeAreaView>
     );
   }
 }
 
-
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    marginTop: Platform.OS == 'android' ? 30 : 0,
+    marginTop: Platform.OS === 'android' ? 30 : 0,
   },
 });

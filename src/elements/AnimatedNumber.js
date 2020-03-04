@@ -1,73 +1,120 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, TouchableOpacity } from 'react-native';
-import { Icon } from 'react-native-elements';
+import { Text } from 'react-native';
 import moment from 'moment';
 
-export default class AnimatedNumber extends React.Component {
+const DEFAULT_INTERVAL_MSECS = 15;
+const CORE_PROPS = ['initial', 'target', 'stepSize', 'interval', 'duration']; // need 2 out of 3 to determine third
 
+export default class AnimatedNumber extends React.Component {
   constructor(props) {
     super(props);
-    let isIncrement = this.props.target > this.props.initial;
-    let interval = 14;
-    let duration = 5;
-    let diff = isIncrement ? this.props.target - this.props.initial : this.props.initial - this.props.target;
-    let steps = diff / this.props.stepSize;
-    if (this.props.duration) {
-      interval = this.props.duration / steps;
-    } else if (this.props.interval) {
-      duration = this.props.interval * steps;
-    }
     this.state = {
-      initialNumber: this.props.initial,
-      currentNumber: this.props.initial,
-      targetNumber: this.props.target,
-      stepSize: this.props.stepSize,
-      duration: this.props.duration ? this.props.duration : duration,
-      interval: this.props.interval ? this.props.interval : interval,
-      isIncrement: isIncrement,
+      currentNumber: 0,
+      targetNumber: 0,
+      interval: DEFAULT_INTERVAL_MSECS,
+      isUnmounted: true,
     };
   }
 
   async componentDidMount() {
-    this.animate();
+    // console.log('*** ANIMATED NUMBER RESTART ****');
+    this.setCoreParamsAndAnimate();
+    this.setState({ isUnmounted: false });
+  }
+
+  componentDidUpdate(prevProps) {
+    // if initial or target changes, we recalibrate; note means setting 'initial' back to zero is not going to work, may need future override
+    const corePropChanged = CORE_PROPS.find(
+      key => this.props[key] !== prevProps[key]
+    );
+    if (corePropChanged) {
+      // console.log(`Animated number core prop changed: ${corePropChanged}, initial: ${prevProps[corePropChanged]}, new: ${this.props[corePropChanged]}`);
+      this.setCoreParamsAndAnimate();
+    }
+  }
+
+  // this is not a great pattern but the alternative is too convert the set timeout into a timed observable and unsubscribe from it
+  // here, but that would be far more work than is justified at this stage by this quasi-anti-pattern
+  async componentWillUnmount() {
+    this.setState({ isUnmounted: true });
+  }
+
+  // basically two ways to set this, either pass in duration & interval and we figure out step size; or pass in stepsize and duration and
+  // we figure out the interval, that's it
+  setCoreParamsAndAnimate() {
+    const diff = Math.abs(this.props.target - this.props.initial);
+    let steps;
+    let stepSize;
+    let interval = 0;
+    if (this.props.interval) {
+      steps = this.props.duration / this.props.interval;
+      stepSize = diff / steps;
+      interval = this.props.interval;
+    } else {
+      steps = diff / this.props.stepSize;
+      stepSize = this.props.stepSize;
+      interval = this.props.duration
+        ? this.props.duration / steps
+        : DEFAULT_INTERVAL_MSECS;
+    }
+    // console.log(`To cover difference of ${diff}, with step size, ${stepSize}, need ${steps} steps`);
+    this.setState({
+      currentNumber: this.props.initial,
+      targetNumber: this.props.target,
+      interval,
+      stepSize,
+      isIncrement: this.props.target > this.props.initial,
+    }, () => {
+      // console.log(`Animating from current number ${this.state.currentNumber}, towards target number ${this.state.targetNumber}`)
+      this.animate();
+    });
   }
 
   animate() {
-    if (this.state.currentNumber == this.state.targetNumber) {
+    if (this.state.currentNumber === this.state.targetNumber) {
       if (this.props.onAnimationFinished) {
         this.props.onAnimationFinished();
       }
       return;
     }
-    let startTime = moment();
-    let num = this.state.currentNumber + this.state.stepSize * (this.state.isIncrement ? 1 : -1);
-    if (this.state.isIncrement && num > this.state.targetNumber) num = this.state.targetNumber;
-    if (!this.state.isIncrement && num < this.state.targetNumber) num = this.state.targetNumber;
-    this.setState({
-      currentNumber: num,
-    }, () => {
-      if ((this.state.isIncrement && num < this.state.targetNumber) || (!this.state.isIncrement && num > this.state.targetNumber)) {
-        let timeout = this.state.interval - (moment().valueOf() - startTime.valueOf());
-        if (timeout < 0) timeout = 0;
-        setTimeout(() => {this.animate()}, timeout);
+    const startTime = moment();
+    const candidateNextNumber =
+      this.state.currentNumber +
+      this.state.stepSize * (this.state.isIncrement ? 1 : -1);
+
+    const isAboveOrBelowTarget = this.state.isIncrement
+      ? candidateNextNumber > this.state.targetNumber
+      : this.state.targetNumber > candidateNextNumber;
+
+    const nextNumber = isAboveOrBelowTarget
+      ? this.state.targetNumber
+      : candidateNextNumber;
+
+    if (this.state.isUnmounted) {
+      return;
+    }
+    this.setState(
+      {
+        currentNumber: nextNumber,
+      },
+      () => {
         if (this.props.onAnimationProgress) {
-          this.props.onAnimationProgress(num);
+          this.props.onAnimationProgress(nextNumber);
         }
-      } else {
-        if (this.props.onAnimationFinished) {
-          this.props.onAnimationFinished();
-        }
+        setTimeout(() => {
+          this.animate();
+        }, Math.max(0, this.state.interval - (moment().valueOf() - startTime.valueOf())));
       }
-    });
+    );
   }
 
   render() {
-    let value = this.state.currentNumber;
-    if (this.props.formatting) {
-      value = this.props.formatting(value);
-    }
     return (
-      <Text style={this.props.style}>{value}</Text>
+      <Text style={this.props.style}>
+        {this.props.formatting
+          ? this.props.formatting(this.state.currentNumber)
+          : this.state.currentNumber}
+      </Text>
     );
   }
 }

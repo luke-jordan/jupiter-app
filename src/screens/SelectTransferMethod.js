@@ -1,0 +1,316 @@
+import React from 'react';
+import { connect } from 'react-redux';
+
+import { View, ScrollView, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { Icon } from 'react-native-elements';
+
+import { NavigationUtil } from '../util/NavigationUtil';
+import { LoggingUtil } from '../util/LoggingUtil';
+import { Colors, Endpoints } from '../util/Values';
+
+import { getAuthToken } from '../modules/auth/auth.reducer';
+
+const mapStateToProps = state => ({
+  authToken: getAuthToken(state),
+});
+
+class SelectTransferMethod extends React.PureComponent {
+
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      isOnboarding: false,
+      amountToAdd: 0,
+      loadingInstant: false,
+      loadingManual: false,
+    };
+
+  }
+
+  componentDidMount() {
+    LoggingUtil.logEvent('USER_ENTERED_SELECT_PAYMENT_METHOD');
+    const { params } = this.props.navigation.state;
+    this.setState({
+      amountToAdd: params.amountToAdd,
+      isOnboarding: params.isOnboarding,
+      accountId: params.accountId,
+    })
+  }
+
+  onPressInstantEft = async () => {
+    if (this.state.loadingInstant || this.state.loadingManual) return true;
+
+    LoggingUtil.logEvent('USER_SELECTED_INSTANT_EFT');
+
+    this.setState({ loadingInstant: true});
+    const resultJson = await this.conductBackendCall('OZOW');
+    this.setState({ loadingInstant: false });
+    
+    if (resultJson) {
+      this.props.navigation.navigate('Payment', {
+        urlToCompletePayment: resultJson.paymentRedirectDetails.urlToCompletePayment,
+        transactionId: resultJson.transactionDetails[0].accountTransactionId,
+        humanReference: resultJson.humanReference,
+        token: this.props.authToken,
+        isOnboarding: this.state.isOnboarding,
+        amountToAdd: this.state.amountToAdd,
+      });
+    }
+  }
+
+  onPressManualEft = async () => {
+    if (this.state.loadingManual || this.state.loadingInstant) return true;
+
+    LoggingUtil.logEvent('USER_SELECTED_MANUAL_EFT');
+
+    this.setState({ loadingManual: true });
+    const resultJson = await this.conductBackendCall('MANUAL_EFT');
+    this.setState({ loadingManual:  false});
+
+    if (resultJson) {
+      this.props.navigation.navigate('EFTPayment', {
+        amountToAdd: this.state.amountToAdd,
+        token: this.props.authToken,
+        isOnboarding: this.state.isOnboarding,
+        transactionId: resultJson.transactionDetails[0].accountTransactionId,
+        humanReference: resultJson.humanReference,
+        bankDetails: resultJson.bankDetails,
+      });
+    }
+  }
+
+  conductBackendCall = async (paymentMethod) => {
+    try {
+      const result = await fetch(`${Endpoints.CORE}addcash/initiate`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          Authorization: `Bearer ${this.props.authToken}`,
+        },
+        method: 'POST',
+        body: JSON.stringify({
+          accountId: this.state.accountId,
+          amount: this.state.amountToAdd * 10000, // multiplying by 100 to get cents and again by 100 to get hundreth cent
+          currency: 'ZAR', // TODO implement for handling other currencies
+          unit: 'HUNDREDTH_CENT',
+          paymentProvider: paymentMethod,
+        }),
+      });
+
+      if (result.ok) {
+        const resultJson = await result.json();
+        if (this.state.isOnboarding) {
+          NavigationUtil.removeOnboardStepRemaining('ADD_CASH');
+        }
+        return resultJson;
+      } else {
+        throw result;
+      }
+      
+    } catch (error) {
+      console.log('Add cash failed: ', error);
+      LoggingUtil.logEvent('ADD_CASH_FAILED_UNKNOWN', {
+        serverResponse: JSON.stringify(error.message),
+      });
+      this.setState({ loadingInstant: false, loadingManual: false });
+      // this.showError();
+    }      
+  }
+
+  onPressBack = () => {
+    this.props.navigation.goBack();
+  };
+
+  render() {
+    return (
+      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContainer}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={this.onPressBack}
+          >
+            <Icon
+              name="chevron-left"
+              type="evilicon"
+              size={45}
+              color={Colors.MEDIUM_GRAY}
+            />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Transfer Method</Text>
+        </View>
+        <View style={styles.mainContent}>
+          <TouchableOpacity 
+            style={styles.optionBox} 
+            onPress={this.onPressInstantEft} 
+            loading={this.state.loadingInstant}
+            disabled={this.state.loadingManual}
+          >
+            <Image
+              style={styles.optionImage}
+              source={require('../../assets/ozow-icon.png')}
+            />
+            <View style={styles.optionTextBox}>
+              <Text style={this.state.loadingManual ? styles.optionTitleDisabled : styles.optionTitle}>
+                { this.state.loadingInstant ? 'LOADING...' : 'PAY WITH OZOW' }
+              </Text>
+              <Text style={styles.optionSubtitle}>Safe and secure instant transfer</Text>
+            </View>
+          </TouchableOpacity>
+
+          <View style={styles.bulletBox}>
+            <View style={styles.bulletItem}>
+              <Icon name="check" type="feather" size={19} color={Colors.GREEN} />
+              <Text style={styles.bulletText}>
+                No registration or app download required
+              </Text>
+            </View>
+            <View style={styles.bulletItem}>
+              <Icon name="check" type="feather" size={19} color={Colors.GREEN} />
+              <Text style={styles.bulletText}>
+                Payments completed in minutes
+              </Text>
+            </View>    
+            <View style={styles.bulletItem}>
+              <Icon name="check" type="feather" size={19} color={Colors.GREEN} />
+              <Text style={styles.bulletText}>
+                No banking login details stored
+              </Text>
+            </View>
+            <View style={styles.bulletItem}>
+              <Icon name="check" type="feather" size={19} color={Colors.GREEN} />
+              <Text style={styles.bulletText}>
+                Works with the big 6 SA banks
+              </Text>
+            </View>
+          </View>
+
+          <TouchableOpacity 
+            style={styles.optionBox} 
+            onPress={this.onPressManualEft} 
+            loading={this.state.loadingManual}
+            disabled={this.state.loadingInstant}
+          >
+            <Image
+              style={styles.optionImage}
+              source={require('../../assets/eft-positive.png')}
+            />
+            <View style={styles.optionTextBox}>
+              <Text style={this.state.loadingInstant ? styles.optionTitleDisabled : styles.optionTitle}>
+                { this.state.loadingManual ? 'LOADING...' : 'MANUAL EFT' }
+              </Text>
+              <Text style={styles.optionSubtitle}>EFTs take 2-3 working days to reflect</Text>
+            </View>
+          </TouchableOpacity>
+
+          <View style={styles.bulletBox}>
+            <View style={styles.bulletItem}>
+              <Icon name="check" type="feather" size={19} color={Colors.GREEN} />
+              <Text style={styles.bulletText}>
+                Transfer cash when you can
+              </Text>
+            </View>
+            <View style={styles.bulletItem}>
+              <Icon name="check" type="feather" size={19} color={Colors.GREEN} />
+              <Text style={styles.bulletText}>
+                Use your normal EFT process
+              </Text>
+            </View>
+            <View style={styles.bulletItem}>
+              <Icon name="check" type="feather" size={19} color={Colors.GREEN} />
+              <Text style={styles.bulletText}>
+                Works with all South African banks
+              </Text>
+            </View>
+          </View>
+
+        </View>
+      </ScrollView>
+    )
+  }
+
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.BACKGROUND_GRAY,
+  },
+  scrollContainer: {
+    alignItems: 'center',
+    justifyContent: 'space-around',
+  },
+  header: {
+    width: '100%',
+    backgroundColor: Colors.WHITE,
+    alignItems: 'flex-start',
+    padding: 6,
+  },
+  headerTitle: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 22,
+    marginStart: 10,
+  },
+  mainContent: {
+    flex: 1,
+    width: '100%',
+    justifyContent: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+  },
+  optionBox: {
+    marginTop: 20,
+    backgroundColor: Colors.WHITE,
+    borderRadius: 10,
+    shadowColor: Colors.BLACK,
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+    height: 70,
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+  },
+  optionImage: {
+    marginStart: 20,
+    width: 29,
+    height: 29,
+  },
+  optionTextBox: {
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    marginLeft: 15,
+  },
+  optionTitle: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  optionTitleDisabled: {
+    fontFamily: 'poppins-regular',
+    fontSize: 16,
+    color: Colors.GRAY,
+  },
+  optionSubtitle: {
+    fontFamily: 'poppins-regular',
+    fontSize: 12,
+    color: Colors.MEDIUM_GRAY,
+  },
+  bulletBox: {
+    marginTop: 15,
+    width: '100%',
+  },
+  bulletItem: {
+    flexDirection: 'row',
+    paddingHorizontal: 5,
+  },
+  bulletText: {
+    fontFamily: 'poppins-regular',
+    fontSize: 12,
+    color: Colors.MEDIUM_GRAY,
+    marginLeft: 5,
+    paddingRight: 10,
+  },
+});
+
+export default connect(mapStateToProps)(SelectTransferMethod);

@@ -4,34 +4,31 @@ import { Endpoints } from '../util/Values';
 import { LoggingUtil } from './LoggingUtil';
 
 export const NotificationsUtil = {
-
   async uploadTokenToServer(notificationsToken, authenticationToken) {
     try {
-      let result = await fetch(Endpoints.CORE + 'message/token', {
+      const result = await fetch(`${Endpoints.CORE}'message/token`, {
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': 'Bearer ' + authenticationToken,
+          Accept: 'application/json',
+          Authorization: `Bearer ${authenticationToken}`,
         },
         method: 'POST',
         body: JSON.stringify({
-          "provider": "EXPO",
-          "token": notificationsToken
-        })
+          provider: 'EXPO',
+          token: notificationsToken,
+        }),
       });
       if (result.ok) {
-        let resultJson = await result.json();
-        if (resultJson.result && resultJson.result.includes("SUCCESS")) {
+        const resultJson = await result.json();
+        if (resultJson.result && resultJson.result.includes('SUCCESS')) {
           return true;
         }
         return false;
-      } else {
-        let resultText = await result.text();
-        console.log("resultText:", resultText);
+      }
+      if (!result.ok) {
         throw result;
       }
     } catch (error) {
-      console.log("error!", error);
       return false;
     }
   },
@@ -42,10 +39,10 @@ export const NotificationsUtil = {
     // console.log(notification);
 
     try {
-      if (notification.origin == "received") {
-        //TODO
+      if (notification.origin === 'received') {
+        // TODO
         //   if (ios) show in tray
-      } else if (notification.origin == "selected") {
+      } else if (notification.origin === 'selected') {
         NavigationUtil.navigateWithoutBackstack(navigation, 'Home');
       }
     } catch (err) {
@@ -57,16 +54,16 @@ export const NotificationsUtil = {
   async deleteNotificationToken(authenticationToken) {
     try {
       // there is a corner case of user being logged into multiple devices, so we specify the token here
-      let result = await fetch(Endpoints.CORE + 'message/token', {
+      const result = await fetch(`${Endpoints.CORE}'message/token`, {
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': 'Bearer ' + authenticationToken,
+          Accept: 'application/json',
+          Authorization: `Bearer ${authenticationToken}`,
         },
         method: 'DELETE',
         body: JSON.stringify({
-          "provider": "EXPO"
-        })
+          provider: 'EXPO',
+        }),
       });
 
       if (result.ok) {
@@ -74,12 +71,10 @@ export const NotificationsUtil = {
       }
 
       return false;
-
     } catch (err) {
-      err.message = `Push notification delete error: ${err.message};`
+      err.message = `Push notification delete error: ${err.message};`;
       LoggingUtil.logError(err);
       return false;
     }
-  }
-
+  },
 };

@@ -1,21 +1,30 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Dimensions, BackHandler } from 'react-native';
+import {
+  AsyncStorage,
+  BackHandler,
+  Dimensions,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { Icon, Button } from 'react-native-elements';
+
 import { NavigationUtil } from '../util/NavigationUtil';
-import { LoggingUtil } from '../util/LoggingUtil';
-import { MessagingUtil } from '../util/MessagingUtil';
 import { Endpoints, Colors } from '../util/Values';
-import { Button, Icon } from 'react-native-elements';
+
+import iconThx from '../../assets/thank_you.png';
 
 const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
 export default class WithdrawalComplete extends React.Component {
-
   constructor(props) {
     super(props);
-    let amount = this.props.navigation.getParam("amount");
+    const amount = this.props.navigation.getParam('amount');
     this.state = {
-      amount: amount,
+      amount,
       loading: false,
       fetchingProfile: true,
       userInfo: null,
@@ -23,10 +32,12 @@ export default class WithdrawalComplete extends React.Component {
   }
 
   async componentDidMount() {
-    this.backHandler = BackHandler.addEventListener('hardwareBackPress', this.handleHardwareBackPress);
+    this.backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      this.handleHardwareBackPress
+    );
 
-    this.fetchProfile(this.props.navigation.getParam("token"));
-
+    this.fetchProfile(this.props.navigation.getParam('token'));
   }
 
   componentWillUnmount() {
@@ -37,7 +48,22 @@ export default class WithdrawalComplete extends React.Component {
     this.backHandler.remove();
     this.onPressDone();
     return false;
-  }
+  };
+
+  onPressDone = attempts => {
+    if (!attempts) attempts = 0;
+    this.setState({ loading: true });
+    if (this.state.fetchingProfile && attempts < 10) {
+      setTimeout(() => {
+        this.onPressDone();
+      }, 1000);
+    } else {
+      this.setState({ loading: false });
+      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', {
+        userInfo: this.state.userInfo,
+      });
+    }
+  };
 
   async fetchProfile(token) {
     this.setState({
@@ -47,14 +73,14 @@ export default class WithdrawalComplete extends React.Component {
       if (!token) {
         NavigationUtil.logout(this.props.navigation);
       }
-      let result = await fetch(Endpoints.AUTH + 'profile/fetch', {
+      const result = await fetch(`${Endpoints.AUTH}profile/fetch`, {
         headers: {
-          'Authorization': 'Bearer ' + token,
+          Authorization: `Bearer ${token}`,
         },
         method: 'GET',
       });
       if (result.ok) {
-        let resultJson = await result.json();
+        const resultJson = await result.json();
         AsyncStorage.setItem('userInfo', JSON.stringify(resultJson));
         this.setState({
           userInfo: resultJson,
@@ -64,19 +90,7 @@ export default class WithdrawalComplete extends React.Component {
         throw result;
       }
     } catch (error) {
-      console.log("error!", error.status);
-      this.setState({fetchingProfile: false});
-    }
-  }
-
-  onPressDone = (attempts) => {
-    if (!attempts) attempts = 0;
-    this.setState({loading: true});
-    if (this.state.fetchingProfile && attempts < 10) {
-      setTimeout(() => {this.onPressDone()}, 1000);
-    } else {
-      this.setState({loading: false});
-      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', { userInfo: this.state.userInfo });
+      this.setState({ fetchingProfile: false });
     }
   }
 
@@ -85,22 +99,29 @@ export default class WithdrawalComplete extends React.Component {
       <View style={styles.container}>
         <TouchableOpacity style={styles.closeButton} onPress={this.onPressDone}>
           <Icon
-            name='close'
-            type='evilicon'
+            name="close"
+            type="evilicon"
             size={30}
             color={Colors.MEDIUM_GRAY}
           />
         </TouchableOpacity>
         <View style={styles.mainContent}>
           <View style={styles.top}>
-            <Image style={styles.image} source={require('../../assets/thank_you.png')} resizeMode="contain"/>
+            <Image style={styles.image} source={iconThx} resizeMode="contain" />
             <Text style={styles.title}>Withdrawal completed successfully</Text>
             <View style={styles.box}>
               <Text style={styles.superscript}>R</Text>
               <Text style={styles.amount}>{this.state.amount}</Text>
             </View>
-            <Text style={styles.description}>You will receive your cash with <Text style={styles.bold}>2-3 working days,</Text> depending on your bank processing time.</Text>
-            <Text style={styles.description}>Remember to keep adding to your savings to continue earning interest!</Text>
+            <Text style={styles.description}>
+              You will receive your cash with{' '}
+              <Text style={styles.bold}>2-3 working days,</Text> depending on
+              your bank processing time.
+            </Text>
+            <Text style={styles.description}>
+              Remember to keep adding to your savings to continue earning
+              interest!
+            </Text>
           </View>
         </View>
         <Button
@@ -114,7 +135,8 @@ export default class WithdrawalComplete extends React.Component {
             colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
             start: { x: 0, y: 0.5 },
             end: { x: 1, y: 0.5 },
-          }} />
+          }}
+        />
       </View>
     );
   }

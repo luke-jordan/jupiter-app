@@ -3,15 +3,15 @@
     "name": "Jupiter",
     "slug": "Jupiter",
     "privacy": "public",
-    "sdkVersion": "35.0.0",
+    "sdkVersion": "36.0.0",
     "platforms": [
       "ios",
-      "android",
-      "web"
+      "android"
     ],
-    "version": "0.0.5",
+    "version": "0.0.21",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
+    "scheme": "jupiter",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -24,13 +24,29 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true,
       "bundleIdentifier": "com.jupitersave.app"
     },
     "android": {
       "package": "com.jupitersave.app",
-      "versionCode": 5,
-      "permissions": []
+      "versionCode": 21,
+      "permissions": [],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "message.jupitersave.com",
+              "pathPrefix": "/uni/*"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
     },
     "hooks": {
       "postPublish": [
@@ -43,6 +59,7 @@
           }
         }
       ]
-    }
+    },
+    "description": "Jupiter savings app. Triggering new publish. This cached publish is extremely annoying when manifests have to change."
   }
 }

@@ -1,63 +1,85 @@
+/* eslint-disable react/sort-comp */
+import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, Clipboard, AppState, Linking, ActivityIndicator, BackHandler, Dimensions } from 'react-native';
+import {
+  ActivityIndicator,
+  Clipboard,
+  Dimensions,
+  Image,
+  Linking,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  AppState,
+  BackHandler,
+} from 'react-native';
+import { Icon, Overlay } from 'react-native-elements';
+import Toast from 'react-native-easy-toast';
+
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Endpoints, Colors } from '../util/Values';
-import { Icon } from 'react-native-elements';
-import { LinearGradient } from 'expo-linear-gradient';
-import Toast from 'react-native-easy-toast';
-import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
 
-let { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
+
 const FONT_UNIT = 0.01 * width;
 
 export default class Payment extends React.Component {
-
   constructor(props) {
     super(props);
+    this.toastRef = React.createRef();
     this.state = {
-      paymentLink: "",
-      accountTransactionId: -1,
-      appState: AppState.currentState,
+      paymentLink: '',
+      transactionId: -1,
       checkingForPayment: false,
-      token: "",
+      token: '',
       isOnboarding: false,
+      appState: AppState.currentState,
     };
   }
 
   async componentDidMount() {
-    console.log(height);
     AppState.addEventListener('change', this.handleAppStateChange);
-    this.backHandler = BackHandler.addEventListener('hardwareBackPress', this.handleHardwareBackPress);
-    let params = this.props.navigation.state.params;
+    this.backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      this.handleHardwareBackPress
+    );
+    const { params } = this.props.navigation.state;
     if (params) {
       this.setState({
+        humanReference: params.humanReference,
         paymentLink: params.urlToCompletePayment,
-        accountTransactionId: params.accountTransactionId,
+        transactionId: params.transactionId,
         token: params.token,
         isOnboarding: params.isOnboarding,
-        amountAdded: params.amountAdded,
+        amountToAdd: params.amountToAdd,
       });
     }
   }
 
-  componentWillUnmount() {
-    AppState.removeEventListener('change', this.handleAppStateChange);
-    this.backHandler.remove();
+  // removing until more confidence in iOS bug handling
+  handleAppStateChange = async (nextAppState) => {
+    try {
+      if (this.state.appState.match(/inactive|background/) && nextAppState === 'active') {
+        LoggingUtil.logEvent("USER_RETURNED_TO_PAYMENT_LINK");
+        if (this.state.checkingForPayment) {
+          this.setState({ appState: nextAppState });
+          return;
+        }
+        this.checkIfPaymentCompleted();
+      } else {
+        LoggingUtil.logEvent("USER_LEFT_APP_AT_PAYMENT_LINK");
+        this.setState({ appState: nextAppState });
+      }
+    } catch (err) {
+      LoggingUtil.logError(err);
+    }
   }
 
-  handleAppStateChange = async (nextAppState) => {
-    if (this.state.appState.match(/inactive|background/) && nextAppState === 'active') {
-      LoggingUtil.logEvent("USER_RETURNED_TO_PAYMENT_LINK");
-      if (this.state.checkingForPayment) {
-        this.setState({ appState: nextAppState });
-        return;
-      }
-      this.checkIfPaymentCompleted();
-    } else {
-      LoggingUtil.logEvent("USER_LEFT_APP_AT_PAYMENT_LINK");
-      this.setState({ appState: nextAppState });
-    }
+  cleanUpListeners() {
+    AppState.removeEventListener('change', this.handleAppStateChange);
+    this.backHandler.remove();
   }
 
   checkIfPaymentCompleted = async () => {
@@ -65,178 +87,252 @@ export default class Payment extends React.Component {
       checkingForPayment: true,
     });
     try {
-      // let result = await fetch(Endpoints.CORE + 'addcash/check?transactionId=' + this.state.accountTransactionId + '&failureType=PENDING', {
-      let result = await fetch(Endpoints.CORE + 'addcash/check?transactionId=' + this.state.accountTransactionId, {
-        headers: {
-          'Authorization': 'Bearer ' + this.state.token,
-        },
-        method: 'GET',
-      });
+      // let result = await fetch(Endpoints.CORE + 'addcash/check?transactionId=' + this.state.transactionId + '&failureType=PENDING', {
+      const result = await fetch(
+        `${Endpoints.CORE}addcash/check?transactionId=${this.state.transactionId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${this.state.token}`,
+          },
+          method: 'GET',
+        }
+      );
       if (result.ok) {
-        let resultJson = await result.json();
+        const resultJson = await result.json();
         this.setState({
           checkingForPayment: false,
         });
-        AppState.removeEventListener('change', this.handleAppStateChange);
-        this.backHandler.remove();
-        if (resultJson.result.includes("PAYMENT_SUCCEEDED")) {
-          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'PaymentComplete', {
-            paymentLink: this.state.paymentLink,
-            accountTransactionId: this.state.accountTransactionId,
-            token: this.state.token,
-            isOnboarding: this.state.isOnboarding,
-            newBalance: resultJson.newBalance,
-            amountAdded: this.state.amountAdded,
-          });
-        } else if (resultJson.result.includes("PAYMENT_PENDING")) {
-          this.props.navigation.navigate('CheckingForPayment', {
-            paymentLink: this.state.paymentLink,
-            accountTransactionId:this.state.accountTransactionId,
-            token: this.state.token,
-            isOnboarding: this.state.isOnboarding,
-            amountAdded: this.state.amountAdded,
-          });
+        if (!resultJson || !resultJson.result) {
+          LoggingUtil.logError(
+            new Error('Payment status check returned malform result: check')
+          );
+          this.navigateToPaymentPending();
+        }
+        if (resultJson.result.includes('PAYMENT_SUCCEEDED')) {
+          this.cleanUpListeners();
+          NavigationUtil.navigateWithoutBackstack(
+            this.props.navigation,
+            'PaymentComplete',
+            {
+              paymentLink: this.state.paymentLink,
+              transactionId: this.state.transactionId,
+              token: this.state.token,
+              isOnboarding: this.state.isOnboarding,
+              newBalance: resultJson.newBalance,
+              amountAdded: this.state.amountToAdd,
+            }
+          );
+        } else if (resultJson.result.includes('PAYMENT_PENDING')) {
+          this.navigateToPaymentPending();
         } else {
-          LoggingUtil.logEvent('PAYMENT_FAILED_UNKNOWN', { "serverResponse" : JSON.stringify(result) });
-          //failed
-          //TODO redirect to failed screen
+          this.logPaymentError('Payment failed on server response', result);
         }
       } else {
-        LoggingUtil.logEvent('PAYMENT_FAILED_UNKNOWN', { "serverResponse" : JSON.stringify(result) });
-        throw result;
+        this.logPaymentError('Payment received bad status code from server', result);
       }
     } catch (error) {
-      console.log("error!", error.status);
-      this.setState({checkingForPayment: false});
+      console.log('ERROR THROWN IN PAYMENT: ', error);
+      this.setState({ checkingForPayment: false });
+      LoggingUtil.logError(error);
+      this.navigateToPaymentPending();
     }
-  }
+  };
 
   handleHardwareBackPress = () => {
-    AppState.removeEventListener('change', this.handleAppStateChange);
-    this.backHandler.remove();
+    this.cleanUpListeners();
     return true;
-  }
+  };
 
   onPressBack = () => {
-    AppState.removeEventListener('change', this.handleAppStateChange);
-    this.backHandler.remove();
-    LoggingUtil.logEvent("USER_WENT_BACK_AT_PAYMENT_LINK");
+    // TODO : consider altering to prevent back
+    this.cleanUpListeners();
+    LoggingUtil.logEvent('USER_WENT_BACK_AT_PAYMENT_LINK');
     this.props.navigation.goBack();
-  }
+  };
 
   onPressAlreadyPaid = () => {
     this.checkIfPaymentCompleted();
-  }
+  };
 
   onPressCopy = () => {
     Clipboard.setString(this.state.paymentLink);
-    this.refs.toast.show('Copied to clipboard!');
-  }
+    this.toastRef.current.show('Copied to clipboard!');
+  };
 
   onPressPaymentLink = () => {
     Linking.openURL(this.state.paymentLink);
+  };
+
+  logPaymentError(message, response) {
+    console.log('LOGGING PAYMENT ERROR: ', message);
+    const paymentError = new Error(message);
+    const serverResponse = response ? JSON.stringify(response) : 'Could not retrieve failing server response';
+    if (serverResponse) {
+      paymentError.serverResponse = serverResponse;
+    }
+    LoggingUtil.logError(paymentError);
+    LoggingUtil.logEvent('PAYMENT_FAILED_SERVER_ERROR');
+    this.navigateToPaymentPending();
+  }
+
+  navigateToPaymentPending(bankDetails) {
+    this.cleanUpListeners();
+    
+    const navigationFunction = this.state.isOnboarding ? NavigationUtil.navigateWithoutBackstack : NavigationUtil.navigateWithHomeBackstack;
+    navigationFunction(
+      this.props.navigation,
+      'PendingInstantTransfer',
+      {
+        paymentLink: this.state.paymentLink,
+        transactionId: this.state.transactionId,
+        token: this.state.token,
+        isOnboarding: this.state.isOnboarding,
+        amountAdded: this.state.amountToAdd,
+        humanReference: this.state.humanReference,
+        bankDetails,
+      }
+    );
   }
 
   render() {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity style={styles.headerButton} onPress={this.onPressBack} >
+          {/* <TouchableOpacity
+            style={styles.headerButton}
+            onPress={this.onPressBack}
+          >
             <Icon
-              name='chevron-left'
-              type='evilicon'
+              name="chevron-left"
+              type="evilicon"
               size={45}
               color={Colors.MEDIUM_GRAY}
             />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
         <View style={styles.contentWrapper}>
           <Text style={styles.title}>Payment</Text>
           <View style={styles.mainContent}>
-            <Text style={styles.secondaryTitle}>Pay with Ozow</Text>
-            <Image style={styles.ozowLogo} source={require('../../assets/ozow_black.png')}/>
-            <Text style={styles.description}>We use <Text style={styles.bold}>Ozow</Text>, South Africa’s premium payment solution, to process all instant EFT payments and transfer cash directly to your Jupiter account. </Text>
-            <Text style={styles.buttonDescription}>Tap the link to pay with Ozow:</Text>
-            <LinearGradient start={[0, 0.5]} end={[1, 0.5]} colors={[Colors.LIGHT_BLUE, Colors.PURPLE]} style={[styles.buttonStyle]}>
-              <Text style={styles.paymentLink} onPress={this.onPressPaymentLink}>{this.state.paymentLink}</Text>
+            <Image
+              style={styles.ozowLogo}
+              source={require('../../assets/ozow_black.png')}
+            />
+            <Text style={styles.description}>
+              We use <Text style={styles.bold}>Ozow</Text>, SA&apos;s premium
+              payment solution, to process instant EFTs and transfer cash
+              directly to your Jupiter account.{' '}
+            </Text>
+            <LinearGradient
+              start={[0, 0.5]}
+              end={[1, 0.5]}
+              colors={[Colors.LIGHT_BLUE, Colors.PURPLE]}
+              style={styles.buttonStyle}
+            >
+              <Text
+                style={styles.paymentLink}
+                onPress={this.onPressPaymentLink}
+              >
+                TRANSFER VIA OZOW
+              </Text>
               <TouchableOpacity onPress={this.onPressCopy}>
-                <Image style={styles.copyIcon} source={require('../../assets/copy.png')} resizeMode="contain"/>
+                <Image
+                  style={styles.copyIcon}
+                  source={require('../../assets/copy.png')}
+                  resizeMode="contain"
+                />
               </TouchableOpacity>
             </LinearGradient>
-            <TouchableOpacity testID='payment-already-paid' accessibilityLabel='payment-already-paid' style={styles.alreadyPaidButton} onPress={this.onPressAlreadyPaid}>
-              <Text style={styles.alreadyPaidButtonText}>I&apos;VE ALREADY PAID</Text>
+            <Text style={styles.buttonDescription}>
+              Tapping will open Ozow&apos;s site in a browser
+            </Text>
+            <TouchableOpacity
+              testID="payment-already-paid"
+              accessibilityLabel="payment-already-paid"
+              style={styles.alreadyPaidButton}
+              onPress={this.onPressAlreadyPaid}
+            >
+              <Text style={styles.alreadyPaidButtonText}>
+                {this.state.checkingForPayment
+                  ? 'CHECKING PAYMENT STATUS...'
+                  : 'I MADE THE PAYMENT!'}
+              </Text>
             </TouchableOpacity>
+            <Text style={styles.description}>
+              When you come back from Ozow tap the button to finish
+            </Text>
           </View>
         </View>
-        {
-          height > 500 ?
-          <View style={[styles.footer, styles.boxShadow]}>
+        {height > 600 ? (
+          <View style={styles.footer}>
             <Text style={styles.footerTitle}>THE EASIEST WAY TO PAY:</Text>
-            <Image style={styles.shield} source={require('../../assets/shield.png')}/>
+            <Image
+              style={styles.shield}
+              source={require('../../assets/shield.png')}
+            />
             <View style={styles.footerItem}>
               <Icon
-                name='check'
-                type='feather'
+                name="check"
+                type="feather"
                 size={19}
                 color={Colors.PURPLE}
               />
-              <Text style={styles.footerItemText}>No registration or app download required</Text>
+              <Text style={styles.footerItemText}>
+                No registration or app download required
+              </Text>
             </View>
             <View style={styles.footerItem}>
               <Icon
-                name='check'
-                type='feather'
+                name="check"
+                type="feather"
                 size={19}
                 color={Colors.PURPLE}
               />
-              <Text style={styles.footerItemText}>Payments completed in seconds</Text>
+              <Text style={styles.footerItemText}>
+                Payments completed in seconds
+              </Text>
             </View>
             <View style={styles.footerItem}>
               <Icon
-                name='check'
-                type='feather'
+                name="check"
+                type="feather"
                 size={19}
                 color={Colors.PURPLE}
               />
-              <Text style={styles.footerItemText}>No proof of payment necessary</Text>
+              <Text style={styles.footerItemText}>
+                <Text style={styles.bold}>No</Text> banking login details stored
+              </Text>
             </View>
             <View style={styles.footerItem}>
               <Icon
-                name='check'
-                type='feather'
-                size={19}
-                color={Colors.PURPLE}
-              />
-              <Text style={styles.footerItemText}><Text style={styles.bold}>No</Text> banking login details stored</Text>
-            </View>
-            <View style={styles.footerItem}>
-              <Icon
-                name='check'
-                type='feather'
+                name="check"
+                type="feather"
                 size={19}
                 color={Colors.PURPLE}
               />
               <Text style={styles.footerItemText}>Safe and secure</Text>
             </View>
           </View>
-          : null
-        }
-        <Toast ref="toast" opacity={1} style={styles.toast}/>
+        ) : null}
+        <Toast ref={this.toastRef} opacity={1} style={styles.toast} />
 
-        <Dialog
-          visible={this.state.checkingForPayment}
-          dialogStyle={styles.dialogStyle}
-          dialogAnimation={new SlideAnimation({
-            slideFrom: 'bottom',
-          })}
-          onTouchOutside={() => {}}
-          onHardwareBackPress={() => {this.setState({checkingForPayment: false}); return true;}}
+        <Overlay
+          isVisible={this.state.checkingForPayment}
+          height="auto"
+          width="auto"
+          containerStyle={styles.dialogStyle}
+          onBackdropPress={() => {}}
+          onHardwareBackPress={() => {
+            this.setState({ checkingForPayment: false });
+            return true;
+          }}
         >
-          <DialogContent style={styles.dialogWrapper}>
+          <View style={styles.dialogWrapper}>
             <ActivityIndicator size="large" color={Colors.PURPLE} />
-            <Text style={styles.dialogText}>Checking if your payment is complete...</Text>
-          </DialogContent>
-        </Dialog>
+            <Text style={styles.dialogText}>
+              Checking if your payment is complete...
+            </Text>
+          </View>
+        </Overlay>
       </View>
     );
   }
@@ -250,7 +346,7 @@ const styles = StyleSheet.create({
   },
   header: {
     width: '100%',
-    height: 50,
+    height: 30,
     backgroundColor: Colors.WHITE,
     flexDirection: 'row',
     alignItems: 'center',
@@ -274,44 +370,42 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     backgroundColor: Colors.BACKGROUND_GRAY,
     alignItems: 'center',
+    paddingTop: 20,
   },
   buttonStyle: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-around',
+    justifyContent: 'center',
     width: '90%',
     borderRadius: 10,
     minHeight: 65,
     minWidth: 220,
   },
-  secondaryTitle: {
-    fontFamily: 'poppins-semibold',
-    fontSize: 20,
-    color: Colors.DARK_GRAY,
-  },
-  ozowLogo: {
-
-  },
+  ozowLogo: {},
   description: {
     fontFamily: 'poppins-regular',
     fontSize: 15,
     color: Colors.MEDIUM_GRAY,
     textAlign: 'center',
+    paddingHorizontal: 7,
   },
   bold: {
     fontFamily: 'poppins-semibold',
   },
   buttonDescription: {
     fontFamily: 'poppins-semibold',
-    fontSize: 18,
+    fontSize: 14,
     color: Colors.DARK_GRAY,
     textAlign: 'center',
+    paddingHorizontal: 10,
+    marginBottom: 15,
   },
   paymentLink: {
     fontFamily: 'poppins-semibold',
-    fontSize: FONT_UNIT * 3,
+    fontSize: FONT_UNIT * 5,
     color: Colors.WHITE,
     textAlign: 'center',
+    marginEnd: 10,
   },
   alreadyPaidButton: {
     borderWidth: 2,
@@ -353,13 +447,6 @@ const styles = StyleSheet.create({
     color: Colors.MEDIUM_GRAY,
     marginBottom: 2,
     marginLeft: 5,
-  },
-  boxShadow: {
-    shadowColor: Colors.RED,
-    shadowOffset: { width: 0, height: 1000 },
-    shadowOpacity: 0.1,
-    shadowRadius: 500,
-    elevation: 20,
   },
   copyIcon: {
     width: 22,

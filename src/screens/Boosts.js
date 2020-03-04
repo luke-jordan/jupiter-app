@@ -1,17 +1,35 @@
+import moment from 'moment';
 import React from 'react';
-import { StyleSheet, View, Image, Text, Dimensions, AsyncStorage, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import {
+  ActivityIndicator,
+  AsyncStorage,
+  Dimensions,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+} from 'react-native';
+import { Button } from 'react-native-elements';
+
+import BoostOfferModal from '../elements/boost/BoostOfferModal';
+
+import NavigationBar from '../elements/NavigationBar';
+import getPermittedTypesOfBoost from '../modules/boost/helpers/getPermittedTypesOfBoost';
+import { BoostStatus } from '../modules/boost/models';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { Sizes, Endpoints, Colors } from '../util/Values';
-import { Button, Icon, Input } from 'react-native-elements';
-import NavigationBar from '../elements/NavigationBar';
-import moment from 'moment';
+import { MessagingUtil } from '../util/MessagingUtil';
+import { equalizeAmounts } from '../modules/boost/helpers/parseAmountValue';
+
+import { extractConditionParameter, getDivisor } from '../util/AmountUtil';
 
 const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
-export default class Boosts extends React.Component {
-
+class Boosts extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -27,127 +45,99 @@ export default class Boosts extends React.Component {
     } else {
       info = JSON.parse(info);
     }
-    let token = info.token;
-    await this.setState({
-      token: token,
-    });
+    const { token } = info;
 
     let boosts = await AsyncStorage.getItem('userBoosts');
     if (boosts) {
       boosts = JSON.parse(boosts);
       this.setState({
-        boosts: boosts,
+        boosts,
+        token,
         loading: false,
       });
     }
     this.fetchBoosts(token);
   }
 
-  sortBoosts = (boosts) => {
-    return boosts.sort((a, b) => {
-      if (a.boostStatus != b.boostStatus) {
-        if (a.boostStatus == "REDEEMED" || a.boostStatus == "EXPIRED") return 1;
-        else return -1;
-      } else {
-        if (moment(a.endTime).isAfter(moment(b.endTime))) return -1;
-        else return 1;
-      }
-    });
-  }
-
-  fetchBoosts = async (token) => {
-    try {
-      let result = await fetch(Endpoints.CORE + 'boost/list', {
-        headers: {
-          'Authorization': 'Bearer ' + token,
-        },
-        method: 'GET',
-      });
-      if (result.ok) {
-        let resultJson = await result.json();
-        let boosts = this.sortBoosts(resultJson);
-        this.setState({
-          boosts: boosts,
-          loading: false,
-        });
-        AsyncStorage.setItem("userBoosts", JSON.stringify(boosts));
-      } else {
-        throw result;
-      }
-    } catch (error) {
-      console.log("error!", error.status);
-      this.setState({loading: false});
-    }
-  }
-
-  renderBoosts() {
-    return (
-      <View style={styles.cardsWrapper}>
-        {
-          this.state.boosts.map((item, index) => this.renderBoostCard(item, index))
-        }
-      </View>
-    );
-  }
-
   getBoostIcon(boostDetails) {
-    if (boostDetails.boostStatus == "REDEEMED") {
+    if (boostDetails.boostStatus === 'REDEEMED') {
       return require('../../assets/completed.png');
-    } else if (boostDetails.boostType == "GAME") {
+    } else if (boostDetails.boostType === 'GAME') {
       return require('../../assets/boost_challenge.png');
     }
     return require('../../assets/surprise_reward.png');
   }
 
-  getBoostResultIcon(status) {
-    if (status == "REDEEMED") {
+  getBoostResultIcon(boostStatus, endTime) {
+    if (boostStatus === 'REDEEMED') {
       return require('../../assets/thumbs_up.png');
-    } else if (status == "EXPIRED") {
+    } else if (this.isBoostExpired({ boostStatus, endTime })) {
       return require('../../assets/sad_face.png');
     }
   }
 
-  isBoostExpiringSoon(endTime) {
-    return moment(endTime).isBefore(moment().add(1, 'days'));
+  // note : 'pending' state means no further action from user, so here is the same as redeemed (thus also skipped over)
+  getNextStatus(boostStatus, statusConditionKeys) {
+    if ([BoostStatus.PENDING, BoostStatus.REDEEMED, BoostStatus.EXPIRED, BoostStatus.REVOKED].includes(boostStatus)) {
+      return null;
+    }
+
+    const isBoostPreAction = [BoostStatus.CREATED, BoostStatus.OFFERED].includes(boostStatus);
+    if (isBoostPreAction) {
+      return statusConditionKeys.includes(BoostStatus.UNLOCKED) ? BoostStatus.UNLOCKED : BoostStatus.REDEEMED;
+    }
+
+    if (boostStatus === BoostStatus.UNLOCKED) {
+      return BoostStatus.REDEEMED;
+    }
   }
 
-  getAdditionalLabelRow(boostDetails) {
-    if (boostDetails.boostStatus == "REDEEMED") {
-      return <Text style={styles.boostClaimed}>Boost Claimed: </Text>;
+  getNextStatusAndThresholdEvent(boostStatus, statusConditions) {
+    const nextStatus = this.getNextStatus(boostStatus, Object.keys(statusConditions));
+    // console.log('BOOST NEXT STATUS: ', nextStatus);
+    if (!nextStatus) {
+      return null;
     }
-    if (boostDetails.boostStatus == "EXPIRED") {
-      return <Text style={styles.boostExpired}>Boost Expired.</Text>;
+
+    const conditions = statusConditions[nextStatus];
+    // console.log('EXTRACTED BOOST CONDITION: ', conditions);
+
+    let thresholdEventType = '';
+    if (conditions && conditions.length > 0) {
+      const condition = conditions[0];
+      if (condition.includes('save_event')) thresholdEventType = 'save_event';
+      if (condition.includes('social_event')) thresholdEventType = 'social_event';
+      if (condition.includes('number_taps')) thresholdEventType = 'game_event';
     }
-    if (this.isBoostExpiringSoon(boostDetails.endTime)) {
-      return <Text style={styles.boostExpiring}>Expiring soon</Text>;
-    }
+    
+    return { nextStatus, thresholdEventType };
   }
 
   getBoostButton(boostDetails) {
-
-    if (boostDetails.boostStatus == "REDEEMED" || boostDetails.boostStatus == "EXPIRED") {
+    const isBoostExpired = this.isBoostExpired({ boostStatus: boostDetails.boostStatus, endTime: boostDetails.endTime });
+    if (boostDetails.boostStatus === 'REDEEMED' || isBoostExpired) {
       return null;
     }
 
-    let conditions = boostDetails.statusConditions.REDEEMED;
-    let buttonType = "";
-    if (conditions && conditions.length > 0) {
-      let condition = conditions[0];
-      if (condition.includes("save_event")) buttonType = "save_event";
-      if (condition.includes("social_event")) buttonType = "social_event";
-    }
-
-    if (buttonType == "") {
+    const { nextStatus, thresholdEventType } = this.getNextStatusAndThresholdEvent(boostDetails.boostStatus, boostDetails.statusConditions);
+    
+    if (thresholdEventType === '') {
       return null;
     } else {
-      let title = "", action = null;
-      if (buttonType == "save_event") {
-        title = "ADD CASH";
-        action = this.onPressAddCash;
-      } else if (buttonType == "social_event") {
-        title = "INVITE FRIENDS";
+      let title = '';
+      let action = null;
+      if (thresholdEventType === 'save_event') {
+        title = 'ADD CASH';
+        const amount = this.extractStatusThreshold(boostDetails.statusConditions, nextStatus);
+        action = () => this.onPressAddCash(amount);
+      } else if (thresholdEventType === 'social_event') {
+        title = 'INVITE FRIENDS';
         action = this.onPressInviteFriends;
+      } else if (thresholdEventType === 'game_event') {
+        title = 'PLAY GAME';
+        action = () => this.props.navigation.navigate('Home', { showGameUnlockedModal: true, boostDetails });
       }
+
       return (
         <Button
           title={title}
@@ -159,107 +149,293 @@ export default class Boosts extends React.Component {
             colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
             start: { x: 0, y: 0.5 },
             end: { x: 1, y: 0.5 },
-          }}/>
+          }}
+        />
       );
     }
   }
 
-  onPressAddCash = () => {
-    this.props.navigation.navigate('AddCash');
-  }
-
-  onPressInviteFriends = () => {
-    this.props.navigation.navigate('Friends');
+  getAdditionalLabelRow(boostDetails) {
+    if (boostDetails.boostStatus === 'REDEEMED') {
+      return <Text style={styles.boostClaimed}>Boost Claimed: </Text>;
+    }
+    if (
+      this.isBoostExpired({
+        boostStatus: boostDetails.boostStatus,
+        endTime: boostDetails.endTime,
+      })
+    ) {
+      return <Text style={styles.boostExpired}>Boost Expired.</Text>;
+    }
+    if (this.isBoostExpiringSoon(boostDetails.endTime)) {
+      return <Text style={styles.boostExpiring}>Expiring soon</Text>;
+    }
   }
 
   getHighlightBorder(boostDetails) {
-    if (boostDetails.boostStatus != "REDEEMED" && boostDetails.boostStatus != "EXPIRED" && this.isBoostExpiringSoon(boostDetails.endTime)) {
+    if ([BoostStatus.UNLOCKED, BoostStatus.PENDING].indexOf(boostDetails.boostStatus) > 0 && !this.isBoostExpired(boostDetails)) {
       return styles.purpleBorder;
     }
     return null;
   }
 
-  getCardOpacity(boostStatus) {
-    if (boostStatus == "EXPIRED") return 0.6;
+  getCardOpacity(boostStatus, endTime) {
+    if (boostStatus === 'REDEEMED' || this.isBoostExpired({ boostStatus, endTime })) return 0.6;
     return 1;
   }
 
-  renderBoostCard(boostDetails, index) {
+  sortBoosts = boosts => {
+    const sortByTime = (a, b) =>
+      moment(b.startTime).isAfter(moment(a.startTime)) && 1;
+    const isOneOf = options => x => options.indexOf(x.boostStatus) !== -1;
+
+    const topGroup = boosts
+      .filter(
+        isOneOf([BoostStatus.OFFERED, BoostStatus.CREATED, BoostStatus.UNLOCKED, BoostStatus.PENDING])
+      )
+      .sort(sortByTime);
+    const middleGroup = boosts
+      .filter(isOneOf([BoostStatus.CLAIMED, BoostStatus.REDEEMED]))
+      .sort(sortByTime);
+    const bottomGroup = boosts
+      .filter(isOneOf([BoostStatus.EXPIRED, BoostStatus.REVOKED]))
+      .sort(sortByTime);
+
+    return [...topGroup, ...middleGroup, ...bottomGroup];
+  };
+
+  extractStatusThreshold = (statusConditions, boostStatus = BoostStatus.REDEEMED) => {
+    const redeemConditions = statusConditions[boostStatus];
+    if (!redeemConditions) {
+      return null;
+    }
+    const saveCondition = redeemConditions.find((condition) => condition.startsWith('save_event_greater_than'));
+    if (!saveCondition) {
+      return null;
+    }
+    const saveConditionParam = extractConditionParameter(saveCondition);
+    if (!saveConditionParam) {
+      return null;
+    }
+
+    const thresholdNumber = equalizeAmounts(saveConditionParam) / getDivisor('DEFAULT');
+    return thresholdNumber;
+  }
+
+  showModalHandler = (boostModalParams) => {
+    this.setState({ showModal: true, currentBoostParameters: boostModalParams });
+  };
+
+  hideModalHandler = () => {
+    this.setState({ showModal: false });
+  };
+
+  handleTappedBoost = (boostDetails) => {
+    const { nextStatus, thresholdEventType } = this.getNextStatusAndThresholdEvent(boostDetails.boostStatus, boostDetails.statusConditions);
+    if (thresholdEventType === 'save_event') {
+      const boostThreshold = this.extractStatusThreshold(boostDetails.statusConditions, nextStatus);
+      const boostModalParams = { ...boostDetails, boostThreshold };
+      this.showModalHandler(boostModalParams);
+      return;
+    }
+
+    if (thresholdEventType === 'game_event') {
+      this.props.navigation.navigate('Home', { showGameUnlockedModal: true, boostDetails });
+    }
+
+    return false;
+  }
+
+  fetchBoosts = async token => {
+    try {
+      const result = await fetch(`${Endpoints.CORE}boost/list`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        method: 'GET',
+      });
+      if (result.ok) {
+        const resultJson = await result.json();
+        const boosts = this.sortBoosts(resultJson);
+        // console.log('TCL: Boosts -> boosts', boosts);
+        this.setState({
+          boosts,
+          loading: false,
+        });
+        AsyncStorage.setItem('userBoosts', JSON.stringify(boosts));
+      } else {
+        throw result;
+      }
+    } catch (error) {
+      this.setState({ loading: false });
+    }
+  };
+
+  onPressAddCash = amount => this.props.navigation.navigate('AddCash', { preFilledAmount: amount });
+
+  onPressInviteFriends = () => {
+    this.props.navigation.navigate('Friends');
+  };
+
+  isBoostExpiringSoon(endTime) {
+    return moment(endTime).isBefore(moment().add(1, 'days'));
+  }
+
+  isBoostExpired({ boostStatus, endTime }) {
+    // the server sometimes will not have set a boost status to expire even when its end time is past
+    // in that case, as a fallback, we should set the status to expired here
+    if (boostStatus === 'EXPIRED') {
+      return true;
+    }
+
+    return moment(endTime).isBefore(moment());
+  }
+
+  renderBoosts() {
     return (
-      <View opacity={this.getCardOpacity(boostDetails.boostStatus)} style={[styles.boostCard, styles.boxShadow, this.getHighlightBorder(boostDetails)]} key={index}>
-        <View style={styles.boostTopRow}>
-          <Text style={styles.boostTitle}>{boostDetails.label}</Text>
-          <View style={styles.boostIconWrapper}>
-            {
-              boostDetails.boostType != "SIMPLE" || boostDetails.boostStatus == "REDEEMED" ?
-              <Image source={this.getBoostIcon(boostDetails)} style={styles.boostIcon} />
-              :
-              <Text style={styles.boostAmount}>R{boostDetails.boostAmount}</Text>
-            }
-          </View>
-        </View>
-        <View style={styles.boostBottomRow}>
-          <View style={styles.boostBottomRowLeft}>
-            {
-              boostDetails.boostStatus == "REDEEMED" || boostDetails.boostStatus == "EXPIRED" ?
-              <Image source={this.getBoostResultIcon(boostDetails.boostStatus)} style={styles.boostResultIcon} />
-              : null
-            }
-            <View style={styles.boostResultTexts}>
-              {
-                this.getAdditionalLabelRow(boostDetails)
-              }
-              <Text style={styles.boostValidityText}>
-                {boostDetails.boostStatus == "OFFERED" || boostDetails.boostStatus == "PENDING" ? "Valid until " : ""}
-                {moment(boostDetails.endTime).format("DD MMM YY")}
-              </Text>
+      <View style={styles.cardsWrapper}>
+        {this.state.boosts.map((item, index) =>
+          this.renderBoostCard(item, index)
+        )}
+      </View>
+    );
+  }
+
+  renderBoostCard(boostDetails) {
+    const permittedTypesOfBoost = getPermittedTypesOfBoost(boostDetails);
+    if (permittedTypesOfBoost) {
+      const offeredInstructionStatus = boostDetails.messageInstructionIds.instructions.find(
+        item => item.status === BoostStatus.OFFERED
+      );
+      const { msgInstructionId } = offeredInstructionStatus;
+
+      if (msgInstructionId) {
+        MessagingUtil.fetchInstructionsMessage(
+          this.state.token,
+          msgInstructionId
+        );
+      }
+    }
+
+    return (
+      <TouchableOpacity
+        disabled={boostDetails.boostStatus !== BoostStatus.OFFERED && boostDetails.boostStatus !== BoostStatus.UNLOCKED}
+        onPress={() => this.handleTappedBoost(boostDetails)}
+        key={boostDetails.boostId}
+        style={[
+          styles.boostCard,
+          styles.boxShadow,
+          this.getHighlightBorder(boostDetails),
+        ]}
+      >
+        <View
+          opacity={this.getCardOpacity(
+            boostDetails.boostStatus,
+            boostDetails.endTime
+          )}
+        >
+          <View style={styles.boostTopRow}>
+            <Text style={styles.boostTitle}>{boostDetails.label}</Text>
+            <View style={styles.boostIconWrapper}>
+              {boostDetails.boostType !== 'SIMPLE' ||
+              boostDetails.boostStatus === 'REDEEMED' ? (
+                <Image
+                  source={this.getBoostIcon(boostDetails)}
+                  style={styles.boostIcon}
+                />
+              ) : (
+                <Text style={styles.boostAmount}>
+                  R{boostDetails.boostAmount}
+                </Text>
+              )}
             </View>
           </View>
-          {
-            this.getBoostButton(boostDetails)
-          }
+          <View style={styles.boostBottomRow}>
+            <View style={styles.boostBottomRowLeft}>
+              {boostDetails.boostStatus === 'REDEEMED' ||
+              this.isBoostExpired({
+                boostStatus: boostDetails.boostStatus,
+                endTime: boostDetails.endTime,
+              }) ? (
+                <Image
+                  source={this.getBoostResultIcon(
+                    boostDetails.boostStatus,
+                    boostDetails.endTime
+                  )}
+                  style={styles.boostResultIcon}
+                />
+              ) : null}
+              <View style={styles.boostResultTexts}>
+                {this.getAdditionalLabelRow(boostDetails)}
+                <Text style={styles.boostValidityText}>
+                  {boostDetails.boostStatus === 'OFFERED' ||
+                  boostDetails.boostStatus === 'PENDING'
+                    ? 'Valid until '
+                    : ''}
+                  {moment(boostDetails.endTime).format('DD MMM YY')}
+                </Text>
+              </View>
+            </View>
+            {this.getBoostButton(boostDetails)}
+          </View>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   }
 
   renderMainContent() {
     return (
       <View style={styles.contentWrapper}>
-        {
-          this.state.boosts && this.state.boosts.length > 0 ?
-          <ScrollView style={styles.scrollView} contentContainerStyle={styles.mainContent}>
-            {
-              this.renderBoosts()
-            }
+        {this.state.boosts && this.state.boosts.length > 0 ? (
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.mainContent}
+          >
+            {this.renderBoosts()}
             <View style={styles.bottomMargin} />
           </ScrollView>
-          :
+        ) : (
           <View style={styles.contentWrapper}>
-            <Image style={styles.image} source={require('../../assets/group_7.png')} resizeMode="contain"/>
+            <Image
+              style={styles.image}
+              source={require('../../assets/group_7.png')}
+              resizeMode="contain"
+            />
             <Text style={styles.title}>Watch this space…</Text>
-            <Text style={styles.description}>We’re adding boosts to encourage and celebrate you being a{"\n"}happy saver!</Text>
+            <Text style={styles.description}>
+              We’re adding boosts to encourage and celebrate you being a{'\n'}
+              happy saver!
+            </Text>
           </View>
-        }
+        )}
       </View>
     );
   }
 
   render() {
+    const { showModal } = this.state;
     return (
       <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Boosts</Text>
         </View>
-        {
-          this.state.loading ?
+        {this.state.loading ? (
           <View style={styles.contentWrapper}>
             <ActivityIndicator size="large" color={Colors.PURPLE} />
           </View>
-          :
+        ) : (
           this.renderMainContent()
-        }
-        <NavigationBar navigation={this.props.navigation} currentTab={2} hasNotification />
+        )}
+        <NavigationBar navigation={this.props.navigation} currentTab={2} />
+        {showModal && (
+          <BoostOfferModal
+            showModal
+            navigation={this.props.navigation}
+            hideModal={() => this.hideModalHandler()}
+            boostDetails={this.state.currentBoostParameters}
+            // boostMessage={this.state.boostMessage}
+          />
+        )}
       </View>
     );
   }
@@ -309,10 +485,12 @@ const styles = StyleSheet.create({
   scrollView: {
     backgroundColor: Colors.BACKGROUND_GRAY,
     width: '100%',
-    marginBottom: - Sizes.NAVIGATION_BAR_HEIGHT + Sizes.VISIBLE_NAVIGATION_BAR_HEIGHT,
+    marginBottom:
+      -Sizes.NAVIGATION_BAR_HEIGHT + Sizes.VISIBLE_NAVIGATION_BAR_HEIGHT,
   },
   bottomMargin: {
-    marginBottom: Sizes.NAVIGATION_BAR_HEIGHT - Sizes.VISIBLE_NAVIGATION_BAR_HEIGHT,
+    marginBottom:
+      Sizes.NAVIGATION_BAR_HEIGHT - Sizes.VISIBLE_NAVIGATION_BAR_HEIGHT,
   },
   mainContent: {
     alignItems: 'center',
@@ -337,7 +515,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   boostCard: {
-    backgroundColor: 'white',
+    backgroundColor: Colors.WHITE,
     marginVertical: 12,
     width: '97%',
     padding: 10,
@@ -373,9 +551,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  boostIcon: {
-
-  },
+  boostIcon: {},
   boostAmount: {
     fontFamily: 'poppins-semibold',
     fontSize: 15,
@@ -421,3 +597,5 @@ const styles = StyleSheet.create({
     borderColor: Colors.PURPLE,
   },
 });
+
+export default Boosts;

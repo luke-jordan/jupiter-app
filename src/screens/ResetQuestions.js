@@ -1,21 +1,18 @@
 import React from 'react';
-import { StyleSheet, View, Text, AsyncStorage, ScrollView, Dimensions } from 'react-native';
+import { Dimensions, Text, ScrollView, StyleSheet, View } from 'react-native';
+import { Button, Input } from 'react-native-elements';
+
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Endpoints, Colors } from '../util/Values';
-import { Button, Input } from 'react-native-elements';
 
-const { width} = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
 export default class ResetQuestions extends React.Component {
-
   constructor(props) {
     super(props);
     this.state = {
-      month: "",
-      balance: "",
-      friends: "",
       answers: [],
       questions: [],
       loading: false,
@@ -24,11 +21,11 @@ export default class ResetQuestions extends React.Component {
 
   async componentDidMount() {
     LoggingUtil.logEvent('USER_ENTERED_PWORD_RESET_QS');
-    let questions = this.props.navigation.getParam('questions');
+    const questions = this.props.navigation.getParam('questions');
 
-    let answers = this.state.answers;
-    for (let question of questions.questionsToAnswer) {
-      answers[question.questionKey] = "";
+    const { answers } = this.state;
+    for (const question of questions.questionsToAnswer) {
+      answers[question.questionKey] = '';
     }
     this.setState({
       answers,
@@ -39,26 +36,30 @@ export default class ResetQuestions extends React.Component {
 
   onPressContinue = async () => {
     if (this.state.loading) return;
-    this.setState({loading: true});
-    let bodyArray = [];
-    for (let answerKey in this.state.answers) {
-      bodyArray[answerKey] = this.state.answers[answerKey];
-    }
+    this.setState({ loading: true });
+
+    const bodyArray = { ...this.state.answers };
     try {
-      let result = await fetch(Endpoints.AUTH + 'password/reset/answerqs', {
+      const result = await fetch(`${Endpoints.AUTH}password/reset/answerqs`, {
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          Accept: 'application/json',
         },
         method: 'POST',
-        body: JSON.stringify(bodyArray),
+        body: JSON.stringify({
+          systemWideUserId: this.state.systemWideUserId, 
+          userAnswers: bodyArray,
+        }),
       });
       if (result.ok) {
-        this.setState({loading: false});
-        let resultJson = await result.json();
-        console.log(resultJson);
-        if (resultJson.result.includes("SUCCESS")) {
-          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'SetPassword', { systemWideUserId: this.state.systemWideUserId, isReset: true });
+        this.setState({ loading: false });
+        const resultJson = await result.json();
+        if (resultJson.result.includes('SUCCESS')) {
+          NavigationUtil.navigateWithoutBackstack(
+            this.props.navigation,
+            'SetPassword',
+            { systemWideUserId: this.state.systemWideUserId, isReset: true }
+          );
         } else {
           this.showError();
         }
@@ -66,44 +67,51 @@ export default class ResetQuestions extends React.Component {
         throw result;
       }
     } catch (error) {
-      console.log("error!", error);
       this.showError();
     }
-  }
+  };
+
+  onChangeAnswer = (text, question) => {
+    const answers = { ...this.state.answers };
+    answers[question.questionKey] = text;
+    this.setState({
+      answers,
+      hasError: false,
+    });
+  };
+
+  getQuestionPlaceholder = question => {
+    if (question.placeholder) {
+      return question.placeholder;
+    }
+    switch (question.questionKey) {
+      case 'MONTH_OPEN':
+        return 'e.g. August 2019';
+
+      case 'CURRENT_BALANCE':
+        return 'e.g. 123.45';
+
+      case 'MONTHLY_SAVING_EVENTS':
+        return 'e.g. 8';
+
+      default:
+        return '';
+    }
+  };
+
+  onPressLogin = () => {
+    NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Login');
+  };
+
+  onPressSupport = () => {
+    this.props.navigation.navigate('Support', { originScreen: 'ResetQuestions '});
+  };
 
   showError() {
     this.setState({
       loading: false,
       hasError: true,
     });
-  }
-
-  onChangeAnswer = (text, question) => {
-    let answers = Object.assign({}, this.state.answers);
-    answers[question.questionKey] = text;
-    this.setState({
-      answers,
-      hasError: false
-    });
-  }
-
-  getQuestionPlaceholder = (question) => {
-    if (question.placeholder) {
-      return question.placeholder;
-    }
-    switch (question.questionKey) {
-      case "MONTH_OPEN":
-      return "e.g. August 2019";
-
-      case "CURRENT_BALANCE":
-      return "e.g. 123.45";
-
-      case "MONTHLY_SAVING_EVENTS":
-      return "e.g. 8";
-
-      default:
-      return "";
-    }
   }
 
   renderQuestion(index, question) {
@@ -113,7 +121,7 @@ export default class ResetQuestions extends React.Component {
         <Input
           value={this.state.answers[question.questionKey]}
           placeholder={this.getQuestionPlaceholder(question)}
-          onChangeText={(text) => this.onChangeAnswer(text, question)}
+          onChangeText={text => this.onChangeAnswer(text, question)}
           inputContainerStyle={styles.inputContainerStyle}
           inputStyle={styles.inputStyle}
           containerStyle={styles.containerStyle}
@@ -122,30 +130,35 @@ export default class ResetQuestions extends React.Component {
     );
   }
 
-  onPressLogin = () => {
-    NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Login');
-  }
-
   render() {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Reset Password</Text>
-          <Text style={styles.headerText}>For security reasons, please answer the following questions before resetting your password.</Text>
+          <Text style={styles.headerText}>
+            For security reasons, please answer the following questions before
+            resetting your password.
+          </Text>
         </View>
-        <ScrollView style={styles.mainContent} contentContainerStyle={styles.mainContentContainer} >
-          {
-            this.state.questions && this.state.questions.length > 0 ?
-            this.state.questions.map((item, index) => this.renderQuestion(index, item))
-            : null
-          }
-          </ScrollView>
-          {
-            this.state.hasError ?
-            <Text style={styles.errorMessage}>Some of your answers might be incorrect.</Text>
-            : null
-          }
-        <Text style={styles.goback} onPress={this.onPressLogin}>Go to Login</Text>
+        <ScrollView
+          style={styles.mainContent}
+          contentContainerStyle={styles.mainContentContainer}
+        >
+          {this.state.questions && this.state.questions.length > 0
+            ? this.state.questions.map((item, index) =>
+                this.renderQuestion(index, item)
+              )
+            : null}
+        </ScrollView>
+        {this.state.hasError ? (
+          <Text style={styles.errorMessage} onPress={this.onPressSupport}>
+            Sorry, some of those answers are too far away from the correct values. Please try again, 
+            or <Text style={styles.errorSupport}>contact support</Text> to ask for manual verification and reset.
+          </Text>
+        ) : null}
+        <Text style={styles.goback} onPress={this.onPressLogin}>
+          Go to Login
+        </Text>
         <Button
           title="CONTINUE"
           loading={this.state.loading}
@@ -157,7 +170,8 @@ export default class ResetQuestions extends React.Component {
             colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
             start: { x: 0, y: 0.5 },
             end: { x: 1, y: 0.5 },
-          }} />
+          }}
+        />
       </View>
     );
   }
@@ -175,7 +189,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.WHITE,
     paddingTop: 30,
     paddingBottom: 15,
-    paddingHorizontal: 10
+    paddingHorizontal: 10,
   },
   headerTitle: {
     fontFamily: 'poppins-semibold',
@@ -237,15 +251,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  redText: {
-    color: Colors.RED,
-  },
   errorMessage: {
     fontFamily: 'poppins-regular',
     color: Colors.RED,
     fontSize: 12,
-    marginTop: -15, //this is valid because of the exact alignment of other elements - do not reuse in other components
+    marginTop: -15, // this is valid because of the exact alignment of other elements - do not reuse in other components
     marginBottom: 20,
+    paddingHorizontal: 20,
+  },
+  errorSupport: {
+    fontFamily: 'poppins-semibold',
+    textDecorationLine: 'underline',
   },
   goback: {
     color: Colors.PURPLE,

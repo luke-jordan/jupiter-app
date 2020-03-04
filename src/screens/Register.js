@@ -1,22 +1,30 @@
 import React from 'react';
-import { StyleSheet, View, Image, Text, TouchableOpacity, ScrollView, KeyboardAvoidingView, Keyboard } from 'react-native';
+import {
+  Image,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  KeyboardAvoidingView,
+  Keyboard,
+  View,
+} from 'react-native';
+import { Button, Icon, Input, Overlay } from 'react-native-elements';
+
 import { LoggingUtil } from '../util/LoggingUtil';
 import { ValidationUtil } from '../util/ValidationUtil';
-import { Button, Icon, Input } from 'react-native-elements';
 import { Colors, Endpoints } from '../util/Values';
-import Dialog, { SlideAnimation, DialogContent } from 'react-native-popup-dialog';
 
 export default class Register extends React.Component {
-
   constructor(props) {
     super(props);
     this.state = {
       loading: false,
-      firstName: "",
-      lastName: "",
-      idNumber: "",
-      userId: "",
-      referralCode: "",
+      firstName: '',
+      lastName: '',
+      idNumber: '',
+      userId: '',
+      referralCode: '',
       errors: {
         firstName: false,
         lastName: false,
@@ -25,70 +33,61 @@ export default class Register extends React.Component {
         phoneEmailValidation: false,
         general: false,
       },
-      generalErrorText: "Sorry, there's an error with one or more input above, please check and resubmit",
-      defaultGeneralErrorText: "Sorry, there's an error with one or more input above, please check and resubmit",
+      generalErrorText:
+        "Sorry, there's an error with one or more input above, please check and resubmit",
+      defaultGeneralErrorText:
+        "Sorry, there's an error with one or more input above, please check and resubmit",
       dialogVisible: false,
+      hasErrors: false,
     };
   }
 
   async componentDidMount() {
-    let referralCode = this.props.navigation.getParam("referralCode");
+    const referralCode = this.props.navigation.getParam('referralCode');
     if (referralCode && referralCode.length > 0) {
-      this.setState({referralCode});
+      this.setState({ referralCode });
     }
   }
 
   onPressBack = () => {
     this.props.navigation.goBack();
-  }
-
-  fieldIsMandatory(field) {
-    switch (field) {
-      case "firstName":
-      case "lastName":
-      case "idNumber":
-      return true;
-
-      default:
-      return false;
-    }
-  }
+  };
 
   onEditField = (text, field) => {
-    let errors = Object.assign({}, this.state.errors);
+    const errors = { ...this.state.errors };
     errors[field] = false;
-    if (field == "userId") {
+    if (field === 'userId') {
       errors.phone = false;
       errors.email = false;
     }
     errors.general = false;
     this.setState({
       [field]: text,
-      errors: errors,
+      errors,
     });
-  }
+  };
 
-  onEndEditing = async (field) => {
-    let errors = Object.assign({}, this.state.errors);
-    if (this.fieldIsMandatory(field) && this.state[field].length == 0) {
+  onEndEditing = async field => {
+    const errors = { ...this.state.errors };
+    if (this.fieldIsMandatory(field) && this.state[field].length === 0) {
       errors[field] = true;
     } else {
       errors[field] = false;
     }
     errors.general = false;
     this.setState({
-      errors: errors,
+      errors,
     });
-  }
+  };
 
   onPressTerms = () => {
     this.props.navigation.navigate('Terms');
-  }
+  };
 
   // note : for some strange deep RN weirdness, this has to be async
   validateInput = async () => {
     let hasErrors = false;
-    let errors = Object.assign({}, this.state.errors);
+    const errors = { ...this.state.errors };
 
     // check for non-null
     if (this.state.firstName.length < 1) {
@@ -104,16 +103,25 @@ export default class Register extends React.Component {
       errors.idNumber = true;
     }
 
+    // trim the input
+    await this.setState({
+      firstName: this.state.firstName.trim(),
+      lastName: this.state.lastName.trim(),
+      idNumber: this.state.idNumber.trim(),
+    });
+
     // check for phone email is non null & is valid
     if (this.state.userId.length < 1) {
       hasErrors = true;
       errors.phoneEmailValidation = true;
-    } else {
-      if (!ValidationUtil.isValidEmailPhone(this.state.userId)) {
-        hasErrors = true;
-        errors.phoneEmailValidation = true;
-      }
+    } else if (!ValidationUtil.isValidEmailPhone(this.state.userId)) {
+      hasErrors = true;
+      errors.phoneEmailValidation = true;
     }
+
+    this.setState({
+      userId: this.state.userId.trim(),
+    });
 
     // since SA ID numbers are easy to check for basic validity, do so
     if (!ValidationUtil.isValidId(this.state.idNumber)) {
@@ -123,240 +131,323 @@ export default class Register extends React.Component {
 
     if (hasErrors) {
       await this.setState({
-        errors: errors,
+        errors,
+        hasErrors: true,
       });
       return false;
     }
 
+    this.setState({
+      hasErrors: false,
+    });
+
     return true;
-  }
+  };
 
   onPressRegister = async () => {
     Keyboard.dismiss();
     if (this.state.loading) return;
-    this.setState({loading: true});
+    this.setState({ loading: true });
 
     this.clearError(); // so prior ones are no longer around
-    let validation = await this.validateInput();
+    const validation = await this.validateInput();
     if (!validation) {
       this.showError();
       return;
     }
 
     try {
-      let result = await fetch(Endpoints.AUTH + 'register/profile', {
+      const result = await fetch(`${Endpoints.AUTH}register/profile`, {
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          Accept: 'application/json',
         },
         method: 'POST',
         body: JSON.stringify({
-          "countryCode3Letter": 'ZAF',
-          "nationalId": this.state.idNumber,
-          "phoneOrEmail": this.state.userId,
-          "personalName": this.state.firstName,
-          "familyName": this.state.lastName,
-          "referralCode": this.state.referralCode,
+          countryCode3Letter: 'ZAF',
+          nationalId: this.state.idNumber,
+          phoneOrEmail: this.state.userId,
+          personalName: this.state.firstName,
+          familyName: this.state.lastName,
+          referralCode: this.state.referralCode,
         }),
       });
       if (result.ok) {
-        let resultJson = await result.json();
-        this.setState({loading: false});
-        if (resultJson.result.includes("SUCCESS")) {
-          LoggingUtil.logEvent("USER_PROFILE_REGISTER_SUCCEEDED");
-          this.props.navigation.navigate("SetPassword", {
+        const resultJson = await result.json();
+        this.setState({ loading: false });
+        if (resultJson.result.includes('SUCCESS')) {
+          LoggingUtil.logEvent('USER_PROFILE_REGISTER_SUCCEEDED');
+          this.props.navigation.navigate('SetPassword', {
             systemWideUserId: resultJson.systemWideUserId,
             clientId: resultJson.clientId,
             defaultFloatId: resultJson.defaultFloatId,
             defaultCurrency: resultJson.defaultCurrency,
+            idNumber: this.state.idNumber,
+            firstName: this.state.firstName,
+            lastName: this.state.lastName,
           });
         } else {
-          LoggingUtil.logEvent("USER_PROFILE_REGISTER_FAILED", {"reason" : "Result didn't include SUCCESS"});
+          LoggingUtil.logEvent('USER_PROFILE_REGISTER_FAILED', {
+            reason: "Result didn't include SUCCESS",
+          });
           this.showError();
         }
       } else {
-        let resultJson = await result.json();
-        LoggingUtil.logEvent("USER_PROFILE_REGISTER_FAILED", {"reason": resultJson.errorField});
-        let errors = Object.assign({}, this.state.errors);
+        const resultJson = await result.json();
+        LoggingUtil.logEvent('USER_PROFILE_REGISTER_FAILED', {
+          reason: resultJson.errorField,
+        });
+        const errors = { ...this.state.errors };
         if (!resultJson.conflicts) {
+          // eslint-disable-next-line no-throw-literal
           throw null;
         }
-        for (let conflict of resultJson.conflicts) {
-          if (conflict.errorField.includes("NATIONAL_ID")) {
+        for (const conflict of resultJson.conflicts) {
+          if (conflict.errorField.includes('NATIONAL_ID')) {
             this.setState({
               dialogVisible: true,
             });
             errors.idNumber = conflict.messageToUser;
           }
-          if (conflict.errorField.includes("EMAIL_ADDRESS")) {
+          if (conflict.errorField.includes('EMAIL_ADDRESS')) {
             errors.userId = true;
             errors.email = conflict.messageToUser;
           }
-          if (conflict.errorField.includes("PHONE_NUMBER")) {
+          if (conflict.errorField.includes('PHONE_NUMBER')) {
             errors.userId = true;
             errors.phone = conflict.messageToUser;
           }
         }
         this.setState({
           loading: false,
-          errors: errors,
+          errors,
+          hasErrors: true,
         });
       }
     } catch (error) {
-      console.log("error!", error);
       this.showError(error);
     }
-  }
-
-  showError(errorText) {
-    let errors = Object.assign({}, this.state.errors);
-    errors.general = true;
-    this.setState({
-      loading: false,
-      errors: errors,
-      generalErrorText: errorText ? errorText : this.state.defaultGeneralErrorText,
-    });
-  }
-
-  clearError() {
-    let errors = Object.assign({}, this.state.errors);
-    Object.keys(errors).forEach((key) => errors[key] = false);
-    this.setState({ errors });
-  }
+  };
 
   onHideDialog = () => {
     this.setState({
       dialogVisible: false,
     });
     return true;
-  }
+  };
 
   onPressLogin = () => {
     this.onHideDialog();
     this.props.navigation.navigate('Login');
-  }
+  };
 
   onPressResetPassword = () => {
     this.onHideDialog();
     this.props.navigation.navigate('ResetPassword');
-  }
+  };
 
   onPressContactUs = () => {
     this.onHideDialog();
-    this.props.navigation.navigate('Support');
+    this.props.navigation.navigate('Support', { originScreen: 'Register' });
+  };
+
+  fieldIsMandatory(field) {
+    switch (field) {
+      case 'firstName':
+      case 'lastName':
+      case 'idNumber':
+        return true;
+
+      default:
+        return false;
+    }
+  }
+
+  showError(errorText) {
+    const errors = { ...this.state.errors };
+    errors.general = true;
+    this.setState({
+      loading: false,
+      errors,
+      hasErrors: true,
+      generalErrorText: errorText
+        ? errorText
+        : this.state.defaultGeneralErrorText,
+    });
+  }
+
+  clearError() {
+    const errors = { ...this.state.errors };
+    Object.keys(errors).forEach(key => (errors[key] = false));
+    this.setState({ errors, hasErrors: false });
   }
 
   render() {
     return (
-      <KeyboardAvoidingView style={styles.container} contentContainerStyle={styles.container} behavior="padding">
+      <KeyboardAvoidingView
+        style={styles.container}
+        contentContainerStyle={styles.container}
+        behavior="padding"
+      >
         <View style={styles.header}>
-          <TouchableOpacity style={styles.headerButton} onPress={this.onPressBack} >
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={this.onPressBack}
+          >
             <Icon
-              name='chevron-left'
-              type='evilicon'
+              name="chevron-left"
+              type="evilicon"
               size={45}
               color={Colors.MEDIUM_GRAY}
             />
           </TouchableOpacity>
         </View>
         <View style={styles.contentWrapper}>
-          <ScrollView style={styles.scrollView} contentContainerStyle={styles.mainContent}>
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.mainContent}
+          >
             <Text style={styles.title}>Let’s create your Jupiter account</Text>
             <View style={styles.profileField}>
               <Text style={styles.profileFieldTitle}>First Name*</Text>
-                <Input
-                  testID='register-first-name'
-                  accessibilityLabel='register-first-name'
-                  value={this.state.firstName}
-                  onChangeText={(text) => this.onEditField(text, "firstName")}
-                  onEndEditing={() => this.onEndEditing("firstName")}
-                  inputContainerStyle={styles.inputContainerStyle}
-                  inputStyle={[styles.inputStyle, this.state.errors && this.state.errors.firstName ? styles.redText : null]}
-                  containerStyle={styles.containerStyle}
-                />
-                {
-                  this.state.errors && this.state.errors.firstName ?
-                  <Text style={styles.errorMessage}>Please enter a valid first name</Text>
-                  : null
-                }
+              <Input
+                testID="register-first-name"
+                accessibilityLabel="register-first-name"
+                value={this.state.firstName}
+                onChangeText={text => this.onEditField(text, 'firstName')}
+                onEndEditing={() => this.onEndEditing('firstName')}
+                inputContainerStyle={styles.inputContainerStyle}
+                inputStyle={[
+                  styles.inputStyle,
+                  this.state.errors && this.state.errors.firstName
+                    ? styles.redText
+                    : null,
+                ]}
+                containerStyle={styles.containerStyle}
+              />
+              {this.state.hasErrors ? null : (
+                <Text style={styles.noteMessage}>
+                  Please enter your legal names (i.e. the same as on your ID)
+                </Text>
+              )}
+              {this.state.errors && this.state.errors.firstName ? (
+                <Text style={styles.errorMessage}>
+                  Please enter a valid first name
+                </Text>
+              ) : null}
             </View>
             <View style={styles.profileField}>
               <Text style={styles.profileFieldTitle}>Last Name*</Text>
-                <Input
-                  testID='register-last-name'
-                  accessibilityLabel='register-last-name'
-                  value={this.state.lastName}
-                  onChangeText={(text) => this.onEditField(text, "lastName")}
-                  onEndEditing={() => this.onEndEditing("lastName")}
-                  inputContainerStyle={styles.inputContainerStyle}
-                  inputStyle={[styles.inputStyle, this.state.errors && this.state.errors.lastName ? styles.redText : null]}
-                  containerStyle={styles.containerStyle}
-                />
-                {
-                  this.state.errors && this.state.errors.lastName ?
-                  <Text style={styles.errorMessage}>Please enter a valid last name</Text>
-                  : null
-                }
+              <Input
+                testID="register-last-name"
+                accessibilityLabel="register-last-name"
+                value={this.state.lastName}
+                onChangeText={text => this.onEditField(text, 'lastName')}
+                onEndEditing={() => this.onEndEditing('lastName')}
+                inputContainerStyle={styles.inputContainerStyle}
+                inputStyle={[
+                  styles.inputStyle,
+                  this.state.errors && this.state.errors.lastName
+                    ? styles.redText
+                    : null,
+                ]}
+                containerStyle={styles.containerStyle}
+              />
+              {this.state.errors && this.state.errors.lastName ? (
+                <Text style={styles.errorMessage}>
+                  Please enter a valid last name
+                </Text>
+              ) : null}
             </View>
             <View style={styles.profileField}>
               <Text style={styles.profileFieldTitle}>ID Number*</Text>
-                <Input
-                  testID='register-id-number'
-                  accessibilityLabel='register-id-number'
-                  value={this.state.idNumber}
-                  onChangeText={(text) => this.onEditField(text, "idNumber")}
-                  onEndEditing={() => this.onEndEditing("idNumber")}
-                  inputContainerStyle={styles.inputContainerStyle}
-                  inputStyle={[styles.inputStyle, this.state.errors && this.state.errors.idNumber ? styles.redText : null]}
-                  containerStyle={styles.containerStyle}
-                />
-                {
-                  this.state.errors && this.state.errors.idNumber ?
-                  <Text style={styles.errorMessage}>{this.state.errors.idNumber === true ? "Please enter a valid ID number" : this.state.errors.idNumber}</Text>
-                  : null
-                }
+              <Input
+                testID="register-id-number"
+                accessibilityLabel="register-id-number"
+                value={this.state.idNumber}
+                onChangeText={text => this.onEditField(text, 'idNumber')}
+                onEndEditing={() => this.onEndEditing('idNumber')}
+                inputContainerStyle={styles.inputContainerStyle}
+                inputStyle={[
+                  styles.inputStyle,
+                  this.state.errors && this.state.errors.idNumber
+                    ? styles.redText
+                    : null,
+                ]}
+                containerStyle={styles.containerStyle}
+              />
+              {this.state.errors && this.state.errors.idNumber ? (
+                <Text style={styles.errorMessage}>
+                  {this.state.errors.idNumber === true
+                    ? 'Please enter a valid ID number'
+                    : this.state.errors.idNumber}
+                </Text>
+              ) : null}
             </View>
             <View style={styles.profileField}>
-              <Text style={styles.profileFieldTitle}>Email Address or Phone number</Text>
-                <Input
-                  testID='register-email-or-phone'
-                  accessibilityLabel='register-email-or-phone'                  
-                  value={this.state.userId}
-                  onChangeText={(text) => this.onEditField(text, "userId")}
-                  onEndEditing={() => this.onEndEditing("userId")}
-                  inputContainerStyle={styles.inputContainerStyle}
-                  inputStyle={[styles.inputStyle, this.state.errors && this.state.errors.userId ? styles.redText : null]}
-                  containerStyle={styles.containerStyle}
-                />
-                {
-                  this.state.errors && this.state.errors.phoneEmailValidation ?
-                  <Text style={styles.errorMessage}>Please enter a valid email address or cellphone number</Text>
-                  : null
-                }
-                {
-                  this.state.errors && this.state.errors.email ?
-                  <Text style={styles.errorMessage}>{this.state.errors.email === true ? "Please enter a valid email address" : this.state.errors.email}</Text>
-                  : null
-                }
-                {
-                  this.state.errors && this.state.errors.phone ?
-                  <Text style={styles.errorMessage}>{this.state.errors.phone === true ? "Please enter a valid cellphone numebr" : this.state.errors.phone}</Text>
-                  : null
-                }
+              <Text style={styles.profileFieldTitle}>
+                Email adress or Phone number
+              </Text>
+              <Input
+                testID="register-email-or-phone"
+                accessibilityLabel="register-email-or-phone"
+                value={this.state.userId}
+                onChangeText={text => this.onEditField(text, 'userId')}
+                onEndEditing={() => this.onEndEditing('userId')}
+                inputContainerStyle={styles.inputContainerStyle}
+                inputStyle={[
+                  styles.inputStyle,
+                  this.state.errors && this.state.errors.userId
+                    ? styles.redText
+                    : null,
+                ]}
+                containerStyle={styles.containerStyle}
+              />
+              {this.state.errors && this.state.errors.phoneEmailValidation ? (
+                <Text style={styles.errorMessage}>
+                  Please enter a valid email address or cellphone number
+                </Text>
+              ) : null}
+              {this.state.errors && this.state.errors.email ? (
+                <Text style={styles.errorMessage}>
+                  {this.state.errors.email === true
+                    ? 'Please enter a valid email address'
+                    : this.state.errors.email}
+                </Text>
+              ) : null}
+              {this.state.errors && this.state.errors.phone ? (
+                <Text style={styles.errorMessage}>
+                  {this.state.errors.phone === true
+                    ? 'Please enter a valid cellphone numebr'
+                    : this.state.errors.phone}
+                </Text>
+              ) : null}
             </View>
-            <Text style={styles.disclaimer}>Continuing means you’ve read and agreed to Jupiter’s{" "}
-              <Text style={styles.disclaimerButton} onPress={this.onPressTerms}>T’C & C’s.</Text>
+            <Text style={styles.disclaimer}>
+              Continuing means you’ve read and agreed to Jupiter’s{' '}
+              <Text style={styles.disclaimerButton} onPress={this.onPressTerms}>
+                Ts &amp; Cs.
+              </Text>
             </Text>
-            <Text style={[styles.disclaimer, styles.disclaimerButton, {marginTop: 10}]} onPress={this.onPressContactUs}>Need help?</Text>
+            <Text
+              style={[
+                styles.disclaimer,
+                styles.disclaimerButton,
+                { marginTop: 10 },
+              ]}
+              onPress={this.onPressContactUs}
+            >
+              Need help?
+            </Text>
           </ScrollView>
-          {
-            this.state.errors && this.state.errors.general ?
-            <Text style={styles.errorMessage}>{this.state.generalErrorText}</Text>
-            : null
-          }
+          {this.state.errors && this.state.errors.general ? (
+            <Text style={styles.errorMessage}>
+              {this.state.generalErrorText}
+            </Text>
+          ) : null}
           <Button
-            testID='register-continue-btn'
-            accessibilityLabel='register-continue-btn'
+            testID="register-continue-btn"
+            accessibilityLabel="register-continue-btn"
             title="CONTINUE"
             loading={this.state.loading}
             titleStyle={styles.buttonTitleStyle}
@@ -367,26 +458,27 @@ export default class Register extends React.Component {
               colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
               start: { x: 0, y: 0.5 },
               end: { x: 1, y: 0.5 },
-            }} />
+            }}
+          />
         </View>
 
-        <Dialog
-          visible={this.state.dialogVisible}
+        <Overlay
+          isVisible={this.state.dialogVisible}
           dialogStyle={styles.dialogStyle}
-          dialogAnimation={new SlideAnimation({
-            slideFrom: 'bottom',
-          })}
-          onTouchOutside={this.onHideDialog}
+          onBackdropPress={this.onHideDialog}
           onHardwareBackPress={this.onHideDialog}
         >
-          <DialogContent style={styles.dialogWrapper}>
+          <View style={styles.dialogWrapper}>
             <View style={styles.helpDialog}>
               <Text style={styles.helpTitle}>Account already exists</Text>
-              <Text style={styles.helpContent}>An account with this <Text style={styles.bold}>ID number</Text> has already been created.</Text>
+              <Text style={styles.helpContent}>
+                An account with this <Text style={styles.bold}>ID number</Text>{' '}
+                has already been created.
+              </Text>
               <Text style={styles.explanation}>Log in to your account</Text>
               <Button
-                testID='register-login'
-                accessibilityLabel='register-login'
+                testID="register-login"
+                accessibilityLabel="register-login"
                 title="LOG IN"
                 loading={this.state.loginLoading}
                 titleStyle={styles.buttonTitleStyle}
@@ -397,11 +489,12 @@ export default class Register extends React.Component {
                   colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
                   start: { x: 0, y: 0.5 },
                   end: { x: 1, y: 0.5 },
-                }} />
+                }}
+              />
               <Text style={styles.explanation}>Forgot your password?</Text>
               <Button
-                testID='register-reset-password'
-                accessibilityLabel='register-reset-password'
+                testID="register-reset-password"
+                accessibilityLabel="register-reset-password"
                 title="RESET PASSWORD"
                 loading={this.state.resetPasswordLoading}
                 titleStyle={styles.buttonTitleStyle}
@@ -412,16 +505,28 @@ export default class Register extends React.Component {
                   colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
                   start: { x: 0, y: 0.5 },
                   end: { x: 1, y: 0.5 },
-                }} />
-              <TouchableOpacity style={styles.closeDialog} onPress={this.onHideDialog} >
-                <Image source={require('../../assets/close.png')}/>
+                }}
+              />
+              <TouchableOpacity
+                style={styles.closeDialog}
+                onPress={this.onHideDialog}
+              >
+                <Image source={require('../../assets/close.png')} />
               </TouchableOpacity>
             </View>
             <View style={styles.dialogFooter}>
-              <Text style={styles.dialogFooterText}>Something not right? <Text style={styles.dialogFooterLink} onPress={this.onPressContactUs}>Contact us</Text></Text>
+              <Text style={styles.dialogFooterText}>
+                Something not right?{' '}
+                <Text
+                  style={styles.dialogFooterLink}
+                  onPress={this.onPressContactUs}
+                >
+                  Contact us
+                </Text>
+              </Text>
             </View>
-          </DialogContent>
-        </Dialog>
+          </View>
+        </Overlay>
       </KeyboardAvoidingView>
     );
   }
@@ -478,6 +583,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: '100%',
     paddingHorizontal: 15,
+    alignSelf: 'stretch',
   },
   profileField: {
     flex: 1,
@@ -489,11 +595,6 @@ const styles = StyleSheet.create({
     color: Colors.MEDIUM_GRAY,
     fontSize: 14,
     marginBottom: 5,
-  },
-  profileFieldValue: {
-    fontFamily: 'poppins-regular',
-    color: Colors.DARK_GRAY,
-    fontSize: 18,
   },
   inputContainerStyle: {
     borderBottomWidth: 0,
@@ -511,11 +612,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  noteMessage: {
+    fontFamily: 'poppins-regular',
+    color: Colors.DARK_GRAY,
+    fontSize: 13,
+    marginTop: -15, // as below on error message
+    marginBottom: 20,
+    width: '90%',
+  },
   errorMessage: {
     fontFamily: 'poppins-regular',
     color: Colors.RED,
     fontSize: 13,
-    marginTop: -15, //this is valid because of the exact alignment of other elements - do not reuse in other components
+    marginTop: -15, // this is valid because of the exact alignment of other elements - do not reuse in other components
     marginBottom: 20,
     width: '90%',
   },
@@ -524,7 +633,7 @@ const styles = StyleSheet.create({
   },
   disclaimer: {
     width: '100%',
-    paddingHorizontal: 15,
+    paddingHorizontal: 5,
     fontFamily: 'poppins-semibold',
     color: Colors.DARK_GRAY,
     fontSize: 11,
@@ -551,7 +660,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     justifyContent: 'space-around',
     paddingBottom: 20,
-    paddingTop: 10,
+    paddingTop: 50,
     paddingHorizontal: 15,
   },
   helpTitle: {
@@ -569,17 +678,8 @@ const styles = StyleSheet.create({
   },
   closeDialog: {
     position: 'absolute',
-    top: 10,
-    right: 10,
-  },
-  buttonStyle: {
-    borderRadius: 10,
-    minHeight: 55,
-    minWidth: 220,
-  },
-  buttonContainerStyle: {
-    alignSelf: 'stretch',
-    paddingHorizontal: 15,
+    top: 8,
+    right: 8,
   },
   explanation: {
     fontFamily: 'poppins-regular',

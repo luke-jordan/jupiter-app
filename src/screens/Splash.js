@@ -8,36 +8,42 @@ import { LoggingUtil } from '../util/LoggingUtil';
 const SPLASH_TIMEOUT = 1400;
 
 export default class Splash extends React.Component {
-
   constructor(props) {
     super(props);
-    this.state = {
-
-    };
+    this.state = {};
   }
 
   async componentDidMount() {
-    LoggingUtil.initialize();
-    await Font.loadAsync({
-      'poppins-bold': require('./../../assets/poppins/Poppins-Bold.ttf'),
-      'poppins-light': require('./../../assets/poppins/Poppins-Light.ttf'),
-      'poppins-medium': require('./../../assets/poppins/Poppins-Medium.ttf'),
-      'poppins-regular': require('./../../assets/poppins/Poppins-Regular.ttf'),
-      'poppins-semibold': require('./../../assets/poppins/Poppins-SemiBold.ttf'),
-    });
-    let userInfo = await AsyncStorage.getItem('userInfo');
-    if (userInfo) {
-      userInfo = JSON.parse(userInfo);
-    }
+    try {
+      LoggingUtil.initialize();
+      await Font.loadAsync({
+        'poppins-bold': require('./../../assets/poppins/Poppins-Bold.ttf'),
+        'poppins-light': require('./../../assets/poppins/Poppins-Light.ttf'),
+        'poppins-medium': require('./../../assets/poppins/Poppins-Medium.ttf'),
+        'poppins-regular': require('./../../assets/poppins/Poppins-Regular.ttf'),
+        'poppins-semibold': require('./../../assets/poppins/Poppins-SemiBold.ttf'),
+      });
+    
+      const [rawUserInfo, rawOnboarded] = await Promise.all([AsyncStorage.getItem('userInfo'), AsyncStorage.getItem('hasOnboarded')]);
+      // const [rawUserInfo, rawOnboarded] = [undefined, null];
 
-    setTimeout(() => {
-      this.navigate(userInfo);
-    }, SPLASH_TIMEOUT);
+      const userInfo = rawUserInfo && typeof rawUserInfo === 'string' ? JSON.parse(rawUserInfo) : null;
+      const hasOnboarded = rawOnboarded ? Boolean(rawOnboarded) : false; 
+      
+      setTimeout(() => {
+        this.navigate(userInfo, hasOnboarded);
+      }, SPLASH_TIMEOUT);
+    } catch (err) {
+      console.log('Error!: ', err);
+      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Onboarding');
+    }
   }
 
-  navigate(userInfo) {
+  navigate(userInfo, hasOnboarded) {
     if (userInfo && userInfo.token && userInfo.token.length > 0) {
       NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home');
+    } else if (hasOnboarded) {
+      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Login');
     } else {
       NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Onboarding');
     }
@@ -46,8 +52,16 @@ export default class Splash extends React.Component {
   render() {
     return (
       <View style={styles.container}>
-        <Image style={styles.logo} source={require('../../assets/group_15.png')} resizeMode='contain'/>
-        <Image style={styles.text} source={require('../../assets/group_2.png')} resizeMode='contain'/>
+        <Image
+          style={styles.logo}
+          source={require('../../assets/group_15.png')}
+          resizeMode="contain"
+        />
+        <Image
+          style={styles.text}
+          source={require('../../assets/group_2.png')}
+          resizeMode="contain"
+        />
       </View>
     );
   }
