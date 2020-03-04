@@ -22,7 +22,6 @@ export default class ChangePassword extends React.Component {
     this.toastRef = React.createRef();
     this.state = {
       token: this.props.navigation.state.params.token,
-      systemWideUserId: this.props.navigation.state.params.systemWideUserId,
       loading: false,
       generatePasswordLoading: false,
       oldPassword: '',
@@ -35,8 +34,8 @@ export default class ChangePassword extends React.Component {
       },
       dialogVisible: false,
       generatedPassword: '',
-      oldPasswordErrorMessage: 'Your password is not valid',
-      defaultOldPasswordErrorMessage: 'Your password is not valid',
+      oldPasswordErrorMessage: 'Sorry, that password is not valid',
+      defaultOldPasswordErrorMessage: 'Sorry, that password is not valid',
       passwordErrorMessage: 'Please enter a valid password',
       defaultPasswordErrorMessage: 'Please enter a valid password',
       generalErrorText: 'There is a problem with your request',
@@ -136,9 +135,21 @@ export default class ChangePassword extends React.Component {
           'ResetComplete'
         );
       } else {
+        if (result.status === 403) {
+          this.showError(this.state.defaultOldPasswordErrorMessage, 'OLD_PASSWORD');
+          return;
+        }
+        
+        const resultBody = await result.json();
+        if (resultBody && resultBody.message) {
+          this.showError(resultBody.message, 'NEW_PASSWORD');
+          return;
+        } 
+
         throw result;
       }
     } catch (error) {
+      console.log('RESULT: ', JSON.stringify(error));
       this.showError();
     }
   };
@@ -199,9 +210,12 @@ export default class ChangePassword extends React.Component {
     }
   }
 
-  showError(errorText) {
+  showError(errorText, errorType = null) {
+    console.log('Showing error text: ', errorText);
     const errors = { ...this.state.errors };
-    errors.general = true;
+    errors.general = !errorType;
+    errors.oldPassword = errorType === 'OLD_PASSWORD';
+    errors.newPassword = errorType === 'NEW_PASSWORD'; // new is not evaluated if old is wrong, hence cannot overlap
     this.setState({
       checkingForCompletion: false,
       loading: false,
@@ -254,7 +268,7 @@ export default class ChangePassword extends React.Component {
                 ]}
                 containerStyle={styles.containerStyle}
               />
-              {this.state.errors && this.state.errors.password ? (
+              {this.state.errors && this.state.errors.oldPassword ? (
                 <Text style={styles.errorMessage}>
                   {this.state.oldPasswordErrorMessage}
                 </Text>
@@ -270,13 +284,13 @@ export default class ChangePassword extends React.Component {
                 inputContainerStyle={styles.inputContainerStyle}
                 inputStyle={[
                   styles.inputStyle,
-                  this.state.errors && this.state.errors.password
+                  this.state.errors && this.state.errors.newPassword
                     ? styles.redText
                     : null,
                 ]}
                 containerStyle={styles.containerStyle}
               />
-              {this.state.errors && this.state.errors.password ? (
+              {this.state.errors && this.state.errors.newPassword ? (
                 <Text style={styles.errorMessage}>
                   {this.state.passwordErrorMessage}
                 </Text>

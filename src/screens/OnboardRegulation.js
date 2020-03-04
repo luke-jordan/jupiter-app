@@ -19,6 +19,7 @@ import { Colors, Endpoints } from '../util/Values';
 
 import { getAuthToken } from '../modules/auth/auth.reducer';
 import { updateAuthToken, removeAuthToken } from '../modules/auth/auth.actions';
+import { NavigationUtil } from '../util/NavigationUtil';
 
 const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
@@ -73,7 +74,7 @@ class OnboardRegulation extends React.PureComponent {
 
   onPressAgree = async () => {
     try {
-      console.log('SENDING AGREEMENT');
+      // console.log('SENDING AGREEMENT');
       this.setState({ loading: true });
       
       const result = await fetch(`${Endpoints.AUTH}profile/update`, {
@@ -88,13 +89,10 @@ class OnboardRegulation extends React.PureComponent {
         }),
       });
 
-      console.log('Raw result: ', JSON.stringify(result));
+      // console.log('Raw result: ', JSON.stringify(result));
       if (!result.ok) {
         throw result;
       }
-
-      const resultBody = await result.json();
-      console.log('What we received: ', resultBody);
 
       await this.onCompleteAgreement();
     } catch (err) {
@@ -106,6 +104,7 @@ class OnboardRegulation extends React.PureComponent {
   onCompleteAgreement = async () => {
     if (this.state.isOnboarding) {
       this.setState({ loading: false });
+      NavigationUtil.removeOnboardStepRemaining('AGREE_REGULATORY');
       this.props.navigation.navigate('AddCash', {
         isOnboarding: true,
         token: this.props.authToken,

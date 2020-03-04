@@ -95,24 +95,30 @@ export default class Stokvel extends React.PureComponent {
             D. Unless invited by the executive committee, non-members will not be allowed to sit in on the AGM.{'\n'}
             E. Special or emergency meetings may be scheduled by the executive committee as and when necessary.{'\n'}
             <Text style={styles.bodySectionTitle}>5.INSTRUCTIONS AND AUTHORISATION THROUGH THE JUPITER APP</Text>{'\n'}
-            A. Funds are to be transferred into the Jupiter Clients bank account (FNB bank account: 62828393728) - a bank account which is specific to the receiving of member contributions.{'\n'}
-            B. The Jupiter Stokvel executive committee has appointed and authorised Jupiter Savings Pty Ltd to be the intermediary app platform upon which all members transact, action and process instructions for the investment of members funds.{'\n'}
-            C. Jupiter Stokvel members will directly utilise the Jupiter Savings app platform to place any instruction with regards to their funds (deposit, transact and withdraw){'\n'}
-            D. Jupiter Stokvel members will have access to all “boosts” and other such benefits of the Jupiter App platform.{'\n'}
-            E. Only instructions, interactions and authorisation through the Jupiter app platform will be actioned and processed.{'\n'}
-            F. The executive committee of the Jupiter Stokvel has granted Jupiter Savings Pty Ltd a non-discretionary mandate in terms of investment of Jupiter Stokvel member funds.{'\n'}
+            A. Funds are to be transferred into the Jupiter Clients bank account (FNB bank account: 62828393728) - a bank account which is 
+            specific to the receiving of Jupiter Stokvel member contributions.{'\n'}
+            B. The executive committee of the Jupiter Stokvel has granted approval Jupiter Savings Pty Ltd to utilise the Jupiter Savings 
+            Pty Ltd &quot;Jupiter Clients bank account&quot; solely for the purpose of receiving Jupiter Stokvel members contribution.{'\n'}
+            C. The management of Jupiter Savings Pty Ltd have agreed that the maximum amount of time which Jupiter Stokvel funds will 
+            remain in the Jupiter Clients bank account is 24 hours, and any interest earned by Jupiter Savings Pty Ltd will be passed
+            on to the Jupiter Stokvel members in proportion to their contributions in the period in which interest was earned.{'\n'}
+            D. The Jupiter Stokvel executive committee has appointed and authorised Jupiter Savings Pty Ltd to be the intermediary app platform upon which all members transact, action and process instructions for the investment of members funds.{'\n'}
+            E. Jupiter Stokvel members will directly utilise the Jupiter Savings app platform to place any instruction with regards to their funds (deposit, transact and withdraw){'\n'}
+            F. Jupiter Stokvel members will have access to all “boosts” and other such benefits of the Jupiter App platform.{'\n'}
+            F. Only instructions, interactions and authorisation through the Jupiter app platform will be actioned and processed.{'\n'}
+            G. The executive committee of the Jupiter Stokvel has granted Jupiter Savings Pty Ltd a non-discretionary mandate in terms of investment of Jupiter Stokvel member funds.{'\n'}
               In this regard, Jupiter Saving Pty Ltd will have a mandate to invest all member funds solely in the Allan Gray Money Market Fund.{'\n'}
               Jupiter Savings Pty Ltd’s role is merely as the administrator - and the ultimate decision as to the placement or investment of member funds will remain under the member’s discretion via instruction on the Jupiter App. {'\n'}
-              In the event of Jupiter Savings Pty Ltd changing the financial service provider of the money market fund:{'\n'}
-                Jupiter Savings Pty Ltd commits to only take this action if this is beneficial to the Jupiter Stokvel members.{'\n'}
-                Jupiter Savings Pty Ltd commits that the service provider of these money market funds will be a tier 1 service provider in the South African financial sector.{'\n'}
-                Jupiter Savings Pty Ltd commits to informing the Jupiter Stokvel executive committee within 3 business days of making the change to a new financial service provider’s money market fund. {'\n'}
-                The Jupiter Stokvel executive committee agree that new contributions from members can be invested in the new financial service provider’s money market fund as soon as the account is open, and prior to Jupiter Savings Pty Ltd notice to the executive committee. {'\n'}
-                In the event of a change in financial service provider of the money market fund, the contributions and proceeds invested in the Allan Gray Money Market Fund up to that date, can remain in this fund, unless deemed to not be in the interest of Jupiter Stokvel members by Jupiter Savings Pty Ltd. {'\n'}
-              If the Jupiter Stokvel executive committee changes the mandate to Jupiter Savings Pty Ltd to invest in multiple funds, this can only be done under the following circumstances:{'\n'}
-                This change in mandate will only occur after the Jupiter Stokvel executive committee has met and a vote to allow such a decision has taken place.{'\n'}
-                Jupiter Savings Pty Ltd will be fulfilling the decisions of the Jupiter Stokvel member/s, and fund selection will be at the discretion of the Jupiter Stokvel members, not at the discretion of Jupiter Savings Pty Ltd.{'\n'}
-              The Jupiter Stokvel executive committee acknowledges and accepts that the Jupiter Savings Pty Ltd entity does not provide financial advice with regards to products or services it currently, or in future will offer.{'\n'}
+            H. In the event of Jupiter Savings Pty Ltd changing the financial service provider of the money market fund:{'\n'}
+            {'\u2022'}{'\u0009'}Jupiter Savings Pty Ltd commits to only take this action if this is beneficial to the Jupiter Stokvel members.{'\n'}
+            {'\u2022'}{'\u0009'}Jupiter Savings Pty Ltd commits that the service provider of these money market funds will be a tier 1 service provider in the South African financial sector.{'\n'}
+            {'\u2022'}{'\u0009'}Jupiter Savings Pty Ltd commits to informing the Jupiter Stokvel executive committee within 3 business days of making the change to a new financial service provider’s money market fund. {'\n'}
+            {'\u2022'}{'\u0009'}The Jupiter Stokvel executive committee agree that new contributions from members can be invested in the new financial service provider’s money market fund as soon as the account is open, and prior to Jupiter Savings Pty Ltd notice to the executive committee. {'\n'}
+            {'\u2022'}{'\u0009'}In the event of a change in financial service provider of the money market fund, the contributions and proceeds invested in the Allan Gray Money Market Fund up to that date, can remain in this fund, unless deemed to not be in the interest of Jupiter Stokvel members by Jupiter Savings Pty Ltd. {'\n'}
+            I. If the Jupiter Stokvel executive committee changes the mandate to Jupiter Savings Pty Ltd to invest in multiple funds, this can only be done under the following circumstances:{'\n'}
+            {'\u2022'}{'\u0009'}This change in mandate will only occur after the Jupiter Stokvel executive committee has met and a vote to allow such a decision has taken place.{'\n'}
+            {'\u2022'}{'\u0009'}Jupiter Savings Pty Ltd will be fulfilling the decisions of the Jupiter Stokvel member/s, and fund selection will be at the discretion of the Jupiter Stokvel members, not at the discretion of Jupiter Savings Pty Ltd.{'\n'}
+            J. The Jupiter Stokvel executive committee acknowledges and accepts that the Jupiter Savings Pty Ltd entity does not provide financial advice with regards to products or services it currently, or in future will offer.{'\n'}
             <Text style={styles.bodySectionTitle}>6.JOINING FEE AND FURTHER CONTRIBUTIONS</Text>{'\n'}
             A. There is no joining fee to join the Jupiter Stokvel{'\n'}
             B. Each member of the Jupiter Stokvel is allowed to make contributions as and when they are able or willing to contribute.{'\n'}

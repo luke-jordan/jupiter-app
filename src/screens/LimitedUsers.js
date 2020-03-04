@@ -8,11 +8,12 @@ import {
   StyleSheet,
   Text,
   View,
+  Linking,
 } from 'react-native';
 import { Button, Input } from 'react-native-elements';
 
 import { LoggingUtil } from '../util/LoggingUtil';
-import { Colors, Endpoints, Defaults } from '../util/Values';
+import { Colors, Endpoints, Defaults, FallbackSupportNumber } from '../util/Values';
 
 const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
@@ -38,6 +39,22 @@ export default class LimitedUsers extends React.Component {
       hasError: false,
     });
   };
+
+  onPressWhatsApp = () => {
+    const defaultText = 'Hi! I\'d like a referral code for Jupiter please. You should give me one because - ';
+    const whatsAppLink = `https://wa.me/${FallbackSupportNumber.link}?text=${encodeURIComponent(defaultText)}`;
+    Linking.openURL(whatsAppLink).catch((err) => {
+      LoggingUtil.logError(err);
+      this.defaultToSupportScreen()
+    });
+  };
+
+  defaultToSupportScreen = () => {
+    this.props.navigation.navigate('Support', {
+      originScreen: 'LimitedUsers',
+      preFilledSupportMessage: 'Hi, please give me a referral code',
+    });
+  }
 
   onPressLogin = () => {
     this.props.navigation.navigate('Login');
@@ -147,12 +164,16 @@ export default class LimitedUsers extends React.Component {
                 ? 'Found a referral code? '
                 : 'Don’t have a referral code? '}
             </Text>
-            {this.state.notifyMode
-              ? ''
-              : '\nBe one of the first to know when access is open! '}
-            <Text style={styles.textAsButton} onPress={this.onPressNotifyMe}>
+            {!this.state.notifyMode && (
+              <Text>{'\n'}
+              No problem! <Text style={styles.textAsButton} onPress={this.onPressWhatsApp}>WhatsApp</Text> our support team, 
+              tell us how much you want in &amp; we may just send you a code right now!
+              </Text>              
+            )}
+            {/* ? '' : '\nBe one of the first to know when access is open! '} */}
+            {/* <Text style={styles.textAsButton} onPress={this.onPressNotifyMe}>
               {this.state.notifyMode ? 'Press here to enter it' : 'Notify me'}
-            </Text>
+            </Text> */}
           </Text>
         </View>
         <View style={styles.inputWrapper}>
@@ -242,7 +263,7 @@ const styles = StyleSheet.create({
   },
   description: {
     marginTop: 10,
-    marginHorizontal: 12 * FONT_UNIT,
+    marginHorizontal: 5 * FONT_UNIT,
     fontFamily: 'poppins-regular',
     fontSize: 4 * FONT_UNIT,
     textAlign: 'center',

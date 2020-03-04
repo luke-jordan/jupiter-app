@@ -17,6 +17,14 @@ export default class PendingTransactionModal extends React.PureComponent {
     }
   }
 
+  componentDidMount() {
+    const { transactionType, paymentProvider } = this.props.transaction.details;
+    this.setState({
+      isSave: transactionType === 'USER_SAVING_EVENT',
+      isInstant: paymentProvider === 'OZOW',
+    });
+  }
+
   onPressCloseOrDone = () => {
     this.props.onRequestClose(this.state.transactionComplete);
   }
@@ -24,7 +32,7 @@ export default class PendingTransactionModal extends React.PureComponent {
   getBodyText() {
     const { transactionType } = this.props.transaction.details;
     if (transactionType === 'USER_SAVING_EVENT') {
-      return 'This save is still marked as pending, which means the funds are still on the way to us, but you can check again or ping the support team to check.';
+      return 'This save is still marked as pending, which means your funds are still on their way to us';
     }
 
     if (transactionType === 'WITHDRAWAL') {
@@ -49,6 +57,14 @@ export default class PendingTransactionModal extends React.PureComponent {
     return 'CANCEL';
   }
 
+  viewEftDetails = () => {
+    this.props.navigateToEft(this.props.transaction.details);
+  }
+
+  returnToInstant = () => {
+    this.props.navigateToInstant(this.props.transaction.details);
+  }
+
   remindSupportOfPending = () => {
     const preFilledSupportMessage = `Please check transaction ${this.props.transaction.details.humanReference} again as soon as possible. ` +
       `It is still marked as pending.`;
@@ -71,7 +87,7 @@ export default class PendingTransactionModal extends React.PureComponent {
       }
 
       const resultJson = await result.json();
-      console.log('Received response: ', resultJson);
+      // console.log('Received response: ', resultJson);
       if (resultJson.error) {
         throw resultJson.error;
       }
@@ -173,9 +189,10 @@ export default class PendingTransactionModal extends React.PureComponent {
   }
 
   render() {
+        
     return (
       <Overlay
-        animationType="slide"
+        animationType="fade"
         height="auto"
         width="auto"
         isVisible={this.props.showModal}
@@ -204,7 +221,7 @@ export default class PendingTransactionModal extends React.PureComponent {
               </Text>
             )}
 
-            {!this.state.hideCheck && (
+            {!this.state.hideCheck && !this.state.isInstant && (
               <Button
                 title="CHECK AGAIN"
                 loading={this.state.recheckingTx}
@@ -220,7 +237,37 @@ export default class PendingTransactionModal extends React.PureComponent {
               />
             )}
 
-            {!this.state.transactionComplete && (
+            {this.state.isSave && !this.state.isInstant && !this.state.transactionComplete && (
+              <Button
+                title="VIEW EFT DETAILS"
+                titleStyle={styles.buttonTitleStyle}
+                buttonStyle={styles.buttonStyle}
+                containerStyle={styles.buttonContainerStyle}
+                onPress={this.viewEftDetails}
+                linearGradientProps={{
+                  colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+                  start: { x: 0, y: 0.5 },
+                  end: { x: 1, y: 0.5 },
+                }}
+              />
+            )}
+
+            {this.state.isSave && this.state.isInstant && !this.state.transactionComplete && (
+              <Button
+                title="TRY OZOW AGAIN"
+                titleStyle={styles.buttonTitleStyle}
+                buttonStyle={styles.buttonStyle}
+                containerStyle={styles.buttonContainerStyle}
+                onPress={this.returnToInstant}
+                linearGradientProps={{
+                  colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+                  start: { x: 0, y: 0.5 },
+                  end: { x: 1, y: 0.5 },
+                }}
+              />
+            )}
+
+            {!this.state.isSave && !this.state.transactionComplete && (
               <Button
                 title="NOTIFY SUPPORT"
                 titleStyle={styles.buttonTitleStyle}

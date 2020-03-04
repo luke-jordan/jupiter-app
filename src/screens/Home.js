@@ -154,6 +154,7 @@ class Home extends React.Component {
       token: info.token,
       firstName: info.profile.personalName,
     });
+
     this.props.updateAuthToken(info.token);
 
     // check params if we have params.showModal we show modal with game
@@ -162,13 +163,10 @@ class Home extends React.Component {
       this.props.navigation.setParams({ showGameUnlockeModal: false }); // so we don't have an infinite loop
     }
 
-    if (info.profile.kycStatus === 'FAILED_VERIFICATION' || info.profile.kycStatus === 'REVIEW_FAILED') {
-      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'FailedVerification', { fromHome: true });
-      return;
-    }
-
-    if (!info.profile.regulatoryStatus || info.profile.regulatoryStatus === 'REQUIRES_AGREEMENT') {
-      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'OnboardRegulation');
+    const { screen, params: navParams } = NavigationUtil.directBasedOnProfile(info);
+    if (screen && screen !== 'Home') {
+      navParams.fromHome = true;
+      NavigationUtil.navigateWithoutBackstack(this.props.navigation, screen, navParams);
       return;
     }
 
@@ -177,7 +175,9 @@ class Home extends React.Component {
     LoggingUtil.setUserId(info.systemWideUserId);
     LoggingUtil.logEvent('USER_ENTERED_HOME_SCREEN');
 
-    this.props.updateServerBalance(info.balance);
+    if (info.balance) {
+      this.props.updateServerBalance(info.balance);
+    }
 
     this.fetchCurrentBalanceFromServer();
     this.checkForTriggeredBoost();
@@ -201,7 +201,7 @@ class Home extends React.Component {
     const { pendingTransactions } = balanceResult;
     const equalizeTx = (transaction) => transaction.amount / getDivisor(transaction.unit);
     const totalPendingAmount = pendingTransactions.reduce((sum, tx) => sum + equalizeTx(tx), 0);
-    console.log('Pending transactions: ', pendingTransactions);
+    // console.log('Pending transactions: ', pendingTransactions);
     const pendingHasWithdrawals = pendingTransactions.some((tx) => tx.transactionType === 'WITHDRAWAL');
     const pendingHasSaves = pendingTransactions.some((tx) => tx.transactionType === 'USER_SAVING_EVENT');
 
@@ -499,6 +499,11 @@ class Home extends React.Component {
     }
   };
 
+  onPressPending = () => {
+    console.log('Pressed pending!');
+    this.props.navigation.navigate('History');
+  }
+
   renderPendingBalance() {
     let descriptor = 'transaction';
     if (this.state.pendingHasSaves && !this.state.pendingHasWithdrawals) {
@@ -513,7 +518,7 @@ class Home extends React.Component {
     const icon = isWithdrawal ? require('../../assets/withdrawal_home.png') : require('../../assets/add_home.png');
     const amount = `R${Math.abs(this.state.totalPendingAmount).toFixed(0)}`;
     return (
-      <TouchableOpacity style={styles.pendingItemsHolder} onPress={() => this.props.navigation.navigate('History')}>
+      <TouchableOpacity style={styles.pendingItemsHolder} onPress={this.onPressPending}>
         <View style={styles.endOfMonthBalanceWrapper}>
           <Image style={styles.pendingItemsIcon} source={icon} />
           <Text style={styles.endOfMonthBalance}>
@@ -538,12 +543,14 @@ class Home extends React.Component {
       showGameUnlockeModal: true,
       gameParams,
     });
+    LoggingUtil.logEvent('GAME_PRESENTED_TO_USER');
   }
 
   onPressPlayLater = () => {
     this.setState({
       showGameUnlockeModal: false,
     });
+    LoggingUtil.logEvent('GAME_USER_DISMISSED');
     // TODO show gameDetails.actionContext.gameParams.waitMessage maybe?
   };
 
@@ -584,6 +591,7 @@ class Home extends React.Component {
         this.decrementChaseArrowGameTimer();
       }, 1000);
     }
+    LoggingUtil.logEvent('GAME_USER_INITIATED');
   };
 
   rotateGameCircle(arrowSpeedMultiplier) {
@@ -640,7 +648,7 @@ class Home extends React.Component {
   };
 
   async submitGameResults(numberOfTaps) {
-
+    LoggingUtil.logEvent('GAME_USER_COMPLETED');
     // const nextStepId = this.state.gameParams.finishedMessage;
     // const nextStep = this.props.availableMessages[nextStepId];
     // if (nextStep) this.showMessage(nextStep);

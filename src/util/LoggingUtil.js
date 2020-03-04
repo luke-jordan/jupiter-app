@@ -4,27 +4,47 @@ import { Endpoints } from '../util/Values';
 
 export const LoggingUtil = {
   initialize() {
-    Amplitude.initialize(Endpoints.AMPLITUDE);
-    LoggingUtil.logEvent('USER_OPENED_APP');
+    try {
+      Amplitude.initialize(Endpoints.AMPLITUDE);
+      LoggingUtil.logEvent('USER_OPENED_APP');
+    } catch (err) {
+      console.log('Error initializing amplitude: ', JSON.stringify(err));
+    }
   },
 
   setUserId(id) {
-    Amplitude.setUserId(id);
+    try {
+      Amplitude.setUserId(id);
+    } catch (err) {
+      console.log('Error setting amplitude user ID: ', JSON.stringify(err));
+    }
   },
 
   logEvent(event, properties) {
-    if (properties) {
-      Amplitude.logEventWithProperties(event, properties);
-    } else {
-      Amplitude.logEvent(event);
+    try {
+      if (properties) {
+        Amplitude.logEventWithProperties(event, properties);
+      } else {
+        Amplitude.logEvent(event);
+      }
+    } catch (err) {
+      console.log('Error logging with Amplitude: ', JSON.stringify(err));
     }
   },
 
   logError(error) {
-    Sentry.captureException(error);
+    try {
+      Sentry.captureException(error);
+    } catch (err) {
+      console.log('Error logging error: ', JSON.stringify(err));
+    }
   },
 
   clearUserProperties() {
-    Amplitude.clearUserProperties();
+    try {
+      Amplitude.clearUserProperties();
+    } catch (err) {
+      console.log('Error clearing Amplitude properties: ', err);
+    }
   },
 };

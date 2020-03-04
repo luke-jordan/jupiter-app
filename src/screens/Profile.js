@@ -21,10 +21,8 @@ const PROFILE_PIC_SIZE = 0.16 * width;
 export default class Profile extends React.Component {
   constructor(props) {
     super(props);
-    const failedVerification = this.props.navigation.getParam(
-      'failedVerification'
-    );
 
+    const failedVerification = this.props.navigation.getParam('failedVerification');
     this.state = {
       profilePic: null,
       loading: false,
@@ -41,23 +39,19 @@ export default class Profile extends React.Component {
 
   async componentDidMount() {
     LoggingUtil.logEvent('USER_ENTERED_PROFILE_SCREEN');
-    let info = await AsyncStorage.getItem('userInfo');
-    if (!info) {
-      if (this.state.failedVerification) {
-        info = this.props.navigation.getParam('info');
-        this.setState({
-          firstName: info.firstName,
-          lastName: info.lastName,
-          idNumber: info.idNumber,
-          initials: info.firstName[0] + info.lastName[0],
-          systemWideUserId: info.systemWideUserId,
-          token: info.token,
-        });
-      } else {
-        NavigationUtil.logout(this.props.navigation);
-      }
+    const rawInfo = await AsyncStorage.getItem('userInfo');
+    if (this.state.failedVerification) {
+      const info = this.props.navigation.getParam('info') || (rawInfo ? JSON.parse(rawInfo) : {});
+      const initials = info.firstName && info.lastName ? info.firstName[0] + info.lastName[0] : 'A'; 
+      this.setState({
+        firstName: info.firstName,
+        lastName: info.lastName,
+        idNumber: info.idNumber,
+        initials,
+        token: info.token,
+      });
     } else {
-      info = JSON.parse(info);
+      const info = JSON.parse(rawInfo);
       this.setState({
         firstName: info.profile.personalName,
         lastName: info.profile.familyName,
@@ -69,6 +63,7 @@ export default class Profile extends React.Component {
         userLoggedIn: true,
       });
     }
+
   }
 
   onPressBack = () => {
@@ -133,6 +128,7 @@ export default class Profile extends React.Component {
         nationalId: this.state.idNumber,
       };
 
+      console.log('HUH, TOKEN: ', this.state.token);
       const result = await fetch(`${Endpoints.AUTH}profile/update`, {
         headers: {
           'Content-Type': 'application/json',

@@ -184,21 +184,40 @@ class SetPassword extends React.Component {
           this.props.updateComparatorRates(resultJson.comparatorRates);
         }
 
+        // store this so user comes back here if they exit / crash instead of needing to login again
+        const { params } = this.props.navigation.state;
+        const userInfo = {
+          token: resultJson.token,
+          systemWideUserId: resultJson.systemWideUserId,
+          balance: {
+            accountId: resultJson.accountId,
+          },
+          profile: {
+            personalName: params.firstName,
+            familyName: params.lastName,            
+            kycStatus: resultJson.kycStatus,
+          },
+          onboardStepsRemaining: resultJson.onboardStepsRemaining,
+        }
+
+        await AsyncStorage.setItem('userInfo', JSON.stringify(userInfo));
+
         if (
           resultJson.kycStatus === 'FAILED_VERIFICATION' ||
           resultJson.kycStatus === 'REVIEW_FAILED'
         ) {
-          const { params } = this.props.navigation.state;
           LoggingUtil.logEvent('USER_FAILED_KYC_CHECK_ONBOARD');
 
           this.props.updateAuthToken(resultJson.token);
+
           this.props.navigation.navigate('FailedVerification', {
             idNumber: params.idNumber,
             firstName: params.firstName,
             lastName: params.lastName,
-            systemWideUserId: resultJson.token,
+            nationalId: params.idNumber,
             token: resultJson.token,
             accountId: resultJson.accountId[0],
+            fromHome: false,
           });
           return;
         }

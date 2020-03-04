@@ -19,21 +19,22 @@ import Toast from 'react-native-easy-toast';
 
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
-import { Endpoints, Colors } from '../util/Values';
+import { Endpoints, Colors, FallbackBankDetails } from '../util/Values';
 
 const HOURGLASS_ROTATION_DURATION = 10000;
 
-export default class CheckingForPayment extends React.Component {
+export default class PendingInstantTransfer extends React.Component {
   constructor(props) {
     super(props);
     this.toastRef = React.createRef();
     this.state = {
       paymentLink: '',
-      accountTransactionId: -1,
+      transactionId: -1,
       token: '',
       isOnboarding: false,
       loading: false,
       checkingForPayment: false,
+      cancellingPayment: false,
       rotation: new Animated.Value(0),
     };
   }
@@ -45,11 +46,11 @@ export default class CheckingForPayment extends React.Component {
     if (params) {
       this.setState({
         paymentLink: params.paymentLink,
-        accountTransactionId: params.accountTransactionId,
+        transactionId: params.transactionId,
         token: params.token,
         isOnboarding: params.isOnboarding,
         amountAdded: params.amountAdded,
-        bankDetails: params.bankDetails,
+        bankDetails: params.bankDetails || FallbackBankDetails,
       });
     }
   }
@@ -66,7 +67,7 @@ export default class CheckingForPayment extends React.Component {
     });
     try {
       const result = await fetch(
-        `${Endpoints.CORE}addcash/check?transactionId=${this.state.accountTransactionId}&failureType=PENDING`,
+        `${Endpoints.CORE}addcash/check?transactionId=${this.state.transactionId}`,
         {
           headers: {
             Authorization: `Bearer ${this.state.token}`,
@@ -85,13 +86,14 @@ export default class CheckingForPayment extends React.Component {
           checkingForPayment: false,
           loading: false,
         });
+        console.log('Result JSON ? : ', resultJson);
         if (resultJson.result.includes('PAYMENT_SUCCEEDED')) {
           NavigationUtil.navigateWithoutBackstack(
             this.props.navigation,
             'PaymentComplete',
             {
               paymentLink: this.state.paymentLink,
-              accountTransactionId: this.state.accountTransactionId,
+              transactionId: this.state.transactionId,
               token: this.state.token,
               isOnboarding: this.state.isOnboarding,
               newBalance: resultJson.newBalance,
@@ -128,20 +130,85 @@ export default class CheckingForPayment extends React.Component {
     Linking.openURL(this.state.paymentLink);
   };
 
-  onPressEft = () => {
-    const humanReference = this.props.navigation.getParam('humanReference');
-    this.props.navigation.navigate('EFTPayment', {
-      humanReference,
-      bankDetails: this.state.bankDetails,
-    });
+  onPressEft = async () => {
+    if (this.state.loading) return;
+    this.setState({ loading: true });
+
+    try {
+      LoggingUtil.logEvent('USER_SWITCHED_TRANSFER_TO_MANUAL');
+      const result = await fetch(`${Endpoints.CORE}pending/update`, {
+        headers: {
+          Authorization: `Bearer ${this.state.token}`,
+        },
+        method: 'POST',
+        body: JSON.stringify({ transactionId: this.state.transactionId, paymentMethod: 'MANUAL_EFT' }),
+      });
+
+      if (!result.ok) {
+        throw result;
+      }
+
+      const resultJson = await result.json();
+      const { bankDetails, humanReference } = resultJson;
+      this.props.navigation.navigate('EFTPayment', {
+        humanReference,
+        bankDetails,
+        transactionId: this.state.transactionId,
+        token: this.state.token,
+        isOnboarding: this.state.isOnboarding,
+        amountToAdd: this.state.amountAdded,
+      });
+    } catch (err) {
+      console.log('Error: ', JSON.stringify(err));
+      this.setState({ loading: false });
+      LoggingUtil.logError(err);
+      this.props.navigation.navigate('EFTPayment', {
+        humanReference: this.props.navigation.getParam('humanReference'),
+        bankDetails: this.state.bankDetails,
+      });
+    }
   };
 
-  onPressCancel = () => {
-    NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home');
+  onPressCancel = async () => {
+    if (this.state.loading) return;
+    this.setState({ loading: true, cancellingPayment: true });
+
+    try {
+      console.log('Cancelling pending save');
+      const result = await fetch(`${Endpoints.CORE}pending/cancel`, {
+        headers: {
+          Authorization: `Bearer ${this.state.token}`,
+        },
+        method: 'POST',
+        body: JSON.stringify({ transactionId: this.state.transactionId }),
+      });
+
+      if (!result.ok) {
+        throw result;
+      }
+
+      const resultJson = await result.json();
+      if (resultJson.result === 'SUCCESS') {
+        LoggingUtil.logEvent('USER_CANCELLED_PENDING_SAVE');
+        this.setState({
+          loading: false,
+          cancellingPayment: false,
+        }, () => NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home'));
+      } else {
+        throw resultJson;
+      }
+    } catch (err) {
+      console.log('Error cancelling!: ', JSON.stringify(err));
+      this.setState({ loading: false, cancellingPayment: false });
+    }
   };
 
   onPressContact = () => {
-    this.props.navigation.navigate('Support', { originScreen: 'CheckingForPayment', postSubmitNavigateHome: true });
+    this.props.navigation.navigate('Support', { originScreen: 'PendingInstantTransfer', postSubmitNavigateHome: true });
+  };
+
+  onPressHome = () => {
+    this.props.navigation.navigate('Home');
   };
 
   async rotateHourglass() {
@@ -190,7 +257,7 @@ export default class CheckingForPayment extends React.Component {
               Would you prefer to pay via manual EFT instead?
             </Text>
             <Button
-              title="PAY VIA EFT"
+              title="USE NORMAL EFT"
               icon={icon}
               loading={this.state.loading}
               titleStyle={styles.buttonTitleStyle}
@@ -235,15 +302,19 @@ export default class CheckingForPayment extends React.Component {
               </Text>
             </View>
             <View style={styles.separator} />
-            <View style={styles.graySubsection}>
-              <Text
-                style={styles.buttonDescription}
-                onPress={this.onPressCancel}
-              >
-                Cancel my payment
-              </Text>
-            </View>
-            <View style={styles.separator} />
+            {!this.state.isOnboarding && (
+              <>
+                <View style={styles.graySubsection}>
+                  <Text
+                    style={styles.buttonDescription}
+                    onPress={this.onPressCancel}
+                  >
+                    Cancel my payment
+                  </Text>
+                </View>
+                <View style={styles.separator} />
+              </>
+            )}
             <View style={styles.graySubsection}>
               <Text
                 style={styles.buttonDescription}
@@ -252,6 +323,17 @@ export default class CheckingForPayment extends React.Component {
                 Contact Us
               </Text>
             </View>
+            <View style={styles.separator} />
+            {!this.state.isOnboarding && (
+            <View style={styles.graySubsection}>
+              <Text
+                style={styles.buttonDescription}
+                onPress={this.onPressHome}
+              >
+                Home
+              </Text>
+            </View>
+            )}
           </View>
         </View>
 
@@ -273,6 +355,26 @@ export default class CheckingForPayment extends React.Component {
             </Text>
           </View>
         </Overlay>
+
+        <Overlay
+          isVisible={this.state.cancellingPayment}
+          dialogStyle={styles.dialogStyle}
+          height="auto"
+          width="auto"
+          onBackdropPress={() => {}}
+          onHardwareBackPress={() => {
+            this.setState({ cancellingPayment: false });
+            return true;
+          }}
+        >
+          <View style={styles.dialogWrapper}>
+            <ActivityIndicator size="large" color={Colors.PURPLE} />
+            <Text style={styles.dialogText}>
+              Cancelling your save...
+            </Text>
+          </View>
+        </Overlay>
+
 
         <Toast ref={this.toastRef} opacity={1} style={styles.toast} />
       </ScrollView>
@@ -300,14 +402,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   hourglass: {
-    marginTop: 10,
+    marginTop: 30,
   },
   hourglassBackground: {
     width: 120,
     height: 60,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: 30,
+    marginTop: 20,
   },
   title: {
     fontFamily: 'poppins-semibold',
@@ -348,6 +451,7 @@ const styles = StyleSheet.create({
   buttonContainerStyle: {
     alignSelf: 'stretch',
     paddingHorizontal: 15,
+    marginTop: 20,
   },
   toast: {
     backgroundColor: Colors.DARK_GRAY,
@@ -373,6 +477,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   graySection: {
+    marginTop: 30,
     backgroundColor: Colors.BACKGROUND_GRAY,
     borderRadius: 15,
   },
@@ -390,7 +495,7 @@ const styles = StyleSheet.create({
     width: '100%',
     fontFamily: 'poppins-regular',
     fontSize: 15,
-    color: Colors.MEDIUM_GRAY,
+    color: Colors.DARK_GRAY,
     textAlign: 'center',
     marginBottom: 3,
   },

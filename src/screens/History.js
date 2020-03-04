@@ -186,8 +186,33 @@ export default class History extends React.Component {
     }
   }
 
+  onNavigateToEftForPending = (transactionDetails) => {
+    this.setState({ showPendingModal: false });
+    this.props.navigation.navigate('PendingManualTransfer', {
+      token: this.state.authToken,
+      humanReference: transactionDetails.humanReference,
+      bankDetails: transactionDetails.bankDetails,
+      transactionId: transactionDetails.transactionId,
+      amountToAdd: transactionDetails.amount / getDivisor(transactionDetails.unit),
+      isOnboarding: false,
+    });
+  };
+
+  onNavigateToInstantForPending = (transactionDetails) => {
+    this.setState({ showPendingModal: false });
+    const amount = transactionDetails.amount / getDivisor(transactionDetails.unit);
+    const paymentLinkTag = transactionDetails.tags.find((tag) => tag.startsWith('PAYMENT_URL::'));
+    this.props.navigation.navigate('PendingInstantTransfer', {
+      token: this.state.authToken,
+      transactionId: transactionDetails.transactionId,
+      isOnboarding: false,
+      amountAdded: amount,
+      bankDetails: transactionDetails.bankDetails,
+      paymentLink: paymentLinkTag ? paymentLinkTag.substring('PAYMENT_URL::'.length) : '',
+    });
+  }
+
   onNavigateToSupportForPending = (preFilledSupportMessage) => {
-    console.log('NAVIGATE TO SUPPORT!');
     this.setState({ showPendingModal: false });
     const params = { preFilledSupportMessage, originScreen: 'History' };
     this.props.navigation.navigate('Support', params);
@@ -414,6 +439,8 @@ export default class History extends React.Component {
             showModal={this.state.showPendingModal}
             transaction={this.state.pendingTransaction}
             onRequestClose={this.onClosePendingDialog}
+            navigateToEft={this.onNavigateToEftForPending}
+            navigateToInstant={this.onNavigateToInstantForPending}
             navigateToSupport={this.onNavigateToSupportForPending}
             authToken={this.state.authToken}
           />

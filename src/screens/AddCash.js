@@ -12,7 +12,7 @@ import {
 import { Icon, Input, Button } from 'react-native-elements';
 
 import { NavigationUtil } from '../util/NavigationUtil';
-import { Colors, Endpoints } from '../util/Values';
+import { Colors } from '../util/Values';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { getDivisor } from '../util/AmountUtil';
 
@@ -40,7 +40,6 @@ class AddCash extends React.Component {
     if (params) {
       this.setState({
         isOnboarding: params.isOnboarding,
-        token: params.token,
         accountId: params.accountId,
       });
     }
@@ -58,7 +57,6 @@ class AddCash extends React.Component {
         this.setState({
           balance: info.balance.currentBalance.amount,
           unit: info.balance.currentBalance.unit,
-          token: info.token,
           accountId: info.balance.accountId[0],
         });
       }
@@ -81,16 +79,8 @@ class AddCash extends React.Component {
     this.props.navigation.goBack();
   };
 
-  onPressAddCash = async () => {
-    if (this.state.loading) return;
-    
-    if(this.state.amountToAdd.trim().length === 0) {
-      this.setState({ emptyAmountError: true });
-      return;
-    }
-
-    this.setState({ loading: true });
-
+  // eslint-disable-next-line react/sort-comp
+  transitionToTransferMethod = () => {
     if (this.state.isOnboarding) {
       LoggingUtil.logEvent('USER_INITIATED_FIRST_ADD_CASH', {
         amountAdded: this.state.amountToAdd,
@@ -100,48 +90,26 @@ class AddCash extends React.Component {
         amountAdded: this.state.amountToAdd,
       });
     }
-    try {
-      AsyncStorage.setItem('lastSaveAmount', parseFloat(this.state.amountToAdd).toFixed(0));
-      const result = await fetch(`${Endpoints.CORE}addcash/initiate`, {
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          Authorization: `Bearer ${this.state.token}`,
-        },
-        method: 'POST',
-        body: JSON.stringify({
-          accountId: this.state.accountId,
-          amount: this.state.amountToAdd * 10000, // multiplying by 100 to get cents and again by 100 to get hundreth cent
-          currency: 'ZAR', // TODO implement for handling other currencies
-          unit: 'HUNDREDTH_CENT',
-        }),
-      });
 
-      if (result.ok) {
-        const resultJson = await result.json();
-        this.setState({ loading: false });
-        this.props.navigation.navigate('Payment', {
-          urlToCompletePayment:
-            resultJson.paymentRedirectDetails.urlToCompletePayment,
-          accountTransactionId:
-            resultJson.transactionDetails[0].accountTransactionId,
-          humanReference: resultJson.humanReference,
-          token: this.state.token,
-          isOnboarding: this.state.isOnboarding,
-          amountAdded: this.state.amountToAdd,
-        });
-      } else {
-        throw result;
-      }
-      
-    } catch (error) {
-      console.log('Add cash failed: ', error);
-      LoggingUtil.logEvent('ADD_CASH_FAILED_UNKNOWN', {
-        serverResponse: JSON.stringify(error.message),
-      });
-      this.setState({ loading: false });
-      // this.showError();
+    AsyncStorage.setItem('lastSaveAmount', parseFloat(this.state.amountToAdd).toFixed(0));
+    this.setState({ loading: false }, () => {
+      this.props.navigation.navigate('SelectTransferMethod', { 
+        amountToAdd: this.state.amountToAdd, 
+        isOnboarding: this.state.isOnboarding,
+        accountId: this.state.accountId, 
+      });  
+    })
+  }
+
+  onPressAddCash = async () => {
+    if (this.state.loading) return;
+    
+    if(this.state.amountToAdd.trim().length === 0) {
+      this.setState({ emptyAmountError: true });
+      return;
     }
+
+    this.setState({ loading: true }, () => this.transitionToTransferMethod());
   };
 
   onChangeAmount = text => {
@@ -223,7 +191,7 @@ class AddCash extends React.Component {
               />
             </TouchableOpacity>
           </View>
-          <Text style={styles.headerTitleOnboarding}>Add some cash</Text>
+          <Text style={styles.headerTitleOnboarding}>Make a save</Text>
         </View>
       );
     } else {
@@ -240,7 +208,7 @@ class AddCash extends React.Component {
               color={Colors.GRAY}
             />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Add cash</Text>
+          <Text style={styles.headerTitle}>Make a save</Text>
         </View>
       );
     }
@@ -335,7 +303,7 @@ class AddCash extends React.Component {
         <Button
           testID="add-cash-next-btn"
           accessibilityLabel="add-cash-next-btn"
-          title="MAKE PAYMENT"
+          title="MAKE MY SAVE"
           loading={this.state.loading}
           titleStyle={styles.buttonTitleStyle}
           buttonStyle={styles.buttonStyle}

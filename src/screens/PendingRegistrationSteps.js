@@ -23,9 +23,11 @@ export default class PendingRegistrationSteps extends React.Component {
 
     this.state = {
       firstName: userInfo.profile.personalName,
+      stepsLeft: 2, // reasonable default
       stepsLeftHeader: '2 STEPS LEFT',
       mustAddCash: true,
       mustAgreeRegulatory: true,
+      mustFinishTransfer: true,
     };
   }
 
@@ -40,9 +42,11 @@ export default class PendingRegistrationSteps extends React.Component {
     const stepsLeft = onboardStepsRemaining.length;
 
     this.setState({
+      stepsLeft,
       stepsLeftHeader: `${stepsLeft} STEP${stepsLeft === 1 ? '' : 'S'} LEFT`,
       mustAgreeRegulatory: userInfo.onboardStepsRemaining.includes('AGREE_REGULATORY'),
       mustAddCash: onboardStepsRemaining.includes('ADD_CASH'),
+      mustFinishTransfer: onboardStepsRemaining.includes('FINISH_SAVE'),
     });
   }
 
@@ -63,6 +67,22 @@ export default class PendingRegistrationSteps extends React.Component {
       accountId: userInfo.balance.accountId[0],
     });
   };
+
+  onPressFinishSave = () => {
+    const userInfo = this.props.navigation.getParam('userInfo');
+    this.props.navigation.navigate('PendingManualTransfer', {
+      isOnboarding: true,
+      token: userInfo.token,
+    });
+  };
+
+  onPressLogout = () => {
+    NavigationUtil.logout();
+  };
+
+  onPressContactSupport = () => {
+    this.props.navigation.navigate('Support', { originScreen: 'PendingRegistrationSteps' });
+  }
 
   render() {
     return (
@@ -95,6 +115,18 @@ export default class PendingRegistrationSteps extends React.Component {
                 start={[0, 0.5]}
                 end={[1, 0.5]}
                 colors={[Colors.LIGHT_BLUE, Colors.PURPLE]}
+                style={styles.stepsGradient}
+              />
+              <LinearGradient
+                start={[0, 0.5]}
+                end={[1, 0.5]}
+                colors={this.state.stepsLeft > 2 ? [Colors.LIGHT_GRAY, Colors.LIGHT_GRAY] : [Colors.LIGHT_BLUE, Colors.PURPLE]}
+                style={styles.stepsGradient}
+              />
+              <LinearGradient
+                start={[0, 0.5]}
+                end={[1, 0.5]}
+                colors={this.state.stepsLeft > 1 ? [Colors.LIGHT_GRAY, Colors.LIGHT_GRAY] : [Colors.LIGHT_BLUE, Colors.PURPLE]}
                 style={styles.stepsGradient}
               />
               <LinearGradient
@@ -156,7 +188,7 @@ export default class PendingRegistrationSteps extends React.Component {
                   name="chevron-right"
                   type="evilicon"
                   size={40}
-                  color={Colors.MEDIUM_GRAY}
+                  color={Colors.DARK_GRAY}
                 />
               ) : (
                 <Icon
@@ -179,7 +211,7 @@ export default class PendingRegistrationSteps extends React.Component {
                 resizeMode="contain"
               />
               <Text
-                style={this.state.mustAgreeRegulatory ? [styles.stepButtonText, styles.stepButtonTextIncomplete] : styles.stepButtonText}
+                style={this.state.mustAddCash ? [styles.stepButtonText, styles.stepButtonTextIncomplete] : styles.stepButtonText}
               >
                 Add cash
               </Text>
@@ -188,7 +220,7 @@ export default class PendingRegistrationSteps extends React.Component {
                   name="chevron-right"
                   type="evilicon"
                   size={40}
-                  color={Colors.MEDIUM_GRAY}
+                  color={Colors.DARK_GRAY}
                 />
               ) : (
                 <Icon
@@ -200,6 +232,48 @@ export default class PendingRegistrationSteps extends React.Component {
               )}
             </TouchableOpacity>
             <View style={styles.separator} />
+            <TouchableOpacity
+              style={styles.stepButton}
+              disabled={this.state.mustAgreeRegulatory || this.state.mustAddCash}
+              onPress={this.onPressFinishSave}
+            >
+              <Image
+                style={styles.stepButtonIcon}
+                source={require('../../assets/arrow_up_circle.png')}
+                resizeMode="contain"
+              />
+              <Text
+                style={this.state.mustFinishTransfer ? [styles.stepButtonText, styles.stepButtonTextIncomplete] : styles.stepButtonText}
+              >
+                Finish transfer
+              </Text>
+              {this.state.mustFinishTransfer ? (
+                <Icon
+                  name="chevron-right"
+                  type="evilicon"
+                  size={40}
+                  color={Colors.DARK_GRAY}
+                />
+              ) : (
+                <Icon
+                  name="check"
+                  type="feather"
+                  size={25}
+                  color={Colors.PURPLE}
+                />
+              )}
+            </TouchableOpacity>
+            <View style={styles.separator} />
+          </View>
+          <View style={styles.footerBox}>
+            <Text style={styles.footerDesc}>
+              Were you expecting to see something different?
+            </Text>
+            <View style={styles.footerRow}>
+              <Text style={styles.footerLink}>Logout</Text>
+              <Text style={styles.footerDesc}>|</Text>
+              <Text style={styles.footerLink}>Contact support</Text>
+            </View>
           </View>
         </ScrollView>
       </View>
@@ -229,6 +303,7 @@ const styles = StyleSheet.create({
   },
   midSection: {
     flex: 1,
+    marginTop: 10,
   },
   botSection: {
     flex: 3,
@@ -272,7 +347,7 @@ const styles = StyleSheet.create({
     color: Colors.PURPLE,
   },
   stepButtonTextIncomplete: {
-    color: Colors.MEDIUM_GRAY,
+    color: Colors.DARK_GRAY,
   },
   stepButtonIcon: {
     marginRight: 15,
@@ -281,5 +356,32 @@ const styles = StyleSheet.create({
     height: 1,
     width: width * 0.9,
     backgroundColor: Colors.GRAY,
+  },
+  footerBox: {
+    backgroundColor: Colors.BACKGROUND_GRAY,
+    alignContent: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+    paddingHorizontal: 18,
+    paddingVertical: 15,
+  },
+  footerDesc: {
+    fontFamily: 'poppins-regular',
+    color: Colors.MEDIUM_GRAY,
+    textAlign: 'center',
+    fontSize: 12,
+  },
+  footerRow: {
+    flexDirection: 'row',
+    alignContent: 'center',
+    justifyContent: 'center',
+    marginTop: 5,
+  },
+  footerLink: {
+    fontFamily: 'poppins-regular',
+    color: Colors.PURPLE,
+    fontWeight: '600',
+    fontSize: 12,
+    marginHorizontal: 10,
   },
 });

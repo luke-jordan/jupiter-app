@@ -163,8 +163,7 @@ export default class OTPVerification extends React.Component {
       }
 
       const result = await fetch(
-        `${Endpoints.AUTH}password/reset/obtainqs?phoneOrEmail=${userId}`,
-        {
+        `${Endpoints.AUTH}password/reset/obtainqs?phoneOrEmail=${userId}`, {
           headers: {
             'Content-Type': 'application/json',
             Accept: 'application/json',
@@ -176,17 +175,11 @@ export default class OTPVerification extends React.Component {
         const resultJson = await result.json();
         this.setState({ loading: false });
         if (resultJson.flags && resultJson.flags.includes('CAN_SKIP_QUESTIONS')) {
-          NavigationUtil.navigateWithoutBackstack(
-            this.props.navigation,
-            'SetPassword',
+          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'SetPassword',
             { systemWideUserId: resultJson.systemWideUserId, isReset: true }
           );
         } else {
-          NavigationUtil.navigateWithoutBackstack(
-            this.props.navigation,
-            'ResetQuestions',
-            { questions: resultJson }
-          );
+          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'ResetQuestions', { questions: resultJson });
         }
       } else {
         const resultJson = await result.json();
@@ -221,44 +214,16 @@ export default class OTPVerification extends React.Component {
           deviceId: this.state.deviceId,
         }),
       });
+
       if (result.ok) {
         const resultJson = await result.json();
         this.setState({ loading: false });
-        if (
-          resultJson &&
-          resultJson.profile &&
-          (resultJson.profile.kycStatus === 'FAILED_VERIFICATION' ||
-            resultJson.profile.kycStatus === 'REVIEW_FAILED')
-        ) {
-          AsyncStorage.setItem('userInfo', JSON.stringify(resultJson));
-          NavigationUtil.navigateWithoutBackstack(
-            this.props.navigation,
-            'FailedVerification',
-            { fromHome: true }
-          );
-          return;
-        }
-        if (
-          resultJson &&
-          resultJson.onboardStepsRemaining &&
-          resultJson.onboardStepsRemaining.includes('ADD_CASH')
-        ) {
-          NavigationUtil.navigateWithoutBackstack(
-            this.props.navigation,
-            'PendingRegistrationSteps',
-            { userInfo: resultJson }
-          );
-        } else {
-          await Promise.all([
-            AsyncStorage.setItem('userInfo', JSON.stringify(resultJson)),
-            AsyncStorage.setItem('hasOnboarded', 'true'),
-          ]);
-          NavigationUtil.navigateWithoutBackstack(
-            this.props.navigation,
-            'Home',
-            { userInfo: resultJson }
-          );
-        }
+        await Promise.all([
+          AsyncStorage.setItem('userInfo', JSON.stringify(resultJson)),
+          AsyncStorage.setItem('hasOnboarded', 'true'),
+        ]);
+        const { screen, params } = NavigationUtil.directBasedOnProfile(resultJson, false);
+        NavigationUtil.navigateWithoutBackstack(this.props.navigation, screen, params);
       } else {
         const resultJson = await result.json();
         if (Array.isArray(resultJson)) {
@@ -271,6 +236,7 @@ export default class OTPVerification extends React.Component {
         }
       }
     } catch (error) {
+      console.log('Error: ', error);
       this.setState({ loading: false });
     }
   }

@@ -161,16 +161,19 @@ const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
     width: '100%',
+    maxHeight: '68%',
   },
   activeDotStyle: {
     width: 14,
     height: 14,
     borderRadius: 14 / 2,
+    marginTop: 10,
   },
   dotStyle: {
     width: 12,
     height: 12,
     borderRadius: 12 / 2,
+    marginTop: 10,
   },
   slide: {
     flex: 1,
@@ -190,6 +193,7 @@ const styles = StyleSheet.create({
   tabDescription: {
     fontFamily: 'poppins-regular',
     fontSize: 4 * FONT_UNIT,
+    marginBottom: 10,
   },
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',

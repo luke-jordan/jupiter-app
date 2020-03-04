@@ -23,7 +23,8 @@ import Profile from './src/screens/Profile';
 import Register from './src/screens/Register';
 import SetPassword from './src/screens/SetPassword';
 import Payment from './src/screens/Payment';
-import CheckingForPayment from './src/screens/CheckingForPayment';
+import SelectTransferMethod from './src/screens/SelectTransferMethod';
+import PendingInstantTransfer from './src/screens/PendingInstantTransfer';
 import PaymentComplete from './src/screens/PaymentComplete';
 import PendingRegistrationSteps from './src/screens/PendingRegistrationSteps';
 import ResetPassword from './src/screens/ResetPassword';
@@ -38,6 +39,7 @@ import SupportRequestSent from './src/screens/SupportRequestSent';
 import History from './src/screens/History';
 import FailedVerification from './src/screens/FailedVerification';
 import EFTPayment from './src/screens/EFTPayment';
+import PendingManualTransfer from './src/screens/PendingManualTransfer';
 import Stokvel from './src/screens/Stokvel';
 import MoneyMarket from './src/screens/MoneyMarket';
 import OnboardRegulation from './src/screens/OnboardRegulation';
@@ -63,7 +65,8 @@ const AppContainer = createAppContainer(
       Register: { screen: Register },
       SetPassword: { screen: SetPassword },
       Payment: { screen: Payment },
-      CheckingForPayment: { screen: CheckingForPayment },
+      SelectTransferMethod: { screen: SelectTransferMethod },
+      PendingInstantTransfer: { screen: PendingInstantTransfer },
       PaymentComplete: { screen: PaymentComplete },
       PendingRegistrationSteps: { screen: PendingRegistrationSteps },
       ResetPassword: { screen: ResetPassword },
@@ -78,6 +81,7 @@ const AppContainer = createAppContainer(
       History: { screen: History },
       FailedVerification: { screen: FailedVerification },
       EFTPayment: { screen: EFTPayment },
+      PendingManualTransfer: { screen: PendingManualTransfer },
       Stokvel: { screen: Stokvel },
       MoneyMarket: { screen: MoneyMarket },
       OnboardRegulation: { screen: OnboardRegulation },

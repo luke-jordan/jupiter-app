@@ -56,8 +56,8 @@ export const getLastServerBalanceFull = state => state[STATE_KEY].serverBalance;
 export const getCurrentServerBalanceFull = state =>
   state[STATE_KEY].serverBalance.balanceStartDayOrLastSettled;
 
-export const getCurrentBalanceAmount = state =>
-  state[STATE_KEY].serverBalance.balanceStartDayOrLastSettled.amount;
+export const getCurrentBalanceAmount = state => state[STATE_KEY].serverBalance.balanceStartDayOrLastSettled ?
+  state[STATE_KEY].serverBalance.balanceStartDayOrLastSettled.amount : 0;
 
 export const getComparatorRates = state =>
   state[STATE_KEY].serverBalance.comparatorRates;

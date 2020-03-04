@@ -144,12 +144,11 @@ const styles = StyleSheet.create({
     messageCardHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 8,
         padding: 10,
         width: '80%',
     },
     messageCardIcon: {
-        marginHorizontal: 10,
+        marginRight: 10,
     },
     messageCardIconEmphasis: {
         marginHorizontal: 10,

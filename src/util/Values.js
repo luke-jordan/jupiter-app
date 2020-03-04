@@ -37,6 +37,14 @@ export const FallbackSupportNumber = isMaster
   ? { display: '073 659 3063', link: '27736593063' }
   : { display: '073 659 3063', link: '27736593063' };
 
+export const FallbackBankDetails = {
+  bankName: 'FNB',
+  beneficiaryName: 'Jupiter Stokvel',
+  accountNumber: '62828393728',
+  accountType: 'Cheque',
+  routingNumber: '250655',
+};
+
 export const Endpoints = isMaster
   ? {
       // MASTER

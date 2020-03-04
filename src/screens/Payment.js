@@ -31,7 +31,7 @@ export default class Payment extends React.Component {
     this.toastRef = React.createRef();
     this.state = {
       paymentLink: '',
-      accountTransactionId: -1,
+      transactionId: -1,
       checkingForPayment: false,
       token: '',
       isOnboarding: false,
@@ -50,10 +50,10 @@ export default class Payment extends React.Component {
       this.setState({
         humanReference: params.humanReference,
         paymentLink: params.urlToCompletePayment,
-        accountTransactionId: params.accountTransactionId,
+        transactionId: params.transactionId,
         token: params.token,
         isOnboarding: params.isOnboarding,
-        amountAdded: params.amountAdded,
+        amountToAdd: params.amountToAdd,
       });
     }
   }
@@ -87,9 +87,9 @@ export default class Payment extends React.Component {
       checkingForPayment: true,
     });
     try {
-      // let result = await fetch(Endpoints.CORE + 'addcash/check?transactionId=' + this.state.accountTransactionId + '&failureType=PENDING', {
+      // let result = await fetch(Endpoints.CORE + 'addcash/check?transactionId=' + this.state.transactionId + '&failureType=PENDING', {
       const result = await fetch(
-        `${Endpoints.CORE}addcash/check?transactionId=${this.state.accountTransactionId}`,
+        `${Endpoints.CORE}addcash/check?transactionId=${this.state.transactionId}`,
         {
           headers: {
             Authorization: `Bearer ${this.state.token}`,
@@ -115,11 +115,11 @@ export default class Payment extends React.Component {
             'PaymentComplete',
             {
               paymentLink: this.state.paymentLink,
-              accountTransactionId: this.state.accountTransactionId,
+              transactionId: this.state.transactionId,
               token: this.state.token,
               isOnboarding: this.state.isOnboarding,
               newBalance: resultJson.newBalance,
-              amountAdded: this.state.amountAdded,
+              amountAdded: this.state.amountToAdd,
             }
           );
         } else if (resultJson.result.includes('PAYMENT_PENDING')) {
@@ -181,13 +181,13 @@ export default class Payment extends React.Component {
     const navigationFunction = this.state.isOnboarding ? NavigationUtil.navigateWithoutBackstack : NavigationUtil.navigateWithHomeBackstack;
     navigationFunction(
       this.props.navigation,
-      'CheckingForPayment',
+      'PendingInstantTransfer',
       {
         paymentLink: this.state.paymentLink,
-        accountTransactionId: this.state.accountTransactionId,
+        transactionId: this.state.transactionId,
         token: this.state.token,
         isOnboarding: this.state.isOnboarding,
-        amountAdded: this.state.amountAdded,
+        amountAdded: this.state.amountToAdd,
         humanReference: this.state.humanReference,
         bankDetails,
       }
@@ -198,7 +198,7 @@ export default class Payment extends React.Component {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={styles.headerButton}
             onPress={this.onPressBack}
           >
@@ -208,7 +208,7 @@ export default class Payment extends React.Component {
               size={45}
               color={Colors.MEDIUM_GRAY}
             />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
         <View style={styles.contentWrapper}>
           <Text style={styles.title}>Payment</Text>
@@ -222,9 +222,6 @@ export default class Payment extends React.Component {
               payment solution, to process instant EFTs and transfer cash
               directly to your Jupiter account.{' '}
             </Text>
-            <Text style={styles.buttonDescription}>
-              Tap the link to pay with Ozow:
-            </Text>
             <LinearGradient
               start={[0, 0.5]}
               end={[1, 0.5]}
@@ -235,7 +232,7 @@ export default class Payment extends React.Component {
                 style={styles.paymentLink}
                 onPress={this.onPressPaymentLink}
               >
-                {this.state.paymentLink}
+                TRANSFER VIA OZOW
               </Text>
               <TouchableOpacity onPress={this.onPressCopy}>
                 <Image
@@ -245,6 +242,9 @@ export default class Payment extends React.Component {
                 />
               </TouchableOpacity>
             </LinearGradient>
+            <Text style={styles.buttonDescription}>
+              Tapping will open Ozow&apos;s site in a browser
+            </Text>
             <TouchableOpacity
               testID="payment-already-paid"
               accessibilityLabel="payment-already-paid"
@@ -258,8 +258,7 @@ export default class Payment extends React.Component {
               </Text>
             </TouchableOpacity>
             <Text style={styles.description}>
-              When you come back from Ozow tap the button to complete adding
-              your cash
+              When you come back from Ozow tap the button to finish
             </Text>
           </View>
         </View>
@@ -347,7 +346,7 @@ const styles = StyleSheet.create({
   },
   header: {
     width: '100%',
-    height: 50,
+    height: 30,
     backgroundColor: Colors.WHITE,
     flexDirection: 'row',
     alignItems: 'center',
@@ -371,11 +370,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     backgroundColor: Colors.BACKGROUND_GRAY,
     alignItems: 'center',
+    paddingTop: 20,
   },
   buttonStyle: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-around',
+    justifyContent: 'center',
     width: '90%',
     borderRadius: 10,
     minHeight: 65,
@@ -394,15 +394,18 @@ const styles = StyleSheet.create({
   },
   buttonDescription: {
     fontFamily: 'poppins-semibold',
-    fontSize: 18,
+    fontSize: 14,
     color: Colors.DARK_GRAY,
     textAlign: 'center',
+    paddingHorizontal: 10,
+    marginBottom: 15,
   },
   paymentLink: {
     fontFamily: 'poppins-semibold',
-    fontSize: FONT_UNIT * 3,
+    fontSize: FONT_UNIT * 5,
     color: Colors.WHITE,
     textAlign: 'center',
+    marginEnd: 10,
   },
   alreadyPaidButton: {
     borderWidth: 2,

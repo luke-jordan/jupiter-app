@@ -38,7 +38,7 @@ export default class GameResultModal extends React.PureComponent {
         console.log('Error, should not happen');
     }
     
-    console.log('RENDERING END GAME DIALOG, SHOW MODAL : ', this.props.showModal);
+    // console.log('RENDERING END GAME DIALOG, SHOW MODAL : ', this.props.showModal);
     
     return (
       <View style={styles.backgroundWrapper}>
@@ -94,7 +94,7 @@ export default class GameResultModal extends React.PureComponent {
         return null;
       }
       
-      console.log('RERENDERING GAME DIALOG, RESULT: ', this.props.gameDetails.gameResult);
+      // console.log('RERENDERING GAME DIALOG, RESULT: ', this.props.gameDetails.gameResult);
       
       if (!this.props.gameDetails.gameResult) {
         return this.renderGameStartDialog();

@@ -9,13 +9,14 @@ import {
   TouchableOpacity,
   View,
   ScrollView,
+  Linking,
 } from 'react-native';
-import { Button, Icon } from 'react-native-elements';
+import { Button, Icon, Overlay } from 'react-native-elements';
 import Toast from 'react-native-easy-toast';
 
 import { LoggingUtil } from '../util/LoggingUtil';
 import { NavigationUtil } from '../util/NavigationUtil';
-import { Colors } from '../util/Values';
+import { Colors, Endpoints, FallbackSupportNumber, FallbackBankDetails } from '../util/Values';
 
 const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
@@ -24,24 +25,31 @@ export default class EFTPayment extends React.Component {
   constructor(props) {
     super(props);
     this.toastRef = React.createRef();
-    const humanReference = this.props.navigation.getParam('humanReference');
     this.state = {
-      bank: '',
-      beneficiaryName: '',
-      accountNumber: '',
-      branchCode: '',
-      accountType: '',
-      humanReference,
+      isOnboarding: true,
+      numberDoneChecks: 0,
+      showDoneModal: false,
+      showStilPendingModal: false,
+      loading: false,
+      loadingInstant: false,
+      token: this.props.navigation.getParam('token'),
     };
   }
 
   async componentDidMount() {
     LoggingUtil.logEvent('USER_ENTERED_EFT_DETAILS');
-    const bankDetails = this.props.navigation.getParam('bankDetails') || {};
+    const { params } = this.props.navigation.state;
+    const { token, humanReference, amountToAdd, transactionId } = params;
+    const bankDetails = params.bankDetails || FallbackBankDetails;
     // our default used in case the backend doesn't supply details
     this.setState({
-      bank: bankDetails.bankName || 'FNB',
-      beneficiaryName: bankDetails.beneficiaryName || 'Jupiter Savings App',
+      token,
+      humanReference,
+      amountToAdd,
+      transactionId,
+      isOnboarding: params.isOnboarding || false,
+      bankName: bankDetails.bankName || 'FNB',
+      beneficiaryName: bankDetails.beneficiaryName || 'Jupiter Stokvel',
       accountNumber: bankDetails.accountNumber || '62828393728',
       accountType: bankDetails.accountType || 'Cheque',
       routingNumber: bankDetails.routingNumber || '250655',
@@ -54,37 +62,143 @@ export default class EFTPayment extends React.Component {
   };
 
   onPressShare = async () => {
-    if (this.state.loading) return;
-    this.setState({ loading: true });
     try {
-      const result = await Share.share({
-        message: `Jupiter Payment Details: Bank: ${this.state.bank}; Beneficiary Name: ${this.state.beneficiaryName}; Account Type: Current/Cheque; Account Number: ${this.state.accountNumber}; Branch code: ${this.state.branchCode}`,
+      await Share.share({
+        message: `Jupiter Payment Details: Bank: ${this.state.bankName}; Beneficiary Name: ${this.state.beneficiaryName}; Account Type: Current/Cheque; Account Number: ${this.state.accountNumber}; Branch code: ${this.state.branchCode}`,
       });
-      console.log(result);
     } catch (error) {
       console.log(error);
       // handle somehow?
     }
-    this.setState({ loading: false });
   };
 
-  onPressDone = () => {
-    NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', {
-      userInfo: this.state.userInfo,
-    });
+  onPressSendPOP = () => {
+    const defaultText = `Hi! I made a payment already for ${this.state.humanReference} - here is my proof of payment: `;
+    const whatsAppLink = `https://wa.me/${FallbackSupportNumber.link}?text=${encodeURIComponent(defaultText)}`;
+    Linking.openURL(whatsAppLink);
+  };
+
+  onCheckDone = async () => {
+    this.setState({ loading: true });
+    try {
+      const result = await fetch(`${Endpoints.CORE}pending/check`, {
+        headers: {
+          Authorization: `Bearer ${this.state.token}`,
+        },
+        method: 'POST',
+        body: JSON.stringify({ transactionId: this.state.transactionId }),
+      });
+
+      if (!result.ok) {
+        throw result;
+      }
+
+      const resultJson = await result.json();
+      // console.log('Received response: ', resultJson);
+      if (resultJson.error) {
+        throw resultJson.error;
+      }
+
+      const { result: checkResult } = resultJson;
+
+      if (['ADMIN_MARKED_PAID', 'PAYMENT_SUCCEEDED'].includes(checkResult)) {
+        this.setState({ showDoneModal: false, showStilPendingModal: false, loading: false });
+        NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'PaymentComplete',
+          {
+            transactionId: this.state.transactionId,
+            token: this.state.token,
+            isOnboarding: this.state.isOnboarding,
+            newBalance: resultJson.newBalance,
+            amountAdded: this.state.amountToAdd,
+          }
+        );
+      } else {
+        const newDoneChecks = this.state.numberDoneChecks + 1;
+        this.setState({ showStilPendingModal: true, numberDoneChecks: newDoneChecks, loading: false });
+      }
+    } catch (err) {
+      console.log('ERROR: ', JSON.stringify(err));
+      const newDoneChecks = this.state.numberDoneChecks + 1;
+      this.setState({ showStilPendingModal: true, numberDoneChecks: newDoneChecks, loading: false });
+    }
+  };
+
+  onCloseModals = () => {
+    this.setState({ showDoneModal: false, showStilPendingModal: false });
+  };
+
+  onOpenDoneModal = () => {
+    this.setState({ showDoneModal: true });
+  }
+
+  moveToNextScreen = () => {
+    this.setState({ showDoneModal: false, showStilPendingModal: false, loading: false });
+    if (this.state.isOnboarding) {
+      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'PendingManualTransfer', {
+        transactionId: this.state.transactionId,
+        token: this.state.token,
+        bankDetails: this.state.bankDetails,
+        humanReference: this.state.humanReference,
+        isOnboarding: true,
+      });
+    } else {
+      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', {
+        userInfo: this.state.userInfo,
+      });
+    }
+  };
+
+  // first we check, unless that is already done, in which case, we go to the end
+  onPressDone = async () => {
+    if (this.state.numberDoneChecks > 0) {
+      this.setState({ showDoneModal: true });
+    } else {
+      this.onCheckDone();
+    }
+  };
+
+  onPressInstant = async () => {
+    if (this.state.loadingInstant) return;
+    this.setState({ loadingInstant: true });
+
+    try {
+      LoggingUtil.logEvent('USER_SWITCHED_TRANSFER_TO_INSTANT');
+
+      const result = await fetch(`${Endpoints.CORE}pending/update`, {
+        headers: {
+          Authorization: `Bearer ${this.state.token}`,
+        },
+        method: 'POST',
+        body: JSON.stringify({ transactionId: this.state.transactionId, paymentMethod: 'OZOW' }),
+      });
+
+      if (!result.ok) {
+        throw result;
+      }
+
+      const resultJson = await result.json();
+      if (resultJson.paymentRedirectDetails) {
+        this.setState({ loadingInstant: false });
+        this.props.navigation.navigate('Payment', {
+          urlToCompletePayment: resultJson.paymentRedirectDetails.urlToCompletePayment,
+          transactionId: this.state.transactionId,
+          humanReference: resultJson.humanReference,
+          amountToAdd: this.state.amountToAdd,
+          token: this.state.token,
+          isOnboarding: this.state.isOnboarding,
+        });  
+      } else {
+        throw resultJson;
+      }
+    } catch (err) {
+      console.log('Error switching!: ', JSON.stringify(err));
+      this.setState({ loadingInstant: false });
+    }
   };
 
   render() {
     return (
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContainer}>
-        <TouchableOpacity style={styles.closeButton} onPress={this.onPressDone}>
-          <Icon
-            name="close"
-            type="evilicon"
-            size={30}
-            color={Colors.MEDIUM_GRAY}
-          />
-        </TouchableOpacity>
         <View style={styles.mainContent}>
           <View style={styles.top}>
             <Image
@@ -100,8 +214,16 @@ export default class EFTPayment extends React.Component {
               updated.
             </Text>
           </View>
+          <TouchableOpacity
+            onPress={this.onPressInstant}
+            style={styles.switchButton}
+          >
+            <Text style={styles.switchButtonText}>
+              {this.state.loadingInstant ? 'LOADING...' : 'OR SWITCH TO INSTANT EFT'}
+            </Text>
+          </TouchableOpacity>
           <View style={styles.reference}>
-            <Text style={styles.referenceTitle}>USE THIS REFERENCE</Text>
+            <Text style={styles.referenceTitle}>TRANSFER R{this.state.amountToAdd} USING REFERENCE</Text>
             <Text style={styles.referenceText}>
               {this.state.humanReference}
             </Text>
@@ -120,16 +242,16 @@ export default class EFTPayment extends React.Component {
             <Text style={styles.bottomTitle}>PLEASE MAKE PAYMENT TO:</Text>
             <View style={styles.separator} />
             <Text style={styles.bottomText}>
-              Bank: <Text style={styles.bottomBold}>{this.state.bank}</Text>
+              Bank: <Text style={styles.bottomBold}>{this.state.bankName}</Text>
             </Text>
             <Text style={styles.bottomText}>
-              Benificiary Name:{' '}
+              Account Name:{' '}
               <Text style={styles.bottomBold}>
                 {this.state.beneficiaryName}
               </Text>
             </Text>
             <Text style={styles.bottomText}>
-              Account Type: {this.state.accountType}
+              Account Type: <Text style={styles.bottomBold}>{this.state.accountType}</Text>
             </Text>
             <View style={styles.bottomRow}>
               <Text style={styles.bottomText}>
@@ -174,11 +296,34 @@ export default class EFTPayment extends React.Component {
                 source={require('../../assets/share.png')}
                 resizeMode="contain"
               />
-              <Text style={styles.shareText}>Share Payment Details</Text>
+              <Text style={styles.shareText}>Share payment Details</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.shareButton}
+              onPress={this.onPressSendPOP}
+            >
+              <Image
+                style={styles.shareIcon}
+                source={require('../../assets/message-circle.png')}
+                resizeMode="contain"
+              />
+              <Text style={styles.shareText}>WhatsApp us the proof of payment</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.shareButton}
+              onPress={this.onCheckDone}
+            >
+              <Image
+                style={styles.shareIcon}
+                source={require('../../assets/message-circle.png')}
+                resizeMode="contain"
+              />
+              <Text style={styles.shareText}>Check payment complete</Text>
             </TouchableOpacity>
           </View>
           <Button
-            title="DONE"
+            title={this.state.numberDoneChecks > 0 ? "DONE" : "I'VE TRANSFERRED"}
+            loading={this.state.loading}
             titleStyle={styles.buttonTitleStyle}
             buttonStyle={styles.buttonStyle}
             containerStyle={styles.buttonContainerStyle}
@@ -189,7 +334,69 @@ export default class EFTPayment extends React.Component {
               end: { x: 1, y: 0.5 },
             }}
           />
+
         </View>
+
+        <Overlay
+          isVisible={this.state.showDoneModal}
+          dialogStyle={styles.dialogStyle}
+          height="auto"
+          width="auto"
+          onBackdropPress={this.onCloseModals}
+          onHardwareBackPress={this.onCloseModals}
+        >
+          <View style={styles.dialogWrapper}>
+            <TouchableOpacity style={styles.closeButton} onPress={this.moveToNextScreen}>
+              <Icon
+                name="close"
+                type="evilicon"
+                size={30}
+                color={Colors.MEDIUM_GRAY}
+              />
+            </TouchableOpacity>
+            <Text style={styles.dialogText}>
+              {this.state.isOnboarding 
+                ? 'We will notify you when the EFT reflects and your account is fully open' 
+                : 'We will notify you when the EFT reflects and your MoneyWheel is updated' }
+            </Text>
+            <Button
+              title="OKAY"
+              titleStyle={styles.buttonTitleStyle}
+              buttonStyle={styles.buttonStyle}
+              containerStyle={styles.buttonContainerStyle}
+              onPress={this.moveToNextScreen}
+              linearGradientProps={{
+                colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+                start: { x: 0, y: 0.5 },
+                end: { x: 1, y: 0.5 },
+              }}
+            />
+          </View>
+        </Overlay>
+
+        <Overlay
+          isVisible={this.state.showStilPendingModal}
+          dialogStyle={styles.dialogStyle}
+          height="auto"
+          width="auto"
+          onBackdropPress={this.onCloseModals}
+          onHardwareBackPress={this.onCloseModals}
+        >
+          <View style={styles.dialogWrapper}>
+            <TouchableOpacity style={styles.closeButton} onPress={this.onCloseModals}>
+              <Icon
+                name="close"
+                type="evilicon"
+                size={30}
+                color={Colors.MEDIUM_GRAY}
+              />
+            </TouchableOpacity>
+            <Text style={styles.dialogText}>
+              Unfortunately, we have not received the payment yet. You can WhatsApp the proof of payment to our
+              support team, or try checking in again later.
+            </Text>
+          </View>
+        </Overlay>
 
         <Toast ref={this.toastRef} opacity={1} style={styles.toast} />
       </ScrollView>
@@ -209,11 +416,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'space-around',
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 15,
-    right: 15,
+    paddingHorizontal: 15,
   },
   top: {
     alignItems: 'center',
@@ -257,10 +460,11 @@ const styles = StyleSheet.create({
     color: Colors.DARK_GRAY,
   },
   referenceText: {
-    fontFamily: 'poppins-regular',
-    fontSize: 3.9 * FONT_UNIT,
+    fontFamily: 'poppins-semibold',
+    fontSize: 4.5 * FONT_UNIT,
     textAlign: 'center',
     color: Colors.PURPLE,
+    fontWeight: '600',
   },
   copyButton: {
     position: 'absolute',
@@ -277,12 +481,13 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.BACKGROUND_GRAY,
     alignSelf: 'stretch',
     marginHorizontal: 15,
+    marginTop: 15,
     borderRadius: 10,
     padding: 20,
   },
   bottomTitle: {
     fontFamily: 'poppins-semibold',
-    fontSize: 3.5 * FONT_UNIT,
+    fontSize: 3.9 * FONT_UNIT,
     color: Colors.DARK_GRAY,
   },
   separator: {
@@ -302,12 +507,14 @@ const styles = StyleSheet.create({
     marginVertical: 7,
   },
   bottomBold: {
+    fontFamily: 'poppins-semibold',
     fontWeight: 'bold',
+    color: Colors.DARK_GRAY,
   },
   shareButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 7,
+    marginTop: 12,
   },
   shareIcon: {
     width: 22,
@@ -338,5 +545,39 @@ const styles = StyleSheet.create({
   buttonContainerStyle: {
     alignSelf: 'stretch',
     paddingHorizontal: 15,
+    marginVertical: 10,
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+  },
+  dialogWrapper: {
+    maxWidth: '90%',
+    paddingHorizontal: 10,
+    paddingVertical: 15,
+  },
+  dialogText: {
+    fontFamily: 'poppins-regular',
+    fontSize: 17,
+    color: Colors.DARK_GRAY,
+    marginVertical: 10,
+    textAlign: 'center',
+  },
+  switchButton: {
+    width: 220,
+    height: 35,
+    borderRadius: 4,
+    borderColor: Colors.PURPLE,
+    borderWidth: 1, 
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 8,
+  },
+  switchButtonText: {
+    fontFamily: 'poppins-regular',
+    fontWeight: '600',
+    fontSize: 13,
+    color: Colors.PURPLE,
   },
 });

@@ -17,7 +17,7 @@ export default class AnimatedNumber extends React.Component {
   }
 
   async componentDidMount() {
-    console.log('*** ANIMATED NUMBER RESTART ****');
+    // console.log('*** ANIMATED NUMBER RESTART ****');
     this.setCoreParamsAndAnimate();
     this.setState({ isUnmounted: false });
   }

@@ -31,8 +31,8 @@ const mapStateToProps = state => ({
   comparatorRates: getComparatorRates(state),
 });
 
-const BODY_TEXT_NO_AMOUNT_DEFAULT = `Invite your friends to Jupiter using the referral code below. We'll remember that you're friends and connect ` +
-`you to start earning boosts and rewards together as soon as saving buddies launches!`;
+const BODY_TEXT_NO_AMOUNT_DEFAULT = `Invite your friends to Jupiter using your unique referral code! Just click the button below, ` +
+  `choose how you want to share the message and use our message (or create your own) - and that's it!`;
 const BODY_TEXT_W_AMOUNT_DEFAULT = `Invite your friends to Jupiter using the referral code below. We’ll add {boostAmount} to your balance ` +
   `each time one of them signs up and starts saving! `;
 
@@ -121,8 +121,8 @@ class Friends extends React.Component {
   }
 
   onPressShare = async () => {
-    if (this.state.loading) return;
-    this.setState({ loading: true });
+    // if (this.state.loading) return;
+    // this.setState({ loading: true });
 
     const currentRate = parseFloat(this.props.comparatorRates.referenceRate / 100).toFixed(0);
 
@@ -135,9 +135,9 @@ class Friends extends React.Component {
       this.setState({ loading: false });
       LoggingUtil.logEvent('USER_SHARED_REFERRAL_CODE');
     } catch (error) {
-      this.setState({ loading: false });
+      // this.setState({ loading: false });
     }
-    this.setState({ loading: false });
+    // this.setState({ loading: false });
   };
 
   onPressCopy = () => {

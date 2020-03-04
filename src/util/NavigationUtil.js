@@ -30,7 +30,7 @@ export const NavigationUtil = {
     navigation.dispatch(resetAction);
   },
 
-  directBasedOnProfile(profileData) {
+  directBasedOnProfile(profileData, fromHome = true) {
     if (!profileData) {
       return { screen: 'Splash', params: {}};
     }
@@ -45,14 +45,15 @@ export const NavigationUtil = {
 
     const mustStillGiveRegulatoryApproval = onboardStepsRemaining && onboardStepsRemaining.includes('AGREE_REGULATORY');
     const mustStillAddCash = onboardStepsRemaining && onboardStepsRemaining.includes('ADD_CASH');
+    const mustCompletePayment = onboardStepsRemaining && onboardStepsRemaining.includes('FINISH_SAVE');
 
     if (hasProfileButNeedsKyc) {
       screen = 'FailedVerification';
-      params = { fromHome: true };
+      params = { fromHome };
     } else if (mustStillGiveRegulatoryApproval) {
       screen = 'OnboardRegulation';
       params = { isOnboarding: mustStillAddCash, userInfo: profileData };
-    } else if (mustStillAddCash) {
+    } else if (mustStillAddCash || mustCompletePayment) {
       screen = 'PendingRegistrationSteps';
       params = { userInfo: profileData };
     } else {
@@ -61,6 +62,20 @@ export const NavigationUtil = {
     }
 
     return { screen, params };
+  },
+
+  // this is a bit complicated and a little fragile, and in theory might be replaced by a call to profile/fetch,
+  // _but_ that profile fetch call is pretty heavy if there has not been a prior balance fetch to warm it up,
+  // and each second counts during onboard (plus each moment of possible fragility), and the risks are not very high
+  // since any missed step will be caught pretty quickly in the balance update / home screen flow
+  async removeOnboardStepRemaining(stepToRemove) {
+    const info = await AsyncStorage.getItem('userInfo');
+    if (info) {
+      const userInfo = JSON.parse(info);
+      const revisedStepsRemaining = userInfo.onboardStepsRemaining.filter((step) => step !== stepToRemove);
+      userInfo.onboardStepsRemaining = revisedStepsRemaining;
+      await AsyncStorage.setItem('userInfo', JSON.stringify(userInfo));
+    }
   },
 
   async cleanUpPushToken() {

@@ -35,7 +35,6 @@ export default class FailedVerification extends React.Component {
           idNumber: params.idNumber,
           firstName: params.firstName,
           lastName: params.lastName,
-          systemWideUserId: params.systemWideUserId,
           token: params.token,
           accountId: params.accountId,
         },

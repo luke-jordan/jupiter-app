@@ -243,7 +243,6 @@ class Boosts extends React.Component {
       this.props.navigation.navigate('Home', { showGameUnlockedModal: true, boostDetails });
     }
 
-    console.log('No handled event, just deal with user tap');
     return false;
   }
 
