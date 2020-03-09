@@ -198,7 +198,7 @@ export default class Payment extends React.Component {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          {/* <TouchableOpacity
+          <TouchableOpacity
             style={styles.headerButton}
             onPress={this.onPressBack}
           >
@@ -208,7 +208,7 @@ export default class Payment extends React.Component {
               size={45}
               color={Colors.MEDIUM_GRAY}
             />
-          </TouchableOpacity> */}
+          </TouchableOpacity>
         </View>
         <View style={styles.contentWrapper}>
           <Text style={styles.title}>Payment</Text>

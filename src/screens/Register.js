@@ -111,10 +111,11 @@ export default class Register extends React.Component {
     });
 
     // check for phone email is non null & is valid
-    if (this.state.userId.length < 1) {
+    const enteredPhoneEmail = this.state.userId.trim();
+    if (enteredPhoneEmail.length < 1) {
       hasErrors = true;
       errors.phoneEmailValidation = true;
-    } else if (!ValidationUtil.isValidEmailPhone(this.state.userId)) {
+    } else if (!ValidationUtil.isValidEmailPhone(enteredPhoneEmail)) {
       hasErrors = true;
       errors.phoneEmailValidation = true;
     }

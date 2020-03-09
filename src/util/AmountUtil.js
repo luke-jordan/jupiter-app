@@ -26,6 +26,10 @@ export const getDivisor = (unit) => {
   }
 };
 
+export const getConvertor = (fromUnit, toUnit) => {
+  return getDivisor(toUnit) / getDivisor(fromUnit);
+};
+
 export const getCurrencySymbol = (currencyName) => {
   // todo improve this to handle more currencies
   switch (currencyName) {

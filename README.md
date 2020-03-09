@@ -27,3 +27,9 @@ Apply Prettier formatting:
 ```sh
 $ yarn prettier
 ```
+
+## State
+
+Domains:
+
+* transaction: for managing flow from start of save / withdrawal to completion. Only for managing currently-in-process transaction. Prior or pending transactions, when not currently in active flow, are part of the history domain.

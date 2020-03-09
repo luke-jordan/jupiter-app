@@ -18,9 +18,16 @@ import { getDivisor } from '../util/AmountUtil';
 
 import { getComparatorRates } from '../modules/balance/balance.reducer';
 
+import { clearCurrentTransaction, updateCurrentTransaction } from '../modules/transaction/transaction.actions';
+
 const mapStateToProps = state => ({
   comparatorRates: getComparatorRates(state),
 });
+
+const mapDispatchToProps = {
+  updateCurrentTransaction,
+  clearCurrentTransaction,
+};
 
 class AddCash extends React.Component {
   constructor(props) {
@@ -42,6 +49,11 @@ class AddCash extends React.Component {
         isOnboarding: params.isOnboarding,
         accountId: params.accountId,
       });
+    }
+
+    if (params && params.startNewTransaction) {
+      console.log('*** INITIATING NEW TRANSACTION ***');
+      this.props.clearCurrentTransaction(); // i.e., we start again
     }
 
     if (!params || !params.isOnboarding) {
@@ -81,6 +93,14 @@ class AddCash extends React.Component {
 
   // eslint-disable-next-line react/sort-comp
   transitionToTransferMethod = () => {
+    this.props.updateCurrentTransaction({
+      transactionAmount: {
+        amount: this.state.amountToAdd,
+        currency: 'ZAR',
+        unit: 'WHOLE_CURRENCY',
+      },
+    });
+
     if (this.state.isOnboarding) {
       LoggingUtil.logEvent('USER_INITIATED_FIRST_ADD_CASH', {
         amountAdded: this.state.amountToAdd,
@@ -489,4 +509,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default connect(mapStateToProps)(AddCash);
+export default connect(mapStateToProps, mapDispatchToProps)(AddCash);

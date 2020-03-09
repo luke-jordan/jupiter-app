@@ -469,12 +469,11 @@ class Home extends React.Component {
     switch (action) {
       case 'ADD_CASH': {
           const addCashEmbeddedAmount = actionContext ? actionContext.addCashPreFilled : null;
+          const params = { startNewTransaction: true };
           if (addCashEmbeddedAmount) {
-            const preFilledAmount = extractAmount(addCashEmbeddedAmount, 'WHOLE_CURRENCY');
-            this.props.navigation.navigate('AddCash', { preFilledAmount });
-          } else {
-            this.props.navigation.navigate('AddCash');
+            params.preFilledAmount = extractAmount(addCashEmbeddedAmount, 'WHOLE_CURRENCY');
           }
+          this.props.navigation.navigate('AddCash', params);
           break;
       }
 

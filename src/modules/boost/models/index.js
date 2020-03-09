@@ -16,7 +16,7 @@ export const actionType = {
 };
 
 export const buttonLabel = {
-  ADD_CASH: 'ADD CASH',
+  ADD_CASH: 'SAVE NOW',
   PLAY_GAME: 'PLAY GAME',
   DONE: 'DONE',
 };

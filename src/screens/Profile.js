@@ -8,6 +8,9 @@ import {
   StyleSheet,
   Dimensions,
   View,
+  TouchableWithoutFeedback,
+  Keyboard,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { Button, Input, Icon, Overlay } from 'react-native-elements';
 
@@ -33,6 +36,7 @@ export default class Profile extends React.Component {
       dialogVisible: false,
       chooseFromLibraryLoading: false,
       takePhotoLoading: false,
+      // keyboardShowing: false,
       failedVerification,
     };
   }
@@ -40,30 +44,48 @@ export default class Profile extends React.Component {
   async componentDidMount() {
     LoggingUtil.logEvent('USER_ENTERED_PROFILE_SCREEN');
     const rawInfo = await AsyncStorage.getItem('userInfo');
+
     if (this.state.failedVerification) {
-      const info = this.props.navigation.getParam('info') || (rawInfo ? JSON.parse(rawInfo) : {});
-      const initials = info.firstName && info.lastName ? info.firstName[0] + info.lastName[0] : 'A'; 
-      this.setState({
-        firstName: info.firstName,
-        lastName: info.lastName,
-        idNumber: info.idNumber,
-        initials,
-        token: info.token,
-      });
+      this.setStateForOnboarding(rawInfo);
     } else {
-      const info = JSON.parse(rawInfo);
-      this.setState({
-        firstName: info.profile.personalName,
-        lastName: info.profile.familyName,
-        idNumber: info.profile.nationalId,
-        tempEmail: info.profile.email,
-        initials: info.profile.personalName[0] + info.profile.familyName[0],
-        systemWideUserId: info.systemWideUserId,
-        token: info.token,
-        userLoggedIn: true,
-      });
+      this.setStateForLoggedIn(rawInfo);
     }
 
+    // this.keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', this.keyboardDidShow);
+    // this.keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', this.keyboardDidHide);
+  }
+
+  // componentWillUnmount() {
+  //   this.keyboardDidShowListener.remove();
+  //   this.keyboardDidHideListener.remove();
+  // }
+
+  setStateForOnboarding = (rawInfo) => {
+    const storedInfo = rawInfo && JSON.parse(rawInfo);
+    const info = this.props.navigation.getParam('info') || storedInfo || {};
+    const { profile } = info;
+    const initials = profile.firstName && profile.lastName ? profile.firstName[0] + profile.lastName[0] : 'A';
+    this.setState({
+      firstName: profile.personalName,
+      lastName: profile.familyName,
+      idNumber: profile.nationalId,
+      initials,
+      token: info.token,
+    });
+  }
+
+  setStateForLoggedIn = (rawInfo) => {
+    const info = JSON.parse(rawInfo);
+    this.setState({
+      firstName: info.profile.personalName,
+      lastName: info.profile.familyName,
+      idNumber: info.profile.nationalId,
+      tempEmail: info.profile.email,
+      initials: info.profile.personalName[0] + info.profile.familyName[0],
+      systemWideUserId: info.systemWideUserId,
+      token: info.token,
+      userLoggedIn: true,
+    });
   }
 
   onPressBack = () => {
@@ -118,6 +140,27 @@ export default class Profile extends React.Component {
     }
   };
 
+  onPressCheckAgain = async () => {
+    if (this.state.loading) return;
+    this.setState({ loading: true });
+
+    try {
+      const currentProfile = await this.fetchProfileForOnboardingUser();
+      // console.log('Fetched profile: ', currentProfile);
+      const { screen, params } = NavigationUtil.directBasedOnProfile(currentProfile);
+      
+      if (screen !== 'FailedVerification') {
+        this.setState({ loading: false });
+        NavigationUtil.navigateWithoutBackstack(this.props.navigation, screen, params);
+      } else {
+        this.setState({ loading: false, hasRepeatingError: true });
+      }
+    } catch (error) {
+      console.log('Error checking again: ', JSON.stringify(error));
+      this.setState({ loading: false, hasRepeatingError: true });
+    }
+  };
+
   onPressSave = async () => {
     if (this.state.loading) return;
     this.setState({ loading: true });
@@ -128,7 +171,6 @@ export default class Profile extends React.Component {
         nationalId: this.state.idNumber,
       };
 
-      console.log('HUH, TOKEN: ', this.state.token);
       const result = await fetch(`${Endpoints.AUTH}profile/update`, {
         headers: {
           'Content-Type': 'application/json',
@@ -178,6 +220,15 @@ export default class Profile extends React.Component {
     NavigationUtil.logout(this.props.navigation);
   };
 
+  // keyboardDidShow = () => {
+  //   console.log('Setting keyboard showing!');
+  //   // this.setState({ keyboardShowing: true });
+  // }
+
+  // keyboardDidHide = () => {
+  //   // this.setState({ keyboardShowing: false });
+  // }
+
   renderProfilePicture() {
     if (this.state.profilePic) {
       return <Image style={styles.profilePic} />;
@@ -189,7 +240,7 @@ export default class Profile extends React.Component {
       );
     }
   }
-
+  
   render() {
     return (
       <View style={styles.container}>
@@ -207,92 +258,69 @@ export default class Profile extends React.Component {
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Profile</Text>
         </View>
-        <View style={styles.mainContent}>
-          <View style={styles.picWrapper}>
-            {this.renderProfilePicture()}
-            {/*
-              Uncomment this once we want to implement the edit picture feature
-              <Text style={styles.editText} onPress={this.onPressEditPic}>edit</Text>
-              */}
-          </View>
-          <View style={styles.profileInfoWrapper}>
-            <View style={styles.profileInfo}>
-              <View style={styles.profileField}>
-                <Input
-                  label={`First Name${
-                    !this.state.failedVerification ? '*' : ''
-                  }`}
-                  editable={this.state.failedVerification}
-                  value={this.state.firstName}
-                  onChangeText={text => {
-                    this.setState({ firstName: text });
-                  }}
-                  labelStyle={styles.profileFieldTitle}
-                  inputContainerStyle={styles.inputContainerStyle}
-                  inputStyle={[
-                    styles.profileFieldValue,
-                    this.state.errors && this.state.errors.firstName
-                      ? styles.redText
-                      : null,
-                  ]}
-                  containerStyle={styles.containerStyle}
-                />
-              </View>
-              <View style={styles.separator} />
-              <View style={styles.profileField}>
-                <Input
-                  label={`Last Name${
-                    !this.state.failedVerification ? '*' : ''
-                  }`}
-                  editable={this.state.failedVerification}
-                  value={this.state.lastName}
-                  onChangeText={text => {
-                    this.setState({ lastName: text });
-                  }}
-                  labelStyle={styles.profileFieldTitle}
-                  inputContainerStyle={styles.inputContainerStyle}
-                  inputStyle={[
-                    styles.profileFieldValue,
-                    this.state.errors && this.state.errors.lastName
-                      ? styles.redText
-                      : null,
-                  ]}
-                  containerStyle={styles.containerStyle}
-                />
-              </View>
-              <View style={styles.separator} />
-              <View style={styles.profileField}>
-                <Input
-                  label={`ID number${
-                    !this.state.failedVerification ? '*' : ''
-                  }`}
-                  editable={this.state.failedVerification}
-                  value={this.state.idNumber}
-                  onChangeText={text => {
-                    this.setState({ idNumber: text });
-                  }}
-                  labelStyle={styles.profileFieldTitle}
-                  inputContainerStyle={styles.inputContainerStyle}
-                  inputStyle={[
-                    styles.profileFieldValue,
-                    this.state.errors && this.state.errors.idNumber
-                      ? styles.redText
-                      : null,
-                  ]}
-                  containerStyle={styles.containerStyle}
-                />
-              </View>
-              {!this.state.failedVerification ? (
-                <View style={styles.separator} />
-              ) : null}
-              {!this.state.failedVerification ? (
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <View style={styles.mainContent}>
+            {/* <View style={styles.picWrapper}>
+              {!this.state.keyboardShowing && this.renderProfilePicture()}
+                {/* Uncomment this once we want to implement the edit picture feature
+                <Text style={styles.editText} onPress={this.onPressEditPic}>edit</Text>
+                </View> */}
+            {/* <View style={styles.profileInfoWrapper}> */}
+            <KeyboardAvoidingView style={styles.profileInfoWrapper} contentContainerStyle={styles.profileInfoWrapper} behavior="position">
+              <View style={styles.profileInfo}>
                 <View style={styles.profileField}>
                   <Input
-                    label="Email Address / Phone Number*"
-                    editable={false}
-                    value={this.state.tempEmail}
+                    label={`First Name${
+                      !this.state.failedVerification ? '*' : ''
+                    }`}
+                    editable={this.state.failedVerification}
+                    value={this.state.firstName}
                     onChangeText={text => {
-                      this.setState({ tempEmail: text });
+                      this.setState({ firstName: text });
+                    }}
+                    labelStyle={styles.profileFieldTitle}
+                    inputContainerStyle={styles.inputContainerStyle}
+                    inputStyle={[
+                      styles.profileFieldValue,
+                      this.state.errors && this.state.errors.firstName
+                        ? styles.redText
+                        : null,
+                    ]}
+                    containerStyle={styles.containerStyle}
+                  />
+                </View>
+                <View style={styles.separator} />
+                <View style={styles.profileField}>
+                  <Input
+                    label={`Last Name${
+                      !this.state.failedVerification ? '*' : ''
+                    }`}
+                    editable={this.state.failedVerification}
+                    value={this.state.lastName}
+                    onChangeText={text => {
+                      this.setState({ lastName: text });
+                    }}
+                    labelStyle={styles.profileFieldTitle}
+                    inputContainerStyle={styles.inputContainerStyle}
+                    inputStyle={[
+                      styles.profileFieldValue,
+                      this.state.errors && this.state.errors.lastName
+                        ? styles.redText
+                        : null,
+                    ]}
+                    containerStyle={styles.containerStyle}
+                  />
+                </View>
+                <View style={styles.separator} />
+                <View style={styles.profileField}>
+                  <Input
+                    label={`ID number${
+                      !this.state.failedVerification ? '*' : ''
+                    }`}
+                    editable={this.state.failedVerification}
+                    value={this.state.idNumber}
+                    onChangeText={text => {
+                      this.setState({ idNumber: text });
                     }}
                     labelStyle={styles.profileFieldTitle}
                     inputContainerStyle={styles.inputContainerStyle}
@@ -305,125 +333,177 @@ export default class Profile extends React.Component {
                     containerStyle={styles.containerStyle}
                   />
                 </View>
-              ) : null}
-              {/*
-                <View style={styles.profileField}>
-                  <Input
-                    label="Email Address"
-                    value={this.state.tempEmail}
-                    onChangeText={(text) => {this.setState({tempEmail: text})}}
-                    labelStyle={styles.profileFieldTitle}
-                    inputContainerStyle={styles.inputContainerStyle}
-                    inputStyle={[styles.profileFieldValue, this.state.errors && this.state.errors.email ? styles.redText : null]}
-                    containerStyle={styles.containerStyle}
-                  />
-                </View>
-                <View style={styles.separator}/>
-                <View style={styles.profileField}>
-                  <Input
-                    label="Phone Number"
-                    value={this.state.tempPhoneNumber}
-                    onChangeText={(text) => {this.setState({tempPhoneNumber: text})}}
-                    labelStyle={styles.profileFieldTitle}
-                    inputContainerStyle={styles.inputContainerStyle}
-                    inputStyle={[styles.profileFieldValue, this.state.errors && this.state.errors.phoneNumber ? styles.redText : null]}
-                    containerStyle={styles.containerStyle}
-                  />
-                </View>
-                */}
-            </View>
-            <View>
-              {this.state.hasRepeatingError ? (
-                <Text
-                  style={[styles.disclaimer, styles.redText]}
-                  onPress={this.onPressSupport}
-                >
-                  Sorry, your details still failed the ID verification check. If
-                  you believe they are correct,{' '}
-                  <Text style={styles.disclaimerBold}>
-                    please contact support
+                {!this.state.failedVerification ? (
+                  <View style={styles.separator} />
+                ) : null}
+                {!this.state.failedVerification ? (
+                  <View style={styles.profileField}>
+                    <Input
+                      label="Email Address / Phone Number*"
+                      editable={false}
+                      value={this.state.tempEmail}
+                      onChangeText={text => {
+                        this.setState({ tempEmail: text });
+                      }}
+                      labelStyle={styles.profileFieldTitle}
+                      inputContainerStyle={styles.inputContainerStyle}
+                      inputStyle={[
+                        styles.profileFieldValue,
+                        this.state.errors && this.state.errors.idNumber
+                          ? styles.redText
+                          : null,
+                      ]}
+                      containerStyle={styles.containerStyle}
+                    />
+                  </View>
+                ) : null}
+                {/*
+                  <View style={styles.profileField}>
+                    <Input
+                      label="Email Address"
+                      value={this.state.tempEmail}
+                      onChangeText={(text) => {this.setState({tempEmail: text})}}
+                      labelStyle={styles.profileFieldTitle}
+                      inputContainerStyle={styles.inputContainerStyle}
+                      inputStyle={[styles.profileFieldValue, this.state.errors && this.state.errors.email ? styles.redText : null]}
+                      containerStyle={styles.containerStyle}
+                    />
+                  </View>
+                  <View style={styles.separator}/>
+                  <View style={styles.profileField}>
+                    <Input
+                      label="Phone Number"
+                      value={this.state.tempPhoneNumber}
+                      onChangeText={(text) => {this.setState({tempPhoneNumber: text})}}
+                      labelStyle={styles.profileFieldTitle}
+                      inputContainerStyle={styles.inputContainerStyle}
+                      inputStyle={[styles.profileFieldValue, this.state.errors && this.state.errors.phoneNumber ? styles.redText : null]}
+                      containerStyle={styles.containerStyle}
+                    />
+                  </View>
+                  */}
+              </View>
+              <View>
+                {this.state.hasRepeatingError ? (
+                  <Text
+                    style={[styles.disclaimer, styles.redText]}
+                    onPress={this.onPressSupport}
+                  >
+                    Sorry, your details still failed the ID verification check. If
+                    you believe they are correct,{' '}
+                    <Text style={styles.disclaimerBold}>
+                      please contact support
+                    </Text>
+                    .
                   </Text>
-                  .
-                </Text>
-              ) : (
-                <View>
-                  {this.state.failedVerification ? (
-                    <Text style={styles.disclaimer}>
-                      If your details are correct, please{' '}
-                      <Text
-                        style={styles.disclaimerBold}
-                        onPress={this.onPressSupport}
-                      >
-                        contact support
+                ) : (
+                  <View>
+                    {this.state.failedVerification ? (
+                      <Text style={styles.disclaimer}>
+                        If your details are correct, please{' '}
+                        <Text
+                          style={styles.disclaimerBold}
+                          onPress={this.onPressSupport}
+                        >
+                          contact support
+                        </Text>
+                        .
                       </Text>
-                      .
-                    </Text>
+                    ) : (
+                      <Text style={styles.disclaimer}>
+                        *In order to update any of the those fields please contact
+                        us{' '}
+                        <Text
+                          style={styles.disclaimerBold}
+                          onPress={this.onPressSupport}
+                        >
+                          using the support form.
+                        </Text>
+                      </Text>
+                    )}
+                  </View>
+                )}
+              </View>
+            </KeyboardAvoidingView>
+            <View style={styles.buttonsContainer}>
+              <TouchableOpacity
+                style={styles.buttonLine}
+                onPress={this.onPressSave}
+              >
+                <Text style={styles.buttonLineText}>Save Changes</Text>
+                {this.state.loading ? (
+                  <ActivityIndicator
+                    style={styles.spinner}
+                    color={Colors.MEDIUM_GRAY}
+                  />
+                ) : (
+                  <Icon
+                    name="chevron-right"
+                    type="evilicon"
+                    size={50}
+                    color={Colors.MEDIUM_GRAY}
+                  />
+                )}
+              </TouchableOpacity>
+              {this.state.failedVerification ? (
+                <TouchableOpacity
+                  style={styles.buttonLine}
+                  onPress={this.onPressCheckAgain}
+                >
+                  <Text style={styles.buttonLineText}>Check Again</Text>
+                  {this.state.loading ? (
+                    <ActivityIndicator
+                      style={styles.spinner}
+                      color={Colors.MEDIUM_GRAY}
+                    />
                   ) : (
-                    <Text style={styles.disclaimer}>
-                      *In order to update any of the those fields please contact
-                      us{' '}
-                      <Text
-                        style={styles.disclaimerBold}
-                        onPress={this.onPressSupport}
-                      >
-                        using the support form.
-                      </Text>
-                    </Text>
+                    <Icon
+                      name="chevron-right"
+                      type="evilicon"
+                      size={50}
+                      color={Colors.MEDIUM_GRAY}
+                    />
                   )}
-                </View>
-              )}
+                </TouchableOpacity>
+              ) : null}
+              {this.state.failedVerification ? (
+                <TouchableOpacity
+                  style={styles.buttonLine}
+                  onPress={this.onPressLogout}
+                >
+                  <Text style={styles.buttonLineText}>Logout</Text>
+                  {this.state.loading ? (
+                    <ActivityIndicator
+                      style={styles.spinner}
+                      color={Colors.MEDIUM_GRAY}
+                    />
+                  ) : (
+                    <Icon
+                      name="chevron-right"
+                      type="evilicon"
+                      size={50}
+                      color={Colors.MEDIUM_GRAY}
+                    />
+                  )}
+                </TouchableOpacity>
+              ) : null}
+              {!this.state.failedVerification ? (
+                <TouchableOpacity
+                  style={styles.buttonLine}
+                  onPress={this.onPressChangePassword}
+                >
+                  <Text style={styles.buttonLineText}>Change Password</Text>
+                  <Icon
+                    name="chevron-right"
+                    type="evilicon"
+                    size={50}
+                    color={Colors.MEDIUM_GRAY}
+                  />
+                </TouchableOpacity>
+              ) : null}
             </View>
           </View>
-          <View style={styles.buttonsContainer}>
-            <TouchableOpacity
-              style={styles.buttonLine}
-              onPress={this.onPressSave}
-            >
-              <Text style={styles.buttonLineText}>Save Changes</Text>
-              {this.state.loading ? (
-                <ActivityIndicator
-                  style={styles.spinner}
-                  color={Colors.MEDIUM_GRAY}
-                />
-              ) : (
-                <Icon
-                  name="chevron-right"
-                  type="evilicon"
-                  size={50}
-                  color={Colors.MEDIUM_GRAY}
-                />
-              )}
-            </TouchableOpacity>
-            {this.state.failedVerification ? (
-              <TouchableOpacity
-                style={styles.buttonLine}
-                onPress={this.onPressLogout}
-              >
-                <Text style={styles.buttonLineText}>Logout</Text>
-                <Icon
-                  name="chevron-right"
-                  type="evilicon"
-                  size={50}
-                  color={Colors.MEDIUM_GRAY}
-                />
-              </TouchableOpacity>
-            ) : null}
-            {!this.state.failedVerification ? (
-              <TouchableOpacity
-                style={styles.buttonLine}
-                onPress={this.onPressChangePassword}
-              >
-                <Text style={styles.buttonLineText}>Change Password</Text>
-                <Icon
-                  name="chevron-right"
-                  type="evilicon"
-                  size={50}
-                  color={Colors.MEDIUM_GRAY}
-                />
-              </TouchableOpacity>
-            ) : null}
-          </View>
-        </View>
+        </TouchableWithoutFeedback>
 
         <Overlay
           isVisible={this.state.dialogVisible}
@@ -515,9 +595,9 @@ const styles = StyleSheet.create({
     fontFamily: 'poppins-regular',
     fontSize: 17,
   },
-  picWrapper: {
-    alignItems: 'center',
-  },
+  // picWrapper: {
+  //   alignItems: 'center',
+  // },
   profilePic: {
     width: PROFILE_PIC_SIZE,
     height: PROFILE_PIC_SIZE,
@@ -538,7 +618,7 @@ const styles = StyleSheet.create({
   //   color: Colors.MEDIUM_GRAY,
   // },
   profileInfoWrapper: {
-    height: '50%',
+    minHeight: '50%',
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',

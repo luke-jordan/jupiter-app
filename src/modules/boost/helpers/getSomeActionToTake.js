@@ -18,7 +18,7 @@ const getSomeActionToTake = action => {
  */
 const addCashHandler = (navigation, hideModal, preFilledAmount) => {
   if (preFilledAmount) {
-    navigation.navigate('AddCash', { preFilledAmount });
+    navigation.navigate('AddCash', { preFilledAmount, startNewTransaction: true });
   } else {
     navigation.navigate('AddCash');
   }
