@@ -7,22 +7,26 @@ jobs:
     macos:
       xcode: 11.4.0
     environment:
-      FL_OUTPUT_DIR: output
-      FASTLANE_LANE: test
     shell: /bin/bash --login -o pipefail
     steps:
       - checkout
-      - restore_cache:
-          key: 1-gems-{{ checksum "Gemfile.lock" }}
-      - run: bundle check || bundle install --path vendor/bundle
-      - save_cache:
-          key: 1-gems-{{ checksum "Gemfile.lock" }}
-          paths:
-            - vendor/bundle
       - run:
-          name: fastlane
-          command: bundle exec fastlane $FASTLANE_LANE
+          name: Install expo cli
+          command: npm install -g expo-cli
+      - run:
+          name: Install Turtle CLI
+          command: npm install -g turtle-cli --unsafe-perm=true
+      - run:
+          name: Install app packages
+          command: yarn install
+      - run:
+          name: Run turtle CLI
+          command: turtle build:ios
+      - run: 
+          name: Xcode CLI install
+          command: xcode-select --install
+      - run:
+          name: Xcode run
+          command: xcrun altool --upload-app -f path/to/the/standalone-app.ipa -u youremail@apple.com —verbose -p <app-specific-password>
       - store_artifacts:
           path: output
-      - store_test_results:
-          path: output/scan
