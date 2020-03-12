@@ -10,9 +10,18 @@ import { Colors, Endpoints } from '../util/Values';
 
 import { getAuthToken } from '../modules/auth/auth.reducer';
 
+import { getCurrentTransactionDetails } from '../modules/transaction/transaction.reducer';
+import { updateCurrentTransaction } from '../modules/transaction/transaction.actions';
+import { getDivisor, getConvertor } from '../util/AmountUtil';
+
 const mapStateToProps = state => ({
   authToken: getAuthToken(state),
+  transactionDetails: getCurrentTransactionDetails(state),
 });
+
+const mapDispatchToProps = {
+  updateCurrentTransaction,
+};
 
 class SelectTransferMethod extends React.PureComponent {
 
@@ -25,7 +34,7 @@ class SelectTransferMethod extends React.PureComponent {
       loadingInstant: false,
       loadingManual: false,
     };
-
+    
   }
 
   componentDidMount() {
@@ -44,14 +53,15 @@ class SelectTransferMethod extends React.PureComponent {
     LoggingUtil.logEvent('USER_SELECTED_INSTANT_EFT');
 
     this.setState({ loadingInstant: true});
-    const resultJson = await this.conductBackendCall('OZOW');
+    const resultOfCall = await this.initiateOrUpdateTransaction('OZOW');
+    console.log('Result of call: ', resultOfCall);
     this.setState({ loadingInstant: false });
     
-    if (resultJson) {
+    if (resultOfCall) {
       this.props.navigation.navigate('Payment', {
-        urlToCompletePayment: resultJson.paymentRedirectDetails.urlToCompletePayment,
-        transactionId: resultJson.transactionDetails[0].accountTransactionId,
-        humanReference: resultJson.humanReference,
+        urlToCompletePayment: resultOfCall.urlToCompletePayment,
+        transactionId: resultOfCall.transactionId,
+        humanReference: resultOfCall.humanReference,
         token: this.props.authToken,
         isOnboarding: this.state.isOnboarding,
         amountToAdd: this.state.amountToAdd,
@@ -65,22 +75,36 @@ class SelectTransferMethod extends React.PureComponent {
     LoggingUtil.logEvent('USER_SELECTED_MANUAL_EFT');
 
     this.setState({ loadingManual: true });
-    const resultJson = await this.conductBackendCall('MANUAL_EFT');
+    const resultOfCall = await this.initiateOrUpdateTransaction('MANUAL_EFT');
     this.setState({ loadingManual:  false});
 
-    if (resultJson) {
+    if (resultOfCall) {
       this.props.navigation.navigate('EFTPayment', {
         amountToAdd: this.state.amountToAdd,
         token: this.props.authToken,
         isOnboarding: this.state.isOnboarding,
-        transactionId: resultJson.transactionDetails[0].accountTransactionId,
-        humanReference: resultJson.humanReference,
-        bankDetails: resultJson.bankDetails,
+        transactionId: resultOfCall.transactionId,
+        humanReference: resultOfCall.humanReference,
+        bankDetails: resultOfCall.bankDetails,
       });
     }
   }
 
-  conductBackendCall = async (paymentMethod) => {
+  initiateOrUpdateTransaction = async (paymentMethod) => {
+    const { transactionId, transactionType } = this.props.transactionDetails;
+    console.log('Initiating or updating transaction, details : ', this.props.transactionDetails);
+    // console.log(`TransactionId ? : ${transactionId} and `)
+    let resultOfCall = {};
+    if (transactionId && transactionType === 'USER_SAVING_EVENT') {
+      resultOfCall = await this.tellBackendToUpdate(paymentMethod);
+    } else {
+      resultOfCall = await this.tellBackendToInitiate(paymentMethod);
+    }
+    console.log('Completed backend calls, result: ', resultOfCall);
+    return resultOfCall;
+  };
+
+  tellBackendToInitiate = async (paymentMethod) => {
     try {
       const result = await fetch(`${Endpoints.CORE}addcash/initiate`, {
         headers: {
@@ -91,7 +115,7 @@ class SelectTransferMethod extends React.PureComponent {
         method: 'POST',
         body: JSON.stringify({
           accountId: this.state.accountId,
-          amount: this.state.amountToAdd * 10000, // multiplying by 100 to get cents and again by 100 to get hundreth cent
+          amount: this.state.amountToAdd * getDivisor('HUNDREDTH_CENT'), // multiplying by 100 to get cents and again by 100 to get hundreth cent
           currency: 'ZAR', // TODO implement for handling other currencies
           unit: 'HUNDREDTH_CENT',
           paymentProvider: paymentMethod,
@@ -103,7 +127,21 @@ class SelectTransferMethod extends React.PureComponent {
         if (this.state.isOnboarding) {
           NavigationUtil.removeOnboardStepRemaining('ADD_CASH');
         }
-        return resultJson;
+
+        this.props.updateCurrentTransaction({
+          transactionId: resultJson.transactionDetails[0].accountTransactionId,
+          transactionType: 'USER_SAVING_EVENT',
+          humanReference: resultJson.humanReference,
+          paymentMethod,
+        });
+
+        return {
+          transactionId: resultJson.transactionDetails[0].accountTransactionId,
+          humanReference: resultJson.humanReference,
+          bankDetails: resultJson.bankDetails,
+          urlToCompletePayment: resultJson.paymentRedirectDetails ? resultJson.paymentRedirectDetails.urlToCompletePayment : '',
+        };
+
       } else {
         throw result;
       }
@@ -116,6 +154,51 @@ class SelectTransferMethod extends React.PureComponent {
       this.setState({ loadingInstant: false, loadingManual: false });
       // this.showError();
     }      
+  }
+
+  tellBackendToUpdate = async (paymentMethod) => {
+    try {
+      console.log('UPDATING TRANSACTION ....');
+      const { transactionId, transactionAmount: wholeAmount } = this.props.transactionDetails;
+      const multiplier = getConvertor(wholeAmount.unit, 'HUNDREDTH_CENT');
+      const transactionAmount = { amount: wholeAmount.amount * multiplier, unit: 'HUNDREDTH_CENT', currency: wholeAmount.currency };
+
+      const result = await fetch(`${Endpoints.CORE}pending/update`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          Authorization: `Bearer ${this.props.authToken}`,
+        },
+        method: 'POST',
+        body: JSON.stringify({
+          transactionId,
+          amount: transactionAmount,
+          paymentMethod,
+        }),
+      });
+
+      if (!result.ok) {
+        throw result;
+      }
+
+      const resultJson = await result.json();
+      console.log('Raw backend: ', resultJson);
+      this.props.updateCurrentTransaction({
+        paymentMethod,
+      });
+
+      return {
+        transactionId,
+        humanReference: resultJson.humanReference,
+        bankDetails: resultJson.bankDetails,
+        urlToCompletePayment: resultJson.paymentRedirectDetails ? resultJson.paymentRedirectDetails.urlToCompletePayment : '',
+      };
+
+    } catch (error) {
+      console.log('Failure in update: ', JSON.stringify(error));
+      LoggingUtil.logEvent('ADD_CASH_FAILED_UNKNOWN', { serverResponse: JSON.stringify(error.message) });
+      this.setState({ loadingInstant: false, loadingManual: false });
+    }
   }
 
   onPressBack = () => {
@@ -313,4 +396,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default connect(mapStateToProps)(SelectTransferMethod);
+export default connect(mapStateToProps, mapDispatchToProps)(SelectTransferMethod);

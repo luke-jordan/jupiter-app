@@ -246,7 +246,7 @@ export default class History extends React.Component {
   onPressItem(element) {
     if (element.type === 'TRANSACTION' && element.details.transactionType === 'USER_SAVING_EVENT') {
       const defaultAmount = element.details.amount / getDivisor(element.details.unit);
-      this.props.navigation.navigate('AddCash', { preFilledAmount: defaultAmount });
+      this.props.navigation.navigate('AddCash', { preFilledAmount: defaultAmount, startNewTransaction: true });
     }
   }
 
