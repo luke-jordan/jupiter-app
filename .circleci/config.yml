@@ -19,7 +19,7 @@ executors:
     # NOTE: If you have macos machines you can use them instead.
     # Comment out 'resource_class', 'docker' and 'image' and replace
     # with the comments below.
-     macos:
+    macos:
        xcode: 10.1.0
     working_directory: ~/expo-project
     environment:
