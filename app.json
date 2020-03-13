@@ -24,7 +24,7 @@
       "**/*"
     ],
     "ios": {
-      "bundleIdentifier": "com.jupitersave.app"
+      "bundleIdentifier": "com.jupitersaving.app"
     },
     "android": {
       "package": "com.jupitersave.app",
