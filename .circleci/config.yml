@@ -168,8 +168,12 @@ jobs:
               --dist-p12-path ./expo-project_dist.p12 \
               --provisioning-profile-path ./expo-project.mobileprovision \
               -o ~/expo-project.ipa
-      - store_artifacts:
-          path: ~/expo-project.ipa
+      - run:
+          name: Upload build to App Store
+          command: |
+            xcrun altool --upload-app -f ~/expo-project.ipa -u $APP_STORE_USERNAME -p $APP_STORE_APP_PWD
+      # - store_artifacts:
+      #     path: ~/expo-project.ipa      
 
   build_ios_simulator:
     executor: ios
