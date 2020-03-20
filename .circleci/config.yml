@@ -112,19 +112,10 @@ workflows:
       - publish_app:
           filters:
             branches:
-              only: circleci/working
-      # - build_ios_simulator:
-      #     requires:
-      #       - publish_app
-      - build_ios_archive:
+              only: master
+      - build_upload_ios_archive:
           requires:
             - publish_app
-      # - build_android_apk:
-      #     requires:
-      #       - publish_app
-      # - build_android_aab:
-      #     requires:
-      #       - publish_app
 
 jobs:
   publish_app:
@@ -141,10 +132,10 @@ jobs:
           command: |
             expo login -u $EXPO_USERNAME -p $EXPO_PASSWORD --non-interactive
             yarn
-            expo publish --release-channel default
+            expo publish --release-channel master
       - save_yarn_cache
 
-  build_ios_archive:
+  build_upload_ios_archive:
     executor: ios
     steps:
       - checkout
@@ -163,7 +154,7 @@ jobs:
             base64 --decode expo-project_dist.p12.base64 > expo-project_dist.p12
             echo $EXPO_IOS_PROVISIONING_PROFILE_BASE64 > expo-project.mobileprovision.base64
             base64 --decode expo-project.mobileprovision.base64 > expo-project.mobileprovision
-            turtle build:ios \
+            turtle build:ios --release-channel master \
               --team-id $EXPO_APPLE_TEAM_ID \
               --dist-p12-path ./expo-project_dist.p12 \
               --provisioning-profile-path ./expo-project.mobileprovision \
