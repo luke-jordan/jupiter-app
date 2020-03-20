@@ -19,7 +19,7 @@ const MessageCard = ({
     const getMessageCardButtonText = (action) => {
         switch (action) {
           case 'ADD_CASH':
-            return 'ADD CASH';
+            return 'SAVE NOW';
     
           case 'VIEW_HISTORY':
             return 'VIEW HISTORY';

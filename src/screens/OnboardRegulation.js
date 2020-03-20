@@ -109,6 +109,7 @@ class OnboardRegulation extends React.PureComponent {
         isOnboarding: true,
         token: this.props.authToken,
         accountId: this.state.accountId,
+        startNewTransaction: true,
       });
     } else {
       const updatedProfileRaw = await fetch(`${Endpoints.AUTH}profile/fetch`, {

@@ -8,7 +8,7 @@
       "ios",
       "android"
     ],
-    "version": "0.0.21",
+    "version": "0.0.22",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "jupiter",
@@ -24,11 +24,11 @@
       "**/*"
     ],
     "ios": {
-      "bundleIdentifier": "com.jupitersave.app"
+      "bundleIdentifier": "com.jupitersaving.app"
     },
     "android": {
       "package": "com.jupitersave.app",
-      "versionCode": 21,
+      "versionCode": 22,
       "permissions": [],
       "intentFilters": [
         {
@@ -60,6 +60,6 @@
         }
       ]
     },
-    "description": "Jupiter savings app. Triggering new publish. This cached publish is extremely annoying when manifests have to change."
+    "description": "Jupiter savings app."
   }
 }

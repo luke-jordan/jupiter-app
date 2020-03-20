@@ -12,10 +12,15 @@ import balanceReducer, {
   STATE_KEY as BALANCE_STATE_KEY,
 } from '../modules/balance/balance.reducer';
 
+import transactionReducer, {
+  STATE_KEY as TRANSACTION_STATE_KEY,
+} from '../modules/transaction/transaction.reducer';
+
 const rootReducer = combineReducers({
   [BOOST_STATE_KEY]: boostReducer,
   [BALANCE_STATE_KEY]: balanceReducer,
   [AUTH_STATE_KEY]: authReducer,
+  [TRANSACTION_STATE_KEY]: transactionReducer,
 });
 
 export default rootReducer;

@@ -127,7 +127,7 @@ class Boosts extends React.Component {
       let title = '';
       let action = null;
       if (thresholdEventType === 'save_event') {
-        title = 'ADD CASH';
+        title = 'SAVE NOW';
         const amount = this.extractStatusThreshold(boostDetails.statusConditions, nextStatus);
         action = () => this.onPressAddCash(amount);
       } else if (thresholdEventType === 'social_event') {
@@ -271,7 +271,7 @@ class Boosts extends React.Component {
     }
   };
 
-  onPressAddCash = amount => this.props.navigation.navigate('AddCash', { preFilledAmount: amount });
+  onPressAddCash = amount => this.props.navigation.navigate('AddCash', { preFilledAmount: amount, startNewTransaction: true });
 
   onPressInviteFriends = () => {
     this.props.navigation.navigate('Friends');

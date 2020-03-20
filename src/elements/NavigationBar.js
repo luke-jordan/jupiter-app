@@ -12,7 +12,7 @@ const bgColor = '#00000000';
 
 class NavigationBar extends React.Component {
   onPressAddCash = () => {
-    this.props.navigation.navigate('AddCash');
+    this.props.navigation.navigate('AddCash', { startNewTransaction: true });
   };
 
   onPressTab = async index => {

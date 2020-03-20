@@ -110,12 +110,12 @@ class Account extends React.Component {
                 {/* <Text style={styles.sectionHead}>MY ACCOUNT</Text> */}
                 <TouchableOpacity
                   style={[styles.buttonLine, styles.accountButtonLine]}
-                  onPress={this.onPressDetails}
+                  onPress={this.onPressHistory}
                 >
                   <View style={styles.accountLineContent}>
-                    <Image style={styles.accountLineIcon} source={require('../../assets/profile.png')} />
+                    <Image style={styles.accountLineIcon} source={require('../../assets/history.png')} />
                     <View style={styles.accountInfo}>
-                      <Text style={styles.accountLineText}>Profile</Text>
+                      <Text style={styles.accountLineText}>History</Text>
                     </View>
                   </View>
                   <Icon
@@ -127,12 +127,12 @@ class Account extends React.Component {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.buttonLine, styles.accountButtonLine]}
-                  onPress={this.onPressHistory}
+                  onPress={this.onPressDetails}
                 >
                   <View style={styles.accountLineContent}>
-                    <Image style={styles.accountLineIcon} source={require('../../assets/history.png')} />
+                    <Image style={styles.accountLineIcon} source={require('../../assets/profile.png')} />
                     <View style={styles.accountInfo}>
-                      <Text style={styles.accountLineText}>History</Text>
+                      <Text style={styles.accountLineText}>Profile</Text>
                     </View>
                   </View>
                   <Icon

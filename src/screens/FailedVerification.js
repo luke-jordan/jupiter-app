@@ -32,11 +32,13 @@ export default class FailedVerification extends React.Component {
       this.props.navigation.navigate('Profile', {
         failedVerification: true,
         info: {
-          idNumber: params.idNumber,
-          firstName: params.firstName,
-          lastName: params.lastName,
           token: params.token,
           accountId: params.accountId,
+          profile: {
+            nationalId: params.idNumber,
+            personalName: params.firstName,
+            familyName: params.lastName,
+          },
         },
       });
     }

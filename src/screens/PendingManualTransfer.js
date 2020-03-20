@@ -146,16 +146,27 @@ export default class PendingManualTransfer extends React.Component {
     }
   }
 
+  constructBankDetailsReadable = () => {
+    const { bankDetails } = this.state;
+    return `Jupiter Payment Details:\n\n` +
+      `Bank: ${bankDetails.bankName}\n` +
+      `Beneficiary Name: ${bankDetails.beneficiaryName}\n` +
+      `Account Type: ${bankDetails.accountType}\n` +
+      `Account Number: ${bankDetails.accountNumber}\n` + 
+      `Branch code: ${bankDetails.routingNumber}\n` +
+      `Reference: ${this.state.humanReference}`;
+  }
+
   onPressCopy = () => {
-    Clipboard.setString(this.state.bankDetails);
+    console.log('*** COPIED');
+    Clipboard.setString(this.constructBankDetailsReadable());
     this.toastRef.current.show('Copied to clipboard!');
   };
 
   onPressShare = async () => {
     try {
-      const { bankDetails } = this.state;
       const result = await Share.share({
-        message: `Jupiter Payment Details: Bank: ${bankDetails.bankName}; Beneficiary Name: ${bankDetails.beneficiaryName}; Account Type: ${bankDetails.accountType}; Account Number: ${bankDetails.accountNumber}; Branch code: ${bankDetails.routingNumber}; Reference: ${this.state.humanReference}`,
+        message: this.constructBankDetailsReadable(),
       });
       console.log(result);
     } catch (error) {
@@ -416,12 +427,12 @@ export default class PendingManualTransfer extends React.Component {
                 source={require('../../assets/message-circle.png')}
                 resizeMode="contain"
               />
-              <Text style={styles.shareText}>Check system again</Text>
+              <Text style={styles.shareText}>Check again</Text>
             </TouchableOpacity>
           </View>
           
           <Text style={styles.footerText}>
-            Don&apos;t want to wait to see your balance grow? And some more
+            Don&apos;t want to wait to see your savings grow? Add some more
           </Text>
           <TouchableOpacity
             onPress={this.onPressInstant}

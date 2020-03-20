@@ -64,7 +64,8 @@ export default class PendingRegistrationSteps extends React.Component {
       isOnboarding: true,
       systemWideUserId: userInfo.systemWideUserId,
       token: userInfo.token,
-      accountId: userInfo.balance.accountId[0],
+      accountId: userInfo.balance.accountId[0], 
+      startNewTransaction: true,
     });
   };
 
@@ -76,8 +77,8 @@ export default class PendingRegistrationSteps extends React.Component {
     });
   };
 
-  onPressLogout = () => {
-    NavigationUtil.logout();
+  onPressLogout = async () => {
+    await NavigationUtil.logout(this.props.navigation);
   };
 
   onPressContactSupport = () => {
@@ -174,8 +175,8 @@ export default class PendingRegistrationSteps extends React.Component {
               onPress={this.onPressRegulatoryAgreement}
             >
               <Image
-                style={styles.stepButtonIcon}
-                source={require('../../assets/arrow_up_circle.png')}
+                style={this.state.mustAgreeRegulatory ? styles.stepButtonIcon : [styles.stepButtonIcon, styles.stepButtonCompleted]}
+                source={require('../../assets/check-circle.png')}
                 resizeMode="contain"
               />
               <Text
@@ -206,14 +207,14 @@ export default class PendingRegistrationSteps extends React.Component {
               onPress={this.onPressAddCash}
             >
               <Image
-                style={styles.stepButtonIcon}
+                style={this.state.mustAddCash ? styles.stepButtonIcon : [styles.stepButtonIcon, styles.stepButtonCompleted]}
                 source={require('../../assets/arrow_up_circle.png')}
                 resizeMode="contain"
               />
               <Text
                 style={this.state.mustAddCash ? [styles.stepButtonText, styles.stepButtonTextIncomplete] : styles.stepButtonText}
               >
-                Add cash
+                Make a save
               </Text>
               {this.state.mustAddCash ? (
                 <Icon
@@ -239,7 +240,7 @@ export default class PendingRegistrationSteps extends React.Component {
             >
               <Image
                 style={styles.stepButtonIcon}
-                source={require('../../assets/arrow_up_circle.png')}
+                source={require('../../assets/money-8.png')}
                 resizeMode="contain"
               />
               <Text
@@ -270,9 +271,9 @@ export default class PendingRegistrationSteps extends React.Component {
               Were you expecting to see something different?
             </Text>
             <View style={styles.footerRow}>
-              <Text style={styles.footerLink}>Logout</Text>
+              <TouchableOpacity style={styles.footerButton} onPress={this.onPressLogout}><Text style={styles.footerLink}>Logout</Text></TouchableOpacity>
               <Text style={styles.footerDesc}>|</Text>
-              <Text style={styles.footerLink}>Contact support</Text>
+              <TouchableOpacity style={styles.footerButton} onPress={this.onPressContactSupport}><Text style={styles.footerLink}>Contact support</Text></TouchableOpacity>
             </View>
           </View>
         </ScrollView>
@@ -352,6 +353,9 @@ const styles = StyleSheet.create({
   stepButtonIcon: {
     marginRight: 15,
   },
+  stepButtonCompleted: {
+    tintColor: Colors.PURPLE,
+  },
   separator: {
     height: 1,
     width: width * 0.9,
@@ -370,6 +374,7 @@ const styles = StyleSheet.create({
     color: Colors.MEDIUM_GRAY,
     textAlign: 'center',
     fontSize: 12,
+    paddingVertical: 3,
   },
   footerRow: {
     flexDirection: 'row',
@@ -377,11 +382,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 5,
   },
+  footerButton: {
+    marginHorizontal: 10,
+    paddingVertical: 3,
+  },
   footerLink: {
     fontFamily: 'poppins-regular',
     color: Colors.PURPLE,
     fontWeight: '600',
-    fontSize: 12,
-    marginHorizontal: 10,
+    fontSize: 13,
   },
 });
