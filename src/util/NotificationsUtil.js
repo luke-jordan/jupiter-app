@@ -54,7 +54,7 @@ export const NotificationsUtil = {
   async deleteNotificationToken(authenticationToken) {
     try {
       // there is a corner case of user being logged into multiple devices, so we specify the token here
-      const result = await fetch(`${Endpoints.CORE}'message/token`, {
+      const result = await fetch(`${Endpoints.CORE}message/token`, {
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
