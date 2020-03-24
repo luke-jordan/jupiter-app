@@ -6,7 +6,7 @@ import { LoggingUtil } from './LoggingUtil';
 export const NotificationsUtil = {
   async uploadTokenToServer(notificationsToken, authenticationToken) {
     try {
-      const result = await fetch(`${Endpoints.CORE}'message/token`, {
+      const result = await fetch(`${Endpoints.CORE}message/token`, {
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',

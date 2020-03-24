@@ -14,6 +14,7 @@ import { Button, Icon, Input, Overlay } from 'react-native-elements';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { ValidationUtil } from '../util/ValidationUtil';
 import { Colors, Endpoints } from '../util/Values';
+import OnboardBreadCrumb from '../elements/OnboardBreadCrumb';
 
 export default class Register extends React.Component {
   constructor(props) {
@@ -147,87 +148,89 @@ export default class Register extends React.Component {
 
   onPressRegister = async () => {
     Keyboard.dismiss();
-    if (this.state.loading) return;
-    this.setState({ loading: true });
+    // if (this.state.loading) return;
+    // this.setState({ loading: true });
 
     this.clearError(); // so prior ones are no longer around
     const validation = await this.validateInput();
-    if (!validation) {
-      this.showError();
-      return;
-    }
+    // if (!validation) {
+    //   this.showError();
+    //   return;
+    // }
 
-    try {
-      const result = await fetch(`${Endpoints.AUTH}register/profile`, {
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        method: 'POST',
-        body: JSON.stringify({
-          countryCode3Letter: 'ZAF',
-          nationalId: this.state.idNumber,
-          phoneOrEmail: this.state.userId,
-          personalName: this.state.firstName,
-          familyName: this.state.lastName,
-          referralCode: this.state.referralCode,
-        }),
-      });
-      if (result.ok) {
-        const resultJson = await result.json();
-        this.setState({ loading: false });
-        if (resultJson.result.includes('SUCCESS')) {
-          LoggingUtil.logEvent('USER_PROFILE_REGISTER_SUCCEEDED');
-          this.props.navigation.navigate('SetPassword', {
-            systemWideUserId: resultJson.systemWideUserId,
-            clientId: resultJson.clientId,
-            defaultFloatId: resultJson.defaultFloatId,
-            defaultCurrency: resultJson.defaultCurrency,
-            idNumber: this.state.idNumber,
-            firstName: this.state.firstName,
-            lastName: this.state.lastName,
-          });
-        } else {
-          LoggingUtil.logEvent('USER_PROFILE_REGISTER_FAILED', {
-            reason: "Result didn't include SUCCESS",
-          });
-          this.showError();
-        }
-      } else {
-        const resultJson = await result.json();
-        LoggingUtil.logEvent('USER_PROFILE_REGISTER_FAILED', {
-          reason: resultJson.errorField,
-        });
-        const errors = { ...this.state.errors };
-        if (!resultJson.conflicts) {
-          // eslint-disable-next-line no-throw-literal
-          throw null;
-        }
-        for (const conflict of resultJson.conflicts) {
-          if (conflict.errorField.includes('NATIONAL_ID')) {
-            this.setState({
-              dialogVisible: true,
-            });
-            errors.idNumber = conflict.messageToUser;
-          }
-          if (conflict.errorField.includes('EMAIL_ADDRESS')) {
-            errors.userId = true;
-            errors.email = conflict.messageToUser;
-          }
-          if (conflict.errorField.includes('PHONE_NUMBER')) {
-            errors.userId = true;
-            errors.phone = conflict.messageToUser;
-          }
-        }
-        this.setState({
-          loading: false,
-          errors,
-          hasErrors: true,
-        });
-      }
-    } catch (error) {
-      this.showError(error);
-    }
+    this.props.navigation.navigate('SetPassword');
+
+    // try {
+    //   const result = await fetch(`${Endpoints.AUTH}register/profile`, {
+    //     headers: {
+    //       'Content-Type': 'application/json',
+    //       Accept: 'application/json',
+    //     },
+    //     method: 'POST',
+    //     body: JSON.stringify({
+    //       countryCode3Letter: 'ZAF',
+    //       nationalId: this.state.idNumber,
+    //       phoneOrEmail: this.state.userId,
+    //       personalName: this.state.firstName,
+    //       familyName: this.state.lastName,
+    //       referralCode: this.state.referralCode,
+    //     }),
+    //   });
+    //   if (result.ok) {
+    //     const resultJson = await result.json();
+    //     this.setState({ loading: false });
+    //     if (resultJson.result.includes('SUCCESS')) {
+    //       LoggingUtil.logEvent('USER_PROFILE_REGISTER_SUCCEEDED');
+    //       this.props.navigation.navigate('SetPassword', {
+    //         systemWideUserId: resultJson.systemWideUserId,
+    //         clientId: resultJson.clientId,
+    //         defaultFloatId: resultJson.defaultFloatId,
+    //         defaultCurrency: resultJson.defaultCurrency,
+    //         idNumber: this.state.idNumber,
+    //         firstName: this.state.firstName,
+    //         lastName: this.state.lastName,
+    //       });
+    //     } else {
+    //       LoggingUtil.logEvent('USER_PROFILE_REGISTER_FAILED', {
+    //         reason: "Result didn't include SUCCESS",
+    //       });
+    //       this.showError();
+    //     }
+    //   } else {
+    //     const resultJson = await result.json();
+    //     LoggingUtil.logEvent('USER_PROFILE_REGISTER_FAILED', {
+    //       reason: resultJson.errorField,
+    //     });
+    //     const errors = { ...this.state.errors };
+    //     if (!resultJson.conflicts) {
+    //       // eslint-disable-next-line no-throw-literal
+    //       throw null;
+    //     }
+    //     for (const conflict of resultJson.conflicts) {
+    //       if (conflict.errorField.includes('NATIONAL_ID')) {
+    //         this.setState({
+    //           dialogVisible: true,
+    //         });
+    //         errors.idNumber = conflict.messageToUser;
+    //       }
+    //       if (conflict.errorField.includes('EMAIL_ADDRESS')) {
+    //         errors.userId = true;
+    //         errors.email = conflict.messageToUser;
+    //       }
+    //       if (conflict.errorField.includes('PHONE_NUMBER')) {
+    //         errors.userId = true;
+    //         errors.phone = conflict.messageToUser;
+    //       }
+    //     }
+    //     this.setState({
+    //       loading: false,
+    //       errors,
+    //       hasErrors: true,
+    //     });
+    //   }
+    // } catch (error) {
+    //   this.showError(error);
+    // }
   };
 
   onHideDialog = () => {
@@ -302,13 +305,14 @@ export default class Register extends React.Component {
               color={Colors.MEDIUM_GRAY}
             />
           </TouchableOpacity>
+          <Text style={styles.stepText}>Step 1 of 4</Text>
         </View>
         <View style={styles.contentWrapper}>
           <ScrollView
             style={styles.scrollView}
             contentContainerStyle={styles.mainContent}
           >
-            <Text style={styles.title}>Let’s create your Jupiter account</Text>
+            <OnboardBreadCrumb currentStep="PROFILE" />
             <View style={styles.profileField}>
               <Text style={styles.profileFieldTitle}>First Name*</Text>
               <Input
@@ -552,11 +556,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 5,
   },
-  title: {
+  stepText: {
     fontFamily: 'poppins-semibold',
-    fontSize: 27,
+    fontSize: 16,
     color: Colors.DARK_GRAY,
-    marginBottom: 15,
   },
   mainContent: {
     width: '100%',
@@ -566,7 +569,6 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
     width: '100%',
-    marginVertical: 15,
     paddingHorizontal: 15,
   },
   buttonTitleStyle: {
@@ -589,7 +591,7 @@ const styles = StyleSheet.create({
   profileField: {
     flex: 1,
     justifyContent: 'center',
-    marginBottom: 5,
+    marginTop: 5,
   },
   profileFieldTitle: {
     fontFamily: 'poppins-semibold',

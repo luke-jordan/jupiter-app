@@ -21,6 +21,7 @@ import iconClose from '../../assets/close.png';
 
 import { updateAuthToken } from '../modules/auth/auth.actions';
 import { updateComparatorRates } from '../modules/balance/balance.actions';
+import OnboardBreadCrumb from '../elements/OnboardBreadCrumb';
 
 const mapDispatchToProps = {
   updateAuthToken,
@@ -107,16 +108,16 @@ class SetPassword extends React.Component {
   };
 
   onPressContinue = async () => {
-    if (this.state.loading) return;
-    this.setState({
-      checkingForCompletion: true,
-      loading: true,
-    });
-    const validation = await this.validateInput();
-    if (!validation) {
-      this.showError();
-      return;
-    }
+    // if (this.state.loading) return;
+    // this.setState({
+    //   checkingForCompletion: true,
+    //   loading: true,
+    // });
+    // const validation = await this.validateInput();
+    // if (!validation) {
+    //   this.showError();
+    //   return;
+    // }
     if (this.state.isReset) {
       this.handleResetPassword();
     } else {
@@ -156,99 +157,104 @@ class SetPassword extends React.Component {
   };
 
   handleRegisterPassword = async () => {
-    try {
-      const result = await fetch(`${Endpoints.AUTH}register/password`, {
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        method: 'POST',
-        body: JSON.stringify({
-          systemWideUserId: this.state.systemWideUserId,
-          password: this.state.password,
-          clientId: this.state.clientId,
-          floatId: this.state.defaultFloatId,
-          currency: this.state.defaultCurrency,
-        }),
-      });
-      if (result.ok) {
-        const resultJson = await result.json();
-        this.setState({
-          loading: false,
-          checkingForCompletion: false,
-        });
+    this.props.navigation.navigate('OnboardRegulation', {
+      isOnboarding: true,
+      // accountId: resultJson.accountId[0],
+    });
 
-        await AsyncStorage.setItem('hasOnboarded', 'true');
+    // try {
+    //   const result = await fetch(`${Endpoints.AUTH}register/password`, {
+    //     headers: {
+    //       'Content-Type': 'application/json',
+    //       Accept: 'application/json',
+    //     },
+    //     method: 'POST',
+    //     body: JSON.stringify({
+    //       systemWideUserId: this.state.systemWideUserId,
+    //       password: this.state.password,
+    //       clientId: this.state.clientId,
+    //       floatId: this.state.defaultFloatId,
+    //       currency: this.state.defaultCurrency,
+    //     }),
+    //   });
+    //   if (result.ok) {
+    //     const resultJson = await result.json();
+    //     this.setState({
+    //       loading: false,
+    //       checkingForCompletion: false,
+    //     });
 
-        if (resultJson.comparatorRates) {
-          this.props.updateComparatorRates(resultJson.comparatorRates);
-        }
+    //     await AsyncStorage.setItem('hasOnboarded', 'true');
 
-        // store this so user comes back here if they exit / crash instead of needing to login again
-        const { params } = this.props.navigation.state;
-        const userInfo = {
-          token: resultJson.token,
-          systemWideUserId: resultJson.systemWideUserId,
-          balance: {
-            accountId: resultJson.accountId,
-          },
-          profile: {
-            personalName: params.firstName,
-            familyName: params.lastName,            
-            kycStatus: resultJson.kycStatus,
-          },
-          onboardStepsRemaining: resultJson.onboardStepsRemaining,
-        }
+    //     if (resultJson.comparatorRates) {
+    //       this.props.updateComparatorRates(resultJson.comparatorRates);
+    //     }
 
-        await AsyncStorage.setItem('userInfo', JSON.stringify(userInfo));
+    //     // store this so user comes back here if they exit / crash instead of needing to login again
+    //     const { params } = this.props.navigation.state;
+    //     const userInfo = {
+    //       token: resultJson.token,
+    //       systemWideUserId: resultJson.systemWideUserId,
+    //       balance: {
+    //         accountId: resultJson.accountId,
+    //       },
+    //       profile: {
+    //         personalName: params.firstName,
+    //         familyName: params.lastName,            
+    //         kycStatus: resultJson.kycStatus,
+    //       },
+    //       onboardStepsRemaining: resultJson.onboardStepsRemaining,
+    //     }
 
-        if (
-          resultJson.kycStatus === 'FAILED_VERIFICATION' ||
-          resultJson.kycStatus === 'REVIEW_FAILED'
-        ) {
-          LoggingUtil.logEvent('USER_FAILED_KYC_CHECK_ONBOARD');
+    //     await AsyncStorage.setItem('userInfo', JSON.stringify(userInfo));
 
-          this.props.updateAuthToken(resultJson.token);
+    //     if (
+    //       resultJson.kycStatus === 'FAILED_VERIFICATION' ||
+    //       resultJson.kycStatus === 'REVIEW_FAILED'
+    //     ) {
+    //       LoggingUtil.logEvent('USER_FAILED_KYC_CHECK_ONBOARD');
 
-          this.props.navigation.navigate('FailedVerification', {
-            idNumber: params.idNumber,
-            firstName: params.firstName,
-            lastName: params.lastName,
-            nationalId: params.idNumber,
-            token: resultJson.token,
-            accountId: resultJson.accountId[0],
-            fromHome: false,
-          });
-          return;
-        }
+    //       this.props.updateAuthToken(resultJson.token);
 
-        if (resultJson.result.includes('SUCCESS')) {
-          this.props.updateAuthToken(resultJson.token);
+    //       this.props.navigation.navigate('FailedVerification', {
+    //         idNumber: params.idNumber,
+    //         firstName: params.firstName,
+    //         lastName: params.lastName,
+    //         nationalId: params.idNumber,
+    //         token: resultJson.token,
+    //         accountId: resultJson.accountId[0],
+    //         fromHome: false,
+    //       });
+    //       return;
+    //     }
 
-          this.props.navigation.navigate('OnboardRegulation', {
-            isOnboarding: true,
-            accountId: resultJson.accountId[0],
-          });
-        } else {
-          LoggingUtil.logEvent('USER_PROFILE_PASSWORD_FAILED', {
-            reason: resultJson.message,
-          });
-          this.showError(resultJson.message);
-        }
-      } else {
-        const resultJson = await result.json();
-        LoggingUtil.logEvent('USER_PROFILE_PASSWORD_FAILED', {
-          reason: resultJson.errors.toString(),
-        });
-        const responseErrors = resultJson.errors;
-        // eslint-disable-next-line fp/no-mutating-methods
-        responseErrors.unshift('Your password must:');
-        const errorsString = responseErrors.join('\n- ');
-        this.showError(errorsString);
-      }
-    } catch (error) {
-      this.showError(error);
-    }
+    //     if (resultJson.result.includes('SUCCESS')) {
+    //       this.props.updateAuthToken(resultJson.token);
+
+    //       this.props.navigation.navigate('OnboardRegulation', {
+    //         isOnboarding: true,
+    //         accountId: resultJson.accountId[0],
+    //       });
+    //     } else {
+    //       LoggingUtil.logEvent('USER_PROFILE_PASSWORD_FAILED', {
+    //         reason: resultJson.message,
+    //       });
+    //       this.showError(resultJson.message);
+    //     }
+    //   } else {
+    //     const resultJson = await result.json();
+    //     LoggingUtil.logEvent('USER_PROFILE_PASSWORD_FAILED', {
+    //       reason: resultJson.errors.toString(),
+    //     });
+    //     const responseErrors = resultJson.errors;
+    //     // eslint-disable-next-line fp/no-mutating-methods
+    //     responseErrors.unshift('Your password must:');
+    //     const errorsString = responseErrors.join('\n- ');
+    //     this.showError(errorsString);
+    //   }
+    // } catch (error) {
+    //   this.showError(error);
+    // }
   };
 
   onPressGeneratePassword = async () => {
@@ -333,27 +339,30 @@ class SetPassword extends React.Component {
           {this.state.isReset ? (
             <Text style={styles.resetTitle}>Reset password</Text>
           ) : (
-            <TouchableOpacity
-              style={styles.headerButton}
-              onPress={this.onPressBack}
-            >
-              <Icon
-                name="chevron-left"
-                type="evilicon"
-                size={45}
-                color={Colors.MEDIUM_GRAY}
-              />
-            </TouchableOpacity>
+            <>
+              <TouchableOpacity
+                style={styles.headerButton}
+                onPress={this.onPressBack}
+              >
+                <Icon
+                  name="chevron-left"
+                  type="evilicon"
+                  size={45}
+                  color={Colors.MEDIUM_GRAY}
+                />
+              </TouchableOpacity>
+              <Text style={styles.stepText}>Step 2 of 4</Text>
+            </>
           )}
         </View>
         <View style={styles.contentWrapper}>
-          {this.state.isReset ? null : (
-            <Text style={styles.title}>Set a password</Text>
-          )}
           <ScrollView
             style={styles.scrollView}
             contentContainerStyle={styles.mainContent}
           >
+            {this.state.isReset ? null : (
+              <OnboardBreadCrumb currentStep="PASSWORD" />
+            )}
             <View style={styles.profileField}>
               <Text style={styles.profileFieldTitle}>
                 {this.state.isReset ? 'New Password*' : 'Your Password*'}
@@ -526,6 +535,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 5,
   },
+  stepText: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 16,
+    color: Colors.DARK_GRAY,
+  },
   resetTitle: {
     fontFamily: 'poppins-semibold',
     fontSize: 27,
@@ -534,13 +548,6 @@ const styles = StyleSheet.create({
     paddingLeft: 15,
     marginTop: 20,
     marginBottom: 10,
-  },
-  title: {
-    fontFamily: 'poppins-semibold',
-    fontSize: 27,
-    color: Colors.DARK_GRAY,
-    width: '100%',
-    paddingLeft: 15,
   },
   mainContent: {
     width: '100%',

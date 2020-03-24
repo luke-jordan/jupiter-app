@@ -21,6 +21,8 @@ import { getAuthToken } from '../modules/auth/auth.reducer';
 import { updateAuthToken, removeAuthToken } from '../modules/auth/auth.actions';
 import { NavigationUtil } from '../util/NavigationUtil';
 
+import OnboardBreadCrumb from '../elements/OnboardBreadCrumb';
+
 const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
@@ -73,32 +75,33 @@ class OnboardRegulation extends React.PureComponent {
   }
 
   onPressAgree = async () => {
-    try {
-      // console.log('SENDING AGREEMENT');
-      this.setState({ loading: true });
+    this.props.navigation.navigate('OnboardAddSaving');
+    // try {
+    //   // console.log('SENDING AGREEMENT');
+    //   this.setState({ loading: true });
       
-      const result = await fetch(`${Endpoints.AUTH}profile/update`, {
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          Authorization: `Bearer ${this.props.authToken}`,
-        },
-        method: 'POST',
-        body: JSON.stringify({
-          regulatoryStatus: 'HAS_GIVEN_AGREEMENT',
-        }),
-      });
+    //   const result = await fetch(`${Endpoints.AUTH}profile/update`, {
+    //     headers: {
+    //       'Content-Type': 'application/json',
+    //       Accept: 'application/json',
+    //       Authorization: `Bearer ${this.props.authToken}`,
+    //     },
+    //     method: 'POST',
+    //     body: JSON.stringify({
+    //       regulatoryStatus: 'HAS_GIVEN_AGREEMENT',
+    //     }),
+    //   });
 
-      // console.log('Raw result: ', JSON.stringify(result));
-      if (!result.ok) {
-        throw result;
-      }
+    //   // console.log('Raw result: ', JSON.stringify(result));
+    //   if (!result.ok) {
+    //     throw result;
+    //   }
 
-      await this.onCompleteAgreement();
-    } catch (err) {
-      this.setState({ loading: false });
-      console.log('Result: ', JSON.stringify(err));
-    }
+    //   await this.onCompleteAgreement();
+    // } catch (err) {
+    //   this.setState({ loading: false });
+    //   console.log('Result: ', JSON.stringify(err));
+    // }
   };
 
   onCompleteAgreement = async () => {
@@ -152,7 +155,9 @@ class OnboardRegulation extends React.PureComponent {
 
     return (
       <View style={styles.container}>
+        <View style={styles.stepContainer}><Text style={styles.stepText}>Step 3 of 4</Text></View>
         <ScrollView style={styles.wrapper} contentContainerStyle={styles.scrollContainer}>
+          <OnboardBreadCrumb currentStep="AGREEMENT" />
           <Image 
             style={styles.headerImage}
             source={require('../../assets/regulatory.png')}
@@ -165,7 +170,7 @@ class OnboardRegulation extends React.PureComponent {
           </Text>
           <View style={styles.mandateBlock}>
             <Text style={styles.mandateText}>
-              You&apos;ll be using the secure Jupiter App to earn 6% per year, with our savings invested safely in 
+              You&apos;ll be using the secure Jupiter App to earn inflation beating returns, with our savings invested safely in 
               the <Text style={styles.mandateManager}>Allan Gray</Text> Money Market fund.
             </Text>
             <TouchableOpacity style={styles.linkContainer} onPress={this.onPressViewStokvelConst}>
@@ -252,6 +257,17 @@ const styles = StyleSheet.create({
   wrapper: {
     paddingHorizontal: 10,
     backgroundColor: Colors.WHITE,
+  },
+  stepContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 6,
+    paddingHorizontal: 10,
+  },
+  stepText: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 16,
+    color: Colors.DARK_GRAY,
   },
   scrollContainer: {
     alignItems: 'center',

@@ -55,7 +55,7 @@ export default class PendingRegistrationSteps extends React.Component {
     this.props.navigation.navigate('OnboardRegulation', {
       isOnboarding: true,
       accountId: userInfo.balance.accountId[0],
-    })
+    });
   }
 
   onPressAddCash = () => {

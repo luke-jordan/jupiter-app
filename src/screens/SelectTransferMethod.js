@@ -54,7 +54,7 @@ class SelectTransferMethod extends React.PureComponent {
 
     this.setState({ loadingInstant: true});
     const resultOfCall = await this.initiateOrUpdateTransaction('OZOW');
-    console.log('Result of call: ', resultOfCall);
+    console.log('Result of call: ', JSON.stringify(resultOfCall));
     this.setState({ loadingInstant: false });
     
     if (resultOfCall) {
@@ -100,7 +100,7 @@ class SelectTransferMethod extends React.PureComponent {
     } else {
       resultOfCall = await this.tellBackendToInitiate(paymentMethod);
     }
-    console.log('Completed backend calls, result: ', resultOfCall);
+    console.log('Completed backend calls, result: ', JSON.stringify(resultOfCall));
     return resultOfCall;
   };
 

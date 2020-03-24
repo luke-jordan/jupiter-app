@@ -130,7 +130,8 @@ export default class Login extends React.Component {
   };
 
   onPressWhatIs = () => {
-    this.props.navigation.navigate('Onboarding');
+    // this.props.navigation.navigate('Onboarding');
+    this.props.navigation.navigate('OnboardPending');
   };
 
   onPressForgotPassword = () => {

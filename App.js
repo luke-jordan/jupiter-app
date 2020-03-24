@@ -43,6 +43,9 @@ import PendingManualTransfer from './src/screens/PendingManualTransfer';
 import Stokvel from './src/screens/Stokvel';
 import MoneyMarket from './src/screens/MoneyMarket';
 import OnboardRegulation from './src/screens/OnboardRegulation';
+import OnboardAddSaving from './src/screens/OnboardAddSaving';
+import OnboardPending from './src/screens/OnboardPending';
+
 import configureStore from './src/store/configureStore';
 
 const AppContainer = createAppContainer(
@@ -85,6 +88,8 @@ const AppContainer = createAppContainer(
       Stokvel: { screen: Stokvel },
       MoneyMarket: { screen: MoneyMarket },
       OnboardRegulation: { screen: OnboardRegulation },
+      OnboardAddSaving: { screen: OnboardAddSaving },
+      OnboardPending: { screen: OnboardPending },
     },
     { initialRouteName: 'Splash', headerMode: 'none' }
   )
