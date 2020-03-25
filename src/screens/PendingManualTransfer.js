@@ -36,7 +36,6 @@ export default class PendingManualTransfer extends React.Component {
     this.toastRef = React.createRef();
     this.state = {
       amountToAdd: this.props.navigation.getParam('amountToAdd') || '',
-      isOnboarding: this.props.navigation.getParam('isOnboarding'),
       token: this.props.navigation.getParam('token'),
       loading: false,
       checkingForPayment: false,
@@ -196,7 +195,6 @@ export default class PendingManualTransfer extends React.Component {
     NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'PaymentComplete', {
         transactionId: this.state.transactionId,
         token: this.state.token,
-        isOnboarding: this.state.isOnboarding,
         newBalance: resultJson.newBalance,
         amountAdded,
       }
@@ -275,7 +273,6 @@ export default class PendingManualTransfer extends React.Component {
           humanReference: resultJson.humanReference,
           amountToAdd: resultJson.amount,
           token: this.state.token,
-          isOnboarding: this.state.isOnboarding,
         });  
       } else {
         throw resultJson;
@@ -285,10 +282,6 @@ export default class PendingManualTransfer extends React.Component {
       this.setState({ loading: false });
     }
   };
-
-  onPressLogout = () => {
-    NavigationUtil.logout(this.props.navigation);
-  }
 
   onPressBack = () => {
     this.props.navigation.goBack();
@@ -331,18 +324,10 @@ export default class PendingManualTransfer extends React.Component {
               />
             </ImageBackground>
             <Text style={styles.title}>Processing save</Text>
-            {this.state.isOnboarding && (
-              <Text style={styles.description}>
-                We are awaiting your transfer by EFT. As soon as we receive the funds your balance will
-                be updated.
-              </Text>
-            )}
-            {!this.state.isOnboarding && (
-              <Text style={styles.description}>
-                We are awaiting your transfer by EFT. As soon as we receive the funds or you send us 
-                proof of payment, your account will be complete.
-              </Text>
-            )}
+            <Text style={styles.description}>
+              We are awaiting your transfer by EFT. As soon as we receive the funds your balance will
+              be updated.
+            </Text>
           </View>
           <View style={styles.graySection}>
             <Text style={styles.bottomTitle}>
@@ -444,10 +429,7 @@ export default class PendingManualTransfer extends React.Component {
           </TouchableOpacity>
 
           <Text style={styles.logoutText}>
-            Stuck? Try <Text style={styles.logoutTextLink} onPress={this.onPressLogout}>logout</Text>
-            {!this.state.isOnboarding && (
-              <Text>{' '} or <Text style={styles.logoutTextLink} onPress={this.onPressBack}>go back</Text></Text>
-            )}
+            Stuck? Try <Text style={styles.logoutTextLink} onPress={this.onPressBack}>go back</Text>
           </Text>
         </View>
 

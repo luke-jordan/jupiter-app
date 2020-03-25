@@ -8,7 +8,7 @@
       "ios",
       "android"
     ],
-    "version": "0.0.22",
+    "version": "0.0.23",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "jupiter",
@@ -25,11 +25,11 @@
     ],
     "ios": {
       "bundleIdentifier": "com.jupitersaving.app",
-      "buildNumber": "3"
+      "buildNumber": "1"
     },
     "android": {
       "package": "com.jupitersave.app",
-      "versionCode": 22,
+      "versionCode": 23,
       "permissions": [],
       "intentFilters": [
         {

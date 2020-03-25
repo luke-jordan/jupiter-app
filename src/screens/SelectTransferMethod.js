@@ -124,9 +124,6 @@ class SelectTransferMethod extends React.PureComponent {
 
       if (result.ok) {
         const resultJson = await result.json();
-        if (this.state.isOnboarding) {
-          NavigationUtil.removeOnboardStepRemaining('ADD_CASH');
-        }
 
         this.props.updateCurrentTransaction({
           transactionId: resultJson.transactionDetails[0].accountTransactionId,

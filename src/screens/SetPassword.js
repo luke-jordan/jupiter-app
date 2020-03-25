@@ -21,10 +21,22 @@ import iconClose from '../../assets/close.png';
 
 import { updateAuthToken } from '../modules/auth/auth.actions';
 import { updateComparatorRates } from '../modules/balance/balance.actions';
+
+import { getUserId, getProfileData } from '../modules/profile/profile.reducer';
+import { updateAccountId, updateProfileFields, updateOnboardSteps } from '../modules/profile/profile.actions';
+
 import OnboardBreadCrumb from '../elements/OnboardBreadCrumb';
+
+const mapStateToProps = (state) => ({
+  systemWideUserId: getUserId(state),
+  profileData: getProfileData(state),
+});
 
 const mapDispatchToProps = {
   updateAuthToken,
+  updateAccountId,
+  updateProfileFields,
+  updateOnboardSteps,
   updateComparatorRates,
 };
 
@@ -34,8 +46,8 @@ class SetPassword extends React.Component {
     this.state = {
       loading: false,
       generatePasswordLoading: false,
-      password: '',
-      passwordConfirm: '',
+      password: '#NewPass1234',
+      passwordConfirm: '#NewPass1234',
       errors: {
         password: false,
         passwordConfirm: false,
@@ -54,10 +66,6 @@ class SetPassword extends React.Component {
     const { params } = this.props.navigation.state;
     if (params) {
       this.setState({
-        systemWideUserId: params.systemWideUserId,
-        clientId: params.clientId,
-        defaultFloatId: params.defaultFloatId,
-        defaultCurrency: params.defaultCurrency,
         isReset: params.isReset,
       });
     }
@@ -108,16 +116,18 @@ class SetPassword extends React.Component {
   };
 
   onPressContinue = async () => {
-    // if (this.state.loading) return;
-    // this.setState({
-    //   checkingForCompletion: true,
-    //   loading: true,
-    // });
-    // const validation = await this.validateInput();
-    // if (!validation) {
-    //   this.showError();
-    //   return;
-    // }
+    if (this.state.loading) return;
+
+    this.setState({
+      checkingForCompletion: true,
+      loading: true,
+    });
+    const validation = await this.validateInput();
+    if (!validation) {
+      this.showError();
+      return;
+    }
+
     if (this.state.isReset) {
       this.handleResetPassword();
     } else {
@@ -134,7 +144,7 @@ class SetPassword extends React.Component {
         },
         method: 'POST',
         body: JSON.stringify({
-          systemWideUserId: this.state.systemWideUserId,
+          systemWideUserId: this.props.systemWideUserId,
           newPassword: this.state.password,
           deviceId: DeviceInfo.DEVICE_ID,
         }),
@@ -156,105 +166,99 @@ class SetPassword extends React.Component {
     }
   };
 
+  addPropertiesToState = async (resultJson) => {
+    // store this so user comes back here if they exit / crash instead of needing to login again
+    const { personalName, familyName } = this.props.profileData;
+    const userInfo = {
+      token: resultJson.token,
+      systemWideUserId: resultJson.systemWideUserId,
+      balance: {
+        accountId: resultJson.accountId,
+      },
+      profile: {
+        personalName,
+        familyName,            
+        kycStatus: resultJson.kycStatus,
+      },
+      onboardStepsRemaining: resultJson.onboardStepsRemaining,
+    }
+
+    await AsyncStorage.setItem('userInfo', JSON.stringify(userInfo));
+
+    // however, remaining state uses the below (and in time, everything will)
+    this.props.updateAuthToken(resultJson.token);
+    this.props.updateAccountId(resultJson.accountId[0]);
+    this.props.updateOnboardSteps(resultJson.onboardStepsRemaining);
+    this.props.updateProfileFields({ kycStatus: resultJson.kycStatus });
+
+    if (resultJson.comparatorRates) {
+      this.props.updateComparatorRates(resultJson.comparatorRates);
+    }
+  }
+
   handleRegisterPassword = async () => {
-    this.props.navigation.navigate('OnboardRegulation', {
-      isOnboarding: true,
-      // accountId: resultJson.accountId[0],
-    });
+    try {
+      const { clientId, defaultFloatId: floatId, defaultCurrency: currency } = this.props.profileData;
 
-    // try {
-    //   const result = await fetch(`${Endpoints.AUTH}register/password`, {
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //       Accept: 'application/json',
-    //     },
-    //     method: 'POST',
-    //     body: JSON.stringify({
-    //       systemWideUserId: this.state.systemWideUserId,
-    //       password: this.state.password,
-    //       clientId: this.state.clientId,
-    //       floatId: this.state.defaultFloatId,
-    //       currency: this.state.defaultCurrency,
-    //     }),
-    //   });
-    //   if (result.ok) {
-    //     const resultJson = await result.json();
-    //     this.setState({
-    //       loading: false,
-    //       checkingForCompletion: false,
-    //     });
+      const result = await fetch(`${Endpoints.AUTH}register/password`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        method: 'POST',
+        body: JSON.stringify({
+          systemWideUserId: this.props.systemWideUserId,
+          password: this.state.password,
+          clientId,
+          floatId,
+          currency,
+        }),
+      });
 
-    //     await AsyncStorage.setItem('hasOnboarded', 'true');
+      if (result.ok) {
+        const resultJson = await result.json();
 
-    //     if (resultJson.comparatorRates) {
-    //       this.props.updateComparatorRates(resultJson.comparatorRates);
-    //     }
+        this.setState({
+          loading: false,
+          checkingForCompletion: false,
+        });
 
-    //     // store this so user comes back here if they exit / crash instead of needing to login again
-    //     const { params } = this.props.navigation.state;
-    //     const userInfo = {
-    //       token: resultJson.token,
-    //       systemWideUserId: resultJson.systemWideUserId,
-    //       balance: {
-    //         accountId: resultJson.accountId,
-    //       },
-    //       profile: {
-    //         personalName: params.firstName,
-    //         familyName: params.lastName,            
-    //         kycStatus: resultJson.kycStatus,
-    //       },
-    //       onboardStepsRemaining: resultJson.onboardStepsRemaining,
-    //     }
+        await AsyncStorage.setItem('hasOnboarded', 'true');
 
-    //     await AsyncStorage.setItem('userInfo', JSON.stringify(userInfo));
+        await this.addPropertiesToState(resultJson);
 
-    //     if (
-    //       resultJson.kycStatus === 'FAILED_VERIFICATION' ||
-    //       resultJson.kycStatus === 'REVIEW_FAILED'
-    //     ) {
-    //       LoggingUtil.logEvent('USER_FAILED_KYC_CHECK_ONBOARD');
+        if (['FAILED_VERIFICATION', 'REVIEW_FAILED'].includes(resultJson.kycStatus)) {
+          LoggingUtil.logEvent('USER_FAILED_KYC_CHECK_ONBOARD');
+          this.props.navigation.navigate('FailedVerification', { fromHome: false });
+          return;
+        }
 
-    //       this.props.updateAuthToken(resultJson.token);
-
-    //       this.props.navigation.navigate('FailedVerification', {
-    //         idNumber: params.idNumber,
-    //         firstName: params.firstName,
-    //         lastName: params.lastName,
-    //         nationalId: params.idNumber,
-    //         token: resultJson.token,
-    //         accountId: resultJson.accountId[0],
-    //         fromHome: false,
-    //       });
-    //       return;
-    //     }
-
-    //     if (resultJson.result.includes('SUCCESS')) {
-    //       this.props.updateAuthToken(resultJson.token);
-
-    //       this.props.navigation.navigate('OnboardRegulation', {
-    //         isOnboarding: true,
-    //         accountId: resultJson.accountId[0],
-    //       });
-    //     } else {
-    //       LoggingUtil.logEvent('USER_PROFILE_PASSWORD_FAILED', {
-    //         reason: resultJson.message,
-    //       });
-    //       this.showError(resultJson.message);
-    //     }
-    //   } else {
-    //     const resultJson = await result.json();
-    //     LoggingUtil.logEvent('USER_PROFILE_PASSWORD_FAILED', {
-    //       reason: resultJson.errors.toString(),
-    //     });
-    //     const responseErrors = resultJson.errors;
-    //     // eslint-disable-next-line fp/no-mutating-methods
-    //     responseErrors.unshift('Your password must:');
-    //     const errorsString = responseErrors.join('\n- ');
-    //     this.showError(errorsString);
-    //   }
-    // } catch (error) {
-    //   this.showError(error);
-    // }
+        if (resultJson.result === 'SUCCESS') {
+          this.props.navigation.navigate('OnboardRegulation', {
+            isOnboarding: true,
+          });
+        } else {
+          LoggingUtil.logEvent('USER_PROFILE_PASSWORD_FAILED', {
+            reason: resultJson.message,
+          });
+          this.showError(resultJson.message);
+        }
+      } else {
+        const resultJson = await result.json();
+        console.log('Also result JSON here in error ? : ', resultJson);
+        LoggingUtil.logEvent('USER_PROFILE_PASSWORD_FAILED', {
+          reason: resultJson.errors.toString(),
+        });
+        const responseErrors = resultJson.errors;
+        // eslint-disable-next-line fp/no-mutating-methods
+        responseErrors.unshift('Your password must:');
+        const errorsString = responseErrors.join('\n- ');
+        this.showError(errorsString);
+      }
+    } catch (error) {
+      console.log('Error in password set: ', error);
+      this.showError(error);
+    }
   };
 
   onPressGeneratePassword = async () => {
@@ -311,9 +315,8 @@ class SetPassword extends React.Component {
       checkingForCompletion: false,
       loading: false,
       errors,
-      passwordErrorMessage: errorText
-        ? errorText
-        : this.state.defaultPasswordErrorMessage,
+      passwordErrorMessage: typeof errorText === 'string' && errorText.length > 0
+        ? errorText : this.state.defaultPasswordErrorMessage,
     });
   }
 
@@ -340,7 +343,7 @@ class SetPassword extends React.Component {
             <Text style={styles.resetTitle}>Reset password</Text>
           ) : (
             <>
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 style={styles.headerButton}
                 onPress={this.onPressBack}
               >
@@ -350,7 +353,7 @@ class SetPassword extends React.Component {
                   size={45}
                   color={Colors.MEDIUM_GRAY}
                 />
-              </TouchableOpacity>
+              </TouchableOpacity> */}
               <Text style={styles.stepText}>Step 2 of 4</Text>
             </>
           )}
@@ -675,4 +678,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default connect(null, mapDispatchToProps)(SetPassword);
+export default connect(mapStateToProps, mapDispatchToProps)(SetPassword);

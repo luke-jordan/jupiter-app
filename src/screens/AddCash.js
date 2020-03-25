@@ -11,17 +11,19 @@ import {
 } from 'react-native';
 import { Icon, Input, Button } from 'react-native-elements';
 
-import { NavigationUtil } from '../util/NavigationUtil';
 import { Colors } from '../util/Values';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { getDivisor } from '../util/AmountUtil';
 
-import { getComparatorRates } from '../modules/balance/balance.reducer';
+import { getAccountId } from '../modules/profile/profile.reducer';
+import { getCurrentServerBalanceFull, getComparatorRates } from '../modules/balance/balance.reducer';
 
 import { clearCurrentTransaction, updateCurrentTransaction } from '../modules/transaction/transaction.actions';
 
 const mapStateToProps = state => ({
+  accountId: getAccountId(state),
   comparatorRates: getComparatorRates(state),
+  currentBalance: getCurrentServerBalanceFull(state),
 });
 
 const mapDispatchToProps = {
@@ -36,7 +38,6 @@ class AddCash extends React.Component {
       currency: 'R',
       balance: 0,
       amountToAdd: '',
-      isOnboarding: false,
       loading: false,
       notWholeNumber: false,
     };
@@ -44,47 +45,30 @@ class AddCash extends React.Component {
 
   async componentDidMount() {
     const { params } = this.props.navigation.state;
-    if (params) {
-      this.setState({
-        isOnboarding: params.isOnboarding,
-        accountId: params.accountId,
-      });
-    }
 
     if (params && params.startNewTransaction) {
-      console.log('*** INITIATING NEW TRANSACTION ***');
       this.props.clearCurrentTransaction(); // i.e., we start again
     }
 
-    if (!params || !params.isOnboarding) {
-      // eslint-disable-next-line prefer-const
-      let [info, lastSaveAmount] = await Promise.all([
-        AsyncStorage.getItem('userInfo'),
-        AsyncStorage.getItem('lastSaveAmount'),
-      ]);
-      if (!info) {
-        NavigationUtil.logout(this.props.navigation);
-      } else {
-        info = JSON.parse(info);
-        this.setState({
-          balance: info.balance.currentBalance.amount,
-          unit: info.balance.currentBalance.unit,
-          accountId: info.balance.accountId[0],
-        });
-      }
+    // eslint-disable-next-line prefer-const
+    const lastSaveAmount = await  AsyncStorage.getItem('lastSaveAmount');
+    this.setState({
+      balance: this.props.currentBalance.amount,
+      unit: this.props.currentBalance.unit,
+    });
 
-      const preFilledAmount = this.props.navigation.getParam('preFilledAmount');
-      if (preFilledAmount) {
-        this.setState({ 
-          amountToAdd: preFilledAmount.toFixed(0),
-        })
-      } else if (lastSaveAmount) {
-        const lastSave = parseInt(lastSaveAmount, 10);
-        this.setState({
-          amountToAdd: parseFloat(lastSave).toFixed(0),
-        });
-      }
+    const preFilledAmount = this.props.navigation.getParam('preFilledAmount');
+    if (preFilledAmount) {
+      this.setState({ 
+        amountToAdd: preFilledAmount.toFixed(0),
+      })
+    } else if (lastSaveAmount) {
+      const lastSave = parseInt(lastSaveAmount, 10);
+      this.setState({
+        amountToAdd: parseFloat(lastSave).toFixed(0),
+      });
     }
+  
   }
 
   onPressBack = () => {
@@ -101,23 +85,16 @@ class AddCash extends React.Component {
       },
     });
 
-    if (this.state.isOnboarding) {
-      LoggingUtil.logEvent('USER_INITIATED_FIRST_ADD_CASH', {
-        amountAdded: this.state.amountToAdd,
-      });
-    } else {
-      LoggingUtil.logEvent('USER_INITIATED_ADD_CASH', {
-        amountAdded: this.state.amountToAdd,
-      });
-    }
+    LoggingUtil.logEvent('USER_INITIATED_ADD_CASH', {
+      amountAdded: this.state.amountToAdd,
+    });
 
     AsyncStorage.setItem('lastSaveAmount', parseFloat(this.state.amountToAdd).toFixed(0));
     this.setState({ loading: false }, () => {
       this.props.navigation.navigate('SelectTransferMethod', { 
         amountToAdd: this.state.amountToAdd, 
-        isOnboarding: this.state.isOnboarding,
-        accountId: this.state.accountId, 
-      });  
+        accountId: this.props.accountId, 
+      });
     })
   }
 
@@ -195,43 +172,22 @@ class AddCash extends React.Component {
   }
 
   renderHeader() {
-    if (this.state.isOnboarding) {
-      return (
-        <View style={styles.headerWrapper}>
-          <View style={styles.header}>
-            <TouchableOpacity
-              style={styles.headerButton}
-              onPress={this.onPressBack}
-            >
-              <Icon
-                name="chevron-left"
-                type="evilicon"
-                size={45}
-                color={Colors.GRAY}
-              />
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.headerTitleOnboarding}>Make a save</Text>
-        </View>
-      );
-    } else {
-      return (
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.headerButton}
-            onPress={this.onPressBack}
-          >
-            <Icon
-              name="chevron-left"
-              type="evilicon"
-              size={45}
-              color={Colors.GRAY}
-            />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Make a save</Text>
-        </View>
-      );
-    }
+    return (
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.headerButton}
+          onPress={this.onPressBack}
+        >
+          <Icon
+            name="chevron-left"
+            type="evilicon"
+            size={45}
+            color={Colors.GRAY}
+          />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Make a save</Text>
+      </View>
+    );
   }
 
   renderBankLine(item, index) {
@@ -252,17 +208,13 @@ class AddCash extends React.Component {
           style={styles.mainContent}
           contentContainerStyle={styles.mainContentContainer}
         >
-          {this.state.isOnboarding ? (
-            <Text style={styles.onboardingTitle}>Choose an amount</Text>
-          ) : (
-            <View style={styles.currentBalance}>
-              <Text style={styles.balanceAmount}>
-                {this.state.currency}
-                {this.getFormattedBalance(this.state.balance)}
-              </Text>
-              <Text style={styles.balanceDesc}>Current Balance</Text>
-            </View>
-          )}
+          <View style={styles.currentBalance}>
+            <Text style={styles.balanceAmount}>
+              {this.state.currency}
+              {this.getFormattedBalance(this.state.balance)}
+            </Text>
+            <Text style={styles.balanceDesc}>Current Balance</Text>
+          </View>
           <View style={styles.inputWrapper}>
             <View style={styles.inputWrapperLeft}>
               <Text style={styles.currencyLabel}>{this.state.currency}</Text>
@@ -346,12 +298,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: Colors.BACKGROUND_GRAY,
   },
-  headerWrapper: {
-    width: '100%',
-    backgroundColor: Colors.WHITE,
-    alignItems: 'center',
-    paddingHorizontal: 5,
-  },
   header: {
     width: '100%',
     height: 50,
@@ -364,22 +310,6 @@ const styles = StyleSheet.create({
     marginLeft: -5,
     fontFamily: 'poppins-semibold',
     fontSize: 22,
-  },
-  headerTitleOnboarding: {
-    fontFamily: 'poppins-semibold',
-    fontSize: 27,
-    color: Colors.DARK_GRAY,
-    width: '100%',
-    paddingLeft: 15,
-  },
-  onboardingTitle: {
-    fontFamily: 'poppins-semibold',
-    fontSize: 17,
-    color: Colors.DARK_GRAY,
-    textAlign: 'left',
-    width: '90%',
-    marginTop: 25,
-    marginBottom: -10,
   },
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',

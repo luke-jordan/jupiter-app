@@ -5,10 +5,13 @@ import { View, Text, Image, StyleSheet, KeyboardAvoidingView, ScrollView, Toucha
 import { Input, Icon } from 'react-native-elements';
 
 import OnboardBreadCrumb from '../elements/OnboardBreadCrumb';
-import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 
 import { getAuthToken } from '../modules/auth/auth.reducer';
+import { getAccountId } from '../modules/profile/profile.reducer';
+import { getCurrentTransactionDetails } from '../modules/transaction/transaction.reducer';
+
+import { removeOnboardStep } from '../modules/profile/profile.actions'; 
 import { updateCurrentTransaction, clearCurrentTransaction } from '../modules/transaction/transaction.actions';
 
 import { Colors, Endpoints } from '../util/Values';
@@ -16,11 +19,14 @@ import { getDivisor } from '../util/AmountUtil';
 
 const mapStateToProps = state => ({
   authToken: getAuthToken(state),
+  accountId: getAccountId(state),
+  transactionDetails: getCurrentTransactionDetails(state),
 });
 
 const mapDispatchToProps = {
   updateCurrentTransaction,
   clearCurrentTransaction,
+  removeOnboardStep,
 };
 
 class OnboardAddSaving extends React.Component {
@@ -33,6 +39,14 @@ class OnboardAddSaving extends React.Component {
       emptyAmountError: false,
       loadingInstant: false,
       loadingManual: false,
+    }
+  }
+
+  componentDidMount() {
+    const { params } = this.props.navigation.state;
+    if (params && params.startNewTransaction) {
+      console.log('CLEARING TX AS INSTRUCTED');
+      this.props.clearCurrentTransaction(); // we do this even here so we can handle back presses and continues
     }
   }
 
@@ -79,16 +93,17 @@ class OnboardAddSaving extends React.Component {
     }
 
     this.setState({ loadingInstant: true });
-    const resultOfCall = await this.tellBackendToInitiate('OZOW');
+    const resultOfCall = await this.initiateOrUpdateTransaction('OZOW');
     this.setState({ loadingInstant: false });
 
     if (resultOfCall) {
+      this.logAndRemoveStep('OZOW');
       this.props.navigation.navigate('Payment', {
         urlToCompletePayment: resultOfCall.urlToCompletePayment,
         transactionId: resultOfCall.transactionId,
         humanReference: resultOfCall.humanReference,
         token: this.props.authToken,
-        isOnboarding: this.state.isOnboarding,
+        isOnboarding: true,
         amountToAdd: this.state.amountToAdd,
       });
     }
@@ -102,25 +117,69 @@ class OnboardAddSaving extends React.Component {
       return;
     }
 
-    this.setState({ loadingInstant: true });
-    // const resultOfCall = await this.tellBackendToInitiate('MANUAL_EFT');
-    // const resultOfCall = true;
+    this.setState({ loadingManual: true });
+    const resultOfCall = await this.initiateOrUpdateTransaction('MANUAL_EFT');
     this.setState({ loadingManual: false });
 
-    this.props.navigation.navigate('OnboardPending', {
-      stepToTake: 'FINISH_SAVE',
-    });
+    if (resultOfCall) {
+      this.logAndRemoveStep('MANUAL_EFT');
+      this.props.navigation.navigate('OnboardPending');
+    }
+  }
 
-    // if (resultOfCall) {
-    //   this.props.navigation.navigate('EFTPayment', {
-    //     amountToAdd: this.state.amountToAdd,
-    //     token: this.props.authToken,
-    //     isOnboarding: this.state.isOnboarding,
-    //     transactionId: resultOfCall.transactionId,
-    //     humanReference: resultOfCall.humanReference,
-    //     bankDetails: resultOfCall.bankDetails,
-    //   });
-    // }
+  initiateOrUpdateTransaction = async (paymentMethod) => {
+    console.log('Initiating or updating, anything present: ', this.props.transactionDetails);
+    const { transactionId } = this.props.transactionDetails;
+    if (transactionId) {
+      return this.tellBackendToUpdate(paymentMethod);
+    } else {
+      return this.tellBackendToInitiate(paymentMethod);
+    }
+  }
+
+  // to be honest, we could really do with a transaction service soon
+  tellBackendToUpdate = async (paymentMethod) => {
+    try {
+      const { transactionId } = this.props.transactionDetails;
+
+      const transactionAmount = { amount: this.state.amountToAdd, unit: 'WHOLE_CURRENCY', currency: 'ZAR' };
+      const amountInServerUnits = { amount: this.state.amountToAdd * getDivisor('HUNDREDTH_CENT'), unit: 'HUNDREDTH_CENT', currency: 'ZAR' };
+      
+      // user can change amount on this page, so
+      const result = await fetch(`${Endpoints.CORE}pending/update`, {
+        headers: {
+          Authorization: `Bearer ${this.props.authToken}`,
+        },
+        method: 'POST',
+        body: JSON.stringify({
+          transactionId,
+          amount: amountInServerUnits,
+          paymentMethod,
+        }),
+      });
+
+      if (!result.ok) {
+        throw result;
+      }
+
+      const resultJson = await result.json();
+      this.props.updateCurrentTransaction({
+        paymentMethod,
+        transactionAmount,
+      });
+
+      return {
+        transactionId,
+        humanReference: resultJson.humanReference,
+        bankDetails: resultJson.bankDetails,
+        urlToCompletePayment: resultJson.paymentRedirectDetails ? resultJson.paymentRedirectDetails.urlToCompletePayment : '',
+      };
+
+    } catch (error) {
+      console.log('Failure in update: ', JSON.stringify(error));
+      LoggingUtil.logEvent('ADD_CASH_FAILED_UNKNOWN', { serverResponse: JSON.stringify(error.message) });
+      this.setState({ loadingInstant: false, loadingManual: false });
+    }
   }
 
   tellBackendToInitiate = async (paymentMethod) => {
@@ -133,7 +192,7 @@ class OnboardAddSaving extends React.Component {
         },
         method: 'POST',
         body: JSON.stringify({
-          accountId: this.state.accountId,
+          accountId: this.props.accountId,
           amount: this.state.amountToAdd * getDivisor('HUNDREDTH_CENT'), // multiplying by 100 to get cents and again by 100 to get hundreth cent
           currency: 'ZAR', // TODO implement for handling other currencies
           unit: 'HUNDREDTH_CENT',
@@ -143,16 +202,28 @@ class OnboardAddSaving extends React.Component {
 
       if (result.ok) {
         const resultJson = await result.json();
-        if (this.state.isOnboarding) {
-          NavigationUtil.removeOnboardStepRemaining('ADD_CASH');
-        }
+        
+        const transactionAmount = { amount: this.state.amountToAdd, unit: 'WHOLE_CURRENCY', currency: 'ZAR' };
 
-        this.props.updateCurrentTransaction({
+        const transactionObject = {
+          hasActiveTransaction: false,
           transactionId: resultJson.transactionDetails[0].accountTransactionId,
           transactionType: 'USER_SAVING_EVENT',
           humanReference: resultJson.humanReference,
           paymentMethod,
-        });
+          transactionAmount,
+        };
+        
+        if (resultJson.paymentRedirectDetails) {
+          transactionObject.urlToCompletePayment = resultJson.paymentRedirectDetails.urlToCompletePayment;
+        }
+
+        if (resultJson.bankDetails) {
+          transactionObject.bankDetails = resultJson.bankDetails;
+        }
+
+        this.props.updateCurrentTransaction(transactionObject);
+        this.setState({ loadingInstant: false, loadingManual: false });
 
         return {
           transactionId: resultJson.transactionDetails[0].accountTransactionId,
@@ -175,6 +246,10 @@ class OnboardAddSaving extends React.Component {
     }
   }
 
+  logAndRemoveStep = (paymentMethod) => {
+    LoggingUtil.logEvent('USER_INITIATED_FIRST_ADD_CASH', { amountAdded: this.state.amountToAdd, paymentMethod });
+    this.props.removeOnboardStep('ADD_CASH');
+  }
 
   render() {
     return (
@@ -188,8 +263,7 @@ class OnboardAddSaving extends React.Component {
             You&apos;re almost there!
           </Text>
           <Text style={styles.contentBody}>
-          Now’s the time to activate your savings by transferring as much or as little money as you like. 
-          Remember that you can top-up at any time and there is no minimum amount.
+          All that&apos;s left is to make your first save - from as little as R1!
           </Text>
           <View style={styles.inputBody}>
             <Text style={styles.inputLabel}>Add Savings</Text>

@@ -19,7 +19,9 @@ import { Colors, Endpoints } from '../util/Values';
 
 import { getAuthToken } from '../modules/auth/auth.reducer';
 import { updateAuthToken, removeAuthToken } from '../modules/auth/auth.actions';
-import { NavigationUtil } from '../util/NavigationUtil';
+
+import { getOnboardStepsRemaining } from '../modules/profile/profile.reducer';
+import { removeOnboardStep, updateAllFields } from '../modules/profile/profile.actions';
 
 import OnboardBreadCrumb from '../elements/OnboardBreadCrumb';
 
@@ -28,11 +30,14 @@ const FONT_UNIT = 0.01 * width;
 
 const mapStateToProps = state => ({
   authToken: getAuthToken(state),
+  onboardStepsRemaining: getOnboardStepsRemaining(state),
 });
 
 const mapDispatchToProps = {
   updateAuthToken,
   removeAuthToken,
+  removeOnboardStep,
+  updateAllFields,
 };
 
 class OnboardRegulation extends React.PureComponent {
@@ -49,24 +54,11 @@ class OnboardRegulation extends React.PureComponent {
   async componentDidMount() {
     LoggingUtil.logEvent('USER_ENTERED_REGULATORY_ONBOARD');
     const { params } = this.props.navigation.state;
+    console.log('Regulatory, params: ', params);
     if (params) {
-      const { userInfo } = params;
-
-      if (!this.props.authToken) {
-        const token = params.token || (userInfo && userInfo.token);
-        this.props.updateAuthToken(token);  
-      }
-
-      let { accountId } = params;
-      if (!accountId && userInfo && userInfo.balance) {
-        [accountId] = userInfo.balance.accountId;
-      }
-
       this.setState({
         isOnboarding: params.isOnboarding,
-        accountId,
       });
-
     } else {
       this.setState({
         isOnboarding: false,
@@ -75,45 +67,44 @@ class OnboardRegulation extends React.PureComponent {
   }
 
   onPressAgree = async () => {
-    this.props.navigation.navigate('OnboardAddSaving');
-    // try {
-    //   // console.log('SENDING AGREEMENT');
-    //   this.setState({ loading: true });
+    try {
+      this.setState({ loading: true });
       
-    //   const result = await fetch(`${Endpoints.AUTH}profile/update`, {
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //       Accept: 'application/json',
-    //       Authorization: `Bearer ${this.props.authToken}`,
-    //     },
-    //     method: 'POST',
-    //     body: JSON.stringify({
-    //       regulatoryStatus: 'HAS_GIVEN_AGREEMENT',
-    //     }),
-    //   });
+      const result = await fetch(`${Endpoints.AUTH}profile/update`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          Authorization: `Bearer ${this.props.authToken}`,
+        },
+        method: 'POST',
+        body: JSON.stringify({
+          regulatoryStatus: 'HAS_GIVEN_AGREEMENT',
+        }),
+      });
 
-    //   // console.log('Raw result: ', JSON.stringify(result));
-    //   if (!result.ok) {
-    //     throw result;
-    //   }
+      // console.log('Raw result: ', JSON.stringify(result));
+      if (!result.ok) {
+        throw result;
+      }
 
-    //   await this.onCompleteAgreement();
-    // } catch (err) {
-    //   this.setState({ loading: false });
-    //   console.log('Result: ', JSON.stringify(err));
-    // }
+      await this.onCompleteAgreement();
+    } catch (err) {
+      this.setState({ loading: false });
+      console.log('Result: ', JSON.stringify(err));
+    }
   };
 
   onCompleteAgreement = async () => {
     if (this.state.isOnboarding) {
       this.setState({ loading: false });
-      NavigationUtil.removeOnboardStepRemaining('AGREE_REGULATORY');
-      this.props.navigation.navigate('AddCash', {
-        isOnboarding: true,
-        token: this.props.authToken,
-        accountId: this.state.accountId,
-        startNewTransaction: true,
-      });
+      this.props.removeOnboardStep('AGREE_REGULATORY');
+      const { onboardStepsRemaining } = this.props;
+      
+      let nextScreen = 'OnboardAddSaving';
+      if (onboardStepsRemaining && onboardStepsRemaining.length > 0 && !onboardStepsRemaining.includes('ADD_CASH')) {
+        nextScreen = onboardStepsRemaining.length > 0 ? 'Home' : 'OnboardPending'; 
+      }
+      this.props.navigation.navigate(nextScreen, { startNewTransaction: true });
     } else {
       const updatedProfileRaw = await fetch(`${Endpoints.AUTH}profile/fetch`, {
         headers: {
@@ -122,7 +113,10 @@ class OnboardRegulation extends React.PureComponent {
         method: 'GET',
       });
       const updatedProfile = await updatedProfileRaw.json();
+      
       await AsyncStorage.setItem('userInfo', JSON.stringify(updatedProfile));
+      this.props.updateAllFields(updatedProfile);
+
       this.setState({ loading: false });
       this.props.navigation.navigate('Home');
     }

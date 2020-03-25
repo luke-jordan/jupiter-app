@@ -1,4 +1,6 @@
 import React from 'react';
+import { connect } from 'react-redux';
+
 import {
   Image,
   Text,
@@ -14,17 +16,24 @@ import { Button, Icon, Input, Overlay } from 'react-native-elements';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { ValidationUtil } from '../util/ValidationUtil';
 import { Colors, Endpoints } from '../util/Values';
+
+import { updateUserId, updateProfileFields } from '../modules/profile/profile.actions';
 import OnboardBreadCrumb from '../elements/OnboardBreadCrumb';
 
-export default class Register extends React.Component {
+const mapDispatchToProps = {
+  updateUserId, 
+  updateProfileFields,
+}
+
+class Register extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
       loading: false,
-      firstName: '',
-      lastName: '',
-      idNumber: '',
-      userId: '',
+      firstName: 'State',
+      lastName: 'Tester',
+      idNumber: '7700995104001',
+      userId: 'state@jupitersave.co',
       referralCode: '',
       errors: {
         firstName: false,
@@ -148,89 +157,93 @@ export default class Register extends React.Component {
 
   onPressRegister = async () => {
     Keyboard.dismiss();
-    // if (this.state.loading) return;
-    // this.setState({ loading: true });
+    if (this.state.loading) return;
+    this.setState({ loading: true });
 
     this.clearError(); // so prior ones are no longer around
     const validation = await this.validateInput();
-    // if (!validation) {
-    //   this.showError();
-    //   return;
-    // }
+    if (!validation) {
+      this.showError();
+      return;
+    }
 
-    this.props.navigation.navigate('SetPassword');
+    try {
+      const result = await fetch(`${Endpoints.AUTH}register/profile`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        method: 'POST',
+        body: JSON.stringify({
+          countryCode3Letter: 'ZAF',
+          nationalId: this.state.idNumber,
+          phoneOrEmail: this.state.userId,
+          personalName: this.state.firstName,
+          familyName: this.state.lastName,
+          referralCode: this.state.referralCode,
+        }),
+      });
 
-    // try {
-    //   const result = await fetch(`${Endpoints.AUTH}register/profile`, {
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //       Accept: 'application/json',
-    //     },
-    //     method: 'POST',
-    //     body: JSON.stringify({
-    //       countryCode3Letter: 'ZAF',
-    //       nationalId: this.state.idNumber,
-    //       phoneOrEmail: this.state.userId,
-    //       personalName: this.state.firstName,
-    //       familyName: this.state.lastName,
-    //       referralCode: this.state.referralCode,
-    //     }),
-    //   });
-    //   if (result.ok) {
-    //     const resultJson = await result.json();
-    //     this.setState({ loading: false });
-    //     if (resultJson.result.includes('SUCCESS')) {
-    //       LoggingUtil.logEvent('USER_PROFILE_REGISTER_SUCCEEDED');
-    //       this.props.navigation.navigate('SetPassword', {
-    //         systemWideUserId: resultJson.systemWideUserId,
-    //         clientId: resultJson.clientId,
-    //         defaultFloatId: resultJson.defaultFloatId,
-    //         defaultCurrency: resultJson.defaultCurrency,
-    //         idNumber: this.state.idNumber,
-    //         firstName: this.state.firstName,
-    //         lastName: this.state.lastName,
-    //       });
-    //     } else {
-    //       LoggingUtil.logEvent('USER_PROFILE_REGISTER_FAILED', {
-    //         reason: "Result didn't include SUCCESS",
-    //       });
-    //       this.showError();
-    //     }
-    //   } else {
-    //     const resultJson = await result.json();
-    //     LoggingUtil.logEvent('USER_PROFILE_REGISTER_FAILED', {
-    //       reason: resultJson.errorField,
-    //     });
-    //     const errors = { ...this.state.errors };
-    //     if (!resultJson.conflicts) {
-    //       // eslint-disable-next-line no-throw-literal
-    //       throw null;
-    //     }
-    //     for (const conflict of resultJson.conflicts) {
-    //       if (conflict.errorField.includes('NATIONAL_ID')) {
-    //         this.setState({
-    //           dialogVisible: true,
-    //         });
-    //         errors.idNumber = conflict.messageToUser;
-    //       }
-    //       if (conflict.errorField.includes('EMAIL_ADDRESS')) {
-    //         errors.userId = true;
-    //         errors.email = conflict.messageToUser;
-    //       }
-    //       if (conflict.errorField.includes('PHONE_NUMBER')) {
-    //         errors.userId = true;
-    //         errors.phone = conflict.messageToUser;
-    //       }
-    //     }
-    //     this.setState({
-    //       loading: false,
-    //       errors,
-    //       hasErrors: true,
-    //     });
-    //   }
-    // } catch (error) {
-    //   this.showError(error);
-    // }
+      if (result.ok) {
+        const resultJson = await result.json();
+        this.setState({ loading: false });
+        if (resultJson.result.includes('SUCCESS')) {
+          LoggingUtil.logEvent('USER_PROFILE_REGISTER_SUCCEEDED');
+          
+          this.props.updateUserId(resultJson.systemWideUserId);
+          console.log('UPDATING PROFILE FIELDS!');
+
+          this.props.updateProfileFields({
+            clientId: resultJson.clientId,
+            defaultFloatId: resultJson.defaultFloatId,
+            defaultCurrency: resultJson.defaultCurrency,
+            personalName: this.state.firstName,
+            familyName: this.state.lastName,
+            nationalId: this.state.idNumber,
+          });
+
+          this.props.navigation.navigate('SetPassword');
+        } else {
+          LoggingUtil.logEvent('USER_PROFILE_REGISTER_FAILED', {
+            reason: "Result didn't include SUCCESS",
+          });
+          this.showError();
+        }
+      } else {
+        const resultJson = await result.json();
+        LoggingUtil.logEvent('USER_PROFILE_REGISTER_FAILED', {
+          reason: resultJson.errorField,
+        });
+        const errors = { ...this.state.errors };
+        if (!resultJson.conflicts) {
+          // eslint-disable-next-line no-throw-literal
+          throw null;
+        }
+        for (const conflict of resultJson.conflicts) {
+          if (conflict.errorField.includes('NATIONAL_ID')) {
+            this.setState({
+              dialogVisible: true,
+            });
+            errors.idNumber = conflict.messageToUser;
+          }
+          if (conflict.errorField.includes('EMAIL_ADDRESS')) {
+            errors.userId = true;
+            errors.email = conflict.messageToUser;
+          }
+          if (conflict.errorField.includes('PHONE_NUMBER')) {
+            errors.userId = true;
+            errors.phone = conflict.messageToUser;
+          }
+        }
+        this.setState({
+          loading: false,
+          errors,
+          hasErrors: true,
+        });
+      }
+    } catch (error) {
+      this.showError(error);
+    }
   };
 
   onHideDialog = () => {
@@ -711,3 +724,5 @@ const styles = StyleSheet.create({
     color: Colors.PURPLE,
   },
 });
+
+export default connect(null, mapDispatchToProps)(Register);

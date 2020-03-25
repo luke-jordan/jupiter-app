@@ -177,21 +177,20 @@ export default class Payment extends React.Component {
 
   navigateToPaymentPending(bankDetails) {
     this.cleanUpListeners();
-    
-    const navigationFunction = this.state.isOnboarding ? NavigationUtil.navigateWithoutBackstack : NavigationUtil.navigateWithHomeBackstack;
-    navigationFunction(
-      this.props.navigation,
-      'PendingInstantTransfer',
-      {
+
+    if (this.state.isOnboarding) {
+      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'OnboardPending', { stepToTake: 'FINISH_SAVE' });
+    } else {
+      NavigationUtil.navigateWithHomeBackstack(this.props.navigation, 'PendingInstantTransfer', {
         paymentLink: this.state.paymentLink,
         transactionId: this.state.transactionId,
         token: this.state.token,
-        isOnboarding: this.state.isOnboarding,
         amountAdded: this.state.amountToAdd,
         humanReference: this.state.humanReference,
         bankDetails,
-      }
-    );
+      });
+    }
+    
   }
 
   render() {
