@@ -219,13 +219,12 @@ class Register extends React.Component {
         }
       } else {
         const resultJson = await result.json();
-        console.log('Result JSON: ', resultJson);
+        // console.log('Result JSON: ', resultJson);
         LoggingUtil.logEvent('USER_PROFILE_REGISTER_FAILED', {
           reason: resultJson.errorField,
         });
         const errors = { ...this.state.errors };
         if (!resultJson.conflicts) {
-          // eslint-disable-next-line no-throw-literal
           throw resultJson;
         }
         for (const conflict of resultJson.conflicts) {
@@ -251,7 +250,9 @@ class Register extends React.Component {
         });
       }
     } catch (error) {
-      if (Reflect.has(error, 'messageToUser')) {
+      if (!error) {
+        this.showError();
+      } else if (Reflect.has(error, 'messageToUser')) {
         this.showError(error.messageToUser);
       } else {
         this.showError(error);

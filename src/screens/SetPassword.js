@@ -46,8 +46,8 @@ class SetPassword extends React.Component {
     this.state = {
       loading: false,
       generatePasswordLoading: false,
-      password: '#NewPass1234',
-      passwordConfirm: '#NewPass1234',
+      password: '',
+      passwordConfirm: '',
       errors: {
         password: false,
         passwordConfirm: false,
