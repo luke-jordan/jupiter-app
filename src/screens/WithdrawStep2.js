@@ -1,13 +1,24 @@
 import React from 'react';
-import {ActivityIndicator, AsyncStorage, StyleSheet, Image, Text, TouchableOpacity, View, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import { connect } from 'react-redux';
+
+import { ActivityIndicator, StyleSheet, Image, Text, TouchableOpacity, View, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { Button, Icon, Input, Overlay } from 'react-native-elements';
 import moment from 'moment';
 
-import { NavigationUtil } from '../util/NavigationUtil';
 import { Endpoints, Colors } from '../util/Values';
 import { getDivisor, getFormattedValue } from '../util/AmountUtil';
 
-export default class Withdraw extends React.Component {
+import { getAuthToken } from '../modules/auth/auth.reducer';
+import { getAccountId } from '../modules/profile/profile.reducer';
+import { getCurrentServerBalanceFull } from '../modules/balance/balance.reducer';
+
+const mapStateToProps = state => ({
+  authToken: getAuthToken(state),
+  accountId: getAccountId(state),
+  currentBalance: getCurrentServerBalanceFull(state),
+});
+
+class WithdrawStep2 extends React.Component {
   constructor(props) {
     super(props);
     const bank = this.props.navigation.getParam('bank');
@@ -28,18 +39,12 @@ export default class Withdraw extends React.Component {
 
   async componentDidMount() {
     // LoggingUtil.logEvent('USER_ENTERED_....');
-    let info = await AsyncStorage.getItem('userInfo');
-    if (!info) {
-      NavigationUtil.logout(this.props.navigation);
-    } else {
-      info = JSON.parse(info);
-      this.setState({
-        balance: info.balance.currentBalance.amount,
-        unit: info.balance.currentBalance.unit,
-        accountId: info.balance.accountId[0],
-        token: info.token,
-      });
-    }
+    this.setState({
+      balance: this.props.currentBalance.amount,
+      unit: this.props.currentBalance.unit,
+      accountId: this.props.accountId,
+      token: this.props.authToken,
+    });
   }
 
   onPressBack = () => {
@@ -581,3 +586,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+
+export default connect(mapStateToProps)(WithdrawStep2);

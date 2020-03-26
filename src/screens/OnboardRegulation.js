@@ -2,7 +2,6 @@ import React from 'react';
 import { connect } from 'react-redux';
 
 import {
-  Dimensions,
   Image,
   StyleSheet,
   Text,
@@ -19,18 +18,22 @@ import { Colors, Endpoints } from '../util/Values';
 
 import { getAuthToken } from '../modules/auth/auth.reducer';
 import { updateAuthToken, removeAuthToken } from '../modules/auth/auth.actions';
-import { NavigationUtil } from '../util/NavigationUtil';
 
-const { width } = Dimensions.get('window');
-const FONT_UNIT = 0.01 * width;
+import { getOnboardStepsRemaining } from '../modules/profile/profile.reducer';
+import { removeOnboardStep, updateAllFields } from '../modules/profile/profile.actions';
+
+import OnboardBreadCrumb from '../elements/OnboardBreadCrumb';
 
 const mapStateToProps = state => ({
   authToken: getAuthToken(state),
+  onboardStepsRemaining: getOnboardStepsRemaining(state),
 });
 
 const mapDispatchToProps = {
   updateAuthToken,
   removeAuthToken,
+  removeOnboardStep,
+  updateAllFields,
 };
 
 class OnboardRegulation extends React.PureComponent {
@@ -48,23 +51,9 @@ class OnboardRegulation extends React.PureComponent {
     LoggingUtil.logEvent('USER_ENTERED_REGULATORY_ONBOARD');
     const { params } = this.props.navigation.state;
     if (params) {
-      const { userInfo } = params;
-
-      if (!this.props.authToken) {
-        const token = params.token || (userInfo && userInfo.token);
-        this.props.updateAuthToken(token);  
-      }
-
-      let { accountId } = params;
-      if (!accountId && userInfo && userInfo.balance) {
-        [accountId] = userInfo.balance.accountId;
-      }
-
       this.setState({
         isOnboarding: params.isOnboarding,
-        accountId,
       });
-
     } else {
       this.setState({
         isOnboarding: false,
@@ -74,7 +63,6 @@ class OnboardRegulation extends React.PureComponent {
 
   onPressAgree = async () => {
     try {
-      // console.log('SENDING AGREEMENT');
       this.setState({ loading: true });
       
       const result = await fetch(`${Endpoints.AUTH}profile/update`, {
@@ -104,13 +92,14 @@ class OnboardRegulation extends React.PureComponent {
   onCompleteAgreement = async () => {
     if (this.state.isOnboarding) {
       this.setState({ loading: false });
-      NavigationUtil.removeOnboardStepRemaining('AGREE_REGULATORY');
-      this.props.navigation.navigate('AddCash', {
-        isOnboarding: true,
-        token: this.props.authToken,
-        accountId: this.state.accountId,
-        startNewTransaction: true,
-      });
+      this.props.removeOnboardStep('AGREE_REGULATORY');
+      const { onboardStepsRemaining } = this.props;
+      
+      let nextScreen = 'OnboardAddSaving';
+      if (onboardStepsRemaining && onboardStepsRemaining.length > 0 && !onboardStepsRemaining.includes('ADD_CASH')) {
+        nextScreen = onboardStepsRemaining.length > 0 ? 'Home' : 'OnboardPending'; 
+      }
+      this.props.navigation.navigate(nextScreen, { startNewTransaction: true });
     } else {
       const updatedProfileRaw = await fetch(`${Endpoints.AUTH}profile/fetch`, {
         headers: {
@@ -119,7 +108,10 @@ class OnboardRegulation extends React.PureComponent {
         method: 'GET',
       });
       const updatedProfile = await updatedProfileRaw.json();
+      
       await AsyncStorage.setItem('userInfo', JSON.stringify(updatedProfile));
+      this.props.updateAllFields(updatedProfile);
+
       this.setState({ loading: false });
       this.props.navigation.navigate('Home');
     }
@@ -152,20 +144,19 @@ class OnboardRegulation extends React.PureComponent {
 
     return (
       <View style={styles.container}>
+        <View style={styles.stepContainer}><Text style={styles.stepText}>Step 3 of 4</Text></View>
         <ScrollView style={styles.wrapper} contentContainerStyle={styles.scrollContainer}>
+          <OnboardBreadCrumb currentStep="AGREEMENT" />
           <Image 
             style={styles.headerImage}
             source={require('../../assets/regulatory.png')}
           />
-          <Text style={styles.headerText}>
-            Hi there,
-          </Text>
           <Text style={styles.subHeaderText}>
-            You are agreeing to join the Jupiter Stokvel, a group of like-minded people, focused on building our wealth.
+            By continuing, you are agreeing to join the Jupiter Stokvel, a group of like-minded people, focused on building our wealth.
           </Text>
           <View style={styles.mandateBlock}>
             <Text style={styles.mandateText}>
-              You&apos;ll be using the secure Jupiter App to earn 6% per year, with our savings invested safely in 
+              You&apos;ll be using the secure Jupiter App to earn inflation beating returns, with our savings invested safely in 
               the <Text style={styles.mandateManager}>Allan Gray</Text> Money Market fund.
             </Text>
             <TouchableOpacity style={styles.linkContainer} onPress={this.onPressViewStokvelConst}>
@@ -253,19 +244,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     backgroundColor: Colors.WHITE,
   },
+  stepContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 6,
+    paddingHorizontal: 10,
+  },
+  stepText: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 16,
+    color: Colors.DARK_GRAY,
+  },
   scrollContainer: {
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerImage: {
-    marginVertical: 25,
-  },
-  headerText: {
-    fontFamily: 'poppins-semibold',
-    fontSize: 7.2 * FONT_UNIT,
-    lineHeight: 10 * FONT_UNIT,
-    color: Colors.DARK_GRAY,
-    marginBottom: 10,
+    marginVertical: 20,
   },
   subHeaderText: {
     fontFamily: 'poppins-regular',

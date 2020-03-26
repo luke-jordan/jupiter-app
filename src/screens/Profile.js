@@ -1,4 +1,6 @@
 import React from 'react';
+import { connect } from 'react-redux';
+
 import {
   ActivityIndicator,
   AsyncStorage,
@@ -15,13 +17,27 @@ import {
 import { Button, Input, Icon, Overlay } from 'react-native-elements';
 
 import { NavigationUtil } from '../util/NavigationUtil';
+import { LogoutUtil } from '../util/LogoutUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Endpoints, Colors } from '../util/Values';
+
+import { getAuthToken } from '../modules/auth/auth.reducer';
+import { getProfileData } from '../modules/profile/profile.reducer';
+import { updateProfileFields } from '../modules/profile/profile.actions';
 
 const { height, width } = Dimensions.get('window');
 const PROFILE_PIC_SIZE = 0.16 * width;
 
-export default class Profile extends React.Component {
+const mapStateToProps = state => ({
+  profile: getProfileData(state),
+  authToken: getAuthToken(state),
+});
+
+const mapDispatchToProps = {
+  updateProfileFields,
+};
+
+class Profile extends React.Component {
   constructor(props) {
     super(props);
 
@@ -60,17 +76,14 @@ export default class Profile extends React.Component {
   //   this.keyboardDidHideListener.remove();
   // }
 
-  setStateForOnboarding = (rawInfo) => {
-    const storedInfo = rawInfo && JSON.parse(rawInfo);
-    const info = this.props.navigation.getParam('info') || storedInfo || {};
-    const { profile } = info;
-    const initials = profile.firstName && profile.lastName ? profile.firstName[0] + profile.lastName[0] : 'A';
+  setStateForOnboarding = async () => {
+    const { personalName, familyName, nationalId } = this.props.profile;
+    const initials = personalName && familyName ? personalName[0] + familyName[0] : 'A';
     this.setState({
-      firstName: profile.personalName,
-      lastName: profile.familyName,
-      idNumber: profile.nationalId,
+      firstName: personalName,
+      lastName: familyName,
+      idNumber: nationalId,
       initials,
-      token: info.token,
     });
   }
 
@@ -83,7 +96,6 @@ export default class Profile extends React.Component {
       tempEmail: info.profile.email,
       initials: info.profile.personalName[0] + info.profile.familyName[0],
       systemWideUserId: info.systemWideUserId,
-      token: info.token,
       userLoggedIn: true,
     });
   }
@@ -95,7 +107,7 @@ export default class Profile extends React.Component {
   onPressChangePassword = () => {
     this.props.navigation.navigate('ChangePassword', {
       systemWideUserId: this.state.systemWideUserId,
-      token: this.state.token,
+      token: this.props.authToken,
     });
   };
 
@@ -127,7 +139,7 @@ export default class Profile extends React.Component {
   fetchProfileForOnboardingUser = async () => {
     const result = await fetch(`${Endpoints.AUTH}profile/fetch`, {
       headers: {
-        Authorization: `Bearer ${this.state.token}`,
+        Authorization: `Bearer ${this.props.authToken}`,
       },
       method: 'GET',
     });
@@ -175,7 +187,7 @@ export default class Profile extends React.Component {
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
-          Authorization: `Bearer ${this.state.token}`,
+          Authorization: `Bearer ${this.props.authToken}`,
         },
         method: 'POST',
         body: JSON.stringify(payload),
@@ -217,7 +229,8 @@ export default class Profile extends React.Component {
   };
 
   onPressLogout = () => {
-    NavigationUtil.logout(this.props.navigation);
+    this.props.dispatch(LogoutUtil.logoutAction);
+    LogoutUtil.logout(this.props.navigation);
   };
 
   // keyboardDidShow = () => {
@@ -715,3 +728,5 @@ const styles = StyleSheet.create({
     marginRight: 15,
   },
 });
+
+export default connect(mapStateToProps, mapDispatchToProps)(Profile);

@@ -1,4 +1,6 @@
 import React from 'react';
+import { connect } from 'react-redux';
+
 import {
   AsyncStorage,
   BackHandler,
@@ -16,10 +18,16 @@ import { LoggingUtil } from '../util/LoggingUtil';
 import { getFormattedValue } from '../util/AmountUtil';
 import { Endpoints, Colors } from '../util/Values';
 
+import { getAuthToken } from '../modules/auth/auth.reducer';
+import { updateAllFields } from '../modules/profile/profile.actions';
+
 const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
-export default class PaymentComplete extends React.Component {
+const mapStateToProps = state => ({ authToken: getAuthToken(state) });
+const mapDispatchToProps = { updateAllFields };
+
+class PaymentComplete extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -49,7 +57,7 @@ export default class PaymentComplete extends React.Component {
       });
     }
 
-    this.fetchProfile(params.token);
+    this.fetchProfile();
   }
 
   componentWillUnmount() {
@@ -82,17 +90,14 @@ export default class PaymentComplete extends React.Component {
     return false;
   };
 
-  async fetchProfile(token) {
+  async fetchProfile() {
     this.setState({
       fetchingProfile: true,
     });
     try {
-      if (!token) {
-        NavigationUtil.logout(this.props.navigation);
-      }
       const result = await fetch(`${Endpoints.AUTH}profile/fetch`, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${this.props.authToken}`,
         },
         method: 'GET',
       });
@@ -100,6 +105,7 @@ export default class PaymentComplete extends React.Component {
         const resultJson = await result.json();
         // console.log('Result of profile fetch on payment complete: ', resultJson);
         await AsyncStorage.setItem('userInfo', JSON.stringify(resultJson));
+        this.props.updateAllFields(resultJson);
         this.setState({
           userInfo: resultJson,
           fetchingProfile: false,
@@ -256,3 +262,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
   },
 });
+
+export default connect(mapStateToProps, mapDispatchToProps)(PaymentComplete);
