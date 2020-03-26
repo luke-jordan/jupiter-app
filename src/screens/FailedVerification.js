@@ -24,24 +24,7 @@ export default class FailedVerification extends React.Component {
   };
 
   onPressEdit = () => {
-    const isFromHome = this.props.navigation.getParam('fromHome');
-    if (isFromHome) {
-      this.props.navigation.navigate('Profile', { failedVerification: true });
-    } else {
-      const { params } = this.props.navigation.state;
-      this.props.navigation.navigate('Profile', {
-        failedVerification: true,
-        info: {
-          token: params.token,
-          accountId: params.accountId,
-          profile: {
-            nationalId: params.idNumber,
-            personalName: params.firstName,
-            familyName: params.lastName,
-          },
-        },
-      });
-    }
+    this.props.navigation.navigate('Profile', { failedVerification: true });
   };
 
   render() {
@@ -72,7 +55,7 @@ export default class FailedVerification extends React.Component {
             titleStyle={styles.buttonTitleStyle}
             buttonStyle={styles.buttonStyle}
             containerStyle={styles.buttonContainerStyle}
-            onPress={this.onPressEdit}
+            onPress={() => this.onPressEdit()}
             linearGradientProps={{
               colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
               start: { x: 0, y: 0.5 },

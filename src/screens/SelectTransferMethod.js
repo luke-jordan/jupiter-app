@@ -4,7 +4,6 @@ import { connect } from 'react-redux';
 import { View, ScrollView, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Icon } from 'react-native-elements';
 
-import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Colors, Endpoints } from '../util/Values';
 
@@ -54,7 +53,7 @@ class SelectTransferMethod extends React.PureComponent {
 
     this.setState({ loadingInstant: true});
     const resultOfCall = await this.initiateOrUpdateTransaction('OZOW');
-    console.log('Result of call: ', resultOfCall);
+    console.log('Result of call: ', JSON.stringify(resultOfCall));
     this.setState({ loadingInstant: false });
     
     if (resultOfCall) {
@@ -100,7 +99,7 @@ class SelectTransferMethod extends React.PureComponent {
     } else {
       resultOfCall = await this.tellBackendToInitiate(paymentMethod);
     }
-    console.log('Completed backend calls, result: ', resultOfCall);
+    console.log('Completed backend calls, result: ', JSON.stringify(resultOfCall));
     return resultOfCall;
   };
 
@@ -124,9 +123,6 @@ class SelectTransferMethod extends React.PureComponent {
 
       if (result.ok) {
         const resultJson = await result.json();
-        if (this.state.isOnboarding) {
-          NavigationUtil.removeOnboardStepRemaining('ADD_CASH');
-        }
 
         this.props.updateCurrentTransaction({
           transactionId: resultJson.transactionDetails[0].accountTransactionId,

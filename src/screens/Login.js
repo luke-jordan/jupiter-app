@@ -1,4 +1,6 @@
 import React from 'react';
+import { connect } from 'react-redux';
+
 import {
   AsyncStorage,
   Image,
@@ -14,12 +16,20 @@ import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { ValidationUtil } from '../util/ValidationUtil';
 
+import { updateAuthToken } from '../modules/auth/auth.actions';
+import { updateAllFields } from '../modules/profile/profile.actions';
+
 const stdHeaders = {
   'Content-Type': 'application/json',
   Accept: 'application/json',
 };
 
-export default class Login extends React.Component {
+const mapDispatchToProps = {
+  updateAuthToken,
+  updateProfile: updateAllFields,
+}
+
+class Login extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -60,8 +70,16 @@ export default class Login extends React.Component {
           AsyncStorage.setItem('userInfo', JSON.stringify(resultJson)), 
           AsyncStorage.setItem('hasOnboarded', 'true'),
         ]);
-        const { screen, params } = NavigationUtil.directBasedOnProfile(resultJson);
-        NavigationUtil.navigateWithoutBackstack(this.props.navigation, screen, params);
+
+        this.props.updateAuthToken(resultJson.token);
+        this.props.updateProfile(resultJson);
+
+        const { onboardStepsRemaining } = resultJson;
+        if (Array.isArray(onboardStepsRemaining) && onboardStepsRemaining.length > 0) {
+          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'OnboardPending');
+        } else {
+          NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', { userInfo: resultJson });
+        }
       }
     } else if (result.status === 403) {
       LoggingUtil.logEvent('LOGIN_FAILED_403');
@@ -320,3 +338,5 @@ const styles = StyleSheet.create({
     marginTop: 25,
   },
 });
+
+export default connect(null, mapDispatchToProps)(Login);

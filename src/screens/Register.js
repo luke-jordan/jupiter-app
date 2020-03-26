@@ -1,4 +1,6 @@
 import React from 'react';
+import { connect } from 'react-redux';
+
 import {
   Image,
   Text,
@@ -15,7 +17,21 @@ import { LoggingUtil } from '../util/LoggingUtil';
 import { ValidationUtil } from '../util/ValidationUtil';
 import { Colors, Endpoints } from '../util/Values';
 
-export default class Register extends React.Component {
+import { getProfileData } from '../modules/profile/profile.reducer';
+import { updateUserId, updateProfileFields } from '../modules/profile/profile.actions';
+import OnboardBreadCrumb from '../elements/OnboardBreadCrumb';
+
+const mapStateToProps = state => ({
+  stashedProfile: getProfileData(state),
+});
+
+const mapDispatchToProps = {
+  updateUserId, 
+  updateProfileFields,
+  clearState: () => ({ type: 'USER_LOGOUT' }), 
+}
+
+class Register extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -43,9 +59,12 @@ export default class Register extends React.Component {
   }
 
   async componentDidMount() {
-    const referralCode = this.props.navigation.getParam('referralCode');
+    const referralCode = this.props.navigation.getParam('referralCode') || this.props.stashedProfile.referralCode;
+    // just in case have some legacy stuff lying around from a prior user who did not log out but closed/opened, etc
+    this.props.clearState();
     if (referralCode && referralCode.length > 0) {
       this.setState({ referralCode });
+      this.props.updateProfileFields({ referralCode });
     }
   }
 
@@ -173,20 +192,25 @@ export default class Register extends React.Component {
           referralCode: this.state.referralCode,
         }),
       });
+
       if (result.ok) {
         const resultJson = await result.json();
         this.setState({ loading: false });
         if (resultJson.result.includes('SUCCESS')) {
           LoggingUtil.logEvent('USER_PROFILE_REGISTER_SUCCEEDED');
-          this.props.navigation.navigate('SetPassword', {
-            systemWideUserId: resultJson.systemWideUserId,
+          
+          this.props.updateUserId(resultJson.systemWideUserId);
+          
+          this.props.updateProfileFields({
             clientId: resultJson.clientId,
             defaultFloatId: resultJson.defaultFloatId,
             defaultCurrency: resultJson.defaultCurrency,
-            idNumber: this.state.idNumber,
-            firstName: this.state.firstName,
-            lastName: this.state.lastName,
+            personalName: this.state.firstName,
+            familyName: this.state.lastName,
+            nationalId: this.state.idNumber,
           });
+
+          this.props.navigation.navigate('SetPassword');
         } else {
           LoggingUtil.logEvent('USER_PROFILE_REGISTER_FAILED', {
             reason: "Result didn't include SUCCESS",
@@ -195,13 +219,13 @@ export default class Register extends React.Component {
         }
       } else {
         const resultJson = await result.json();
+        // console.log('Result JSON: ', resultJson);
         LoggingUtil.logEvent('USER_PROFILE_REGISTER_FAILED', {
           reason: resultJson.errorField,
         });
         const errors = { ...this.state.errors };
         if (!resultJson.conflicts) {
-          // eslint-disable-next-line no-throw-literal
-          throw null;
+          throw resultJson;
         }
         for (const conflict of resultJson.conflicts) {
           if (conflict.errorField.includes('NATIONAL_ID')) {
@@ -226,7 +250,13 @@ export default class Register extends React.Component {
         });
       }
     } catch (error) {
-      this.showError(error);
+      if (!error) {
+        this.showError();
+      } else if (Reflect.has(error, 'messageToUser')) {
+        this.showError(error.messageToUser);
+      } else {
+        this.showError(error);
+      }
     }
   };
 
@@ -271,7 +301,7 @@ export default class Register extends React.Component {
       loading: false,
       errors,
       hasErrors: true,
-      generalErrorText: errorText
+      generalErrorText: typeof errorText === 'string' && errorText.length > 0
         ? errorText
         : this.state.defaultGeneralErrorText,
     });
@@ -302,13 +332,14 @@ export default class Register extends React.Component {
               color={Colors.MEDIUM_GRAY}
             />
           </TouchableOpacity>
+          <Text style={styles.stepText}>Step 1 of 4</Text>
         </View>
         <View style={styles.contentWrapper}>
           <ScrollView
             style={styles.scrollView}
             contentContainerStyle={styles.mainContent}
           >
-            <Text style={styles.title}>Let’s create your Jupiter account</Text>
+            <OnboardBreadCrumb currentStep="PROFILE" />
             <View style={styles.profileField}>
               <Text style={styles.profileFieldTitle}>First Name*</Text>
               <Input
@@ -332,7 +363,7 @@ export default class Register extends React.Component {
                 </Text>
               )}
               {this.state.errors && this.state.errors.firstName ? (
-                <Text style={styles.errorMessage}>
+                <Text style={styles.inputErrorMessage}>
                   Please enter a valid first name
                 </Text>
               ) : null}
@@ -355,7 +386,7 @@ export default class Register extends React.Component {
                 containerStyle={styles.containerStyle}
               />
               {this.state.errors && this.state.errors.lastName ? (
-                <Text style={styles.errorMessage}>
+                <Text style={styles.inputErrorMessage}>
                   Please enter a valid last name
                 </Text>
               ) : null}
@@ -378,7 +409,7 @@ export default class Register extends React.Component {
                 containerStyle={styles.containerStyle}
               />
               {this.state.errors && this.state.errors.idNumber ? (
-                <Text style={styles.errorMessage}>
+                <Text style={styles.inputErrorMessage}>
                   {this.state.errors.idNumber === true
                     ? 'Please enter a valid ID number'
                     : this.state.errors.idNumber}
@@ -405,19 +436,19 @@ export default class Register extends React.Component {
                 containerStyle={styles.containerStyle}
               />
               {this.state.errors && this.state.errors.phoneEmailValidation ? (
-                <Text style={styles.errorMessage}>
+                <Text style={styles.inputErrorMessage}>
                   Please enter a valid email address or cellphone number
                 </Text>
               ) : null}
               {this.state.errors && this.state.errors.email ? (
-                <Text style={styles.errorMessage}>
+                <Text style={styles.inputErrorMessage}>
                   {this.state.errors.email === true
                     ? 'Please enter a valid email address'
                     : this.state.errors.email}
                 </Text>
               ) : null}
               {this.state.errors && this.state.errors.phone ? (
-                <Text style={styles.errorMessage}>
+                <Text style={styles.inputErrorMessage}>
                   {this.state.errors.phone === true
                     ? 'Please enter a valid cellphone numebr'
                     : this.state.errors.phone}
@@ -442,7 +473,7 @@ export default class Register extends React.Component {
             </Text>
           </ScrollView>
           {this.state.errors && this.state.errors.general ? (
-            <Text style={styles.errorMessage}>
+            <Text style={styles.generalErrorMessage}>
               {this.state.generalErrorText}
             </Text>
           ) : null}
@@ -552,11 +583,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 5,
   },
-  title: {
+  stepText: {
     fontFamily: 'poppins-semibold',
-    fontSize: 27,
+    fontSize: 16,
     color: Colors.DARK_GRAY,
-    marginBottom: 15,
   },
   mainContent: {
     width: '100%',
@@ -566,7 +596,6 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
     width: '100%',
-    marginVertical: 15,
     paddingHorizontal: 15,
   },
   buttonTitleStyle: {
@@ -589,7 +618,7 @@ const styles = StyleSheet.create({
   profileField: {
     flex: 1,
     justifyContent: 'center',
-    marginBottom: 5,
+    marginTop: 5,
   },
   profileFieldTitle: {
     fontFamily: 'poppins-semibold',
@@ -621,11 +650,19 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     width: '90%',
   },
-  errorMessage: {
+  inputErrorMessage: {
     fontFamily: 'poppins-regular',
     color: Colors.RED,
     fontSize: 13,
-    marginTop: -15, // this is valid because of the exact alignment of other elements - do not reuse in other components
+    marginTop: -15, // only for here
+    marginBottom: 10,
+    width: '90%',
+  },
+  generalErrorMessage: {
+    fontFamily: 'poppins-regular',
+    color: Colors.RED,
+    fontSize: 13,
+    marginTop: 10, // only for here
     marginBottom: 20,
     width: '90%',
   },
@@ -709,3 +746,5 @@ const styles = StyleSheet.create({
     color: Colors.PURPLE,
   },
 });
+
+export default connect(mapStateToProps, mapDispatchToProps)(Register);

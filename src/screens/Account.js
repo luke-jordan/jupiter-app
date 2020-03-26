@@ -1,10 +1,11 @@
 import React from 'react';
+import { connect } from 'react-redux';
+
 import {
   StyleSheet,
   View,
   Image,
   Text,
-  AsyncStorage,
   TouchableOpacity,
   Dimensions,
   ScrollView,
@@ -12,13 +13,19 @@ import {
 import { Icon, Button } from 'react-native-elements';
 import VersionCheck from 'react-native-version-check-expo';
 
-import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
+import { LogoutUtil } from '../util/LogoutUtil';
 import NavigationBar from '../elements/NavigationBar';
 import { Colors } from '../util/Values';
 
+import { getProfileData } from '../modules/profile/profile.reducer';
+
 const { height, width } = Dimensions.get('window');
 const PROFILE_PIC_SIZE = 0.13 * width;
+
+const mapPropsToState = state => ({
+  profile: getProfileData(state),
+})
 
 class Account extends React.Component {
   constructor(props) {
@@ -32,21 +39,16 @@ class Account extends React.Component {
 
   async componentDidMount() {
     LoggingUtil.logEvent('USER_ENTERED_ACCOUNT_SCREEN');
-    let info = await AsyncStorage.getItem('userInfo');
-    if (!info) {
-      NavigationUtil.logout(this.props.navigation);
-    } else {
-      info = JSON.parse(info);
-      this.setState({
-        initials: info.profile.personalName[0] + info.profile.familyName[0],
-      });
-    }
+    this.setState({
+      initials: this.props.profile.personalName[0] + this.props.profile.familyName[0],
+    });
   }
 
   onPressLogout = () => {
     if (this.state.loading) return;
     this.setState({ loading: true });
-    NavigationUtil.logout(this.props.navigation);
+    this.props.dispatch(LogoutUtil.logoutAction);
+    LogoutUtil.logout(this.props.navigation);
   };
 
   onPressDetails = () => {
@@ -368,4 +370,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Account;
+export default connect(mapPropsToState)(Account);

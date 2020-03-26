@@ -1,5 +1,7 @@
-import moment from 'moment';
 import React from 'react';
+import { connect } from 'react-redux';
+import moment from 'moment';
+
 import {
   ActivityIndicator,
   AsyncStorage,
@@ -19,15 +21,20 @@ import NavigationBar from '../elements/NavigationBar';
 import getPermittedTypesOfBoost from '../modules/boost/helpers/getPermittedTypesOfBoost';
 import { BoostStatus } from '../modules/boost/models';
 import { LoggingUtil } from '../util/LoggingUtil';
-import { NavigationUtil } from '../util/NavigationUtil';
 import { Sizes, Endpoints, Colors } from '../util/Values';
 import { MessagingUtil } from '../util/MessagingUtil';
 import { equalizeAmounts } from '../modules/boost/helpers/parseAmountValue';
 
 import { extractConditionParameter, getDivisor } from '../util/AmountUtil';
 
+import { getAuthToken } from '../modules/auth/auth.reducer';
+
 const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
+
+const mapStateToProps = state => ({
+  authToken: getAuthToken(state),
+});
 
 class Boosts extends React.Component {
   constructor(props) {
@@ -39,24 +46,16 @@ class Boosts extends React.Component {
 
   async componentDidMount() {
     LoggingUtil.logEvent('USER_ENTERED_BOOST_LIST');
-    let info = await AsyncStorage.getItem('userInfo');
-    if (!info) {
-      NavigationUtil.logout(this.props.navigation);
-    } else {
-      info = JSON.parse(info);
-    }
-    const { token } = info;
 
     let boosts = await AsyncStorage.getItem('userBoosts');
     if (boosts) {
       boosts = JSON.parse(boosts);
       this.setState({
         boosts,
-        token,
         loading: false,
       });
     }
-    this.fetchBoosts(token);
+    this.fetchBoosts();
   }
 
   getBoostIcon(boostDetails) {
@@ -246,11 +245,11 @@ class Boosts extends React.Component {
     return false;
   }
 
-  fetchBoosts = async token => {
+  fetchBoosts = async () => {
     try {
       const result = await fetch(`${Endpoints.CORE}boost/list`, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${this.props.authToken}`,
         },
         method: 'GET',
       });
@@ -311,7 +310,7 @@ class Boosts extends React.Component {
 
       if (msgInstructionId) {
         MessagingUtil.fetchInstructionsMessage(
-          this.state.token,
+          this.props.authToken,
           msgInstructionId
         );
       }
@@ -598,4 +597,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Boosts;
+export default connect(mapStateToProps)(Boosts);

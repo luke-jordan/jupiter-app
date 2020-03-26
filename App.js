@@ -1,8 +1,12 @@
 import React from 'react';
+
 import { Platform, StyleSheet, SafeAreaView, AppState } from 'react-native';
 import { createStackNavigator, createAppContainer } from 'react-navigation';
 import { Provider } from 'react-redux';
+import { PersistGate } from 'redux-persist/integration/react';
+
 import * as Sentry from 'sentry-expo';
+import configureStore from './src/store/configureStore';
 
 import { LoggingUtil } from './src/util/LoggingUtil';
 import { Endpoints } from './src/util/Values';
@@ -26,7 +30,6 @@ import Payment from './src/screens/Payment';
 import SelectTransferMethod from './src/screens/SelectTransferMethod';
 import PendingInstantTransfer from './src/screens/PendingInstantTransfer';
 import PaymentComplete from './src/screens/PaymentComplete';
-import PendingRegistrationSteps from './src/screens/PendingRegistrationSteps';
 import ResetPassword from './src/screens/ResetPassword';
 import ResetQuestions from './src/screens/ResetQuestions';
 import ResetComplete from './src/screens/ResetComplete';
@@ -43,7 +46,8 @@ import PendingManualTransfer from './src/screens/PendingManualTransfer';
 import Stokvel from './src/screens/Stokvel';
 import MoneyMarket from './src/screens/MoneyMarket';
 import OnboardRegulation from './src/screens/OnboardRegulation';
-import configureStore from './src/store/configureStore';
+import OnboardAddSaving from './src/screens/OnboardAddSaving';
+import OnboardPending from './src/screens/OnboardPending';
 
 const AppContainer = createAppContainer(
   createStackNavigator(
@@ -68,7 +72,6 @@ const AppContainer = createAppContainer(
       SelectTransferMethod: { screen: SelectTransferMethod },
       PendingInstantTransfer: { screen: PendingInstantTransfer },
       PaymentComplete: { screen: PaymentComplete },
-      PendingRegistrationSteps: { screen: PendingRegistrationSteps },
       ResetPassword: { screen: ResetPassword },
       ResetQuestions: { screen: ResetQuestions },
       ResetComplete: { screen: ResetComplete },
@@ -85,6 +88,8 @@ const AppContainer = createAppContainer(
       Stokvel: { screen: Stokvel },
       MoneyMarket: { screen: MoneyMarket },
       OnboardRegulation: { screen: OnboardRegulation },
+      OnboardAddSaving: { screen: OnboardAddSaving },
+      OnboardPending: { screen: OnboardPending },
     },
     { initialRouteName: 'Splash', headerMode: 'none' }
   )
@@ -113,12 +118,14 @@ export default class App extends React.Component {
   };
 
   render() {
-    const store = configureStore();
+    const { store, persistor } = configureStore();
 
     return (
       <SafeAreaView style={styles.safeArea} behavior="padding">
         <Provider store={store}>
-          <AppContainer />
+          <PersistGate loading={null} persistor={persistor}>
+            <AppContainer />
+          </PersistGate>
         </Provider>
       </SafeAreaView>
     );

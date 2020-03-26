@@ -17,6 +17,8 @@ import { NotificationsUtil } from '../util/NotificationsUtil';
 import { MessagingUtil } from '../util/MessagingUtil';
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
+import { LogoutUtil } from '../util/LogoutUtil';
+
 import { getDivisor, extractAmount, standardFormatAmount } from '../util/AmountUtil';
 
 import BalanceNumber from '../elements/BalanceNumber';
@@ -27,11 +29,17 @@ import BoostResultModal from '../elements/boost/BoostResultModal';
 // import BoostOfferModal from '../elements/boost/BoostOfferModal';
 
 import { updateAuthToken } from '../modules/auth/auth.actions';
+import { getAuthToken } from '../modules/auth/auth.reducer';
 
 import { boostService } from '../modules/boost/boost.service';
+
 import { updateServerBalance, updateShownBalance } from '../modules/balance/balance.actions';
+
 import { updateBoostCount, updateBoostViewed, updateMessagesAvailable, updateMessageSequence, updateMessageViewed } from '../modules/boost/boost.actions';
 import { getViewedBoosts, hasViewedFallback, getNextMessage, getAvailableMessages, getViewedMessages } from '../modules/boost/boost.reducer';
+
+import { updateProfileFields, updateOnboardSteps, updateAccountId, updateAllFields } from '../modules/profile/profile.actions';
+import { getOnboardStepsRemaining, getProfileData, getAccountId } from '../modules/profile/profile.reducer'; 
 
 import BoostGameModal from '../elements/boost/BoostGameModal';
 import GameResultModal from '../elements/boost/GameResultModal';
@@ -45,9 +53,18 @@ const mapDispatchToProps = {
   updateMessageSequence,
   updateMessageViewed,
   updateAuthToken,
+  updateProfileFields,
+  updateOnboardSteps,
+  updateAccountId,
+  updateWholeProfile: updateAllFields,
+  clearState: () => ({ type: 'USER_LOGOUT' }), 
 };
 
 const mapStateToProps = state => ({
+  authToken: getAuthToken(state),
+  profile: getProfileData(state),
+  accountId: getAccountId(state),
+  onboardStepsRemaining: getOnboardStepsRemaining(state),
   viewedBoosts: getViewedBoosts(state),
   hasShownFallback: hasViewedFallback(state),
   nextMessage: getNextMessage(state),
@@ -107,34 +124,31 @@ class Home extends React.Component {
     }
   }
 
-  /*
-    // eslint-disable-next-line react/sort-comp
-    async storeAuthToken() {
-      if (!this.props.token) {
-        const storedInfo = await AsyncStorage.getItem('userInfo');
-        const userInfo = JSON.parse(storedInfo);
-        this.props.updateAuthToken(userInfo.token);
-      }
+  // can remove this once all converted, somewhat ugly (for robustness) thing to populate the store
+  // eslint-disable-next-line react/sort-comp
+  async hydrateStateIfNotPrior(storedInfo) {
+    
+    if (!this.props.authToken && storedInfo && storedInfo.token) {
+      this.props.updateAuthToken(storedInfo.token);
     }
 
-    async updateBalance () {
-      await this.storeAuthToken();
-
-      const result = await fetch(`${Endpoints.CORE}balance`, {
-        headers: {
-          Authorization: `Bearer ${this.props.token}`,
-        },
-        method: 'GET',
-      });
-
-      if (result.ok) {
-        const resultJson = await result.json();
-        this.props.updateServerBalance(resultJson);
-      } else {
-        throw result;
-      }
+    if (!this.props.profile || Object.keys(this.props.profile).length === 0 || !Array.isArray(this.props.onboardStepsRemaining)) {
+      this.props.updateWholeProfile(storedInfo);
     }
-  */
+
+    // todo: again, some legacy handling, remove in future
+    const hasAccountIdAsString = typeof this.props.accountId === 'string' && this.props.accountId.length > 0;
+
+    if (!hasAccountIdAsString && Array.isArray(this.props.accountId) && this.props.accountId.length > 0) {
+      const internalAccountId = this.props.accountId[0];
+      this.props.updateAccountId(internalAccountId);
+    } 
+  }
+
+  logout() {
+    this.props.clearState();
+    LogoutUtil.logout(this.props.navigation);
+  }
 
   async showInitialData() {
     let info = this.props.navigation.getParam('userInfo');
@@ -142,31 +156,30 @@ class Home extends React.Component {
     if (!info) {
       info = await AsyncStorage.getItem('userInfo');
       if (!info) {
-        NavigationUtil.logout(this.props.navigation);
+        this.logout();
       } else {
         info = JSON.parse(info);
       }
     }
+
+    if (['FAILED_VERIFICATION', 'REVIEW_FAILED'].includes(info.profile.kycStatus)) {
+      NavigationUtil.navigateWithHomeBackstack(this.props.navigation, 'FailedVerification');
+    }
+
+    await this.hydrateStateIfNotPrior(info);
+
+    this.setState({ firstName: this.props.profile.personalName });
     
-    // weirdness in react queue means in fact this await is very important (otherwise get caught in loop on no token)
-    // at some point could probably do with a refactor though
-    await this.setState({
-      token: info.token,
-      firstName: info.profile.personalName,
-    });
-
-    this.props.updateAuthToken(info.token);
-
     // check params if we have params.showModal we show modal with game
     if (params && params.showGameUnlockedModal) {
       this.showGameUnlocked(params.boostDetails);
       this.props.navigation.setParams({ showGameUnlockeModal: false }); // so we don't have an infinite loop
     }
 
-    const { screen, params: navParams } = NavigationUtil.directBasedOnProfile(info);
-    if (screen && screen !== 'Home') {
-      navParams.fromHome = true;
-      NavigationUtil.navigateWithoutBackstack(this.props.navigation, screen, navParams);
+    info.onboardStepsRemaining = this.props.onboardStepsRemaining;
+    
+    if (Array.isArray(this.props.onboardStepsRemaining) && this.props.onboardStepsRemaining.length > 0) {
+      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'OnboardPending');
       return;
     }
 
@@ -187,7 +200,7 @@ class Home extends React.Component {
     Alert.alert(
       'Session expired',
       'For your security, Jupiter will ask you to login again from time to time. Please click below to login again',
-      [{ text: 'OK', onPress: () => { NavigationUtil.logout(this.props.navigation); } }],
+      [{ text: 'OK', onPress: () => this.logout() }],
       { cancelable: false }
     );
   }
@@ -221,7 +234,7 @@ class Home extends React.Component {
     try {
       const result = await fetch(`${Endpoints.CORE}balance`, {
         headers: {
-          Authorization: `Bearer ${this.state.token}`,
+          Authorization: `Bearer ${this.props.authToken}`,
         },
         method: 'GET',
       });
@@ -254,7 +267,7 @@ class Home extends React.Component {
   async storeUpdatedBalance(response) {
     let info = await AsyncStorage.getItem('userInfo');
     if (!info) {
-      NavigationUtil.logout(this.props.navigation);
+      this.logout();
     } else {
       info = JSON.parse(info);
     }
@@ -271,7 +284,7 @@ class Home extends React.Component {
     const info = await AsyncStorage.getItem('userInfo');
     if (!info) {
       // means something went wrong while on other screens or some backdoor attempt
-      NavigationUtil.logout(this.props.navigation);
+      this.logout();
     }
 
     if (this.state.lastFetchTimeMillis === 0) {
@@ -335,7 +348,7 @@ class Home extends React.Component {
       }
 
       const token = await Notifications.getExpoPushTokenAsync();
-      NotificationsUtil.uploadTokenToServer(token, this.state.token);
+      NotificationsUtil.uploadTokenToServer(token, this.props.authToken);
       return true;
     } catch (err) {
       err.message = `Push notification registration error: ${err.message}`;
@@ -350,7 +363,7 @@ class Home extends React.Component {
     try {
       const result = await fetch(`${Endpoints.CORE}boost/display`, {
         headers: {
-          Authorization: `Bearer ${this.state.token}`,
+          Authorization: `Bearer ${this.props.authToken}`,
         },
         method: 'GET',
       });
@@ -410,7 +423,7 @@ class Home extends React.Component {
     if (nextMessage) {
       this.showMessage(nextMessage);
     } else {
-      const messageResult = await MessagingUtil.fetchMessagesAndGetTop(this.state.token);;
+      const messageResult = await MessagingUtil.fetchMessagesAndGetTop(this.props.authToken);;
       if (!messageResult) { // Sentry says this happens sometimes (must be state mgmt somewhere)
         return;
       }
@@ -452,7 +465,7 @@ class Home extends React.Component {
     this.setState({
       hasMessage: false,
     });
-    MessagingUtil.tellServerMessageAction('DISMISSED', this.state.messageDetails.messageId, this.state.token);
+    MessagingUtil.tellServerMessageAction('DISMISSED', this.state.messageDetails.messageId, this.props.authToken);
   }
 
   onPressMsgAction = action => {
@@ -460,7 +473,7 @@ class Home extends React.Component {
     const { messageDetails } = this.state;
     
     if (messageDetails) {
-      MessagingUtil.tellServerMessageAction('ACTED', messageDetails.messageId, this.state.token);
+      MessagingUtil.tellServerMessageAction('ACTED', messageDetails.messageId, this.props.authToken);
     }
 
     const actionContext = messageDetails ? messageDetails.actionContext : null;
@@ -516,6 +529,7 @@ class Home extends React.Component {
             `${isWithdrawal ? '' : '+ '}${this.state.numberPendingTx} pending ${descriptor}s`;
     const icon = isWithdrawal ? require('../../assets/withdrawal_home.png') : require('../../assets/add_home.png');
     const amount = `R${Math.abs(this.state.totalPendingAmount).toFixed(0)}`;
+
     return (
       <TouchableOpacity style={styles.pendingItemsHolder} onPress={this.onPressPending}>
         <View style={styles.endOfMonthBalanceWrapper}>
@@ -794,7 +808,7 @@ class Home extends React.Component {
                 this.state.hasMessage ? styles.headerWithMessage : styles.header
               }
             >
-              {this.state.firstName.length > 0 ? (
+              {this.state.firstName && this.state.firstName.length > 0 ? (
                 <Text
                   style={
                     this.state.hasMessage

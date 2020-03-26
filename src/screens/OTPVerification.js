@@ -1,4 +1,6 @@
 import React from 'react';
+import { connect } from 'react-redux';
+
 import {
   StyleSheet,
   View,
@@ -12,7 +14,14 @@ import { Input, Button, Overlay } from 'react-native-elements';
 import { Colors, Endpoints, DeviceInfo } from '../util/Values';
 import { NavigationUtil } from '../util/NavigationUtil';
 
-export default class OTPVerification extends React.Component {
+import { updateAuthToken } from '../modules/auth/auth.actions';
+import { updateAllFields } from '../modules/profile/profile.actions';
+
+const mapDispatchToProps = {
+  updateAuthToken, updateProfile: updateAllFields,
+};
+
+class OTPVerification extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -222,8 +231,13 @@ export default class OTPVerification extends React.Component {
           AsyncStorage.setItem('userInfo', JSON.stringify(resultJson)),
           AsyncStorage.setItem('hasOnboarded', 'true'),
         ]);
+
+        this.props.updateAuthToken(resultJson.token);
+        this.props.updateProfile(resultJson);
+
         const { screen, params } = NavigationUtil.directBasedOnProfile(resultJson, false);
         NavigationUtil.navigateWithoutBackstack(this.props.navigation, screen, params);
+
       } else {
         const resultJson = await result.json();
         if (Array.isArray(resultJson)) {
@@ -494,3 +508,5 @@ const styles = StyleSheet.create({
     marginTop: 25,
   },
 });
+
+export default connect(null, mapDispatchToProps)(OTPVerification);

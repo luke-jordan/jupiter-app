@@ -1,7 +1,8 @@
 import React from 'react';
+import { connect } from 'react-redux';
+
 import {
   ActivityIndicator,
-  AsyncStorage,
   Picker,
   ScrollView,
   StyleSheet,
@@ -12,10 +13,17 @@ import {
 import { Button, Icon, Input, Overlay } from 'react-native-elements';
 
 import { LoggingUtil } from '../util/LoggingUtil';
-import { NavigationUtil } from '../util/NavigationUtil';
 import { Endpoints, Colors } from '../util/Values';
 
-export default class Withdraw extends React.Component {
+import { getAuthToken } from '../modules/auth/auth.reducer';
+import { getAccountId } from '../modules/profile/profile.reducer';
+
+const mapStateToProps = state => ({
+  authToken: getAuthToken(state),
+  accountId: getAccountId(state),
+})
+
+class WithdrawStep1 extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -28,17 +36,6 @@ export default class Withdraw extends React.Component {
   }
 
   async componentDidMount() {
-    let info = await AsyncStorage.getItem('userInfo');
-    if (!info) {
-      NavigationUtil.logout(this.props.navigation);
-    } else {
-      info = JSON.parse(info);
-      this.setState({
-        token: info.token,
-        accountId: info.balance.accountId[0],
-      });
-    }
-
     LoggingUtil.logEvent('USER_INITIATED_WITHDRAWAL');
   }
 
@@ -82,11 +79,11 @@ export default class Withdraw extends React.Component {
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
-          Authorization: `Bearer ${this.state.token}`,
+          Authorization: `Bearer ${this.props.authToken}`,
         },
         method: 'POST',
         body: JSON.stringify({
-          accountId: this.state.accountId,
+          accountId: this.props.accountId,
           bankDetails: {
             bankName: this.state.bank,
             accountNumber: this.state.accountNumber,
@@ -419,3 +416,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+
+export default connect(mapStateToProps)(WithdrawStep1);

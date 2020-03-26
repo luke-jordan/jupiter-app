@@ -1,6 +1,8 @@
-/* eslint-disable fp/no-mutating-methods */
-import moment from 'moment';
 import React from 'react';
+import { connect } from 'react-redux';
+
+import moment from 'moment';
+
 import {
   StyleSheet,
   View,
@@ -16,16 +18,20 @@ import { Icon } from 'react-native-elements';
 import * as Animatable from 'react-native-animatable';
 
 import { LoggingUtil } from '../util/LoggingUtil';
-import { NavigationUtil } from '../util/NavigationUtil';
 import { getDivisor, getCurrencySymbol } from '../util/AmountUtil';
 import { Endpoints, Colors } from '../util/Values';
 import PendingTransactionModal from '../elements/PendingTransactionModal';
 
-const HIGHLIGHTED_TYPES = ['USER_SAVING_EVENT', 'BOOST_REDEMPTION', 'CAPITALIZATION'];
+import { getAuthToken } from '../modules/auth/auth.reducer';
 
+const HIGHLIGHTED_TYPES = ['USER_SAVING_EVENT', 'BOOST_REDEMPTION', 'CAPITALIZATION'];
 const pendingIcon = require('../../assets/pending-clock.png');
 
-export default class History extends React.Component {
+const mapStateToProps = state => ({
+  authToken: getAuthToken(state),
+});
+
+class History extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -36,14 +42,8 @@ export default class History extends React.Component {
 
   async componentDidMount() {
     LoggingUtil.logEvent('USER_ENTERED_SCREEN', { screen_name: 'History' });
-    let info = await AsyncStorage.getItem('userInfo');
-    if (!info) {
-      NavigationUtil.logout(this.props.navigation);
-    } else {
-      info = JSON.parse(info);
-    }
-    const { token } = info;
-
+    
+    // this is the only big list in the app, so keeping it separate form state, otherwise will hit hydration & loading time
     let history = await AsyncStorage.getItem('userHistory');
     if (history) {
       history = JSON.parse(history);
@@ -56,7 +56,7 @@ export default class History extends React.Component {
       });
     }
 
-    this.setState({ authToken: token }, () => this.fetchHistory());
+    this.fetchHistory();
   }
 
   onPressBack = () => {
@@ -147,7 +147,7 @@ export default class History extends React.Component {
 
       const result = await fetch(`${Endpoints.CORE}history/list`, {
         headers: {
-          Authorization: `Bearer ${this.state.authToken}`,
+          Authorization: `Bearer ${this.props.authToken}`,
         },
         method: 'GET',
       });
@@ -189,7 +189,7 @@ export default class History extends React.Component {
   onNavigateToEftForPending = (transactionDetails) => {
     this.setState({ showPendingModal: false });
     this.props.navigation.navigate('PendingManualTransfer', {
-      token: this.state.authToken,
+      token: this.props.authToken,
       humanReference: transactionDetails.humanReference,
       bankDetails: transactionDetails.bankDetails,
       transactionId: transactionDetails.transactionId,
@@ -203,7 +203,7 @@ export default class History extends React.Component {
     const amount = transactionDetails.amount / getDivisor(transactionDetails.unit);
     const paymentLinkTag = transactionDetails.tags.find((tag) => tag.startsWith('PAYMENT_URL::'));
     this.props.navigation.navigate('PendingInstantTransfer', {
-      token: this.state.authToken,
+      token: this.props.authToken,
       transactionId: transactionDetails.transactionId,
       isOnboarding: false,
       amountAdded: amount,
@@ -442,7 +442,7 @@ export default class History extends React.Component {
             navigateToEft={this.onNavigateToEftForPending}
             navigateToInstant={this.onNavigateToInstantForPending}
             navigateToSupport={this.onNavigateToSupportForPending}
-            authToken={this.state.authToken}
+            authToken={this.props.authToken}
           />
         )}
       </View>
@@ -596,3 +596,5 @@ const styles = StyleSheet.create({
     fontFamily: 'poppins-regular',
   },
 });
+
+export default connect(mapStateToProps)(History);

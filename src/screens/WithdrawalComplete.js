@@ -70,9 +70,6 @@ export default class WithdrawalComplete extends React.Component {
       fetchingProfile: true,
     });
     try {
-      if (!token) {
-        NavigationUtil.logout(this.props.navigation);
-      }
       const result = await fetch(`${Endpoints.AUTH}profile/fetch`, {
         headers: {
           Authorization: `Bearer ${token}`,

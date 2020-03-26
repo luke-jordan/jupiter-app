@@ -15,7 +15,7 @@ import {
 import Toast from 'react-native-easy-toast';
 import { Button } from 'react-native-elements';
 
-import { NavigationUtil } from '../util/NavigationUtil';
+import { LogoutUtil } from '../util/LogoutUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Endpoints, Colors } from '../util/Values';
 import { standardFormatAmount, formatStringTemplate } from '../util/AmountUtil';
@@ -52,7 +52,7 @@ class Friends extends React.Component {
     LoggingUtil.logEvent('USER_ENTERED_FRIENDS_SCREEN');
     let info = await AsyncStorage.getItem('userInfo');
     if (!info) {
-      NavigationUtil.logout(this.props.navigation);
+      LogoutUtil.logout(this.props.navigation);
     } else {
       info = JSON.parse(info);
       this.setUpReferralVariables(info.profile);

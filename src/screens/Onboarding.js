@@ -16,6 +16,8 @@ import { LoggingUtil } from '../util/LoggingUtil';
 const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
+const FINAL_TAB_INDEX = 4;
+
 export default class Onboarding extends React.Component {
   constructor(props) {
     super(props);
@@ -30,12 +32,12 @@ export default class Onboarding extends React.Component {
 
   onPressNext = async () => {
     if (this.state.loading) return;
-    if (this.swiperRef && this.state.currentTab < 3) {
+    if (this.swiperRef && this.state.currentTab < FINAL_TAB_INDEX) {
       LoggingUtil.logEvent('USER_VISITED_SCREEN', {
         intro_screen_name: this.getTabTitle(this.state.currentTab + 1),
       });
       this.swiperRef.scrollBy(1, true);
-    } else if (this.state.currentTab === 3) {
+    } else if (this.state.currentTab === FINAL_TAB_INDEX) {
       this.props.navigation.navigate('LimitedUsers');
     }
   };
@@ -54,12 +56,14 @@ export default class Onboarding extends React.Component {
   getTabTitle = index => {
     switch (index) {
       case 0:
-        return 'A new way to grow';
+        return 'Grow your money faster';
       case 1:
-        return 'Add money, earn interest';
+        return 'Build your rainy day fund';
       case 2:
-        return 'Your cash stays your cash';
+        return 'Add money, earn interest';
       case 3:
+        return 'Watch your money grow, hour by hour';
+      case 4:
         return 'You save, you win';
     }
   };
@@ -73,6 +77,8 @@ export default class Onboarding extends React.Component {
       case 2:
         return require('../../assets/group_8.png');
       case 3:
+        return require('../../assets/stay-in-touch.png');
+      case 4:
         return require('../../assets/group_66.png');
     }
   };
@@ -80,12 +86,14 @@ export default class Onboarding extends React.Component {
   getTabText = index => {
     switch (index) {
       case 0:
-        return 'Welcome to Jupiter, the savings app with a difference. We’re here to help you make the most of your money, by letting you build healthy saving habits and be rewarded along the way.';
+        return 'Welcome to Jupiter, the savings app with a difference. We’re here to help you make the most of your money.';
       case 1:
-        return 'Yep, it’s that easy. Once you add money in your Jupiter account, you start earning interest immediately. From your very first R1, straight up earnings.';
+        return 'You can instruct us to withdraw any time. Be prepared for that little unplanned expense, or, the next pandemic.';
       case 2:
-        return 'You always have access to your money, so you can instruct us to withdraw funds at any time. Perfect for that little (or huge) unplanned expense.';
+        return 'Once you add money in your Jupiter account, you start earning interest immediately. From your first R1, straight up earnings.';
       case 3:
+        return 'Jupiter’s MoneyWheel shows you how much your money is growing by the hour - even while you’re sleeping.';
+      case 4:
         return 'Get rewarded for saving, not spending. Jupiter exists to help you build good saving habits. So, every time you save, you get rewarded for it—just like that.';
     }
   };
@@ -128,7 +136,7 @@ export default class Onboarding extends React.Component {
           dotStyle={styles.dotStyle}
           activeDotStyle={styles.activeDotStyle}
         >
-          {['Tab1', 'Tab2', 'Tab3', 'Tab4'].map((item, index) =>
+          {['Tab1', 'Tab2', 'Tab3', 'Tab4', 'Tab5'].map((item, index) =>
             this.renderTab(item, index)
           )}
         </Swiper>
@@ -136,7 +144,7 @@ export default class Onboarding extends React.Component {
           <Button
             testID="onboarding-button"
             accessibilityLabel="onboarding-button"
-            title={this.state.currentTab === 3 ? 'START SAVING' : 'NEXT'}
+            title={this.state.currentTab === FINAL_TAB_INDEX ? 'START SAVING' : 'NEXT'}
             loading={this.state.loading}
             titleStyle={styles.buttonTitleStyle}
             buttonStyle={styles.buttonStyle}
@@ -185,6 +193,8 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   tabTitle: {
+    width: '100%',
+    textAlign: 'left',
     fontFamily: 'poppins-semibold',
     fontSize: 8 * FONT_UNIT,
     lineHeight: 10 * FONT_UNIT,
