@@ -76,18 +76,7 @@ class Profile extends React.Component {
   //   this.keyboardDidHideListener.remove();
   // }
 
-  // eslint-disable-next-line react/sort-comp
-  async manualRehydrate() {
-    const storedInfo = await AsyncStorage.getItem('userInfo');
-    const info = JSON.parse(storedInfo);
-    this.props.updateProfileFields({ personalName: info.profile.personalName, familyName: info.profile.familyName });
-  }
-
   setStateForOnboarding = async () => {
-    await this.manualRehydrate();
-    // if (!this.props.profile || this.props.profile === {}) {
-    //   await this.manualRehydrate();
-    // }
     const { personalName, familyName, nationalId } = this.props.profile;
     const initials = personalName && familyName ? personalName[0] + familyName[0] : 'A';
     this.setState({
@@ -95,7 +84,6 @@ class Profile extends React.Component {
       lastName: familyName,
       idNumber: nationalId,
       initials,
-      token: this.props.authToken,
     });
   }
 
@@ -108,7 +96,6 @@ class Profile extends React.Component {
       tempEmail: info.profile.email,
       initials: info.profile.personalName[0] + info.profile.familyName[0],
       systemWideUserId: info.systemWideUserId,
-      token: info.token,
       userLoggedIn: true,
     });
   }
@@ -120,7 +107,7 @@ class Profile extends React.Component {
   onPressChangePassword = () => {
     this.props.navigation.navigate('ChangePassword', {
       systemWideUserId: this.state.systemWideUserId,
-      token: this.state.token,
+      token: this.props.authToken,
     });
   };
 
@@ -152,7 +139,7 @@ class Profile extends React.Component {
   fetchProfileForOnboardingUser = async () => {
     const result = await fetch(`${Endpoints.AUTH}profile/fetch`, {
       headers: {
-        Authorization: `Bearer ${this.state.token}`,
+        Authorization: `Bearer ${this.props.authToken}`,
       },
       method: 'GET',
     });
@@ -200,7 +187,7 @@ class Profile extends React.Component {
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
-          Authorization: `Bearer ${this.state.token}`,
+          Authorization: `Bearer ${this.props.authToken}`,
         },
         method: 'POST',
         body: JSON.stringify(payload),

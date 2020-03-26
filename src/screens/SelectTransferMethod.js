@@ -4,7 +4,6 @@ import { connect } from 'react-redux';
 import { View, ScrollView, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Icon } from 'react-native-elements';
 
-import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Colors, Endpoints } from '../util/Values';
 

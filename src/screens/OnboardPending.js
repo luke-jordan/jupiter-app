@@ -115,6 +115,7 @@ class OnboardPending extends React.Component {
       </Text>
       <Button 
         title="EDIT MY DETAILS"
+        onPress={this.onPressEditDetails}
         titleStyle={styles.nextStepButtonText}
         buttonStyle={styles.nextStepButton}
         containerStyle={styles.buttonContainer}

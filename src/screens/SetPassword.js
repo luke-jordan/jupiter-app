@@ -12,7 +12,7 @@ import {
   View,
   AsyncStorage,
 } from 'react-native';
-import { Button, Icon, Input, Overlay } from 'react-native-elements';
+import { Button, Input, Overlay } from 'react-native-elements';
 
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
@@ -245,7 +245,6 @@ class SetPassword extends React.Component {
         }
       } else {
         const resultJson = await result.json();
-        console.log('Also result JSON here in error ? : ', resultJson);
         LoggingUtil.logEvent('USER_PROFILE_PASSWORD_FAILED', {
           reason: resultJson.errors.toString(),
         });

@@ -21,8 +21,9 @@ export const LogoutUtil = {
     }
   },
 
-  async logout(navigation) {
+  async logout(navigation, logoutEvent = 'USER_LOGGED_OUT') {
     await this.cleanUpPushToken();
+    LoggingUtil.logEvent(logoutEvent);
     await Promise.all([
       AsyncStorage.removeItem('userInfo'),
       AsyncStorage.removeItem('lastShownBalance'),

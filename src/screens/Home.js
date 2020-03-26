@@ -57,6 +57,7 @@ const mapDispatchToProps = {
   updateOnboardSteps,
   updateAccountId,
   updateWholeProfile: updateAllFields,
+  clearState: () => ({ type: 'USER_LOGOUT' }), 
 };
 
 const mapStateToProps = state => ({
@@ -145,7 +146,7 @@ class Home extends React.Component {
   }
 
   logout() {
-    this.props.dispatch(LogoutUtil.logoutAction);
+    this.props.clearState();
     LogoutUtil.logout(this.props.navigation);
   }
 

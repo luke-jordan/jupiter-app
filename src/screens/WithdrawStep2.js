@@ -1,11 +1,10 @@
 import React from 'react';
 import { connect } from 'react-redux';
 
-import { ActivityIndicator, AsyncStorage, StyleSheet, Image, Text, TouchableOpacity, View, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import { ActivityIndicator, StyleSheet, Image, Text, TouchableOpacity, View, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { Button, Icon, Input, Overlay } from 'react-native-elements';
 import moment from 'moment';
 
-import { NavigationUtil } from '../util/NavigationUtil';
 import { Endpoints, Colors } from '../util/Values';
 import { getDivisor, getFormattedValue } from '../util/AmountUtil';
 

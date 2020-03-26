@@ -185,7 +185,7 @@ class AddCash extends React.Component {
             color={Colors.GRAY}
           />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Make a save</Text>
+        <Text style={styles.headerTitle}>Add Savings</Text>
       </View>
     );
   }
@@ -275,7 +275,7 @@ class AddCash extends React.Component {
         <Button
           testID="add-cash-next-btn"
           accessibilityLabel="add-cash-next-btn"
-          title="MAKE MY SAVE"
+          title="ADD SAVINGS"
           loading={this.state.loading}
           titleStyle={styles.buttonTitleStyle}
           buttonStyle={styles.buttonStyle}

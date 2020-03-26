@@ -2,7 +2,6 @@ import React from 'react';
 import { connect } from 'react-redux';
 
 import {
-  Dimensions,
   Image,
   StyleSheet,
   Text,
@@ -24,9 +23,6 @@ import { getOnboardStepsRemaining } from '../modules/profile/profile.reducer';
 import { removeOnboardStep, updateAllFields } from '../modules/profile/profile.actions';
 
 import OnboardBreadCrumb from '../elements/OnboardBreadCrumb';
-
-const { width } = Dimensions.get('window');
-const FONT_UNIT = 0.01 * width;
 
 const mapStateToProps = state => ({
   authToken: getAuthToken(state),
@@ -54,7 +50,6 @@ class OnboardRegulation extends React.PureComponent {
   async componentDidMount() {
     LoggingUtil.logEvent('USER_ENTERED_REGULATORY_ONBOARD');
     const { params } = this.props.navigation.state;
-    console.log('Regulatory, params: ', params);
     if (params) {
       this.setState({
         isOnboarding: params.isOnboarding,
@@ -156,11 +151,8 @@ class OnboardRegulation extends React.PureComponent {
             style={styles.headerImage}
             source={require('../../assets/regulatory.png')}
           />
-          <Text style={styles.headerText}>
-            Hi there,
-          </Text>
           <Text style={styles.subHeaderText}>
-            You are agreeing to join the Jupiter Stokvel, a group of like-minded people, focused on building our wealth.
+            By continuing, you are agreeing to join the Jupiter Stokvel, a group of like-minded people, focused on building our wealth.
           </Text>
           <View style={styles.mandateBlock}>
             <Text style={styles.mandateText}>
@@ -268,14 +260,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerImage: {
-    marginVertical: 25,
-  },
-  headerText: {
-    fontFamily: 'poppins-semibold',
-    fontSize: 7.2 * FONT_UNIT,
-    lineHeight: 10 * FONT_UNIT,
-    color: Colors.DARK_GRAY,
-    marginBottom: 10,
+    marginVertical: 20,
   },
   subHeaderText: {
     fontFamily: 'poppins-regular',

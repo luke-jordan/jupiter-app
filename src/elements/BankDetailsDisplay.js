@@ -18,7 +18,7 @@ const BankDetailsDisplay = ({
   const onPressShare = async () => {
     try {
       await Share.share({
-        message: `Jupiter Payment Details: Bank: ${bankDetails.bankName}; Beneficiary Name: ${bankDetails.beneficiaryName}; Account Type: Current/Cheque; Account Number: ${this.state.accountNumber}; Branch code: ${this.state.branchCode}`,
+        message: `Jupiter Payment Details: Bank: ${bankDetails.bankName}; Beneficiary Name: ${bankDetails.beneficiaryName}; Account Type: Current/Cheque; Account Number: ${bankDetails.accountNumber}; Branch code: ${bankDetails.routingNumber}`,
       });
     } catch (error) {
       console.log(error);
@@ -138,9 +138,6 @@ const BankDetailsDisplay = ({
 };
 
 const styles = StyleSheet.create({
-  boxContainer: {
-    maxWidth: '100%',
-  },
   boxTitle: {
     fontFamily: 'poppins-semibold',
     fontSize: 3.9 * FONT_UNIT,

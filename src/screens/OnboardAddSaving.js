@@ -45,7 +45,6 @@ class OnboardAddSaving extends React.Component {
   componentDidMount() {
     const { params } = this.props.navigation.state;
     if (params && params.startNewTransaction) {
-      console.log('CLEARING TX AS INSTRUCTED');
       this.props.clearCurrentTransaction(); // we do this even here so we can handle back presses and continues
     }
   }

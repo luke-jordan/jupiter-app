@@ -17,12 +17,18 @@ import { LoggingUtil } from '../util/LoggingUtil';
 import { ValidationUtil } from '../util/ValidationUtil';
 import { Colors, Endpoints } from '../util/Values';
 
+import { getProfileData } from '../modules/profile/profile.reducer';
 import { updateUserId, updateProfileFields } from '../modules/profile/profile.actions';
 import OnboardBreadCrumb from '../elements/OnboardBreadCrumb';
+
+const mapStateToProps = state => ({
+  stashedProfile: getProfileData(state),
+});
 
 const mapDispatchToProps = {
   updateUserId, 
   updateProfileFields,
+  clearState: () => ({ type: 'USER_LOGOUT' }), 
 }
 
 class Register extends React.Component {
@@ -30,10 +36,10 @@ class Register extends React.Component {
     super(props);
     this.state = {
       loading: false,
-      firstName: 'State',
-      lastName: 'Tester',
-      idNumber: '7700995104001',
-      userId: 'state@jupitersave.co',
+      firstName: '',
+      lastName: '',
+      idNumber: '',
+      userId: '',
       referralCode: '',
       errors: {
         firstName: false,
@@ -53,9 +59,12 @@ class Register extends React.Component {
   }
 
   async componentDidMount() {
-    const referralCode = this.props.navigation.getParam('referralCode');
+    const referralCode = this.props.navigation.getParam('referralCode') || this.props.stashedProfile.referralCode;
+    // just in case have some legacy stuff lying around from a prior user who did not log out but closed/opened, etc
+    this.props.clearState();
     if (referralCode && referralCode.length > 0) {
       this.setState({ referralCode });
+      this.props.updateProfileFields({ referralCode });
     }
   }
 
@@ -191,8 +200,7 @@ class Register extends React.Component {
           LoggingUtil.logEvent('USER_PROFILE_REGISTER_SUCCEEDED');
           
           this.props.updateUserId(resultJson.systemWideUserId);
-          console.log('UPDATING PROFILE FIELDS!');
-
+          
           this.props.updateProfileFields({
             clientId: resultJson.clientId,
             defaultFloatId: resultJson.defaultFloatId,
@@ -211,13 +219,14 @@ class Register extends React.Component {
         }
       } else {
         const resultJson = await result.json();
+        console.log('Result JSON: ', resultJson);
         LoggingUtil.logEvent('USER_PROFILE_REGISTER_FAILED', {
           reason: resultJson.errorField,
         });
         const errors = { ...this.state.errors };
         if (!resultJson.conflicts) {
           // eslint-disable-next-line no-throw-literal
-          throw null;
+          throw resultJson;
         }
         for (const conflict of resultJson.conflicts) {
           if (conflict.errorField.includes('NATIONAL_ID')) {
@@ -242,7 +251,11 @@ class Register extends React.Component {
         });
       }
     } catch (error) {
-      this.showError(error);
+      if (Reflect.has(error, 'messageToUser')) {
+        this.showError(error.messageToUser);
+      } else {
+        this.showError(error);
+      }
     }
   };
 
@@ -287,7 +300,7 @@ class Register extends React.Component {
       loading: false,
       errors,
       hasErrors: true,
-      generalErrorText: errorText
+      generalErrorText: typeof errorText === 'string' && errorText.length > 0
         ? errorText
         : this.state.defaultGeneralErrorText,
     });
@@ -349,7 +362,7 @@ class Register extends React.Component {
                 </Text>
               )}
               {this.state.errors && this.state.errors.firstName ? (
-                <Text style={styles.errorMessage}>
+                <Text style={styles.inputErrorMessage}>
                   Please enter a valid first name
                 </Text>
               ) : null}
@@ -372,7 +385,7 @@ class Register extends React.Component {
                 containerStyle={styles.containerStyle}
               />
               {this.state.errors && this.state.errors.lastName ? (
-                <Text style={styles.errorMessage}>
+                <Text style={styles.inputErrorMessage}>
                   Please enter a valid last name
                 </Text>
               ) : null}
@@ -395,7 +408,7 @@ class Register extends React.Component {
                 containerStyle={styles.containerStyle}
               />
               {this.state.errors && this.state.errors.idNumber ? (
-                <Text style={styles.errorMessage}>
+                <Text style={styles.inputErrorMessage}>
                   {this.state.errors.idNumber === true
                     ? 'Please enter a valid ID number'
                     : this.state.errors.idNumber}
@@ -422,19 +435,19 @@ class Register extends React.Component {
                 containerStyle={styles.containerStyle}
               />
               {this.state.errors && this.state.errors.phoneEmailValidation ? (
-                <Text style={styles.errorMessage}>
+                <Text style={styles.inputErrorMessage}>
                   Please enter a valid email address or cellphone number
                 </Text>
               ) : null}
               {this.state.errors && this.state.errors.email ? (
-                <Text style={styles.errorMessage}>
+                <Text style={styles.inputErrorMessage}>
                   {this.state.errors.email === true
                     ? 'Please enter a valid email address'
                     : this.state.errors.email}
                 </Text>
               ) : null}
               {this.state.errors && this.state.errors.phone ? (
-                <Text style={styles.errorMessage}>
+                <Text style={styles.inputErrorMessage}>
                   {this.state.errors.phone === true
                     ? 'Please enter a valid cellphone numebr'
                     : this.state.errors.phone}
@@ -459,7 +472,7 @@ class Register extends React.Component {
             </Text>
           </ScrollView>
           {this.state.errors && this.state.errors.general ? (
-            <Text style={styles.errorMessage}>
+            <Text style={styles.generalErrorMessage}>
               {this.state.generalErrorText}
             </Text>
           ) : null}
@@ -636,11 +649,19 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     width: '90%',
   },
-  errorMessage: {
+  inputErrorMessage: {
     fontFamily: 'poppins-regular',
     color: Colors.RED,
     fontSize: 13,
-    marginTop: -15, // this is valid because of the exact alignment of other elements - do not reuse in other components
+    marginTop: -15, // only for here
+    marginBottom: 10,
+    width: '90%',
+  },
+  generalErrorMessage: {
+    fontFamily: 'poppins-regular',
+    color: Colors.RED,
+    fontSize: 13,
+    marginTop: 10, // only for here
     marginBottom: 20,
     width: '90%',
   },
@@ -725,4 +746,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default connect(null, mapDispatchToProps)(Register);
+export default connect(mapStateToProps, mapDispatchToProps)(Register);
