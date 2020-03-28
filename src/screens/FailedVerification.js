@@ -4,6 +4,7 @@ import { StyleSheet, View, Text, Dimensions } from 'react-native';
 import { Button } from 'react-native-elements';
 
 import { LoggingUtil } from '../util/LoggingUtil';
+import { LogoutUtil } from '../util/LogoutUtil';
 import { Colors } from '../util/Values';
 
 const { width } = Dimensions.get('window');
@@ -18,6 +19,10 @@ export default class FailedVerification extends React.Component {
   async componentDidMount() {
     LoggingUtil.logEvent('USER_ENTERED_FAILED_VERIFICATION');
   }
+
+  onPressLogout = () => {
+    LogoutUtil.logout(this.props.navigation);
+  };
 
   onPressContactUs = () => {
     this.props.navigation.navigate('Support', { originScreen: 'FailedVerification' });
@@ -64,12 +69,16 @@ export default class FailedVerification extends React.Component {
           />
         </View>
         <View style={styles.bottomView}>
-          <Text style={styles.bottomText}>
-            Still having problems?{' '}
-            <Text style={styles.bottomLink} onPress={this.onPressContactUs}>
-              Contact us
+          <Text style={styles.bottomText}>Still having problems?</Text>
+          <View style={styles.footerInner}>
+            <Text style={styles.footerLink} onPress={this.onPressLogout}>
+              Logout
             </Text>
-          </Text>
+            <Text style={{ color: Colors.PURPLE }}>|</Text>
+            <Text style={styles.footerLink} onPress={this.onPressContactUs}>
+              Support
+            </Text>
+          </View>
         </View>
       </View>
     );
@@ -154,9 +163,14 @@ const styles = StyleSheet.create({
     fontFamily: 'poppins-regular',
     color: Colors.MEDIUM_GRAY,
   },
-  bottomLink: {
+  footerInner: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  footerLink: {
     fontFamily: 'poppins-regular',
     color: Colors.PURPLE,
     fontWeight: 'bold',
+    paddingHorizontal: 10,
   },
 });
