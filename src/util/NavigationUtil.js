@@ -33,7 +33,9 @@ export const NavigationUtil = {
 
     const { onboardStepsRemaining } = profileData;
 
-    if (Array.isArray(onboardStepsRemaining) && onboardStepsRemaining.length > 0) {
+    if (profileData.profile && ['FAILED_VERIFICATION', 'REVIEW_FAILED'].includes(profileData.profile.kycStatus)) {
+      return { screen: 'OnboardPending', params: { stepToTake: 'FAILED_VERIFICATION' }};
+    } else if (Array.isArray(onboardStepsRemaining) && onboardStepsRemaining.length > 0) {
       return { screen: 'OnboardPending' };
     } else {
       return { screen: 'Home', params: { userInfo: profileData } };

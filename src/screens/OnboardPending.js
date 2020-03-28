@@ -462,6 +462,8 @@ class OnboardPending extends React.Component {
 
     if (this.state.nextStep) {
       renderFunction = serviceMap[this.state.nextStep];
+    } if (this.props.profileData && this.props.profileData.kycStatus === 'FAILED_VERIFICATION') {
+      renderFunction = serviceMap.FAILED_VERIFICATION;
     } else {
       const { onboardStepsRemaining } = this.props;
       const earliestStep = STEPS_IN_ORDER.find((step) => onboardStepsRemaining.includes(step));

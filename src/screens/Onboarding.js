@@ -30,7 +30,7 @@ export default class Onboarding extends React.Component {
     LoggingUtil.logEvent('USER_ENTERED_INTRO');
   }
 
-  onPressNext = async () => {
+  onPressNext = () => {
     if (this.state.loading) return;
     if (this.swiperRef && this.state.currentTab < FINAL_TAB_INDEX) {
       LoggingUtil.logEvent('USER_VISITED_SCREEN', {
@@ -48,7 +48,7 @@ export default class Onboarding extends React.Component {
     });
   };
 
-  onPressSkip = async () => {
+  onPressSkip = () => {
     LoggingUtil.logEvent('USER_SKIPPED_INTRO');
     this.props.navigation.navigate('LimitedUsers');
   };

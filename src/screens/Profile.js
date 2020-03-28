@@ -22,8 +22,9 @@ import { LoggingUtil } from '../util/LoggingUtil';
 import { Endpoints, Colors } from '../util/Values';
 
 import { getAuthToken } from '../modules/auth/auth.reducer';
+
 import { getProfileData } from '../modules/profile/profile.reducer';
-import { updateProfileFields } from '../modules/profile/profile.actions';
+import { updateProfileFields, updateAllFields } from '../modules/profile/profile.actions';
 
 const { height, width } = Dimensions.get('window');
 const PROFILE_PIC_SIZE = 0.16 * width;
@@ -35,6 +36,7 @@ const mapStateToProps = state => ({
 
 const mapDispatchToProps = {
   updateProfileFields,
+  updateAllFields,
 };
 
 class Profile extends React.Component {
@@ -145,7 +147,10 @@ class Profile extends React.Component {
     });
     if (result.ok) {
       const resultJson = await result.json();
+      
       await AsyncStorage.setItem('userInfo', JSON.stringify(resultJson));
+      this.props.updateAllFields(resultJson);
+
       return resultJson;
     } else {
       throw result;
@@ -159,14 +164,17 @@ class Profile extends React.Component {
     try {
       const currentProfile = await this.fetchProfileForOnboardingUser();
       // console.log('Fetched profile: ', currentProfile);
-      const { screen, params } = NavigationUtil.directBasedOnProfile(currentProfile);
-      
-      if (screen !== 'FailedVerification') {
-        this.setState({ loading: false });
-        NavigationUtil.navigateWithoutBackstack(this.props.navigation, screen, params);
-      } else {
+
+      if (['FAILED_VERIFICATION', 'REVIEW_FAILED'].includes(currentProfile.profile.kycStatus)) {
         this.setState({ loading: false, hasRepeatingError: true });
+        return;
       }
+
+      
+      const { screen, params } = NavigationUtil.directBasedOnProfile(currentProfile);
+      this.setState({ loading: false });
+      NavigationUtil.navigateWithoutBackstack(this.props.navigation, screen, params);
+
     } catch (error) {
       console.log('Error checking again: ', JSON.stringify(error));
       this.setState({ loading: false, hasRepeatingError: true });

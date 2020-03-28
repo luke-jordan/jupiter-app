@@ -163,7 +163,8 @@ class Home extends React.Component {
     }
 
     if (['FAILED_VERIFICATION', 'REVIEW_FAILED'].includes(info.profile.kycStatus)) {
-      NavigationUtil.navigateWithHomeBackstack(this.props.navigation, 'FailedVerification');
+      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'OnboardPending', { stepToTake: 'FAILED_VERIFICATION' });
+      return;
     }
 
     await this.hydrateStateIfNotPrior(info);
@@ -192,7 +193,7 @@ class Home extends React.Component {
       this.props.updateServerBalance(info.balance);
     }
 
-    this.fetchCurrentBalanceFromServer();
+    this.fetchCurrentProfileFromServer();
     this.checkForTriggeredBoost();
   }
 
@@ -227,12 +228,12 @@ class Home extends React.Component {
     });
   };
 
-  fetchCurrentBalanceFromServer = async () => {
+  fetchCurrentProfileFromServer = async () => {
     if (this.state.loading) return;
     this.setState({ loading: true });
 
     try {
-      const result = await fetch(`${Endpoints.CORE}balance`, {
+      const result = await fetch(`${Endpoints.AUTH}profile/fetch`, {
         headers: {
           Authorization: `Bearer ${this.props.authToken}`,
         },
@@ -241,12 +242,22 @@ class Home extends React.Component {
 
       if (result.ok) {
         const resultJson = await result.json();
-        this.storeUpdatedBalance(resultJson);
-        this.props.updateServerBalance(resultJson);
+
+        this.props.updateWholeProfile(resultJson);
+        const { screen, params } = NavigationUtil.directBasedOnProfile(resultJson);
+        if (screen && screen !== 'Home') {
+          NavigationUtil.navigateWithoutBackstack(this.props.navigation, screen, params);
+          return;
+        }
+        
+        const { balance } = resultJson;
+        
+        this.storeUpdatedBalance(balance);
+        this.props.updateServerBalance(balance);
         this.props.updateBoostCount(
-          parseInt(resultJson.availableBoostCount || 0)
+          parseInt(balance.availableBoostCount || 0)
         );
-        this.handlePendingTransactions(resultJson);
+        this.handlePendingTransactions(balance);
         this.setState({
           lastFetchTimeMillis: moment().valueOf(),
           loading: false,
@@ -299,7 +310,7 @@ class Home extends React.Component {
     // console.log('Time since fetch: ', millisSinceLastFetch);
     if (millisSinceLastFetch > TIME_BETWEEN_FETCH) {
       // console.log('Enough time elapsed, check for new balance');
-      await Promise.all([this.fetchCurrentBalanceFromServer(), this.checkForTriggeredBoost(), this.fetchMessagesIfNeeded()]);
+      await Promise.all([this.fetchCurrentProfileFromServer(), this.checkForTriggeredBoost(), this.fetchMessagesIfNeeded()]);
     }
   }
 
@@ -380,6 +391,7 @@ class Home extends React.Component {
   }
 
   handleBoostCheckResult(boostArray) {
+    console.log('Boost array from check endpoint: ', boostArray);
     if (!Array.isArray(boostArray) || boostArray.length === 0) {
       return;
     }
@@ -674,7 +686,15 @@ class Home extends React.Component {
       authenticationToken: token,
     };
 
-    const { gameResult, amountWon, statusMet } = await boostService.sendTapGameResults(resultOptions);
+    const resultOfGame = await boostService.sendTapGameResults(resultOptions);
+    // seems to sometimes abort before completion on iPhones -- not showing the result is not great, but better than a crash
+    if (!resultOfGame) {
+      LoggingUtil.logError(Error('Result of game was null'));
+      this.setState({ showSubmittingModal: false });
+      return;
+    }
+    
+    const { gameResult, amountWon, statusMet } = resultOfGame;
     // console.log('Completed sending game results');
     
     const amountWonToPass = amountWon ? standardFormatAmount(amountWon.amount, amountWon.unit, amountWon.currency) : null;
