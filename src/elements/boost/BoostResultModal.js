@@ -9,10 +9,12 @@ import { BoostStatus } from '../../modules/boost/models/index';
 
 const DEFAULT_TITLES = {
     [BoostStatus.REDEEMED]: 'Congratulations!',
+    [BoostStatus.EXPIRED]: 'Missed a boost!',
 };
 
 const DEFAULT_BODY = {
     [BoostStatus.REDEEMED]: 'Congrats! By being awesome and making smart decisions to grow your savings, Jupiter has rewarded you with a {boostAwardedAmount} boost! It\'s already in your MoneyWheel - keep it up :-)',
+    [BoostStatus.EXPIRED]: 'That\'s a shame! You missed a boost that would have been worth {boostAwardedAmount}! Keep checking into the Jupiter app to not miss future rewards',
 };
 
 const hideAndNavigage = (screen, navigation, hideModal) => {
@@ -41,7 +43,7 @@ const BoostResultModal = ({
         body = DEFAULT_BODY[newStatus];
     }
 
-    if (newStatus === 'REDEEMED') {
+    if (newStatus === 'REDEEMED' || newStatus === 'EXPIRED') {
       const currency = getCurrencySymbol(boostDetails.boostCurrency);
       boostDetails.boostAwardedAmount = `${currency}${boostDetails.boostAmount}`
     }
@@ -60,7 +62,9 @@ const BoostResultModal = ({
             <View style={styles.header}>
               <Image
                 style={styles.image}
-                source={require('../../../assets/boost-success-smiley.png')}
+                source={newStatus === 'EXPIRED' 
+                  ? require('../../../assets/boost_failure.png') 
+                  : require('../../../assets/boost-success-smiley.png')}
                 resizeMode="contain"
               />
               <TouchableOpacity onPress={hideModal} style={styles.closeDialog}>
