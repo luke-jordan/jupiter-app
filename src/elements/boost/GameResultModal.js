@@ -5,18 +5,17 @@ import { Button } from 'react-native-elements';
 
 import { Colors } from '../../util/Values';
 
+import { getCurrencySymbol } from '../../util/AmountUtil';
+
 export default class GameResultModal extends React.PureComponent {
-  
-  renderGameEndDialog() {
-    
-    const { gameDetails } = this.props;
-    
-    if (!['REDEEMED', 'PENDING', 'FAILED'].includes(gameDetails.gameResult)) {
-      return null;
-    }
-    
+
+  renderImmediateResponse (gameDetails) {
+
     let resultIcon; let resultHeader; let resultBody = '';
-    switch(gameDetails.gameResult) {
+  
+    const { gameResult } = gameDetails;
+    
+    switch(gameResult) {
       case 'REDEEMED':
         resultIcon = require('../../../assets/boost-success-smiley.png');
         resultHeader = gameDetails.customTitle || 'Congratulations!';
@@ -27,7 +26,7 @@ export default class GameResultModal extends React.PureComponent {
         resultIcon = require('../../../assets/boost_thumbs_up.png');
         resultHeader = gameDetails.customTitle || 'Nice Work!';
         resultBody = `You tapped ${gameDetails.numberOfTaps} times in ${gameDetails.timeTaken} seconds!\n` +
-        'Winners of the challenge will be notified when time is up. Good luck!'
+          'Winners of the challenge will be notified when time is up. Good luck!'
         break;
       case 'FAILED':
         resultIcon = require('../../../assets/boost_failure.png');
@@ -38,8 +37,134 @@ export default class GameResultModal extends React.PureComponent {
         console.log('Error, should not happen');
     }
     
-    // console.log('RENDERING END GAME DIALOG, SHOW MODAL : ', this.props.showModal);
+    return (
+      <>
+        <View style={styles.header}>
+          <Image
+            style={styles.gameResultIcon}
+            source={resultIcon}
+            resizeMode="contain"
+          />
+          <TouchableOpacity onPress={this.props.onCloseGameDialog} style={styles.closeDialog}>
+            <Image source={require('../../../assets/close.png')} />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.resultTextContainer}>
+          <Text style={styles.textTitle}>{resultHeader}</Text>
+          <Text style={styles.gameResultBody}>
+            {resultBody}
+          </Text>
+        </View>
+        <Button
+          title="DONE"
+          titleStyle={styles.buttonTitleStyle}
+          buttonStyle={styles.buttonStyle}
+          containerStyle={styles.buttonContainerStyle}
+          onPress={this.props.onCloseGameDialog}
+          linearGradientProps={{
+            colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+            start: { x: 0, y: 0.5 },
+            end: { x: 1, y: 0.5 },
+          }}
+        />
+        <Text
+          style={styles.gamePlayLater}
+          onPress={this.props.onPressViewOtherBoosts}
+        >
+          View other boosts
+        </Text>
+      </>
+    )
+  }
+  
+  renderTournamentResult (gameDetails) {
+    console.log('Rendering tournament result');
+
+    const userWon = gameDetails.gameResult === 'REDEEMED';
+    const { numberTaps, ranking, topScore } = gameDetails.gameLog;
+
+    const title = userWon ? 'You won the boost challenge!' : 'The boost results are in!';
+
+    const boostAwardAmount = `${getCurrencySymbol(gameDetails.boostCurrency)}${gameDetails.boostAmount}`
+    const body = userWon ? `Congrats! ${boostAwardAmount} will be add to your Jupiter savings` : 'Thank you for taking part in this challenge';
+
+    return (
+      <>
+        <View style={styles.header}>
+          <Image
+            style={styles.gameResultIcon}
+            resizeMode="contain"
+            source={userWon ? require('../../../assets/winner-boost-challenge.png') : require('../../../assets/boost-tournament-result.png')}
+          />
+          <TouchableOpacity onPress={this.props.onCloseGameDialog} style={styles.closeDialog}>
+            <Image source={require('../../../assets/close.png')} />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.resultTextContainer}>
+          <Text style={styles.textTitle}>{title}</Text>
+          <Text style={styles.gameResultBody}>{body}</Text>
+        </View>
+        <View style={styles.rankContainer}>
+          <Text style={styles.rankTitle}>YOUR RANK</Text>
+          <Text style={styles.rankNumber}>{ranking}</Text>
+        </View>
+        {userWon ? (
+          <View style={styles.tournamentWonScoreHolder}>
+            <Text style={styles.tournamentScoreTitle}>Your Top Score</Text>
+            <Text style={styles.tournamentScoreNumber}>{numberTaps}</Text>
+          </View>
+        ) : (
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
+            <View style={styles.tournamentLossScoreHolder}>
+              <Text style={styles.tournamentScoreTitle}>Your Score</Text>
+              <Text style={styles.tournamentScoreNumber}>{numberTaps}</Text>
+            </View>
+            <View style={styles.tournamentLossScoreHolder}>
+              <Text style={styles.tournamentScoreTitle}>Top Score</Text>
+              <Text style={styles.tournamentScoreNumber}>{topScore}</Text>
+            </View>
+          </View>
+        )}
+        <Button
+          title="CLOSE"
+          titleStyle={styles.buttonTitleStyle}
+          buttonStyle={styles.buttonStyle}
+          containerStyle={styles.buttonContainerStyle}
+          onPress={this.props.onCloseGameDialog}
+          linearGradientProps={{
+            colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+            start: { x: 0, y: 0.5 },
+            end: { x: 1, y: 0.5 },
+          }}
+        />
+        <Text
+          style={styles.gamePlayLater}
+          onPress={this.props.onPressViewOtherBoosts}
+        >
+          View other boosts
+        </Text>
+      </>
+    )
+  }
+  
+        
+  render() {
+    if (!this.props.gameDetails) {
+      return null;
+    }
+          
+    const { gameDetails } = this.props;
+
+    if (gameDetails.awardBasis === 'TOURNAMENT' && !gameDetails.gameLog) {
+      console.log('Error, must be legacy : tournament with no outcome log');
+      return null;
+    }
+      
+    const { awardBasis } = gameDetails;
+    const isTournament = awardBasis === 'TOURNAMENT';
     
+    console.log('Is this a tournament ? : ', isTournament, ' and details: ', gameDetails);
+
     return (
       <View style={styles.backgroundWrapper}>
         <Modal
@@ -49,61 +174,13 @@ export default class GameResultModal extends React.PureComponent {
           onRequestClose={this.props.onCloseGameDialog}
         >
           <View style={styles.gameDialog}>
-            <View style={styles.header}>
-              <Image
-                style={styles.gameResultIcon}
-                source={resultIcon}
-                resizeMode="contain"
-              />
-              <TouchableOpacity onPress={this.props.onCloseGameDialog} style={styles.closeDialog}>
-                <Image source={require('../../../assets/close.png')} />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.resultTextContainer}>
-              <Text style={styles.textTitle}>{resultHeader}</Text>
-              <Text style={styles.gameResultBody}>
-                {resultBody}
-              </Text>
-            </View>
-            <Button
-              title="DONE"
-              titleStyle={styles.buttonTitleStyle}
-              buttonStyle={styles.buttonStyle}
-              containerStyle={styles.buttonContainerStyle}
-              onPress={this.props.onCloseGameDialog}
-              linearGradientProps={{
-                colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
-                start: { x: 0, y: 0.5 },
-                end: { x: 1, y: 0.5 },
-              }}
-            />
-            <Text
-              style={styles.gamePlayLater}
-              onPress={this.props.onPressViewOtherBoosts}
-            >
-              View other boosts
-            </Text>
+            {isTournament ? this.renderTournamentResult(gameDetails) : this.renderImmediateResponse(gameDetails)}
           </View>
         </Modal>
       </View>
       );
     }
-    
-    render() {
-      if (!this.props.gameDetails) {
-        return null;
-      }
-      
-      // console.log('RERENDERING GAME DIALOG, RESULT: ', this.props.gameDetails.gameResult);
-      
-      if (!this.props.gameDetails.gameResult) {
-        return this.renderGameStartDialog();
-      } else {
-        return this.renderGameEndDialog();
-      }
-      
-    }
-    
+        
   }
   
   const styles = StyleSheet.create({
@@ -126,16 +203,19 @@ export default class GameResultModal extends React.PureComponent {
       paddingHorizontal: 20,
       paddingBottom: 20,
       paddingTop: 10,
+      alignItems: 'center',
     },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: 16,
+      width: '100%',
     },
     textTitle: {
       color: Colors.DARK_GRAY,
       fontSize: 18,
+      lineHeight: 24,
       fontFamily: 'poppins-semibold',
       textAlign: 'center',
       paddingHorizontal: 25, // to leave space for cross
@@ -184,5 +264,30 @@ export default class GameResultModal extends React.PureComponent {
       alignItems: 'center',
       width: '100%',
     },
+    tournamentScoreTitle: {
+      fontSize: 14, 
+      fontFamily: 'poppins-regular', 
+      color: Colors.MEDIUM_GRAY,      
+    },
+    tournamentScoreNumber: {
+      fontSize: 25, 
+      fontWeight: '600', 
+      fontFamily: 'poppins-semibold', 
+      color: Colors.DARK_GRAY,      
+    },
+    tournamentLossScoreHolder: {
+      marginHorizontal: 7,
+      paddingVertical: 10, 
+      paddingHorizontal: 20, 
+      backgroundColor: 
+      Colors.BACKGROUND_GRAY, 
+      borderRadius: 10, 
+      justifyContent: 'center', 
+      alignItems: 'center',
+    },
+    tournamentWonScoreHolder: { width: '75%', paddingVertical: 10, backgroundColor: Colors.BACKGROUND_GRAY, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+    rankContainer: { width: '100%', alignItems: 'center', marginTop: 10 },
+    rankTitle: { fontSize: 16, fontWeight: '600', fontFamily: 'poppins-semibold', color: Colors.DARK_GRAY },
+    rankNumber: { lineHeight: 70, fontSize: 50, fontFamily: 'poppins-regular', color: Colors.YELLOW },
   });
   

@@ -327,8 +327,8 @@ class OnboardPending extends React.Component {
       const resultJson = await result.json();
       const { result: checkResult } = resultJson;
 
-      this.setState({ checkingForStatus: true, loading: true });
-
+      this.setState({ checkingForStatus: false, loading: false });
+      
       if (['ADMIN_MARKED_PAID', 'PAYMENT_SUCCEEDED'].includes(checkResult)) {
         this.navigateToPaymentDone(resultJson);
       }

@@ -95,7 +95,7 @@ class Boosts extends React.Component {
     const nextStatus = this.getNextStatus(boostStatus, Object.keys(statusConditions));
     // console.log('BOOST NEXT STATUS: ', nextStatus);
     if (!nextStatus) {
-      return null;
+      return { nextStatus: null };
     }
 
     const conditions = statusConditions[nextStatus];
@@ -119,7 +119,10 @@ class Boosts extends React.Component {
     }
 
     const { nextStatus, thresholdEventType } = this.getNextStatusAndThresholdEvent(boostDetails.boostStatus, boostDetails.statusConditions);
-    
+    if (!nextStatus) {
+      return null;
+    }
+
     if (thresholdEventType === '') {
       return null;
     } else {
@@ -157,6 +160,9 @@ class Boosts extends React.Component {
   getAdditionalLabelRow(boostDetails) {
     if (boostDetails.boostStatus === 'REDEEMED') {
       return <Text style={styles.boostClaimed}>Boost Claimed: </Text>;
+    }
+    if (boostDetails.boostStatus === 'PENDING') {
+      return <Text style={styles.boostExpiring}>Waiting for results</Text>;
     }
     if (
       this.isBoostExpired({

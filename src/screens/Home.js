@@ -307,9 +307,7 @@ class Home extends React.Component {
     this.props.updateServerBalance(balance);
 
     const millisSinceLastFetch = moment().valueOf() - this.state.lastFetchTimeMillis;
-    // console.log('Time since fetch: ', millisSinceLastFetch);
     if (millisSinceLastFetch > TIME_BETWEEN_FETCH) {
-      // console.log('Enough time elapsed, check for new balance');
       await Promise.all([this.fetchCurrentProfileFromServer(), this.checkForTriggeredBoost(), this.fetchMessagesIfNeeded()]);
     }
   }
@@ -381,34 +379,35 @@ class Home extends React.Component {
 
       if (result.ok) {
         const resultJson = await result.json();
-        this.handleBoostCheckResult(resultJson);    
+        const transformedBoosts = resultJson.map((boost) => boostService.convertBoostAndLogsToGameDetails(boost));
+        this.handleBoostCheckResult(transformedBoosts);    
       } else {
         throw result;
       }
     } catch (error) {
       console.log('Error fetching changed boost!', error.message);
     }
+
   }
 
   handleBoostCheckResult(boostArray) {
-    console.log('Boost array from check endpoint: ', boostArray);
+    // console.log('Boost array from check endpoint: ', boostArray);
     if (!Array.isArray(boostArray) || boostArray.length === 0) {
       return;
     }
 
     const { viewedBoosts } = this.props;
+    // const statusNotViewedFilter = (boost, status) => boost.boostStatus === status;
     const statusNotViewedFilter = (boost, status) => boost.boostStatus === status &&
       (Object.keys(viewedBoosts).indexOf(boost.boostId) < 0 || viewedBoosts[boost.boostId].indexOf(status) < 0); 
 
     const redeemedBoosts = boostArray.filter((boost) => statusNotViewedFilter(boost, 'REDEEMED'));
+    const expiredBoosts = boostArray.filter((boost) => statusNotViewedFilter(boost, 'EXPIRED'));
+
+    const redeemedOrExpiredBoosts = [...redeemedBoosts, ...expiredBoosts];
     
-    if (redeemedBoosts.length > 0) {
-      const boostToView = redeemedBoosts[0]; // i.e., first one
-      this.setState({ 
-        showBoostResultModal: true,
-        boostResultDetails: boostToView, 
-      },
-      () => this.props.updateBoostViewed({ boostId: boostToView.boostId, viewedStatus: 'REDEEMED' }));
+    if (redeemedOrExpiredBoosts.length > 0) {
+      this.showBoostObtainedOrMissedModal(redeemedOrExpiredBoosts[0]); // i.e., first one, relies on backend to have sorted it for us
       return;
     }
 
@@ -418,6 +417,23 @@ class Home extends React.Component {
       this.showGameUnlocked(unlockedGames[0]);
       this.props.updateBoostViewed({ boostId: unlockedGames[0].boostId, viewedStatus: 'UNLOCKED' });
     }
+  }
+
+  showBoostObtainedOrMissedModal(boostToView) {
+    const stateUpdate = {};
+    // console.log('SHOWING: ', boostToView);
+    
+    const isGameBoost = boostToView.boostType === 'GAME';
+    const hasGameLog = typeof boostToView.gameLog === 'object' && boostToView.gameLog !== null;
+    if (isGameBoost && hasGameLog) {
+      stateUpdate.showGameResultModal = true;
+      stateUpdate.gameResultParams = boostToView;
+    } else {
+      stateUpdate.showBoostResultModal = true;
+      stateUpdate.boostResultDetails = boostToView; 
+    }
+    // console.log('State update: ', stateUpdate);
+    this.setState(stateUpdate, () => this.props.updateBoostViewed({ boostId: boostToView.boostId, viewedStatus: boostToView.boostStatus }));
   }
 
   hideBoostResultModal() {
@@ -435,7 +451,7 @@ class Home extends React.Component {
     if (nextMessage) {
       this.showMessage(nextMessage);
     } else {
-      const messageResult = await MessagingUtil.fetchMessagesAndGetTop(this.props.authToken);;
+      const messageResult = await MessagingUtil.fetchMessagesAndGetTop(this.props.authToken);
       if (!messageResult) { // Sentry says this happens sometimes (must be state mgmt somewhere)
         return;
       }
@@ -678,12 +694,12 @@ class Home extends React.Component {
     // const nextStep = this.props.availableMessages[nextStepId];
     // if (nextStep) this.showMessage(nextStep);
 
-    const { token, gameParams } = this.state;
+    const { gameParams } = this.state;
     const resultOptions = { 
       numberTaps: numberOfTaps, 
       timeTaken: gameParams.timeLimitSeconds,
       boostId: gameParams.boostId,
-      authenticationToken: token,
+      authenticationToken: this.props.authToken,
     };
 
     const resultOfGame = await boostService.sendTapGameResults(resultOptions);

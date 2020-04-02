@@ -19,11 +19,32 @@ export default class BoostGameModal extends React.PureComponent {
       }
       
       if (gameDetails.gameType === 'TAP_SCREEN' || gameDetails.gameType === 'CHASE_ARROW') {
-        return `Your top up was successful and you now stand a chance to win ${gameDetails.boostAmount}. Follow the instructions below to play the game:`;
+        return `Your top up was successful and you now stand a chance to win ${gameDetails.boostAmount}`;
       }
       
       return 'Game failure, please contact support';
     }
+
+    getSimpleThresholdStrap = (gameDetails) => {
+      if (gameDetails.gameType === 'TAP_SCREEN') {
+        return `Tap the screen at least ${gameDetails.winningThreshold} times in ${gameDetails.timeLimitSeconds} seconds`;
+      }
+      
+      if (gameDetails.gameType === 'CHASE_ARROW') {
+        return `Tap the arrow of the circle as it spins at least ${gameDetails.winningThreshold} times in ${gameDetails.timeLimitSeconds} seconds`;
+      }
+    };
+
+    getTournamentStrap = (gameDetails) => {
+      if (gameDetails.gameType === 'TAP_SCREEN') {
+        return `Tap the screen as much as you can in ${gameDetails.timeLimitSeconds} seconds! The top ${gameDetails.numberWinners} scores will win the boost`;
+      }
+      
+      if (gameDetails.gameType === 'CHASE_ARROW') {
+        return `Tap the arrow of the circle as much as you can in ${gameDetails.timeLimitSeconds} seconds! The top ${gameDetails.numberWinners} scores will win the boost`;
+      }
+
+    };
     
     getInstructionStrap = () => {
       const { gameDetails } = this.props;
@@ -31,13 +52,13 @@ export default class BoostGameModal extends React.PureComponent {
       if (gameDetails.customInstructionBand) {
         return gameDetails.customInstructionBand;
       }
-      
-      if (gameDetails.gameType === 'TAP_SCREEN') {
-        return `Tap the screen at least ${gameDetails.winningThreshold} times in ${gameDetails.timeLimitSeconds} seconds`;
+
+      if (gameDetails.winningThreshold) {
+        return this.getSimpleThresholdStrap(gameDetails);
       }
       
-      if (gameDetails.gameType === 'CHASE_ARROW') {
-        return `Tap the arrow of the circle as it spins around as many times as you can in ${gameDetails.timeLimitSeconds} seconds`;
+      if (gameDetails.numberWinners) {
+        return this.getTournamentStrap(gameDetails);
       }
       
       return 'Game failure, please contact support';
