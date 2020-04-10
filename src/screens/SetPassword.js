@@ -12,7 +12,7 @@ import {
   View,
   AsyncStorage,
 } from 'react-native';
-import { Button, Input, Overlay } from 'react-native-elements';
+import { Button, Input, Overlay, Icon } from 'react-native-elements';
 
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
@@ -59,6 +59,8 @@ class SetPassword extends React.Component {
       defaultPasswordErrorMessage: 'Please enter a valid password',
       generalErrorText: 'There is a problem with your request',
       checkingForCompletion: false,
+      hideFirstPassword: true,
+      hideSecondPassword: true,
     };
   }
 
@@ -341,20 +343,7 @@ class SetPassword extends React.Component {
           {this.state.isReset ? (
             <Text style={styles.resetTitle}>Reset password</Text>
           ) : (
-            <>
-              {/* <TouchableOpacity
-                style={styles.headerButton}
-                onPress={this.onPressBack}
-              >
-                <Icon
-                  name="chevron-left"
-                  type="evilicon"
-                  size={45}
-                  color={Colors.MEDIUM_GRAY}
-                />
-              </TouchableOpacity> */}
-              <Text style={styles.stepText}>Step 2 of 4</Text>
-            </>
+            <Text style={styles.stepText}>Step 2 of 4</Text>
           )}
         </View>
         <View style={styles.contentWrapper}>
@@ -373,7 +362,7 @@ class SetPassword extends React.Component {
                 testID="set-password-input-1"
                 accessibilityLabel="set-password-input-1"
                 value={this.state.password}
-                secureTextEntry
+                secureTextEntry={this.state.hideFirstPassword}
                 onChangeText={text => this.onEditField(text, 'password')}
                 onEndEditing={() => this.onEndEditing('password')}
                 inputContainerStyle={styles.inputContainerStyle}
@@ -384,6 +373,15 @@ class SetPassword extends React.Component {
                     : null,
                 ]}
                 containerStyle={styles.containerStyle}
+                rightIcon={(
+                  <Icon
+                    name={this.state.hideFirstPassword ? "eye" : "eye-off"}
+                    size={20}
+                    color={Colors.PURPLE}
+                    type="material-community"
+                    onPress={() => this.setState({ hideFirstPassword: !this.state.hideFirstPassword })}
+                  />
+                )}    
               />
               {this.state.errors && this.state.errors.password ? (
                 <Text style={styles.errorMessage}>
@@ -401,7 +399,7 @@ class SetPassword extends React.Component {
                 testID="set-password-input-2"
                 accessibilityLabel="set-password-input-2"
                 value={this.state.passwordConfirm}
-                secureTextEntry
+                secureTextEntry={this.state.hideSecondPassword}
                 onChangeText={text => this.onEditField(text, 'passwordConfirm')}
                 onEndEditing={() => this.onEndEditing('passwordConfirm')}
                 inputContainerStyle={styles.inputContainerStyle}
@@ -412,6 +410,15 @@ class SetPassword extends React.Component {
                     : null,
                 ]}
                 containerStyle={styles.containerStyle}
+                rightIcon={(
+                  <Icon
+                    name={this.state.hideSecondPassword ? "eye" : "eye-off"}
+                    size={20}
+                    color={Colors.PURPLE}
+                    type="material-community"
+                    onPress={() => this.setState({ hideSecondPassword: !this.state.hideSecondPassword })}
+                  />
+                )}
               />
               {this.state.errors && this.state.errors.passwordConfirm ? (
                 <Text style={styles.errorMessage}>

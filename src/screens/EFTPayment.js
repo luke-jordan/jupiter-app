@@ -56,6 +56,11 @@ export default class EFTPayment extends React.Component {
     });
   }
 
+  onPressBack = () => {
+    LoggingUtil.logEvent('USER_WENT_BACK_AT_PAYMENT_LINK');
+    this.props.navigation.goBack();
+  };
+
   onPressCopy = text => {
     Clipboard.setString(text);
     this.toastRef.current.show('Copied to clipboard!');
@@ -199,6 +204,20 @@ export default class EFTPayment extends React.Component {
   render() {
     return (
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContainer}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={this.onPressBack}
+          >
+            <Icon
+              name="chevron-left"
+              type="evilicon"
+              size={45}
+              color={Colors.MEDIUM_GRAY}
+            />
+          </TouchableOpacity>
+          <Text style={styles.title}>Pay with EFT</Text>
+        </View>
         <View style={styles.mainContent}>
           <View style={styles.top}>
             <Image
@@ -206,7 +225,6 @@ export default class EFTPayment extends React.Component {
               source={require('../../assets/card.png')}
               resizeMode="contain"
             />
-            <Text style={styles.title}>Pay via EFT</Text>
             <Text style={styles.description}>
               EFT’s take{' '}
               <Text style={styles.descriptionBold}>2-3 working days</Text> to
@@ -412,6 +430,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-around',
   },
+  header: {
+    width: '100%',
+    backgroundColor: Colors.WHITE,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 5,
+    paddingVertical: 7,
+  },
+  title: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 6 * FONT_UNIT,
+    color: Colors.DARK_GRAY,
+    width: '100%',
+  },
   mainContent: {
     flex: 1,
     alignItems: 'center',
@@ -426,13 +458,6 @@ const styles = StyleSheet.create({
   },
   image: {
     marginBottom: 15,
-  },
-  title: {
-    fontFamily: 'poppins-semibold',
-    fontSize: 7.2 * FONT_UNIT,
-    marginVertical: 5,
-    textAlign: 'center',
-    color: Colors.DARK_GRAY,
   },
   description: {
     fontFamily: 'poppins-regular',

@@ -59,6 +59,10 @@ class Account extends React.Component {
     this.props.navigation.navigate('History');
   };
 
+  onPressMessages = () => {
+    this.props.navigation.navigate('PastMessages');
+  }
+
   onPressWithdraw = () => {
     this.props.navigation.navigate('WithdrawStep1');
   };
@@ -152,6 +156,23 @@ class Account extends React.Component {
                     <Image style={styles.accountLineIcon} source={require('../../assets/withdraw.png')} />
                     <View style={styles.accountInfo}>
                       <Text style={styles.accountLineText}>Withdraw Cash</Text>
+                    </View>
+                  </View>
+                  <Icon
+                    name="chevron-right"
+                    type="evilicon"
+                    size={50}
+                    color={Colors.MEDIUM_GRAY}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.buttonLine, styles.accountButtonLine]}
+                  onPress={this.onPressMessages}
+                >
+                  <View style={styles.accountLineContent}>
+                    <Image style={styles.accountLineIcon} source={require('../../assets/messages.png')} />
+                    <View style={styles.accountInfo}>
+                      <Text style={styles.accountLineText}>Messages</Text>
                     </View>
                   </View>
                   <Icon

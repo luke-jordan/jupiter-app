@@ -162,7 +162,8 @@ class Boosts extends React.Component {
       return <Text style={styles.boostClaimed}>Boost Claimed: </Text>;
     }
     if (boostDetails.boostStatus === 'PENDING') {
-      return <Text style={styles.boostExpiring}>Waiting for results</Text>;
+      const endTime = moment(boostDetails.endTime);
+      return <Text style={styles.boostExpiring}>Waiting for results (check back in {endTime.fromNow(true)})</Text>;
     }
     if (
       this.isBoostExpired({
@@ -192,21 +193,25 @@ class Boosts extends React.Component {
   sortBoosts = boosts => {
     const sortByTime = (a, b) =>
       moment(b.startTime).isAfter(moment(a.startTime)) && 1;
-    const isOneOf = options => x => options.indexOf(x.boostStatus) !== -1;
 
-    const topGroup = boosts
-      .filter(
-        isOneOf([BoostStatus.OFFERED, BoostStatus.CREATED, BoostStatus.UNLOCKED, BoostStatus.PENDING])
-      )
-      .sort(sortByTime);
-    const middleGroup = boosts
-      .filter(isOneOf([BoostStatus.CLAIMED, BoostStatus.REDEEMED]))
-      .sort(sortByTime);
-    const bottomGroup = boosts
-      .filter(isOneOf([BoostStatus.EXPIRED, BoostStatus.REVOKED]))
-      .sort(sortByTime);
+    return boosts.sort(sortByTime);
 
-    return [...topGroup, ...middleGroup, ...bottomGroup];
+    // keeping this here, in case
+
+    // const isOneOf = options => x => options.indexOf(x.boostStatus) !== -1;
+    // const topGroup = boosts
+    //   .filter(
+    //     isOneOf([BoostStatus.OFFERED, BoostStatus.CREATED, BoostStatus.UNLOCKED, BoostStatus.PENDING])
+    //   )
+    //   .sort(sortByTime);
+    // const middleGroup = boosts
+    //   .filter(isOneOf([BoostStatus.CLAIMED, BoostStatus.REDEEMED]))
+    //   .sort(sortByTime);
+    // const bottomGroup = boosts
+    //   .filter(isOneOf([BoostStatus.EXPIRED, BoostStatus.REVOKED]))
+    //   .sort(sortByTime);
+
+    // return [...topGroup, ...middleGroup, ...bottomGroup];
   };
 
   extractStatusThreshold = (statusConditions, boostStatus = BoostStatus.REDEEMED) => {

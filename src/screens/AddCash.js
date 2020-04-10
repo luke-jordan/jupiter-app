@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     marginLeft: -5,
     fontFamily: 'poppins-semibold',
-    fontSize: 22,
+    fontSize: 18,
   },
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',

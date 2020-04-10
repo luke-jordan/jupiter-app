@@ -40,6 +40,7 @@ import ChangePassword from './src/screens/ChangePassword';
 import Support from './src/screens/Support';
 import SupportRequestSent from './src/screens/SupportRequestSent';
 import History from './src/screens/History';
+import PastMessages from './src/screens/PastMessages';
 import FailedVerification from './src/screens/FailedVerification';
 import EFTPayment from './src/screens/EFTPayment';
 import PendingManualTransfer from './src/screens/PendingManualTransfer';
@@ -82,6 +83,7 @@ const AppContainer = createAppContainer(
       Support: { screen: Support },
       SupportRequestSent: { screen: SupportRequestSent },
       History: { screen: History },
+      PastMessages: { screen: PastMessages },
       FailedVerification: { screen: FailedVerification },
       EFTPayment: { screen: EFTPayment },
       PendingManualTransfer: { screen: PendingManualTransfer },
