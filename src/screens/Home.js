@@ -19,7 +19,7 @@ import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { LogoutUtil } from '../util/LogoutUtil';
 
-import { getDivisor, extractAmount, standardFormatAmount } from '../util/AmountUtil';
+import { getDivisor, standardFormatAmount } from '../util/AmountUtil';
 
 import BalanceNumber from '../elements/BalanceNumber';
 import NavigationBar from '../elements/NavigationBar';
@@ -32,6 +32,7 @@ import { updateAuthToken } from '../modules/auth/auth.actions';
 import { getAuthToken } from '../modules/auth/auth.reducer';
 
 import { boostService } from '../modules/boost/boost.service';
+import handleMessageActionPress from '../modules/boost/helpers/handleMessageActionPress';
 
 import { updateServerBalance, updateShownBalance } from '../modules/balance/balance.actions';
 
@@ -169,7 +170,7 @@ class Home extends React.Component {
 
     await this.hydrateStateIfNotPrior(info);
 
-    this.setState({ firstName: this.props.profile.personalName });
+    this.setState({ firstName: this.props.profile.calledName || this.props.personalName });
     
     // check params if we have params.showModal we show modal with game
     if (params && params.showGameUnlockedModal) {
@@ -496,7 +497,7 @@ class Home extends React.Component {
     MessagingUtil.tellServerMessageAction('DISMISSED', this.state.messageDetails.messageId, this.props.authToken);
   }
 
-  onPressMsgAction = action => {
+  onPressMsgAction = () => {
     this.setState({ hasMessage: false });
     const { messageDetails } = this.state;
     
@@ -504,43 +505,12 @@ class Home extends React.Component {
       MessagingUtil.tellServerMessageAction('ACTED', messageDetails.messageId, this.props.authToken);
     }
 
-    const actionContext = messageDetails ? messageDetails.actionContext : null;
-    // console.log('Processing message action, message details: ', messageDetails);
-    
-    switch (action) {
-      case 'ADD_CASH': {
-          const addCashEmbeddedAmount = actionContext ? actionContext.addCashPreFilled : null;
-          const params = { startNewTransaction: true };
-          if (addCashEmbeddedAmount) {
-            params.preFilledAmount = extractAmount(addCashEmbeddedAmount, 'WHOLE_CURRENCY');
-          }
-          this.props.navigation.navigate('AddCash', params);
-          break;
-      }
-
-      case 'VIEW_HISTORY':
-        this.props.navigation.navigate('History');
-        break;
-
-      case 'VIEW_BOOSTS':
-        this.props.navigation.navigate('Boosts');
-        break;
-
-      case 'VISIT_WEB':
-        if (actionContext && actionContext.urlToVisit) {
-          Linking.openURL(actionContext.urlToVisit);
-        } else {
-          Linking.openURL('https://jupitersave.com')
-        }
-        break;
-
-      default:
-        break;
-    }
+    // console.log('HERE WE GO: ', messageDetails);
+    handleMessageActionPress(messageDetails, this.props.navigation);
   };
 
   onPressPending = () => {
-    console.log('Pressed pending!');
+    // console.log('Pressed pending!');
     this.props.navigation.navigate('History');
   }
 
@@ -600,40 +570,54 @@ class Home extends React.Component {
     // console.log('Starting a game: ', gameParams);
     if (gameParams.gameType.includes('TAP_SCREEN')) {
       // console.log('Starting tap screen game!');
-      this.setState({
-        showGameUnlockeModal: false,
-        gameInProgress: true,
-        tapScreenGameMode: true,
-        tapScreenGameTimer: gameParams.timeLimitSeconds,
-      });
-      this.tapScreenGameTaps = 0;
-      setTimeout(() => {
-        this.handleTapScreenGameEnd();
-      }, gameParams.timeLimitSeconds * 1000);
-      setTimeout(() => {
-        this.decrementTapScreenGameTimer();
-      }, 1000);
+      this.startTapGame(gameParams);
     } else if (gameParams.gameType.includes('CHASE_ARROW')) {
-      this.setState({
-        showGameUnlockeModal: false,
-        gameInProgress: true,
-        chaseArrowGameMode: true,
-        chaseArrowGameTimer: gameParams.timeLimitSeconds,
-        // "arrowFuzziness": "10%",
-        gameRotation: new Animated.Value(0),
-      });
-      this.chaseArrowGameTaps = 0;
-      const { arrowSpeedMultiplier } = gameParams;
-      this.rotateGameCircle(arrowSpeedMultiplier);
-      setTimeout(() => {
-        this.handleChaseArrrowGameEnd();
-      }, gameParams.timeLimitSeconds * 1000);
-      setTimeout(() => {
-        this.decrementChaseArrowGameTimer();
-      }, 1000);
+      this.startArrowGame(gameParams);
     }
     LoggingUtil.logEvent('GAME_USER_INITIATED');
   };
+
+  startTapGame(gameParams) {
+    this.setState({
+      showGameUnlockeModal: false,
+      gameInProgress: true,
+      tapScreenGameMode: true,
+      tapScreenGameTimer: gameParams.timeLimitSeconds,
+    }, () => {
+      this.tapScreenGameTaps = 0;
+    
+      setTimeout(() => {
+        this.handleTapScreenGameEnd();
+      }, gameParams.timeLimitSeconds * 1000);
+      
+      setTimeout(() => {
+        this.decrementTapScreenGameTimer();
+      }, 1000);
+      
+    });
+
+  }
+
+  startArrowGame(gameParams) {
+    this.setState({
+      showGameUnlockeModal: false,
+      gameInProgress: true,
+      chaseArrowGameMode: true,
+      chaseArrowGameTimer: gameParams.timeLimitSeconds,
+      // "arrowFuzziness": "10%",
+      gameRotation: new Animated.Value(0),
+    });
+    this.chaseArrowGameTaps = 0;
+    const { arrowSpeedMultiplier } = gameParams;
+    this.rotateGameCircle(arrowSpeedMultiplier);
+    setTimeout(() => {
+      this.handleChaseArrrowGameEnd();
+    }, gameParams.timeLimitSeconds * 1000);
+    setTimeout(() => {
+      this.decrementChaseArrowGameTimer();
+    }, 1000);
+
+  }
 
   rotateGameCircle(arrowSpeedMultiplier) {
     const rotationDuration = CIRCLE_ROTATION_DURATION / arrowSpeedMultiplier;
@@ -665,9 +649,9 @@ class Home extends React.Component {
   };
 
   decrementTapScreenGameTimer = () => {
-    setTimeout(() => {
-      this.decrementTapScreenGameTimer();
-    }, 1000);
+    if (this.state.tapScreenGameTimer > 0) {
+      setTimeout(() => { this.decrementTapScreenGameTimer(); }, 1000);
+    }
     this.setState({ tapScreenGameTimer: this.state.tapScreenGameTimer - 1 });
   };
 
@@ -677,9 +661,9 @@ class Home extends React.Component {
   };
 
   decrementChaseArrowGameTimer = () => {
-    setTimeout(() => {
-      this.decrementChaseArrowGameTimer();
-    }, 1000);
+    if (this.state.chaseArrowGameTimer > 0) {
+      setTimeout(() => { this.decrementChaseArrowGameTimer(); }, 1000);
+    }
     this.setState({ chaseArrowGameTimer: this.state.chaseArrowGameTimer - 1 });
   };
 
@@ -690,9 +674,6 @@ class Home extends React.Component {
 
   async submitGameResults(numberOfTaps) {
     LoggingUtil.logEvent('GAME_USER_COMPLETED');
-    // const nextStepId = this.state.gameParams.finishedMessage;
-    // const nextStep = this.props.availableMessages[nextStepId];
-    // if (nextStep) this.showMessage(nextStep);
 
     const { gameParams } = this.state;
     const resultOptions = { 
@@ -704,13 +685,14 @@ class Home extends React.Component {
 
     const resultOfGame = await boostService.sendTapGameResults(resultOptions);
     // seems to sometimes abort before completion on iPhones -- not showing the result is not great, but better than a crash
+    console.log('Result of game in Home: ', resultOfGame);
     if (!resultOfGame) {
       LoggingUtil.logError(Error('Result of game was null'));
       this.setState({ showSubmittingModal: false });
       return;
     }
     
-    const { gameResult, amountWon, statusMet } = resultOfGame;
+    const { gameResult, amountWon, statusMet, endTime } = resultOfGame;
     // console.log('Completed sending game results');
     
     const amountWonToPass = amountWon ? standardFormatAmount(amountWon.amount, amountWon.unit, amountWon.currency) : null;
@@ -719,6 +701,7 @@ class Home extends React.Component {
       gameResult,
       amountWon: amountWonToPass,
       numberOfTaps,
+      endTime,
       timeTaken: gameParams.timeLimitSeconds,
     };
 
@@ -730,7 +713,13 @@ class Home extends React.Component {
     this.setState({
       gameResultParams,
       showSubmittingModal: false,
-    }, () => { this.setState({ showGameResultModal: true }) });
+    }, () => this.cleanUpGameParamsAndShowResult());
+  }
+
+  cleanUpGameParamsAndShowResult() {
+    this.setState({ showGameResultModal: true, tapScreenGameTimer: 0, chaseArrowGameTimer: 0 });
+    this.tapScreenGameTaps = 0;
+    this.chaseArrowGameTaps = 0;
   }
 
   onPressTapScreenGame = () => {
@@ -784,9 +773,7 @@ class Home extends React.Component {
       timer = this.state.tapScreenGameTimer ? this.state.tapScreenGameTimer : 0;
     } else if (this.state.chaseArrowGameMode) {
       taps = this.chaseArrowGameTaps ? this.chaseArrowGameTaps : 0;
-      timer = this.state.chaseArrowGameTimer
-        ? this.state.chaseArrowGameTimer
-        : 0;
+      timer = this.state.chaseArrowGameTimer ? this.state.chaseArrowGameTimer : 0;
     }
     return (
       <View style={styles.tapCounterWrapper}>

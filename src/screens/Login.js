@@ -9,7 +9,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { Input, Button } from 'react-native-elements';
+import { Input, Button, Icon } from 'react-native-elements';
 
 import { Colors, Endpoints, Defaults, DeviceInfo } from '../util/Values';
 import { NavigationUtil } from '../util/NavigationUtil';
@@ -33,18 +33,21 @@ class Login extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      // userId: "testemail01@test.tst",
       userId: Defaults.LOGIN,
       validationError: false,
-      // password: "аА@123456",
       password: Defaults.PASS,
       passwordError: false,
       deviceId: DeviceInfo.DEVICE_ID,
+      hidePassword: true,
     };
   }
 
   async componentDidMount() {
     LoggingUtil.logEvent('USER_ENTERED_LOGIN_SCREEN');
+  }
+
+  togglePasswordVisible = () => {
+    this.setState({ hidePassword: !this.state.hidePassword });
   }
 
   initiateLogin = async () => {
@@ -190,12 +193,21 @@ class Login extends React.Component {
           <Input
             testID="login-password"
             accessibilityLabel="login-password"
-            secureTextEntry
+            secureTextEntry={this.state.hidePassword}
             value={this.state.password}
             onChangeText={text => this.setState({ password: text })}
             inputContainerStyle={styles.inputContainerStyle}
             inputStyle={styles.inputStyle}
             containerStyle={styles.containerStyle}
+            rightIcon={(
+              <Icon
+                name={this.state.hidePassword ? "eye" : "eye-off"}
+                size={20}
+                color={Colors.PURPLE}
+                type="material-community"
+                onPress={this.togglePasswordVisible}
+              />
+            )}
           />
           <Text
             style={styles.textAsButton}

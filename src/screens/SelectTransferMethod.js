@@ -259,7 +259,7 @@ class SelectTransferMethod extends React.PureComponent {
             <View style={styles.bulletItem}>
               <Icon name="check" type="feather" size={19} color={Colors.GREEN} />
               <Text style={styles.bulletText}>
-                Works with the big 6 SA banks
+                Works with the 8 largest SA banks
               </Text>
             </View>
           </View>
@@ -320,15 +320,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
   },
   header: {
+    flexDirection: 'row',
     width: '100%',
     backgroundColor: Colors.WHITE,
-    alignItems: 'flex-start',
+    alignItems: 'center',
     padding: 6,
   },
   headerTitle: {
     fontFamily: 'poppins-semibold',
-    fontSize: 22,
-    marginStart: 10,
+    fontSize: 18,
   },
   mainContent: {
     flex: 1,

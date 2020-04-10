@@ -1,4 +1,5 @@
 import React from 'react';
+import moment from 'moment';
 
 import { StyleSheet, Text, View, TouchableOpacity, Image, Modal } from 'react-native';
 import { Button } from 'react-native-elements';
@@ -12,29 +13,36 @@ export default class GameResultModal extends React.PureComponent {
   renderImmediateResponse (gameDetails) {
 
     let resultIcon; let resultHeader; let resultBody = '';
+
+    console.log('Game details: ', gameDetails);
   
-    const { gameResult } = gameDetails;
+    const { gameResult, endTime } = gameDetails;
     
     switch(gameResult) {
-      case 'REDEEMED':
+      case 'REDEEMED': {
         resultIcon = require('../../../assets/boost-success-smiley.png');
         resultHeader = gameDetails.customTitle || 'Congratulations!';
         resultBody = `You've successfully completed the challenge and won ${gameDetails.amountWon}!\n` +
         `Keep being the speedy, smart saver you are to get a chance to unlock further boost challenges and save even more.`;
         break;
-      case 'PENDING':
+      }
+      case 'PENDING': {
         resultIcon = require('../../../assets/boost_thumbs_up.png');
         resultHeader = gameDetails.customTitle || 'Nice Work!';
+        const resultClause = endTime ? `, in about ${moment(endTime).fromNow(true)}` : ''; 
         resultBody = `You tapped ${gameDetails.numberOfTaps} times in ${gameDetails.timeTaken} seconds!\n` +
-          'Winners of the challenge will be notified when time is up. Good luck!'
+          `Winners of the challenge will be notified when time is up${resultClause}. Good luck!`;
         break;
-      case 'FAILED':
+      }
+      case 'FAILED': {
         resultIcon = require('../../../assets/boost_failure.png');
         resultHeader = gameDetails.customTitle || 'Sorry, better luck next time!';
         resultBody = `You missed out on this boost challenge, but keep an eye out for future boosts to earn more towards your savings!`;
         break;
-      default:
+      }
+      default: {
         console.log('Error, should not happen');
+      }
     }
     
     return (
@@ -163,7 +171,7 @@ export default class GameResultModal extends React.PureComponent {
     const { awardBasis } = gameDetails;
     const isTournament = awardBasis === 'TOURNAMENT';
     
-    console.log('Is this a tournament ? : ', isTournament, ' and details: ', gameDetails);
+    // console.log('Is this a tournament ? : ', isTournament, ' and details: ', gameDetails);
 
     return (
       <View style={styles.backgroundWrapper}>

@@ -208,9 +208,9 @@ export default class Payment extends React.Component {
               color={Colors.MEDIUM_GRAY}
             />
           </TouchableOpacity>
+          <Text style={styles.title}>Pay with Ozow</Text>
         </View>
         <View style={styles.contentWrapper}>
-          <Text style={styles.title}>Payment</Text>
           <View style={styles.mainContent}>
             <Image
               style={styles.ozowLogo}
@@ -345,11 +345,11 @@ const styles = StyleSheet.create({
   },
   header: {
     width: '100%',
-    height: 30,
     backgroundColor: Colors.WHITE,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 5,
+    paddingVertical: 7,
   },
   contentWrapper: {
     flex: 1,
@@ -358,10 +358,9 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: 'poppins-semibold',
-    fontSize: 27,
+    fontSize: 18,
     color: Colors.DARK_GRAY,
     width: '100%',
-    paddingLeft: 15,
   },
   mainContent: {
     flex: 1,
@@ -407,14 +406,15 @@ const styles = StyleSheet.create({
     marginEnd: 10,
   },
   alreadyPaidButton: {
+    width: '90%',
     borderWidth: 2,
     borderColor: Colors.PURPLE,
-    borderRadius: 4,
+    borderRadius: 10,
     marginBottom: 10,
   },
   alreadyPaidButtonText: {
     paddingHorizontal: 11,
-    paddingVertical: 7,
+    paddingVertical: 15,
     fontFamily: 'poppins-semibold',
     fontSize: 15,
     color: Colors.PURPLE,

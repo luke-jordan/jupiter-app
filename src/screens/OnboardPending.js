@@ -466,7 +466,7 @@ class OnboardPending extends React.Component {
       renderFunction = serviceMap.FAILED_VERIFICATION;
     } else {
       const { onboardStepsRemaining } = this.props;
-      const earliestStep = STEPS_IN_ORDER.find((step) => onboardStepsRemaining.includes(step));
+      const earliestStep = onboardStepsRemaining ? STEPS_IN_ORDER.find((step) => onboardStepsRemaining.includes(step)) : null;
       renderFunction = earliestStep ? serviceMap[earliestStep] : renderFunction; 
     }
 

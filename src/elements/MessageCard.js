@@ -5,6 +5,9 @@ import { FlingGestureHandler, Directions, State } from 'react-native-gesture-han
 
 import * as Animatable from 'react-native-animatable';
 
+import getMessageCardButtonText from '../modules/boost/helpers/getMessageButtonText';
+import getMessageCardIcon from '../modules/boost/helpers/getMessageIcon';
+
 import { Colors, Sizes } from '../util/Values';
 
 const { width } = Dimensions.get('window');
@@ -15,39 +18,7 @@ const MessageCard = ({
     messageDetails,
     onPressActionButton,
 }) => {
-
-    const getMessageCardButtonText = (action) => {
-        switch (action) {
-          case 'ADD_CASH':
-            return 'SAVE NOW';
     
-          case 'VIEW_HISTORY':
-            return 'VIEW HISTORY';
-
-          case 'VIEW_BOOSTS':
-            return 'VIEW BOOSTS'
-    
-          case 'VISIT_WEB':
-            return 'VISIT SITE';
-    
-          default:
-            return '';
-        }
-      }
-    
-      const getMessageCardIcon = (iconType) => {
-        switch (iconType) {
-          case 'BOOST_ROCKET':
-            return require('../../assets/rocket.png');
-    
-          case 'UNLOCKED':
-            return require('../../assets/unlocked.png');
-    
-          default:
-            return require('../../assets/notification.png');
-        }
-      }
-
       if (!messageDetails) {
         return null;
       }
@@ -67,13 +38,7 @@ const MessageCard = ({
           }}
         >
           <Animatable.View animation="fadeInUp" style={styles.messageCard}>
-            <View
-              style={
-                isEmphasis
-                  ? styles.messageCardHeaderEmphasis
-                  : styles.messageCardHeader
-              }
-            >
+            <View style={isEmphasis ? styles.messageCardHeaderEmphasis : styles.messageCardHeader}>
               {!isEmphasis ? (
                 <Image
                   style={styles.messageCardIcon}
@@ -105,9 +70,7 @@ const MessageCard = ({
               {messageActionText && messageActionText.length > 0 ? (
                 <TouchableOpacity
                   style={styles.messageCardButton}
-                  onPress={() =>
-                    onPressActionButton(messageDetails.actionToTake)
-                  }
+                  onPress={() => onPressActionButton(messageDetails.actionToTake)}
                 >
                   <Text style={styles.messageCardButtonText}>
                     {messageActionText}

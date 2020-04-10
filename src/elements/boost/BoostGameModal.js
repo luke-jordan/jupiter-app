@@ -37,7 +37,8 @@ export default class BoostGameModal extends React.PureComponent {
 
     getTournamentStrap = (gameDetails) => {
       if (gameDetails.gameType === 'TAP_SCREEN') {
-        return `Tap the screen as much as you can in ${gameDetails.timeLimitSeconds} seconds! The top ${gameDetails.numberWinners} scores will win the boost`;
+        const winnerPhrase = gameDetails.numberWinners === 1 ? 'top score' : `top ${gameDetails.numberWinners} scores`; 
+        return `Tap the screen as much as you can in ${gameDetails.timeLimitSeconds} seconds! The ${winnerPhrase} will win the boost`;
       }
       
       if (gameDetails.gameType === 'CHASE_ARROW') {
