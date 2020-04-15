@@ -236,6 +236,7 @@ class SetPassword extends React.Component {
         }
 
         if (resultJson.result === 'SUCCESS') {
+          LoggingUtil.logEvent('USER_PROFILE_PASSWORD_SUCCEEDED');
           this.props.navigation.navigate('OnboardRegulation', {
             isOnboarding: true,
           });

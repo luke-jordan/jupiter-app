@@ -18,7 +18,7 @@ import {
 import { Icon } from 'react-native-elements';
 
 import { LoggingUtil } from '../util/LoggingUtil';
-import { Sizes, Endpoints, Colors } from '../util/Values';
+import { Endpoints, Colors } from '../util/Values';
 
 import { getAuthToken } from '../modules/auth/auth.reducer';
 

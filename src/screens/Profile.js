@@ -10,6 +10,7 @@ import {
   StyleSheet,
   Dimensions,
   View,
+  ScrollView,
   TouchableWithoutFeedback,
   Keyboard,
   KeyboardAvoidingView,
@@ -23,7 +24,7 @@ import { Endpoints, Colors } from '../util/Values';
 
 import { getAuthToken } from '../modules/auth/auth.reducer';
 
-import { getProfileData } from '../modules/profile/profile.reducer';
+import { getProfileData, getUserId } from '../modules/profile/profile.reducer';
 import { updateProfileFields, updateAllFields } from '../modules/profile/profile.actions';
 
 const { height, width } = Dimensions.get('window');
@@ -32,6 +33,7 @@ const PROFILE_PIC_SIZE = 0.16 * width;
 const mapStateToProps = state => ({
   profile: getProfileData(state),
   authToken: getAuthToken(state),
+  userId: getUserId(state),
 });
 
 const mapDispatchToProps = {
@@ -44,17 +46,24 @@ class Profile extends React.Component {
     super(props);
 
     const failedVerification = this.props.navigation.getParam('failedVerification');
+
     this.state = {
       profilePic: null,
       loading: false,
       firstName: '',
       lastName: '',
+      calledName: '',
       idNumber: '',
       initials: '',
+      
       dialogVisible: false,
       chooseFromLibraryLoading: false,
       takePhotoLoading: false,
-      // keyboardShowing: false,
+
+      showOtpModal: false,
+      showSuccessModal: false,
+      showErrorDialog: false,
+
       failedVerification,
     };
   }
@@ -68,15 +77,7 @@ class Profile extends React.Component {
     } else {
       this.setStateForLoggedIn(rawInfo);
     }
-
-    // this.keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', this.keyboardDidShow);
-    // this.keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', this.keyboardDidHide);
   }
-
-  // componentWillUnmount() {
-  //   this.keyboardDidShowListener.remove();
-  //   this.keyboardDidHideListener.remove();
-  // }
 
   setStateForOnboarding = async () => {
     const { personalName, familyName, nationalId } = this.props.profile;
@@ -89,15 +90,16 @@ class Profile extends React.Component {
     });
   }
 
-  setStateForLoggedIn = (rawInfo) => {
-    const info = JSON.parse(rawInfo);
+  setStateForLoggedIn = () => {
+    const { profile } = this.props;
     this.setState({
-      firstName: info.profile.personalName,
-      lastName: info.profile.familyName,
-      idNumber: info.profile.nationalId,
-      tempEmail: info.profile.email,
-      initials: info.profile.personalName[0] + info.profile.familyName[0],
-      systemWideUserId: info.systemWideUserId,
+      firstName: profile.personalName,
+      lastName: profile.familyName,
+      calledName: profile.calledName,
+      idNumber: profile.nationalId,
+      emailAddress: profile.emailAddress,
+      phoneNumber: profile.phoneNumber,
+      initials: profile.personalName[0] + profile.familyName[0],
       userLoggedIn: true,
     });
   }
@@ -138,11 +140,22 @@ class Profile extends React.Component {
     this.props.navigation.navigate('Support', { originScreen: 'Profile' });
   };
 
+  // yeah, really need that api service soon
+  requestHeader = () => ({
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      Authorization: `Bearer ${this.props.authToken}`,
+  });
+
+  postOptions = (payload) => ({
+    headers: this.requestHeader(),
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+
   fetchProfileForOnboardingUser = async () => {
     const result = await fetch(`${Endpoints.AUTH}profile/fetch`, {
-      headers: {
-        Authorization: `Bearer ${this.props.authToken}`,
-      },
+      headers: this.requestHeader(),
       method: 'GET',
     });
     if (result.ok) {
@@ -181,58 +194,132 @@ class Profile extends React.Component {
     }
   };
 
-  onPressSave = async () => {
-    if (this.state.loading) return;
-    this.setState({ loading: true });
+  submitPayload = async (payload) => {
     try {
-      const payload = {
-        personalName: this.state.firstName,
-        familyName: this.state.lastName,
-        nationalId: this.state.idNumber,
-      };
-
       const result = await fetch(`${Endpoints.AUTH}profile/update`, {
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          Authorization: `Bearer ${this.props.authToken}`,
-        },
+        headers: this.requestHeader(),
         method: 'POST',
         body: JSON.stringify(payload),
       });
 
       if (result.ok) {
-        const resultJson = await result.json();
-        if (resultJson.updatedKycStatus === 'VERIFIED_AS_PERSON') {
-          if (this.state.userLoggedIn) {
-            // update the stored profile and continue
-            let info = await AsyncStorage.getItem('userInfo');
-            info = JSON.parse(info);
-            info.profile.kycStatus = resultJson.updatedKycStatus;
-            await AsyncStorage.setItem('userInfo', JSON.stringify(info));
-            this.setState({ loading: false });
-
-            const { screen, params } = NavigationUtil.directBasedOnProfile(info);
-            NavigationUtil.navigateWithoutBackstack(this.props.navigation, screen, params);
-          } else {
-            // we must be in the condition of user not having completed onboarding; 
-            // we used to take them to the onboard remaining steps screen to have a gentler transition to add cash
-            // but now we are going to take them to the regulatory screen, as the most natural transition
-            const profileInfo = await this.fetchProfileForOnboardingUser();
-            const { screen, params } = NavigationUtil.directBasedOnProfile(profileInfo);
-
-            NavigationUtil.navigateWithoutBackstack(this.props.navigation, screen, params);
-          }
-        } else {
-          this.setState({ hasRepeatingError: true, loading: false });
-        }
+        return result.json();
       } else {
         throw result;
       }
+    } catch (err) {
+      console.log('Error updating profile: ', JSON.stringify(err));
+      return null;
+    }
+  }
+
+  submitForFailedVerification = async () => {
+    if (this.state.loading) return;
+    this.setState({ loading: true });
+    const payload = {
+      personalName: this.state.firstName,
+      familyName: this.state.lastName,
+      nationalId: this.state.idNumber,
+    };
+
+    const resultJson = await this.submitPayload(payload);
+    if (!resultJson) {
+      this.setState({ hasRepeatingError: true, loading: false });
+      return;
+    }
+
+    this.setState({ loading: false });
+    if (resultJson.updatedKycStatus === 'VERIFIED_AS_PERSON') {
+      // we must be in the condition of user not having completed onboarding; 
+      // we used to take them to the onboard remaining steps screen to have a gentler transition to add cash
+      // but now we are going to take them to the regulatory screen, as the most natural transition
+      const profileInfo = await this.fetchProfileForOnboardingUser();
+      const { screen, params } = NavigationUtil.directBasedOnProfile(profileInfo);
+
+      NavigationUtil.navigateWithoutBackstack(this.props.navigation, screen, params);
+    }
+  }
+
+  triggerOtpRequest = async (otpType) => {
+    try {
+      const payload = { type: otpType };
+      const result = await fetch(`${Endpoints.AUTH}otp/trigger`, this.postOptions(payload)); 
+      if (!result.ok) {
+        throw result;
+      }
     } catch (error) {
-      this.setState({ loading: false, hasRepeatingError: true });
-      // console.log("error", JSON.stringify(error, null, "\t"));
-      // TODO handle properly
+      console.log('ERROR requesting OTP: ', JSON.stringify(error));
+      this.setState({ 
+        showOtpModal: false,
+        showErrorDialog: true, 
+        errorText: 'Sorry, there was an error triggering the OTP. Please contact support to update your profile' });
+    }
+  }
+
+  verifyOtp = async () => {
+    if (this.state.verifyingOtp) return;
+    this.setState({ verifyingOtp: true, otpError: false });
+
+    try {
+      const payload = { type: this.state.otpType, OTP: this.state.otpEntered, systemWideUserId: this.props.userId }; 
+      const otpResult = await fetch(`${Endpoints.AUTH}otp/verify`, this.postOptions(payload));
+      this.setState({ verifyingOtp: false });
+      if (!otpResult.ok) {
+        throw otpResult;
+      }
+
+      this.submitForLoggedIn();
+
+    } catch (error) {
+      console.log('ERROR submitting OTP: ', JSON.stringify(error));
+      if (error.status === 403) {
+        this.setState({ otpError: true });
+      } else {
+        this.setState({ showOtpModal: false, showErrorDialog: true, errorText: 'Sorry, an unknown error has occurred. Please contact support to update your profile' });
+      }
+    }
+  }
+
+  submitForLoggedIn = async () => {
+
+    if (this.state.loading) return;
+    this.setState({ loading: true });
+        
+    const fieldChanged = (fieldName) => this.state[fieldName] !== this.props.profile[fieldName];
+    if (fieldChanged('phoneNumber') && fieldChanged('emailAddress')) {
+      this.setState({ showErrorDialog: true, errorText: 'Sorry, for security reasons you can only change one contact field at a time' });
+      this.setState({ phoneNumber: this.props.profile.phoneNumber, emailAddress: this.props.profile.emailAddress });
+    }
+
+    const changedFields = ['phoneNumber', 'emailAddress', 'calledName'].filter(fieldChanged);
+    const payload = changedFields.reduce((obj, fieldName) => ({ ...obj, [fieldName]: this.state[fieldName] }), {});
+
+    const resultJson = await this.submitPayload(payload);
+    this.setState({ loading: false });
+
+    if (!resultJson) {
+      return;
+    }
+
+    const { result } = resultJson;
+    if (result === 'REQUIRES_OTP') {
+      const { otpType } = resultJson;
+      this.triggerOtpRequest(otpType);
+      const otpMethodDisplay = otpType ? otpType.trim().toLowerCase() : 'contact';
+      this.setState({ loading: false, showOtpModal: true, otpType, otpMethodDisplay })
+    } else {
+      // update the stored profile and continue
+      this.props.updateProfileFields({ calledName: this.state.calledName });
+      this.setState({ loading: false, showOtpModal: false, showSuccessModal: true });
+    }
+
+  }
+
+  onPressSave = async () => {
+    if (this.state.userLoggedIn) {
+      this.submitForLoggedIn();
+    } else {
+      this.submitForFailedVerification();
     }
   };
 
@@ -240,15 +327,6 @@ class Profile extends React.Component {
     this.props.dispatch(LogoutUtil.logoutAction);
     LogoutUtil.logout(this.props.navigation);
   };
-
-  // keyboardDidShow = () => {
-  //   console.log('Setting keyboard showing!');
-  //   // this.setState({ keyboardShowing: true });
-  // }
-
-  // keyboardDidHide = () => {
-  //   // this.setState({ keyboardShowing: false });
-  // }
 
   renderProfilePicture() {
     if (this.state.profilePic) {
@@ -280,7 +358,7 @@ class Profile extends React.Component {
           <Text style={styles.headerTitle}>Profile</Text>
         </View>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-          <View style={styles.mainContent}>
+          <ScrollView style={{ width: '100%' }} containerStyle={styles.mainContent}>
             {/* <View style={styles.picWrapper}>
               {!this.state.keyboardShowing && this.renderProfilePicture()}
                 {/* Uncomment this once we want to implement the edit picture feature
@@ -291,26 +369,34 @@ class Profile extends React.Component {
               <View style={styles.profileInfo}>
                 <View style={styles.profileField}>
                   <Input
-                    label={`First Name${
-                      !this.state.failedVerification ? '*' : ''
-                    }`}
+                    label={`First Name${!this.state.failedVerification ? '*' : ''}`}
                     editable={this.state.failedVerification}
                     value={this.state.firstName}
-                    onChangeText={text => {
-                      this.setState({ firstName: text });
-                    }}
+                    onChangeText={text => { this.setState({ firstName: text }); }}
                     labelStyle={styles.profileFieldTitle}
                     inputContainerStyle={styles.inputContainerStyle}
-                    inputStyle={[
-                      styles.profileFieldValue,
-                      this.state.errors && this.state.errors.firstName
-                        ? styles.redText
-                        : null,
-                    ]}
+                    inputStyle={[styles.profileFieldValue, this.state.errors && this.state.errors.firstName ? styles.redText : null]}
                     containerStyle={styles.containerStyle}
                   />
                 </View>
                 <View style={styles.separator} />
+                {!this.state.failedVerification && (
+                  <>
+                    <View style={styles.profileField}>
+                      <Input 
+                        label='Nickname (optional)'
+                        editable={!this.state.failedVerification}
+                        value={this.state.calledName}
+                        onChangeText={text => { this.setState({ calledName: text })}}
+                        labelStyle={styles.profileFieldTitle}
+                        inputContainerStyle={styles.inputContainerStyle}
+                        inputStyle={styles.profileFieldValue}
+                        containerStyle={styles.containerStyle}
+                      />
+                    </View>
+                    <View style={styles.separator} />
+                  </>
+                )}
                 <View style={styles.profileField}>
                   <Input
                     label={`Last Name${
@@ -354,18 +440,15 @@ class Profile extends React.Component {
                     containerStyle={styles.containerStyle}
                   />
                 </View>
-                {!this.state.failedVerification ? (
+                {!this.state.failedVerification && (
+                <>
                   <View style={styles.separator} />
-                ) : null}
-                {!this.state.failedVerification ? (
                   <View style={styles.profileField}>
                     <Input
-                      label="Email Address / Phone Number*"
-                      editable={false}
-                      value={this.state.tempEmail}
-                      onChangeText={text => {
-                        this.setState({ tempEmail: text });
-                      }}
+                      label="Email Address"
+                      editable
+                      value={this.state.emailAddress}
+                      onChangeText={text => { this.setState({ emailAddress: text }); }}
                       labelStyle={styles.profileFieldTitle}
                       inputContainerStyle={styles.inputContainerStyle}
                       inputStyle={[
@@ -377,69 +460,39 @@ class Profile extends React.Component {
                       containerStyle={styles.containerStyle}
                     />
                   </View>
-                ) : null}
-                {/*
-                  <View style={styles.profileField}>
-                    <Input
-                      label="Email Address"
-                      value={this.state.tempEmail}
-                      onChangeText={(text) => {this.setState({tempEmail: text})}}
-                      labelStyle={styles.profileFieldTitle}
-                      inputContainerStyle={styles.inputContainerStyle}
-                      inputStyle={[styles.profileFieldValue, this.state.errors && this.state.errors.email ? styles.redText : null]}
-                      containerStyle={styles.containerStyle}
-                    />
-                  </View>
-                  <View style={styles.separator}/>
+                  <View style={styles.separator} />
                   <View style={styles.profileField}>
                     <Input
                       label="Phone Number"
-                      value={this.state.tempPhoneNumber}
-                      onChangeText={(text) => {this.setState({tempPhoneNumber: text})}}
+                      editable
+                      value={this.state.phoneNumber}
+                      onChangeText={text => { this.setState({ phoneNumber: text }); }}
                       labelStyle={styles.profileFieldTitle}
                       inputContainerStyle={styles.inputContainerStyle}
-                      inputStyle={[styles.profileFieldValue, this.state.errors && this.state.errors.phoneNumber ? styles.redText : null]}
+                      inputStyle={[styles.profileFieldValue, this.state.errors && this.state.errors.idNumber ? styles.redText : null]}
                       containerStyle={styles.containerStyle}
                     />
                   </View>
-                  */}
+                </>
+                )}
               </View>
               <View>
                 {this.state.hasRepeatingError ? (
-                  <Text
-                    style={[styles.disclaimer, styles.redText]}
-                    onPress={this.onPressSupport}
-                  >
-                    Sorry, your details still failed the ID verification check. If
-                    you believe they are correct,{' '}
-                    <Text style={styles.disclaimerBold}>
-                      please contact support
-                    </Text>
-                    .
+                  <Text style={[styles.disclaimer, styles.redText]} onPress={this.onPressSupport}>
+                    Sorry, your details still failed the ID verification check. If you believe they are correct,{' '}
+                    <Text style={styles.disclaimerBold}>please contact support</Text>.
                   </Text>
                 ) : (
                   <View>
                     {this.state.failedVerification ? (
                       <Text style={styles.disclaimer}>
                         If your details are correct, please{' '}
-                        <Text
-                          style={styles.disclaimerBold}
-                          onPress={this.onPressSupport}
-                        >
-                          contact support
-                        </Text>
-                        .
+                        <Text style={styles.disclaimerBold} onPress={this.onPressSupport}>contact support</Text>.
                       </Text>
                     ) : (
                       <Text style={styles.disclaimer}>
-                        *In order to update any of the those fields please contact
-                        us{' '}
-                        <Text
-                          style={styles.disclaimerBold}
-                          onPress={this.onPressSupport}
-                        >
-                          using the support form.
-                        </Text>
+                        *In order to update any of the those fields please contactus{' '}
+                        <Text style={styles.disclaimerBold} onPress={this.onPressSupport}>using the support form.</Text>
                       </Text>
                     )}
                   </View>
@@ -523,7 +576,7 @@ class Profile extends React.Component {
                 </TouchableOpacity>
               ) : null}
             </View>
-          </View>
+          </ScrollView>
         </TouchableWithoutFeedback>
 
         <Overlay
@@ -568,6 +621,90 @@ class Profile extends React.Component {
             </Text>
           </View>
         </Overlay>
+
+        <Overlay
+          isVisible={this.state.showOtpModal}
+          containerStyle={styles.infoDialogContainer}
+          height="auto"
+        >
+          <View style={styles.dialogContent}>
+            <Text style={styles.editPicDialogTitle}>Enter OTP</Text>
+            <Text style={styles.infoDialogBody}>
+              For security reasons, changing contact details requires
+              verification by OTP. We have sent a pin to your 
+              {this.state.otpMethodDisplay}
+            </Text>
+            <Input 
+              editable
+              keyboardType="numeric"
+              onChangeText={text => { this.setState({ otpEntered: text }); }}
+              containerStyle={styles.otpInputContainerStyle}
+              inputContainerStyle={styles.otpInputStyle}
+              inputStyle={styles.otpInputField}
+            />
+            {this.state.otpError && 
+              <Text style={styles.otpError}>Sorry, that OTP is incorrect</Text>}
+            <Button 
+              title="SUBMIT"
+              onPress={this.verifyOtp}
+              loading={this.state.verifyingOtp}
+              titleStyle={styles.buttonTitleStyle}
+              buttonStyle={styles.buttonStyle}
+              containerStyle={styles.buttonContainerStyle} 
+              linearGradientProps={{
+                colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+                start: { x: 0, y: 0.5 },
+                end: { x: 1, y: 0.5 },
+              }}
+            />
+          </View>
+        </Overlay>
+
+        <Overlay
+          isVisible={this.state.showSuccessModal}
+          containerStyle={styles.infoDialogContainer}
+          height="auto"
+          onBackdropPress={() => this.setState({ showSuccessModal: false })}
+          onHardwareBackPress={() => this.setState({ showSuccessModal: false })}
+        >
+          <View style={styles.dialogContent}>
+            <Text style={styles.editPicDialogTitle}>
+              Done!
+            </Text>
+            <Text style={styles.infoDialogBody}>
+              Your profile has been updated. 
+              Note: Some changes may not reflect until you reopen the app
+            </Text>
+            <Button 
+              title="CLOSE"
+              onPress={() => this.setState({ showSuccessModal: false })}
+              titleStyle={styles.buttonTitleStyle}
+              buttonStyle={styles.buttonStyle}
+              containerStyle={styles.buttonContainerStyle} 
+              linearGradientProps={{
+                colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+                start: { x: 0, y: 0.5 },
+                end: { x: 1, y: 0.5 },
+              }}
+            />
+          </View>
+        </Overlay>
+
+        <Overlay
+          isVisible={this.state.showErrorDialog}
+          containerStyle={styles.infoDialogContainer}
+          height="auto"
+          onBackdropPress={() => this.setState({ showErrorDialog: false })}
+          onHardwareBackPress={() => this.setState({ showErrorDialog: false })}
+        >
+          <View style={styles.dialogContent}>
+            <Text style={styles.editPicDialogTitle}>Error</Text>
+            <Text style={styles.infoDialogBody}>
+              {this.state.errorText}
+            </Text>
+          </View>
+        </Overlay>
+
       </View>
     );
   }
@@ -595,12 +732,11 @@ const styles = StyleSheet.create({
   },
   mainContent: {
     flex: 1,
-    width: '100%',
     alignItems: 'center',
     justifyContent: 'space-around',
   },
   buttonLine: {
-    height: height * 0.075,
+    height: height * 0.1,
     backgroundColor: Colors.WHITE,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -689,6 +825,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  infoDialogContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 10,
+  },
   dialogContent: {
     width: '100%',
     justifyContent: 'space-around',
@@ -706,7 +847,6 @@ const styles = StyleSheet.create({
     minWidth: 220,
   },
   buttonContainerStyle: {
-    flex: 1,
     marginVertical: 10,
     justifyContent: 'center',
     width: '95%',
@@ -722,12 +862,38 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: 'poppins-semibold',
   },
+  infoDialogBody: {
+    color: Colors.MEDIUM_GRAY,
+    fontFamily: 'poppins-semibold',
+    fontSize: 15,
+    paddingHorizontal: 5,
+    marginVertical: 10,
+  },
   inputContainerStyle: {
     borderBottomWidth: 0,
   },
   containerStyle: {
     paddingLeft: 0,
     paddingRight: 0,
+  },
+  otpInputContainerStyle: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+  },
+  otpInputStyle: {
+    borderBottomWidth: 2,
+    borderBottomColor: Colors.PURPLE,
+  },
+  otpInputField: {
+    fontFamily: 'poppins-semibold',
+    textAlign: 'center',
+    color: Colors.DARK_GRAY,
+  },
+  otpError: {
+    fontFamily: 'poppins-regular',
+    color: Colors.RED,
+    marginVertical: 10,
   },
   redText: {
     color: Colors.RED,

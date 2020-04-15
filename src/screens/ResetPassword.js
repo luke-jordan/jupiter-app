@@ -37,7 +37,13 @@ export default class ResetPassword extends React.Component {
   onPressReset = async () => {
     if (this.state.loading) return;
     this.setState({ loading: true });
+
+    if (!this.state.userInput) {
+      return;
+    }
+
     try {
+      const phoneOrEmail = this.state.userInput.trim();
       const result = await fetch(`${Endpoints.AUTH}otp/generate`, {
         headers: {
           'Content-Type': 'application/json',
@@ -45,7 +51,7 @@ export default class ResetPassword extends React.Component {
         },
         method: 'POST',
         body: JSON.stringify({
-          phoneOrEmail: this.state.userInput,
+          phoneOrEmail,
           type: 'RESET',
         }),
       });
@@ -53,7 +59,7 @@ export default class ResetPassword extends React.Component {
         this.setState({ loading: false });
         const resultJson = await result.json();
         this.props.navigation.navigate('OTPVerification', {
-          userId: this.state.userInput,
+          userId: phoneOrEmail,
           systemWideUserId: resultJson.systemWideUserId,
           redirection: 'Reset',
         });
