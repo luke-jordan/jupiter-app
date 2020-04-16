@@ -30,6 +30,8 @@ export default class LimitedUsers extends React.Component {
 
   async componentDidMount() {
     LoggingUtil.logEvent('USER_ENTERED_REFERRAL_SCREEN');
+    console.log('ENTERED REFERRAL');
+    this.fetchReferralDefaults();
   }
 
   onPressNotifyMe = () => {
@@ -98,6 +100,24 @@ export default class LimitedUsers extends React.Component {
       this.showError();
     }
   };
+
+  fetchReferralDefaults = async () => {
+    try {
+      console.log('Fetching referral defaults');
+      const options = { method: 'GET', headers: { Accept: 'application/json' } };
+      const result = await fetch(`${Endpoints.CORE}referral/status?countryCode=ZAF`, options);
+      if (!result.ok) {
+        throw result;
+      }
+      const { codeRequired, defaultCode } = await result.json();
+      console.log('Is code required ? :: ', codeRequired);
+      if (defaultCode) {
+        this.setState({ userInput: defaultCode });
+      }
+    } catch (err) {
+      console.log('Failure fetching referral status: ', JSON.stringify(err));
+    }
+  }
 
   verifyReferral = async () => {
     if (this.state.loading) return;

@@ -6,7 +6,7 @@ import * as Permissions from 'expo-permissions';
 import moment from 'moment';
 import React from 'react';
 import { connect } from 'react-redux';
-import { Alert, Animated, AsyncStorage, Dimensions, Easing, Image, Linking, StyleSheet, Text, TouchableOpacity, View, Modal } from 'react-native';
+import { Alert, Animated, AsyncStorage, Dimensions, Easing, Image, StyleSheet, Text, TouchableOpacity, View, Modal } from 'react-native';
 import { Icon } from 'react-native-elements';
 
 // import VersionCheck from 'react-native-version-check-expo';
@@ -170,7 +170,7 @@ class Home extends React.Component {
 
     await this.hydrateStateIfNotPrior(info);
 
-    this.setState({ firstName: this.props.profile.calledName || this.props.personalName });
+    this.setState({ firstName: this.props.profile.calledName || this.props.profile.personalName });
     
     // check params if we have params.showModal we show modal with game
     if (params && params.showGameUnlockedModal) {
