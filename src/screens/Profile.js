@@ -305,7 +305,8 @@ class Profile extends React.Component {
     if (result === 'REQUIRES_OTP') {
       const { otpType } = resultJson;
       this.triggerOtpRequest(otpType);
-      const otpMethodDisplay = otpType ? otpType.trim().toLowerCase() : 'contact';
+      // eslint-disable-next-line no-nested-ternary
+      const otpMethodDisplay = otpType ? (otpType === 'VERIFY_BY_EMAIL' ? 'email' : 'phone') : 'contact';
       this.setState({ loading: false, showOtpModal: true, otpType, otpMethodDisplay })
     } else {
       // update the stored profile and continue
@@ -631,7 +632,7 @@ class Profile extends React.Component {
             <Text style={styles.editPicDialogTitle}>Enter OTP</Text>
             <Text style={styles.infoDialogBody}>
               For security reasons, changing contact details requires
-              verification by OTP. We have sent a pin to your 
+              verification by OTP. We have sent a pin to your{' '} 
               {this.state.otpMethodDisplay}
             </Text>
             <Input 

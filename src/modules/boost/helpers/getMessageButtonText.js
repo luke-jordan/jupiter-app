@@ -16,6 +16,12 @@ const getMessageCardButtonText = (action) => {
     case 'VISIT_WEB':
       return 'VISIT SITE';
 
+    case 'VISIT_MESSAGES':
+        return 'VIEW MESSAGES';
+
+    case 'VIEW_PROFILE':
+        return 'CHANGE PROFILE';
+
     default:
       return '';
   }

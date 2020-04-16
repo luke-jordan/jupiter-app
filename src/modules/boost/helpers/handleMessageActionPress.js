@@ -31,6 +31,14 @@ const handleMessageActionPress = (messageDetails, navigation) => {
       navigation.navigate('Boosts');
       break;
 
+    case 'VISIT_MESSAGES':
+      navigation.navigate('PastMessages');
+      break;
+
+    case 'VIEW_PROFILE':
+      navigation.navigate('Profile');
+      break;
+
     case 'VISIT_WEB':
       if (actionContext && actionContext.urlToVisit) {
         Linking.openURL(actionContext.urlToVisit);
