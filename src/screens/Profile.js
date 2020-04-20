@@ -14,13 +14,14 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   KeyboardAvoidingView,
+  Linking,
 } from 'react-native';
 import { Button, Input, Icon, Overlay } from 'react-native-elements';
 
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LogoutUtil } from '../util/LogoutUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
-import { Endpoints, Colors } from '../util/Values';
+import { Endpoints, Colors, FallbackSupportNumber } from '../util/Values';
 
 import { getAuthToken } from '../modules/auth/auth.reducer';
 
@@ -40,6 +41,15 @@ const mapDispatchToProps = {
   updateProfileFields,
   updateAllFields,
 };
+
+// note : backend should convert the other way, so just need this way
+const convertMsisdnToPhone = (msisdn) => {
+  if (!msisdn) {
+    return '';
+  }
+
+  return `0${msisdn.substring('27'.length)}`;
+}
 
 class Profile extends React.Component {
   constructor(props) {
@@ -98,7 +108,7 @@ class Profile extends React.Component {
       calledName: profile.calledName,
       idNumber: profile.nationalId,
       emailAddress: profile.emailAddress,
-      phoneNumber: profile.phoneNumber,
+      phoneNumber: profile.phoneNumber ? convertMsisdnToPhone(profile.phoneNumber) : profile.phoneNumber, // so we don't get false positive on change test
       initials: profile.personalName[0] + profile.familyName[0],
       userLoggedIn: true,
     });
@@ -139,6 +149,16 @@ class Profile extends React.Component {
   onPressSupport = () => {
     this.props.navigation.navigate('Support', { originScreen: 'Profile' });
   };
+
+  onPressWhatsApp = () => {
+    const defaultText = 'Hello, I am stuck at the ID verification screen in the app. Please help.';
+    const whatsAppLink = `https://wa.me/${FallbackSupportNumber.link}?text=${encodeURIComponent(defaultText)}`;
+    Linking.openURL(whatsAppLink).catch((err) => {
+      LoggingUtil.logError(err);
+      this.defaultToSupportScreen()
+    });
+  };
+
 
   // yeah, really need that api service soon
   requestHeader = () => ({
@@ -237,6 +257,8 @@ class Profile extends React.Component {
       const { screen, params } = NavigationUtil.directBasedOnProfile(profileInfo);
 
       NavigationUtil.navigateWithoutBackstack(this.props.navigation, screen, params);
+    } else {
+      this.setState({ hasRepeatingError: true });
     }
   }
 
@@ -317,10 +339,10 @@ class Profile extends React.Component {
   }
 
   onPressSave = async () => {
-    if (this.state.userLoggedIn) {
-      this.submitForLoggedIn();
-    } else {
+    if (this.state.failedVerification) {
       this.submitForFailedVerification();
+    } else {
+      this.submitForLoggedIn();
     }
   };
 
@@ -479,9 +501,11 @@ class Profile extends React.Component {
               </View>
               <View>
                 {this.state.hasRepeatingError ? (
-                  <Text style={[styles.disclaimer, styles.redText]} onPress={this.onPressSupport}>
-                    Sorry, your details still failed the ID verification check. If you believe they are correct,{' '}
-                    <Text style={styles.disclaimerBold}>please contact support</Text>.
+                  <Text style={[styles.disclaimer, styles.redText]}>
+                    Sorry, the ID check still failed. Usually this is the result of outdated Home Affairs databases, and 
+                    can be fixed easily using our {' '}
+                    <Text style={styles.disclaimerBold} onPress={this.onPressSupport}>support form</Text>{' '} or {' '} 
+                    <Text style={styles.disclaimerBold} onPress={this.onPressWhatsApp}>on WhatsApp</Text>.
                   </Text>
                 ) : (
                   <View>

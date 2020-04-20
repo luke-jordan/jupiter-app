@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Text,
   View,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { Input, Button, Icon } from 'react-native-elements';
 
@@ -164,7 +165,7 @@ class Login extends React.Component {
 
   render() {
     return (
-      <View style={styles.container}>
+      <KeyboardAvoidingView style={styles.container} behavior="height">
         <View style={styles.headerImageWrapper}>
           <Image
             style={styles.headerImage}
@@ -221,7 +222,7 @@ class Login extends React.Component {
           {this.state.passwordError ? (
             <Text style={styles.accessErrorText}>
               Sorry, we couldn&apos;t match that phone/email and password.
-              Please try again.
+              Please try again (you can press the eye to see what you are typing).
             </Text>
           ) : null}
         </View>
@@ -255,7 +256,7 @@ class Login extends React.Component {
             WHAT IS JUPITER?
           </Text>
         </ImageBackground>
-      </View>
+      </KeyboardAvoidingView>
     );
   }
 }
@@ -267,17 +268,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   headerImageWrapper: {
-    flex: 1,
+    // flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingTop: 10,
   },
   headerImage: {
     marginVertical: 20,
   },
   mainContent: {
-    flex: 2,
+    // flex: 2,
     width: '90%',
-    minHeight: 170,
+    // minHeight: 170,
     justifyContent: 'center',
   },
   inputContainerStyle: {
@@ -296,7 +298,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderColor: Colors.GRAY,
     marginBottom: 20,
-    minHeight: 50,
+    // minHeight: 50,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -311,7 +313,7 @@ const styles = StyleSheet.create({
     minWidth: 220,
   },
   buttonContainerStyle: {
-    flex: 1,
+    // flex: 1,
     marginVertical: 10,
     justifyContent: 'center',
     width: '80%',
@@ -323,10 +325,12 @@ const styles = StyleSheet.create({
   },
   signUpLink: {
     alignItems: 'center',
-    flex: 1,
+    minWidth: '100%',
+    borderColor: Colors.RED,
+    // flex: 1,
   },
   bottomView: {
-    width: '100%',
+    minWidth: '100%',
     height: 75,
     alignSelf: 'flex-end',
     alignItems: 'center',
@@ -339,12 +343,12 @@ const styles = StyleSheet.create({
     marginTop: 15,
   },
   validationErrorText: {
-    fontFamily: 'poppins-semibold',
+    fontFamily: 'poppins-regular',
     color: Colors.RED,
     textAlign: 'left',
   },
   accessErrorText: {
-    fontFamily: 'poppins-semibold',
+    fontFamily: 'poppins-regular',
     color: Colors.RED,
     textAlign: 'center',
     marginTop: 25,
