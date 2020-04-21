@@ -8,7 +8,6 @@ import {
   StyleSheet,
   ScrollView,
   KeyboardAvoidingView,
-  Keyboard,
   View,
 } from 'react-native';
 import { Button, Icon, Input, Overlay } from 'react-native-elements';
@@ -165,7 +164,6 @@ class Register extends React.Component {
   };
 
   onPressRegister = async () => {
-    Keyboard.dismiss();
     if (this.state.loading) return;
     this.setState({ loading: true });
 
@@ -175,6 +173,8 @@ class Register extends React.Component {
       this.showError();
       return;
     }
+
+    LoggingUtil.logEvent('USER_PROFILE_REGISTER_SUBMITTED');
 
     try {
       const result = await fetch(`${Endpoints.AUTH}register/profile`, {
@@ -196,7 +196,7 @@ class Register extends React.Component {
       if (result.ok) {
         const resultJson = await result.json();
         this.setState({ loading: false });
-        if (resultJson.result.includes('SUCCESS')) {
+        if (resultJson.result && resultJson.result.includes('SUCCESS')) {
           LoggingUtil.logEvent('USER_PROFILE_REGISTER_SUCCEEDED');
           
           this.props.updateUserId(resultJson.systemWideUserId);
@@ -210,6 +210,7 @@ class Register extends React.Component {
             nationalId: this.state.idNumber,
           });
 
+          LoggingUtil.logEvent('USER_PROFILE_REGISTER_SET_PROPS');
           this.props.navigation.navigate('SetPassword');
         } else {
           LoggingUtil.logEvent('USER_PROFILE_REGISTER_FAILED', {
@@ -250,6 +251,7 @@ class Register extends React.Component {
         });
       }
     } catch (error) {
+      LoggingUtil.logError(error);
       if (!error) {
         this.showError();
       } else if (Reflect.has(error, 'messageToUser')) {
@@ -318,7 +320,7 @@ class Register extends React.Component {
       <KeyboardAvoidingView
         style={styles.container}
         contentContainerStyle={styles.container}
-        behavior="padding"
+        behavior="height"
       >
         <View style={styles.header}>
           <TouchableOpacity

@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { Platform, StyleSheet, SafeAreaView, AppState } from 'react-native';
+import { Platform, StyleSheet, SafeAreaView } from 'react-native';
 import { createStackNavigator, createAppContainer } from 'react-navigation';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
@@ -8,7 +8,6 @@ import { PersistGate } from 'redux-persist/integration/react';
 import * as Sentry from 'sentry-expo';
 import configureStore from './src/store/configureStore';
 
-import { LoggingUtil } from './src/util/LoggingUtil';
 import { Endpoints } from './src/util/Values';
 import Splash from './src/screens/Splash';
 import Login from './src/screens/Login';
@@ -104,20 +103,7 @@ export default class App extends React.Component {
       enableInExpoDevelopment: true,
       debug: true,
     });
-    AppState.addEventListener('change', this.handleAppStateChange);
   }
-
-  componentWillUnmount() {
-    AppState.removeEventListener('change', this.handleAppStateChange);
-  }
-
-  handleAppStateChange = nextAppState => {
-    if (nextAppState === 'inactive') {
-      LoggingUtil.logEvent('USER_EXITED_APP');
-    } else if (nextAppState === 'active') {
-      // we are currently logging the USER_OPENED_APP after initialization to avoid conflicts, but here would be another spot to do that
-    }
-  };
 
   render() {
     const { store, persistor } = configureStore();

@@ -66,7 +66,7 @@ export const Defaults = isMaster
       // MASTER
       LOGIN: '',
       PASS: '',
-      REFERRAL: '',
+      REFERRAL: 'RANDELAS',
     }
   : {
       // STAGING
