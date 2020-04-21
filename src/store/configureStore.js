@@ -1,9 +1,8 @@
-import { applyMiddleware, createStore } from 'redux';
+import { createStore } from 'redux';
 
 import { persistStore, persistReducer } from 'redux-persist';
 import { AsyncStorage } from 'react-native';
 
-import loggerMiddleware from './middlewares/loggerMiddleware';
 import { enableHotReload, enableStoreDebug } from './helpers';
 import rootReducer from './rootReducer';
 
@@ -15,16 +14,16 @@ const persistConfig = {
 const persistedReducer = persistReducer(persistConfig, rootReducer);
 
 export default initialState => {
-  const middlewares = [];
+  // const middlewares = [];
 
-  if (__DEV__) {
-    // eslint-disable-next-line fp/no-mutating-methods
-    middlewares.push(loggerMiddleware);
-  }
+  // if (__DEV__) {
+  //   // eslint-disable-next-line fp/no-mutating-methods
+  //   middlewares.push(loggerMiddleware);
+  // }
 
-  // Create enhancer.
-  const enhancer = applyMiddleware(...middlewares);
-  const store = createStore(persistedReducer, initialState, enhancer);
+  // // Create enhancer.
+  // const enhancer = applyMiddleware(...middlewares);
+  const store = createStore(persistedReducer, initialState);
   const persistor = persistStore(store);
 
   console.log('Set up store');

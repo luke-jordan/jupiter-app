@@ -36,7 +36,7 @@ export const LoggingUtil = {
     try {
       Sentry.captureException(error);
     } catch (err) {
-      console.log('Error logging error: ', JSON.stringify(err));
+      console.log('Error logging error!');
     }
   },
 

@@ -304,6 +304,9 @@ class Home extends React.Component {
       return;
     }
 
+    // in case we adjusted this somewhere else
+    this.setState({ firstName: this.props.profile.calledName || this.props.profile.personalName });
+
     const { balance } = JSON.parse(info);
     this.props.updateServerBalance(balance);
 
@@ -454,7 +457,7 @@ class Home extends React.Component {
     } else {
       const messageResult = await MessagingUtil.fetchMessagesAndGetTop(this.props.authToken);
       if (!messageResult) { // Sentry says this happens sometimes (must be state mgmt somewhere)
-        return;
+        this.showMessageOrFallback();
       }
       const { availableMessages, messageSequence } = messageResult;
       this.props.updateMessagesAvailable(availableMessages);

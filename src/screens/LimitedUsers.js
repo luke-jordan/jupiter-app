@@ -103,14 +103,14 @@ export default class LimitedUsers extends React.Component {
 
   fetchReferralDefaults = async () => {
     try {
-      console.log('Fetching referral defaults');
+      // console.log('Fetching referral defaults');
       const options = { method: 'GET', headers: { Accept: 'application/json' } };
       const result = await fetch(`${Endpoints.CORE}referral/status?countryCode=ZAF`, options);
       if (!result.ok) {
         throw result;
       }
       const { codeRequired, defaultCode } = await result.json();
-      console.log('Is code required ? :: ', codeRequired);
+      console.log('Code required :: ', codeRequired);
       if (defaultCode) {
         this.setState({ userInput: defaultCode });
       }

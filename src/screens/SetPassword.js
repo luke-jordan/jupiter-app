@@ -4,7 +4,6 @@ import { connect } from 'react-redux';
 import {
   ActivityIndicator,
   Image,
-  KeyboardAvoidingView,
   Text,
   TouchableOpacity,
   ScrollView,
@@ -78,27 +77,28 @@ class SetPassword extends React.Component {
   };
 
   onEditField = (text, field) => {
-    const { errors } = this.state;
-    errors[field] = false;
-    errors.general = false;
+    // const { errors } = this.state;
+    // errors[field] = false;
+    // errors.general = false;
     this.setState({
       [field]: text,
-      errors,
+      // errors,
     });
+    return false;
   };
 
-  onEndEditing = field => {
-    const { errors } = this.state;
-    if (this.fieldIsMandatory(field) && this.state[field].length === 0) {
-      errors[field] = true;
-    } else {
-      errors[field] = false;
-    }
-    errors.general = false;
-    this.setState({
-      errors,
-    });
-  };
+  // onEndEditing = field => {
+    // const { errors } = this.state;
+    // if (this.fieldIsMandatory(field) && this.state[field].length === 0) {
+    //   errors[field] = true;
+    // } else {
+    //   errors[field] = false;
+    // }
+    // errors.general = false;
+    // this.setState({
+    //   errors,
+    // });
+  // };
 
   validateInput = async () => {
     let hasErrors = false;
@@ -335,11 +335,7 @@ class SetPassword extends React.Component {
 
   render() {
     return (
-      <KeyboardAvoidingView
-        style={styles.container}
-        contentContainerStyle={styles.container}
-        behavior="padding"
-      >
+      <View style={styles.container}>
         <View style={styles.header}>
           {this.state.isReset ? (
             <Text style={styles.resetTitle}>Reset password</Text>
@@ -365,7 +361,7 @@ class SetPassword extends React.Component {
                 value={this.state.password}
                 secureTextEntry={this.state.hideFirstPassword}
                 onChangeText={text => this.onEditField(text, 'password')}
-                onEndEditing={() => this.onEndEditing('password')}
+                // onEndEditing={() => this.onEndEditing('password')}
                 inputContainerStyle={styles.inputContainerStyle}
                 inputStyle={[
                   styles.inputStyle,
@@ -402,7 +398,7 @@ class SetPassword extends React.Component {
                 value={this.state.passwordConfirm}
                 secureTextEntry={this.state.hideSecondPassword}
                 onChangeText={text => this.onEditField(text, 'passwordConfirm')}
-                onEndEditing={() => this.onEndEditing('passwordConfirm')}
+                // onEndEditing={() => this.onEndEditing('passwordConfirm')}
                 inputContainerStyle={styles.inputContainerStyle}
                 inputStyle={[
                   styles.inputStyle,
@@ -428,8 +424,8 @@ class SetPassword extends React.Component {
                 </Text>
               ) : null}
               <Text style={styles.requirementsMessage}>
-                <Text style={styles.requirementsNote}>Note:</Text> Passwords must be at least 8 characters long, with at least: one
-                number, one uppercase letter, one lowercase letter, and one
+                <Text style={styles.requirementsNote}>Note:</Text> Passwords must be at least 8 characters long, 
+                with at least: one number, one uppercase letter, one lowercase letter, and one
                 special character (e.g., @, #, !, etc). Set your password tight
                 to keep your money safe!
               </Text>
@@ -522,7 +518,7 @@ class SetPassword extends React.Component {
             </Text>
           </View>
         </Overlay>
-      </KeyboardAvoidingView>
+      </View>
     );
   }
 }
