@@ -25,7 +25,7 @@
     ],
     "ios": {
       "bundleIdentifier": "com.jupitersaving.app",
-      "buildNumber": "1",
+      "buildNumber": "2",
       "associatedDomains": [
         "applinks:message.jupitersave.com"
       ]

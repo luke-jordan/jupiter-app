@@ -15,7 +15,7 @@ import { Button, Input } from 'react-native-elements';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Colors, Endpoints, Defaults, FallbackSupportNumber } from '../util/Values';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
 export default class LimitedUsers extends React.Component {
@@ -165,7 +165,7 @@ export default class LimitedUsers extends React.Component {
     return (
       <KeyboardAvoidingView
         style={styles.container}
-        contentContainerStyle={styles.container}
+        contentContainerStyle={styles.avoidingContainer}
         behavior="position"
         keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
       >
@@ -257,17 +257,20 @@ export default class LimitedUsers extends React.Component {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  avoidingContainer: {
     flex: 1,
   },
+  container: {
+    flex: 1,
+    justifyContent: 'space-between',
+    paddingBottom: 10,
+  },
   wrapper: {
-    flex: 5,
     marginHorizontal: 15,
     alignItems: 'center',
     justifyContent: 'center',
   },
   inputWrapper: {
-    flex: 1,
     marginHorizontal: 15,
   },
   image: {
@@ -321,7 +324,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderColor: Colors.GRAY,
     marginBottom: 20,
-    minHeight: 50,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -342,17 +344,16 @@ const styles = StyleSheet.create({
     width: '80%',
   },
   nextButtonWrapper: {
-    marginTop: 30,
+    marginTop: height > 640 ? 30 : 0,
     marginBottom: 30,
     alignItems: 'center',
     width: '100%',
   },
   haveAnAccountText: {
-    marginTop: 10,
+    paddingTop: height > 640 ? 10 : 20,
     marginHorizontal: 12 * FONT_UNIT,
     fontFamily: 'poppins-regular',
     fontSize: 4 * FONT_UNIT,
     textAlign: 'center',
-    marginBottom: 15,
   },
 });
