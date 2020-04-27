@@ -18,11 +18,9 @@ import { Button } from 'react-native-elements';
 import BoostOfferModal from '../elements/boost/BoostOfferModal';
 
 import NavigationBar from '../elements/NavigationBar';
-import getPermittedTypesOfBoost from '../modules/boost/helpers/getPermittedTypesOfBoost';
 import { BoostStatus } from '../modules/boost/models';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Sizes, Endpoints, Colors } from '../util/Values';
-import { MessagingUtil } from '../util/MessagingUtil';
 import { equalizeAmounts } from '../modules/boost/helpers/parseAmountValue';
 
 import { extractConditionParameter, getDivisor } from '../util/AmountUtil';
@@ -312,20 +310,22 @@ class Boosts extends React.Component {
   }
 
   renderBoostCard(boostDetails) {
-    const permittedTypesOfBoost = getPermittedTypesOfBoost(boostDetails);
-    if (permittedTypesOfBoost) {
-      const offeredInstructionStatus = boostDetails.messageInstructionIds.instructions.find(
-        item => item.status === BoostStatus.OFFERED
-      );
-      const { msgInstructionId } = offeredInstructionStatus;
+    
+    // will come back to this, for now is causing nasty bugs
+    // const permittedTypesOfBoost = getPermittedTypesOfBoost(boostDetails);
+    // if (permittedTypesOfBoost && boostDetails.messageInstructionIds && boostDetails.messageInstructionIds.instructions) {
+    //   const offeredInstructionStatus = boostDetails.messageInstructionIds.instructions.find(
+    //     item => item.status === BoostStatus.OFFERED
+    //   );
+    //   const { msgInstructionId } = offeredInstructionStatus;
 
-      if (msgInstructionId) {
-        MessagingUtil.fetchInstructionsMessage(
-          this.props.authToken,
-          msgInstructionId
-        );
-      }
-    }
+    //   if (msgInstructionId) {
+    //     MessagingUtil.fetchInstructionsMessage(
+    //       this.props.authToken,
+    //       msgInstructionId
+    //     );
+    //   }
+    // }
 
     return (
       <TouchableOpacity

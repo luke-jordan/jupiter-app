@@ -60,6 +60,11 @@ class Friends extends React.Component {
   }
 
   async setUpReferralVariables(userProfile) {
+    if (!userProfile) {
+      LoggingUtil.logError(Error('Empty user profile passed to set up referral vars'));
+      return;
+    }
+
     this.setState({
       shareCode: userProfile.referralCode,
     });

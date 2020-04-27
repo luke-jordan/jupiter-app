@@ -106,6 +106,8 @@ class Home extends React.Component {
       showSubmittingModal: false,
 
       lastFetchTimeMillis: 0,
+      // overrideGoToOnboard: this.props.navigation.getParam('overrideGoToOnboard') || false,
+      overrideGoToOnboard: true,
     };
   }
 
@@ -155,12 +157,13 @@ class Home extends React.Component {
     let info = this.props.navigation.getParam('userInfo');
     const { params } = this.props.navigation.state;
     if (!info) {
-      info = await AsyncStorage.getItem('userInfo');
-      if (!info) {
+      const storedInfo = await AsyncStorage.getItem('userInfo');
+      if (!storedInfo) {
         this.logout();
-      } else {
-        info = JSON.parse(info);
-      }
+        return;
+      } 
+      
+      info = JSON.parse(storedInfo);
     }
 
     if (['FAILED_VERIFICATION', 'REVIEW_FAILED'].includes(info.profile.kycStatus)) {
@@ -180,7 +183,9 @@ class Home extends React.Component {
 
     info.onboardStepsRemaining = this.props.onboardStepsRemaining;
     
-    if (Array.isArray(this.props.onboardStepsRemaining) && this.props.onboardStepsRemaining.length > 0) {
+    const shouldGoToOnboarding = !this.state.overrideGoToOnboard && Array.isArray(this.props.onboardStepsRemaining) && this.props.onboardStepsRemaining.length > 0;
+    console.log('*** SHOULD GO TO ONBOARD ? : ', shouldGoToOnboarding);
+    if (shouldGoToOnboarding) {
       NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'OnboardPending');
       return;
     }
@@ -246,7 +251,8 @@ class Home extends React.Component {
 
         this.props.updateWholeProfile(resultJson);
         const { screen, params } = NavigationUtil.directBasedOnProfile(resultJson);
-        if (screen && screen !== 'Home') {
+        
+        if (screen && screen !== 'Home' && !this.state.overrideGoToOnboard) {
           NavigationUtil.navigateWithoutBackstack(this.props.navigation, screen, params);
           return;
         }
@@ -452,18 +458,22 @@ class Home extends React.Component {
     }
 
     const { nextMessage } = this.props;
+    
     if (nextMessage) {
       this.showMessage(nextMessage);
-    } else {
-      const messageResult = await MessagingUtil.fetchMessagesAndGetTop(this.props.authToken);
-      if (!messageResult) { // Sentry says this happens sometimes (must be state mgmt somewhere)
-        this.showMessageOrFallback();
-      }
-      const { availableMessages, messageSequence } = messageResult;
-      this.props.updateMessagesAvailable(availableMessages);
-      this.props.updateMessageSequence(messageSequence);
-      this.showMessageOrFallback(this.props.nextMessage);
+      return;
+    } 
+
+    const messageResult = await MessagingUtil.fetchMessagesAndGetTop(this.props.authToken);
+    if (!messageResult) { // Sentry says this happens sometimes (must be state mgmt somewhere)
+      this.showMessageOrFallback();
+      return;
     }
+
+    const { availableMessages, messageSequence } = messageResult;
+    this.props.updateMessagesAvailable(availableMessages);
+    this.props.updateMessageSequence(messageSequence);
+    this.showMessageOrFallback(this.props.nextMessage);    
   }
 
   showMessageOrFallback(message) {

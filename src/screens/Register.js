@@ -398,6 +398,7 @@ class Register extends React.Component {
               <Input
                 testID="register-id-number"
                 accessibilityLabel="register-id-number"
+                keyboardType="numeric"
                 value={this.state.idNumber}
                 onChangeText={text => this.onEditField(text, 'idNumber')}
                 onEndEditing={() => this.onEndEditing('idNumber')}

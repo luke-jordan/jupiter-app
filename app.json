@@ -8,7 +8,7 @@
       "ios",
       "android"
     ],
-    "version": "0.0.31",
+    "version": "0.0.31c",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "jupiter",
