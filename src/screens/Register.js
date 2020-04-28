@@ -54,6 +54,7 @@ class Register extends React.Component {
         "Sorry, there's an error with one or more input above, please check and resubmit",
       dialogVisible: false,
       hasErrors: false,
+      haveLoggedInput: false,
     };
   }
 
@@ -79,10 +80,15 @@ class Register extends React.Component {
       errors.email = false;
     }
     errors.general = false;
-    this.setState({
-      [field]: text,
-      errors,
-    });
+
+    const stateUpdate = { [field]: text, errors};
+    if (field === 'idNumber' && !this.state.haveLoggedInput) {
+      // console.log('User entered ID number, and now logging');
+      LoggingUtil.logEvent('USER_PROFILE_INPUT_STARTED', { field });
+      stateUpdate.haveLoggedInput = true;  
+    }
+
+    this.setState(stateUpdate);
   };
 
   onEndEditing = async field => {
@@ -168,13 +174,14 @@ class Register extends React.Component {
     this.setState({ loading: true });
 
     this.clearError(); // so prior ones are no longer around
+
+    LoggingUtil.logEvent('USER_PROFILE_REGISTER_SUBMITTED'); // so we see if validation is hurting
+
     const validation = await this.validateInput();
     if (!validation) {
       this.showError();
       return;
     }
-
-    LoggingUtil.logEvent('USER_PROFILE_REGISTER_SUBMITTED');
 
     try {
       const result = await fetch(`${Endpoints.AUTH}register/profile`, {
@@ -398,6 +405,7 @@ class Register extends React.Component {
               <Input
                 testID="register-id-number"
                 accessibilityLabel="register-id-number"
+                keyboardType="numeric"
                 value={this.state.idNumber}
                 onChangeText={text => this.onEditField(text, 'idNumber')}
                 onEndEditing={() => this.onEndEditing('idNumber')}

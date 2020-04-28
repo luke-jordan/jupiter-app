@@ -4,6 +4,8 @@ import { Icon } from 'react-native-elements';
 import { connect } from 'react-redux';
 
 import { getHasBoostsAvailable } from '../modules/boost/boost.reducer';
+import { getOnboardStepsRemaining } from '../modules/profile/profile.reducer';
+
 import { Colors, Sizes } from '../util/Values';
 
 const NOTIFICATION_DOT_SIZE = 9;
@@ -12,6 +14,14 @@ const bgColor = '#00000000';
 
 class NavigationBar extends React.Component {
   onPressAddCash = () => {
+    const { onboardStepsRemaining } = this.props;
+    
+    // for new onboard experiment
+    if (Array.isArray(onboardStepsRemaining) && onboardStepsRemaining.includes('ADD_CASH')) {
+      this.props.navigation.navigate('OnboardAddSaving', { startNewTransaction: true });
+      return;
+    }
+
     this.props.navigation.navigate('AddCash', { startNewTransaction: true });
   };
 
@@ -192,6 +202,7 @@ const styles = StyleSheet.create({
 
 const mapStateToProps = state => ({
   hasBoostAvailable: getHasBoostsAvailable(state),
+  onboardStepsRemaining: getOnboardStepsRemaining(state),
 });
 
 export default connect(mapStateToProps)(NavigationBar);

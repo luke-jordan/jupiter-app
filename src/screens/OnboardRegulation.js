@@ -48,7 +48,6 @@ class OnboardRegulation extends React.PureComponent {
   }
 
   async componentDidMount() {
-    LoggingUtil.logEvent('USER_ENTERED_REGULATORY_ONBOARD');
     const { params } = this.props.navigation.state;
     if (params) {
       this.setState({
@@ -92,14 +91,20 @@ class OnboardRegulation extends React.PureComponent {
   onCompleteAgreement = async () => {
     if (this.state.isOnboarding) {
       this.setState({ loading: false });
-      this.props.removeOnboardStep('AGREE_REGULATORY');
-      const { onboardStepsRemaining } = this.props;
+
+      LoggingUtil.logEvent('USER_AGREED_REGULATORY');
       
-      let nextScreen = 'OnboardAddSaving';
-      if (onboardStepsRemaining && onboardStepsRemaining.length > 0 && !onboardStepsRemaining.includes('ADD_CASH')) {
-        nextScreen = onboardStepsRemaining.length > 0 ? 'Home' : 'OnboardPending'; 
-      }
-      this.props.navigation.navigate(nextScreen, { startNewTransaction: true });
+      this.props.removeOnboardStep('AGREE_REGULATORY');
+      
+      // we are going to just allow people straight to home screen so they can look around first
+      this.props.navigation.navigate('Home', { inPreviewMode: true });
+
+      // const { onboardStepsRemaining } = this.props;
+      // let nextScreen = 'OnboardAddSaving';
+      // if (onboardStepsRemaining && onboardStepsRemaining.length > 0 && !onboardStepsRemaining.includes('ADD_CASH')) {
+      //   nextScreen = onboardStepsRemaining.length > 0 ? 'Home' : 'OnboardPending'; 
+      // }
+      // this.props.navigation.navigate(nextScreen, { startNewTransaction: true });
     } else {
       const updatedProfileRaw = await fetch(`${Endpoints.AUTH}profile/fetch`, {
         headers: {

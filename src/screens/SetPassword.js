@@ -77,28 +77,28 @@ class SetPassword extends React.Component {
   };
 
   onEditField = (text, field) => {
-    // const { errors } = this.state;
-    // errors[field] = false;
-    // errors.general = false;
+    const { errors } = this.state;
+    errors[field] = false;
+    errors.general = false;
     this.setState({
       [field]: text,
-      // errors,
+      errors,
     });
     return false;
   };
 
-  // onEndEditing = field => {
-    // const { errors } = this.state;
-    // if (this.fieldIsMandatory(field) && this.state[field].length === 0) {
-    //   errors[field] = true;
-    // } else {
-    //   errors[field] = false;
-    // }
-    // errors.general = false;
-    // this.setState({
-    //   errors,
-    // });
-  // };
+  onEndEditing = field => {
+    const { errors } = this.state;
+    if (this.fieldIsMandatory(field) && this.state[field].length === 0) {
+      errors[field] = true;
+    } else {
+      errors[field] = false;
+    }
+    errors.general = false;
+    this.setState({
+      errors,
+    });
+  };
 
   validateInput = async () => {
     let hasErrors = false;

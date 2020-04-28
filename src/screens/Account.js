@@ -27,6 +27,10 @@ const mapPropsToState = state => ({
   profile: getProfileData(state),
 })
 
+const mapDispatchToProps = {
+  clearState: () => ({ type: 'USER_LOGOUT' }), 
+};
+
 class Account extends React.Component {
   constructor(props) {
     super(props);
@@ -39,15 +43,18 @@ class Account extends React.Component {
 
   async componentDidMount() {
     LoggingUtil.logEvent('USER_ENTERED_ACCOUNT_SCREEN');
-    this.setState({
-      initials: this.props.profile.personalName[0] + this.props.profile.familyName[0],
-    });
+    let initials = '';
+    if (this.props.profile && this.props.profile.personalName && this.props.profile.familyName) {
+      initials = this.props.profile.personalName[0] + this.props.profile.familyName[0]
+    }
+    
+    this.setState({ initials });
   }
 
   onPressLogout = () => {
     if (this.state.loading) return;
     this.setState({ loading: true });
-    this.props.dispatch(LogoutUtil.logoutAction);
+    this.props.clearState();
     LogoutUtil.logout(this.props.navigation);
   };
 
@@ -391,4 +398,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default connect(mapPropsToState)(Account);
+export default connect(mapPropsToState, mapDispatchToProps)(Account);

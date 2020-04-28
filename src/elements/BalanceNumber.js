@@ -19,18 +19,18 @@ import {
   getLastShownBalanceAmount,
   getLastServerBalanceFull,
   getEndOfTodayBalanceAmount,
-  getCurrentBalanceAmount,
+  getCurrentReferenceAmount,
 } from '../modules/balance/balance.reducer';
 
 // depending on the phone, a shorter interval actually leads to a longer animation, because the animation can't
 // move as fast as desired (given calculations etc), especially at large balances
 const DEFAULT_BALANCE_ANIMATION_INTERVAL = 75;
-const DEFAULT_BALANCE_ANIMATION_DURATION = 3000;
+const DEFAULT_BALANCE_ANIMATION_DURATION = 4000;
 const DEFAULT_REST_DAY_STEP_SIZE = 100;
 
 const mapStateToProps = state => ({
   lastShownBalance: getLastShownBalanceAmount(state),
-  currentAnchorBalance: getCurrentBalanceAmount(state),
+  currentReferenceBalance: getCurrentReferenceAmount(state),
   currentTargetBalance: getEndOfTodayBalanceAmount(state),
   balanceDict: getLastServerBalanceFull(state),
 });
@@ -62,7 +62,7 @@ YellowBox.ignoreWarnings(['Setting a timer']);
 // Three numbers therefore control the animation: the current reference balance; the last shown balance;
 // and the target balance for the end of the day:
 
-// ** The current reference balance (currentAnchorBalance) is the user's balance as of either the start of the day or the last
+// ** The current reference balance (currentReferenceBalance) is the user's balance as of either the start of the day or the last
 // balance-related event (save, withdraw, boost award), whichever  is latest. The current reference balance always forms
 // the initial balance for the slow animation. It is stored in Redux state in balance.reducer.js.
 
@@ -99,7 +99,7 @@ class BalanceNumber extends React.Component {
 
   componentDidUpdate(prevProps) {
     // if anchor balance changes anywhere, then we animate rapidly to it, else we relax
-    if (prevProps.currentAnchorBalance !== this.props.currentAnchorBalance) {
+    if (prevProps.currentReferenceBalance !== this.props.currentReferenceBalance) {
       // console.log('*** Anchor balance updated, force rapid animation');
       this.initiateAppropriateAnimation(true, 'componentDidUpdate');
     }
@@ -117,40 +117,52 @@ class BalanceNumber extends React.Component {
   }
 
   onFinishBalanceAnimation() {
-    // console.log(`Balance animation finished, last shown: ${this.state.lastShownBalance} and anchor: ${this.props.currentAnchorBalance}`);
+    // console.log(`Balance animation finished, last shown: ${this.state.lastShownBalance} and anchor: ${this.props.currentReferenceBalance}`);
     if (this.state.lastShownBalance !== this.props.lastShownBalance) {
       this.props.updateShownBalance(this.state.lastShownBalance);
     }
     this.initiateAppropriateAnimation(false, 'onFinishBalanceAnimation');
   }
 
+  // if we put this in the reducer, it gets called all the time, and hits performance badly, because of state refresh
+  calculateTargetBalanceAtReferenceMillis(referenceMillis) {
+    // console.log('*** Calculating reference balance');
+    const { balanceStartDayOrLastSettled, balanceEndOfToday } = this.props.balanceDict;
+    
+    if (!balanceEndOfToday) {
+      return balanceStartDayOrLastSettled.amount;
+    }
+  
+    const targetMinusAnchorMillis = balanceEndOfToday.epochMilli - balanceStartDayOrLastSettled.epochMilli;
+    const targetMinusAnchorAmount = balanceEndOfToday.amount - balanceStartDayOrLastSettled.amount;
+    const elapsedSinceTarget = referenceMillis - balanceStartDayOrLastSettled.epochMilli;
+  
+    const amountSinceStart = (elapsedSinceTarget / targetMinusAnchorMillis) * targetMinusAnchorAmount;
+  
+    return balanceStartDayOrLastSettled.amount + amountSinceStart;
+  }
+  
+
   initiateAppropriateAnimation(forceRapidAnimation = false) {
     if (this.state.lastShownBalance === 0 || forceRapidAnimation) {
-      this.animateToAnchorBalance();
+      this.setState({ referenceMoment: moment().valueOf() }, () => this.animateToAnchorBalance());
       return;
     }
 
-    // console.log(`Last animation target: ${this.state.animationTargetNumber}, and currentBalance: ${this.props.currentAnchorBalance} and target: ${this.props.currentTargetBalance}`);
-    const isAnimatingToRightAnchor =
-      this.state.animationTargetNumber === this.props.currentAnchorBalance;
+    // console.log(`Last animation target: ${this.state.animationTargetNumber}, and currentBalance: ${this.props.currentReferenceBalance} and target: ${this.props.currentTargetBalance}`);
+    const referenceAnchor = this.calculateTargetBalanceAtReferenceMillis(this.state.referenceMoment);
+    const isAnimatingToRightAnchor = this.state.animationTargetNumber === referenceAnchor;
     // as below note, end of day target is *always* above current, so this will guard against accidental declines
-    const isAnimatingToRightTarget =
-      this.state.animationTargetNumber ===
-      Math.max(
-        this.props.currentTargetBalance,
-        this.props.currentAnchorBalance
-      );
+    const isAnimatingToRightTarget = this.state.animationTargetNumber === Math.max(this.props.currentTargetBalance, referenceAnchor);
     // console.log(`Animating tags: to anchor: ${isAnimatingToRightAnchor} and to target: ${isAnimatingToRightTarget}`);
     if (!isAnimatingToRightAnchor && !isAnimatingToRightTarget) {
       // neither heading to anchor balance nor on way to target, so go to anchor quickly
+      console.log('Going to the wrong place, so course correct');
       this.animateToAnchorBalance();
       return;
     }
 
-    if (
-      isAnimatingToRightAnchor &&
-      this.state.lastShownBalance === this.state.animationTargetNumber
-    ) {
+    if (isAnimatingToRightAnchor && this.state.lastShownBalance === this.state.animationTargetNumber) {
       this.animateToEndOfDayBalance();
       return;
     }
@@ -162,7 +174,7 @@ class BalanceNumber extends React.Component {
     const animationDuration = DEFAULT_BALANCE_ANIMATION_DURATION;
     const animationInterval = DEFAULT_BALANCE_ANIMATION_INTERVAL;
     const animationStartNumber = this.state.lastShownBalance;
-    const animationTargetNumber = this.props.currentAnchorBalance;
+    const animationTargetNumber = this.calculateTargetBalanceAtReferenceMillis(this.state.referenceMoment);
 
     this.setState({
       animationStartNumber,
@@ -174,13 +186,17 @@ class BalanceNumber extends React.Component {
 
   animateToEndOfDayBalance() {
 
+    // users are not seeing this happen, so we are going to 'speed it up' with a min duration
     const animationDuration = moment().endOf('day').valueOf() - moment().valueOf();
+
     const animationStartNumber = this.state.lastShownBalance;
     // this prevents an accidental decline (e.g., on day changeover), and is valid, since interest mechanics
     // dictate that the only way a balance should decline is via withdrawal, i.e., change in server balance, so end of day target always higher
+    
+    console.log(`*** TARGET: ${this.props.currentTargetBalance} and anchor: ${this.props.currentReferenceBalance}`);
     const animationTargetNumber = Math.max(
       this.props.currentTargetBalance,
-      this.props.currentAnchorBalance
+      this.props.currentReferenceBalance
     );
 
     // in here we calculate this (animated number can, but would then require reverting to two differently set up anim-numbers, which
