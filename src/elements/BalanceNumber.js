@@ -25,7 +25,7 @@ import {
 // depending on the phone, a shorter interval actually leads to a longer animation, because the animation can't
 // move as fast as desired (given calculations etc), especially at large balances
 const DEFAULT_BALANCE_ANIMATION_INTERVAL = 75;
-const DEFAULT_BALANCE_ANIMATION_DURATION = 3000;
+const DEFAULT_BALANCE_ANIMATION_DURATION = 4000;
 const DEFAULT_REST_DAY_STEP_SIZE = 100;
 
 const mapStateToProps = state => ({
@@ -126,7 +126,7 @@ class BalanceNumber extends React.Component {
 
   // if we put this in the reducer, it gets called all the time, and hits performance badly, because of state refresh
   calculateTargetBalanceAtReferenceMillis(referenceMillis) {
-    console.log('*** Calculating reference balance');
+    // console.log('*** Calculating reference balance');
     const { balanceStartDayOrLastSettled, balanceEndOfToday } = this.props.balanceDict;
     
     if (!balanceEndOfToday) {

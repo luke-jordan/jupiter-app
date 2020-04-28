@@ -124,7 +124,7 @@ class PastMessages extends React.Component {
             {userMessage.messageTitle}
           </Text>
         </View>
-        <View>
+        <View style={{ maxWidth: '100%' }}>
           <Text style={styles.messageCardText}>{messageBody}</Text>
         </View>
         <View style={styles.messageCardFooter}>
@@ -258,6 +258,7 @@ const styles = StyleSheet.create({
     marginVertical: 12,
     padding: 16,
     minWidth: '100%',
+    maxWidth: '100%',
     borderRadius: 4,
     shadowColor: Colors.GRAY,
     shadowOffset: { width: 0, height: 2 },
@@ -269,6 +270,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
+    maxWidth: '100%',
   },
   messageCardIcon: {
     marginEnd: 10,
@@ -278,6 +280,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: Colors.DARK_GRAY,
+    maxWidth: '100%',
   },
   messageCardText: {
     fontFamily: 'poppins-regular',

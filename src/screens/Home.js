@@ -106,8 +106,8 @@ class Home extends React.Component {
       showSubmittingModal: false,
 
       lastFetchTimeMillis: 0,
-      // overrideGoToOnboard: this.props.navigation.getParam('overrideGoToOnboard') || false,
-      overrideGoToOnboard: true,
+      
+      inPreviewMode: this.props.navigation.getParam('inPreviewMode') || false,
     };
   }
 
@@ -174,6 +174,10 @@ class Home extends React.Component {
     await this.hydrateStateIfNotPrior(info);
 
     this.setState({ firstName: this.props.profile.calledName || this.props.profile.personalName });
+
+    if (this.state.inPreviewMode) {
+      this.fetchMessagesIfNeeded();
+    }
     
     // check params if we have params.showModal we show modal with game
     if (params && params.showGameUnlockedModal) {
@@ -183,8 +187,7 @@ class Home extends React.Component {
 
     info.onboardStepsRemaining = this.props.onboardStepsRemaining;
     
-    const shouldGoToOnboarding = !this.state.overrideGoToOnboard && Array.isArray(this.props.onboardStepsRemaining) && this.props.onboardStepsRemaining.length > 0;
-    console.log('*** SHOULD GO TO ONBOARD ? : ', shouldGoToOnboarding);
+    const shouldGoToOnboarding = !this.state.inPreviewMode && Array.isArray(this.props.onboardStepsRemaining) && this.props.onboardStepsRemaining.length > 0;
     if (shouldGoToOnboarding) {
       NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'OnboardPending');
       return;
@@ -252,7 +255,7 @@ class Home extends React.Component {
         this.props.updateWholeProfile(resultJson);
         const { screen, params } = NavigationUtil.directBasedOnProfile(resultJson);
         
-        if (screen && screen !== 'Home' && !this.state.overrideGoToOnboard) {
+        if (screen && screen !== 'Home' && !this.state.inPreviewMode) {
           NavigationUtil.navigateWithoutBackstack(this.props.navigation, screen, params);
           return;
         }
@@ -389,6 +392,7 @@ class Home extends React.Component {
 
       if (result.ok) {
         const resultJson = await result.json();
+        // console.log('Triggered boost result: ', resultJson);
         const transformedBoosts = resultJson.map((boost) => boostService.convertBoostAndLogsToGameDetails(boost));
         this.handleBoostCheckResult(transformedBoosts);    
       } else {
@@ -444,6 +448,11 @@ class Home extends React.Component {
     }
     // console.log('State update: ', stateUpdate);
     this.setState(stateUpdate, () => this.props.updateBoostViewed({ boostId: boostToView.boostId, viewedStatus: boostToView.boostStatus }));
+
+    // finally, update balance, if boost was redeemed (and, if we are onboarding, get the whole profile)
+    if (boostToView.boostStatus === 'REDEEMED') {
+      this.fetchCurrentProfileFromServer();
+    }
   }
 
   hideBoostResultModal() {
@@ -452,13 +461,23 @@ class Home extends React.Component {
     });
   }
 
+  // sequence of checks (first 'true' ends sequence):
+  // (1) are we in preview, if so, we show a welcome kind of message; 
+  // (2) has some other component / logic set the next message already; if so, show that 
+  // (3) does the backend have a next message for us to show; if so, show
+  // (4) is there a remaining fallback message tha thasn't been viewed; if so, show 
   async fetchMessagesIfNeeded() {
     if (this.state.hasMessage) {
       return;
     }
 
+    const showWelcomeMessage = this.state.inPreviewMode || (this.props.onboardStepsRemaining && this.props.onboardStepsRemaining.includes('ADD_CASH'));
+    if (showWelcomeMessage) {
+      this.showMessage(MessagingUtil.getWelcomeMessage());
+      return;
+    }
+
     const { nextMessage } = this.props;
-    
     if (nextMessage) {
       this.showMessage(nextMessage);
       return;
@@ -500,7 +519,10 @@ class Home extends React.Component {
         messageDetails: message,
       });
     }
-    this.props.updateMessageViewed(message);
+
+    if (!this.state.inPreviewMode) {
+      this.props.updateMessageViewed(message);
+    }
   }
 
   onFlingMessage() {
@@ -727,6 +749,11 @@ class Home extends React.Component {
       gameResultParams,
       showSubmittingModal: false,
     }, () => this.cleanUpGameParamsAndShowResult());
+
+    if (amountWon) {
+      // also do an update, so we increase balance
+      this.fetchCurrentProfileFromServer();
+    }
   }
 
   cleanUpGameParamsAndShowResult() {

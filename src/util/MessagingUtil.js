@@ -1,5 +1,17 @@
 import { Endpoints } from '../util/Values';
 
+const WELCOME_MESSAGE = {
+  messageId: 'WELCOME_MESSAGE',
+  display: {
+    type: 'CARD',
+    iconType: 'BOOST_ROCKET',
+    titleType: 'EMPHASIS',
+  },
+  actionToTake: 'ADD_CASH',
+  title: 'Welcome to your Jupiter app🥳',
+  body: 'Hey there, glad to see you here in your Jupiter App! See that big spinning wheel in the centre of your screen? We call that your "Jupiter MoneyWheel". It works hard for you every moment of every day - spinning to earn you interest on your savings with every turn!\n\nSo have a look around your App, and when you\'re ready, make your first save to your MoneyWheel by tapping the PURPLE PLUS button below - and you might also unlock your first boost or game!',
+};
+
 const FALLBACK_MESSAGES = [
 
     {
@@ -61,6 +73,11 @@ const FALLBACK_MSG_IDS = FALLBACK_MESSAGES.map((msg) => msg.messageId);
 
 export const MessagingUtil = {
 
+  // may make more sophisticated in future
+  getWelcomeMessage() {
+    return WELCOME_MESSAGE;
+  },
+
   getFallbackMessages() {
     return FALLBACK_MESSAGES;
   },
@@ -116,7 +133,7 @@ export const MessagingUtil = {
   },
 
   async tellServerMessageAction(userAction, messageId, authenticationToken) {
-    if (!messageId || FALLBACK_MSG_IDS.includes(messageId)) {
+    if (!messageId || FALLBACK_MSG_IDS.includes(messageId) || messageId === 'WELCOME_MESSAGE') {
       return false;
     } else {
       try {

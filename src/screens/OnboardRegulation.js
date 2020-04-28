@@ -97,7 +97,7 @@ class OnboardRegulation extends React.PureComponent {
       this.props.removeOnboardStep('AGREE_REGULATORY');
       
       // we are going to just allow people straight to home screen so they can look around first
-      this.props.navigation.navigate('Home', { overrideGoToOnboard: true });
+      this.props.navigation.navigate('Home', { inPreviewMode: true });
 
       // const { onboardStepsRemaining } = this.props;
       // let nextScreen = 'OnboardAddSaving';
