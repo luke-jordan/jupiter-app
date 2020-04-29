@@ -18,7 +18,6 @@ import Onboarding from './src/screens/Onboarding';
 import LimitedUsers from './src/screens/LimitedUsers';
 import ThankYou from './src/screens/ThankYou';
 import Boosts from './src/screens/Boosts';
-import Friends from './src/screens/Friends';
 import Account from './src/screens/Account';
 import Terms from './src/screens/Terms';
 import PrivacyPolicy from './src/screens/PrivacyPolicy';
@@ -48,6 +47,8 @@ import MoneyMarket from './src/screens/MoneyMarket';
 import OnboardRegulation from './src/screens/OnboardRegulation';
 import OnboardAddSaving from './src/screens/OnboardAddSaving';
 import OnboardPending from './src/screens/OnboardPending';
+
+import Friends from './src/screens/FriendList';
 
 const AppContainer = createAppContainer(
   createStackNavigator(
