@@ -6,7 +6,8 @@ import {
 } from './friend.actions';
 
 const initialState = {
-  friends: [],
+  friends: [
+  ],
   friendRequests: [],
   referralData: {},
   friendAlertPending: false,

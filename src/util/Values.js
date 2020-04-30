@@ -20,6 +20,7 @@ export const Colors = {
   SKY_BLUE: '#EAF8FA',
   GREEN: '#149570',
   HISTORY_GREEN: '#6CD4C4',
+  GOLD: '#FBC943',
 };
 
 export const Sizes = {

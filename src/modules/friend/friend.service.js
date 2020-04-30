@@ -3,7 +3,7 @@ import { getRequest, postRequest } from '../auth/auth.helper';
 
 export const friendService = {
 
-  async fetchFriendList({ token }) {
+  async fetchFriendList(token) {
     try {
       const url = `${Endpoints.CORE}friend/list`;
       const result = await getRequest({ token, url });
@@ -17,7 +17,7 @@ export const friendService = {
     }
   },
 
-  async fetchFriendReqList({ token }) {
+  async fetchFriendReqList(token) {
     try {
       const url = `${Endpoints.CORE}friend/request/list`;
       const result = await getRequest({ token, url });

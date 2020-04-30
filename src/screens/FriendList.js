@@ -18,21 +18,60 @@ const mapStateToProps = state => ({
   token: getAuthToken(state),
 });
 
+const obtainColorForHeat = (friendHeat) => {
+  if (friendHeat > 3) {
+    return Colors.RED;
+  } else if (friendHeat > 2) {
+    return Colors.PURPLE;
+  } else if (friendHeat > 1) {
+    return Colors.GOLD;
+  } else {
+    return Colors.LIGHT_BLUE;
+  }
+};
+
 class Friends extends React.Component {
+
+  constructor(props) {
+    super(props);
+    this.state = {
+      friends: [
+        { personalName: 'Vanessa', familyName: 'Phillips', friendshipId: 'test', savingHeat: 2 },
+        { personalName: 'Avishkar', familyName: 'Brijmohun', friendshipId: 'test-2', savingHeat: 5 },
+        { personalName: 'Simonee', familyName: 'Pillay-Brijmohun', friendshipId: 'test-3', savingHeat: 3 },
+        { personalName: 'Arifperson', familyName: 'Pereira Person Soares Moreno', friendshipId: 'test-4', savingHeat: 0 },
+        { personalName: 'Arif', familyName: 'Pereira Soares Moreno', friendshipId: 'test-5', savingHeat: 0 },
+      ],
+    }
+  }
   
   async componentDidMount() {
-    friendService.fetchFriendList();
+    // friendService.fetchFriendList();
+    // console.log('So far: ', this.state.friends);
+
+    // this.setState({ 
+    // });
   }
 
   renderFriendItem(friend, index) {
+    const friendName = `${friend.calledName || friend.personalName} ${friend.familyName}`;
+    const lastAction = `Saved on 5 March`;
+
     return (
       <View style={styles.friendItemWrapper} key={friend.friendshipId}>
-        <Text style={styles.friendItemIndex}>{index}</Text>
+        <Text style={styles.friendItemIndex}>{index + 1}</Text>
         <View style={styles.friendItemBodyWrapper}>
-          <Text style={styles.friendItemName}>{friend.name}</Text>
-          <Text style={styles.friendItemSubtitle}>{friend.lastAction}</Text>
+          <Text style={styles.friendItemName}>{friendName}</Text>
+          <Text style={styles.friendItemSubtitle}>{lastAction}</Text>
         </View>
-        <View style={styles.friendItemHeat}>{friend.savingHeat}</View>
+        <View style={styles.friendItemHeat}>
+          <Icon
+            name="circle-o"
+            type="font-awesome"
+            size={30}
+            color={obtainColorForHeat(friend.savingHeat)}
+          />
+        </View>
         <Icon
           name="chevron-right"
           type="evilicon"
@@ -62,7 +101,10 @@ class Friends extends React.Component {
             />
           </TouchableOpacity>
           <View style={styles.internalSeparator} />
-          <TouchableOpacity style={styles.hasFriendsTopButton}>
+          <TouchableOpacity 
+            style={styles.hasFriendsTopButton}
+            onPress={() => this.props.navigation.navigate('AddFriend')}
+          >
             <Image
               source={require('../../assets/messages.png')}
               style={styles.buddyRequestIcon}
@@ -81,7 +123,7 @@ class Friends extends React.Component {
             Your buddies
           </Text>
           <View style={styles.friendsListHolder}>
-            {this.props.friends.map((item, index) => this.renderFriendItem(item, index))}
+            {this.state.friends.map((item, index) => this.renderFriendItem(item, index))}
           </View>
         </View>
       </>
@@ -120,6 +162,7 @@ class Friends extends React.Component {
           </Text>
           <Button 
             title="+ ADD SAVING BUDDIES"
+            onPress={() => this.props.navigation.navigate('AddFriend')}
             titleStyle={styles.addFriendBtnTitle}
             buttonStyle={styles.addFriendBtnStyle}
             containerStyle={styles.addFriendBtnContainerStyle}
@@ -152,7 +195,7 @@ class Friends extends React.Component {
           <Text style={styles.mainTitle}>Saving Buddies</Text>
         </View>
         <ScrollView contentContainerStyle={styles.mainView}>
-          {this.renderNoFriends()}
+          {this.state.friends ? this.renderWithFriends() : this.renderNoFriends()}
         </ScrollView>
         <NavigationBar navigation={this.props.navigation} currentTab={1} />
       </View>
@@ -283,6 +326,75 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     marginLeft: 5,
+  },
+
+  // has friends styles
+  hasFriendsTopButtonWrapper: {
+    backgroundColor: Colors.WHITE,
+    width: '100%',
+    marginTop: 14,
+  },
+  hasFriendsTopButton: {
+    flexDirection: 'row',
+    paddingVertical: 10,
+    alignItems: 'center',
+    paddingHorizontal: 14, 
+  },
+  internalSeparator: {
+    marginLeft: 55,
+    width: '100%',
+    height: 1,
+    backgroundColor: Colors.GRAY,
+  },
+  hasFriendsBody: {
+    marginTop: 20,
+    width: '100%',
+    alignItems: 'center',
+  },
+  hasFriendsTitle: {
+    width: '100%',
+    textAlign: 'left',
+    fontSize: 14,
+    fontFamily: 'poppins-semibold',
+    color: Colors.DARK_GRAY,
+    textTransform: 'uppercase',
+    paddingHorizontal: 15,
+    marginBottom: 5,
+  },
+  friendItemWrapper: {
+    flexDirection: 'row',
+    backgroundColor: Colors.WHITE,
+    minWidth: '100%',
+    minHeight: 55,
+    marginTop: 5,
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
+  friendItemIndex: {
+    marginLeft: 18,
+    color: Colors.PURPLE,
+    fontFamily: 'poppins-semibold',
+    fontSize: 16,
+  },
+  friendItemBodyWrapper: {
+    marginStart: 18, 
+    maxHeight: '100%',
+    maxWidth: '70%',
+  },
+  friendItemName: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 15,
+    color: Colors.DARK_GRAY,
+  },
+  friendItemSubtitle: {
+    fontFamily: 'poppins-regular',
+    fontSize: 12,
+    color: Colors.MEDIUM_GRAY,
+  },
+  friendItemHeat: {
+    flexGrow: 1,
+    alignItems: 'flex-end',
   },
 });
 
