@@ -49,7 +49,9 @@ import OnboardAddSaving from './src/screens/OnboardAddSaving';
 import OnboardPending from './src/screens/OnboardPending';
 
 import Friends from './src/screens/FriendList';
+import FriendRequestList from './src/screens/FriendRequestList';
 import AddFriend from './src/screens/AddFriend';
+import AddFriendMessage from './src/screens/AddFriendMessage';
 
 const AppContainer = createAppContainer(
   createStackNavigator(
@@ -93,7 +95,10 @@ const AppContainer = createAppContainer(
       OnboardRegulation: { screen: OnboardRegulation },
       OnboardAddSaving: { screen: OnboardAddSaving },
       OnboardPending: { screen: OnboardPending },
+
       AddFriend: { screen: AddFriend },
+      AddFriendMessage: { screen: AddFriendMessage },
+      FriendRequestList: { screen: FriendRequestList },
     },
     { initialRouteName: 'Splash', headerMode: 'none' }
   )

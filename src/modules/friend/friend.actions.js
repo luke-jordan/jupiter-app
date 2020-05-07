@@ -5,6 +5,12 @@ export const UPDATE_FRIEND_LIST = `${namespace}/UPDATE_FRIEND_LIST`;
 export const UPDATE_FRIEND_REQUEST_LIST = `${namespace}/UPDATE_FRIEND_REQUEST_LIST`;
 export const UPDATE_REFERRAL_DATA = `${namespace}/UPDATE_REFERRAL_DATA`;
 
+// since 90% of operations only work on one at a time
+export const ADD_FRIENDSHIP = `${namespace}/ADD_FRIENDSHIP`;
+export const ADD_FRIEND_REQUEST = `${namespace}/ADD_FRIEND_REQUEST`;
+export const REMOVE_FRIENDSHIP = `${namespace}/REMOVE_FRIENDSHIP`;
+export const REMOVE_FRIEND_REQUEST = `${namespace}/REMOVE_FRIEND_REQUEST`;
+
 export const updateFriendAlertPending = isPending => ({
   type: UPDATE_FRIEND_ALERT_PENDING,
   isPending,
@@ -23,4 +29,27 @@ export const updateFriendReqList = friendRequestList => ({
 export const updateReferralData = payload => ({
   type: UPDATE_REFERRAL_DATA,
   payload,
+});
+
+// using these to save repeated calls to get everything again (may risk some short-term inconsistency, but worth
+// trade-off for sparing our users devices -- can adjust in future if necessary)
+export const addFriendship = friend => ({
+  type: ADD_FRIENDSHIP,
+  friend,
+});
+
+export const addFriendRequest = friendRequest => ({
+  type: ADD_FRIEND_REQUEST,
+  friendRequest,
 })
+
+export const removeFriendship = relationshipId => ({
+  type: REMOVE_FRIENDSHIP,
+  relationshipId,
+});
+
+
+export const removeFriendRequest = friendRequestId => ({
+  type: REMOVE_FRIEND_REQUEST,
+  friendRequestId,
+});

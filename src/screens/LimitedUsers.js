@@ -150,6 +150,7 @@ export default class LimitedUsers extends React.Component {
         throw result;
       }
     } catch (error) {
+      LoggingUtil.logError(error);
       this.showError();
     }
   };
