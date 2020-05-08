@@ -166,7 +166,7 @@ class History extends React.Component {
         throw result;
       }
     } catch (error) {
-      console.log('ERROR FETCHING HISTORY: ', JSON.stringify(error));
+      // console.log('ERROR FETCHING HISTORY: ', JSON.stringify(error));
       this.setState({ loading: false, fetching: false });
     }
   };
