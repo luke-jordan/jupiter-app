@@ -39,7 +39,12 @@ const friendReducer = (state = initialState, action) => {
       }
       
       referralData.referralCode = rawData.referralCode;
-      const boostAmountOffered = safeAmountStringSplit(rawData.boostAmountOffered);
+      const { floatDefaults } = rawData;
+      if (!floatDefaults || !floatDefaults.boostAmountEach) {
+        return { ...state, referralData };
+      }
+
+      const boostAmountOffered = safeAmountStringSplit(floatDefaults.boostAmountEach);
       if (boostAmountOffered && boostAmountOffered.amount > 0) {
         referralData.referralBoostAvailable = true;
         referralData.boostAmountOffered = boostAmountOffered;

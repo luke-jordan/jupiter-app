@@ -3,6 +3,15 @@ import { getRequest, postRequest } from '../auth/auth.helper';
 
 export const friendService = {
 
+  DEFAULT_TEXT_MESSAGE: `The Jupiter Savings app REWARDS me for saving & gives a GREAT interest rate! ` +
+    `If you join me as my savings buddy, we can earn EXTRA rewards!`,
+
+  sharingMessage(referralCode, baseMessage = this.DEFAULT_TEXT_MESSAGE) {
+    // const referralLink = `${Endpoints.MESSAGES}/referral/${referralCode}`;
+    const suffix = `Just use my referral code, ${referralCode}, after downloading here: ${Endpoints.DOWNLOAD}`;
+    return `${baseMessage} ${suffix}`;
+  },
+
   async fetchFriendList(token) {
     try {
       const url = `${Endpoints.CORE}friend/list`;
@@ -24,7 +33,6 @@ export const friendService = {
       if (!result.ok) {
         throw result;
       }
-
       return result.json();
     } catch (err) {
       console.log('ERROR: fetching referral data: ', JSON.stringify(err));
@@ -93,13 +101,21 @@ export const friendService = {
   async acceptFriendRequest(token, requestId, sharingLevel) {
     try {
       const url = `${Endpoints.CORE}friend/request/accept`;
-      const params = { requestId, acceptedShareItems: sharingLevel };
-      console.log('Sending: ', params);
+      const acceptedShareItems = [];
+      if (sharingLevel.shareActivity) {
+        acceptedShareItems.push('LAST_ACTIVITY');
+      }
+      if (sharingLevel.shareAmount) {
+        acceptedShareItems.push('LAST_AMOUNT');
+      }
+
+      const params = { requestId, acceptedShareItems };
+      // console.log('Sending: ', params);
       const result = await postRequest({ token, url, params });
       if (!result.ok) {
         throw result;
       }
-      return true; // todo : return the new friendship
+      return result.json(); // todo : return the new friendship
     } catch (err) {
       console.log('Error accepting friend request: ', JSON.stringify(err));
       return false;
@@ -118,17 +134,6 @@ export const friendService = {
     } catch (err) {
       console.log('Error ignoring friend request: ', JSON.stringify(err));
       return false;
-    }
-  },
-
-  // will need to think through this carefully
-  async requestFriendToJoinBoost({ token, boostId, friendshipId }) {
-    try {
-      const url = `${Endpoints.CORE}friend/boost/add`;
-      const params = { boostId, friendshipId };
-      const result = await postRequest({ token, boostId, friendshipId });
-    } catch (err) {
-      console.log('Error inviting friend to boost: ', JSON.stringify(err));
     }
   },
 

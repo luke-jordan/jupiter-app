@@ -1,7 +1,7 @@
 import React from 'react';
 import { connect } from 'react-redux';
 
-import { View, Text, ScrollView, TouchableOpacity, Modal, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { Button, Icon, Overlay } from 'react-native-elements';
 
 import { Colors } from '../util/Values';
@@ -70,15 +70,15 @@ class FriendRequestList extends React.Component {
   }
 
   onPressAcceptFriendRequest = (request) => {
-    console.log('SHOULD SHOW UP PLEASE');
     this.setState({ requestBeingHandled: request, showAcceptModal: true });
   }
 
   onConfirmAcceptRequest = async (sharingLevel) => {
-    console.log('Here we go, sharing level: ', sharingLevel);
+    // console.log('Here we go, sharing level: ', sharingLevel);
     const { requestId } = this.state.requestBeingHandled;
-    console.log('Accepting request with ID: ', requestId);  
+    // console.log('Accepting request with ID: ', requestId);  
     const acceptResult = await friendService.acceptFriendRequest(this.props.token, requestId, sharingLevel);
+    // console.log('Acceptance result: ', acceptResult);
     if (!acceptResult) {
       // handle error
       this.closeDialogs(false);
@@ -86,7 +86,8 @@ class FriendRequestList extends React.Component {
     }
 
     this.props.removeFriendRequest(requestId);
-    // this.props.addFriendship(acceptResult.friendship);
+    this.props.addFriendship(acceptResult);
+    this.setState({ acceptedFriend: acceptResult });
     this.closeDialogs(true);
   }
 
@@ -95,7 +96,7 @@ class FriendRequestList extends React.Component {
   }
 
   onConfirmIgnoreRequest = async () => {
-    console.log('Okay ignoring, request: ', this.state.requestBeingHandled);
+    // console.log('Okay ignoring, request: ', this.state.requestBeingHandled);
     const { requestId } = this.state.requestBeingHandled;
     const ignoreResult = await friendService.ignoreFriendRequest(this.props.token, requestId);
     if (ignoreResult) {
@@ -109,10 +110,10 @@ class FriendRequestList extends React.Component {
   }
 
   onConfirmCancelSentRequest = async () => {
-    console.log('Cancelling request!');
+    // console.log('Cancelling request!');
     const { requestId } = this.state.requestBeingHandled;
     const cancelResult = await friendService.cancelSentFriendRequest(this.props.token, requestId);
-    console.log('Result of cancel: ', cancelResult);
+    // console.log('Result of cancel: ', cancelResult);
     if (cancelResult) {
       this.props.removeFriendRequest(requestId); // component update will automatically split again
     }
@@ -132,6 +133,7 @@ class FriendRequestList extends React.Component {
   }
 
   renderSingleSentRequest(request, index) {
+    const targetName = `${request.calledName || request.personalName} ${request.familyName}`;
     return (
       <View 
         style={index !== this.state.sentRequests.length - 1 
@@ -140,11 +142,9 @@ class FriendRequestList extends React.Component {
       >
         <View style={styles.requestTextHolder}>
           <Text style={styles.requestPersonName}>
-            {request.calledName || request.personalName}{' '}{request.familyName} 
+            {request.personalName ? targetName : request.contactMethod} 
           </Text>
-          <Text style={styles.requestPersonSubtitle}>
-            {request.contactMethod}
-          </Text>
+          {request.personalName ? <Text style={styles.requestPersonSubtitle}>{request.contactMethod}</Text> : null}
         </View>
         <TouchableOpacity style={styles.requestButtonHolder} onPress={() => this.onPressSentRequest(request)}>
           <Icon
@@ -173,15 +173,19 @@ class FriendRequestList extends React.Component {
     )
   }
 
-  renderSingleReceivedRequest(request) {
+  renderSingleReceivedRequest(request, index) {
     return (
-      <View style={styles.requestContainer} key={request.requestId}>
+      <View 
+        style={index !== this.state.receivedRequests.length - 1 
+          ? [styles.requestContainer, styles.requestWithSeparator] : styles.requestContainer} 
+        key={request.requestId}
+      >
         <View style={styles.requestTextHolder}>
           <Text style={styles.requestPersonName}>
             {request.calledName || request.personalName}{' '}{request.familyName} 
           </Text>
           <Text style={styles.requestPersonSubtitle}>
-            {request.initiatedUserMutualFriends || 0} mutual friends
+            {request.numberOfMutualFriends || 0} mutual friends
           </Text>
         </View>
         <View style={styles.requestButtonHolder}>
@@ -207,7 +211,7 @@ class FriendRequestList extends React.Component {
   renderReceivedRequests() {
     return (
       <>
-        {this.state.receivedRequests.map((request) => this.renderSingleReceivedRequest(request))}
+        {this.state.receivedRequests.map((request, index) => this.renderSingleReceivedRequest(request, index))}
       </>
     )
   }
@@ -294,10 +298,38 @@ class FriendRequestList extends React.Component {
         animationType="fade"
         onBackdropPress={() => this.setState({ showFinishedModal: false })}
       >
-        <View>
-          <Text>Done! You are now connected to (person). You will now share X and Y with Z. Soon, you will be able 
+        <View style={styles.modalContainer}>
+          <Text style={styles.modalHeader}>Done!</Text>
+          <Text style={styles.modalBody}>
+            You are now connected to {this.state.acceptedFriend.calledName}. Soon, you will be able 
             to challenge each other to saving tournaments, and be eligible for group boosts. Stay tuned!
           </Text>
+          <Button 
+            title="GO TO FRIENDS"
+            onPress={() => this.props.navigation.navigate('Friends')}
+            titleStyle={styles.ignoreBtnTitleStyle}
+            buttonStyle={styles.ignoreBtnStyle}
+            containerStyle={styles.ignoreBtnContainerStyle}
+            linearGradientProps={{
+              colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+              start: { x: 0, y: 0.5 },
+              end: { x: 1, y: 0.5 },
+            }}          
+          />
+          {this.props.friendRequests && this.props.friendRequests.length > 0 && (
+            <Button 
+              title="SEE MORE REQUESTS"
+              onPress={() => this.props.navigation.navigate('Friends')}
+              titleStyle={styles.ignoreBtnTitleStyle}
+              buttonStyle={styles.ignoreBtnStyle}
+              containerStyle={styles.ignoreBtnContainerStyle}
+              linearGradientProps={{
+                colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+                start: { x: 0, y: 0.5 },
+                end: { x: 1, y: 0.5 },
+              }}          
+            />
+          )}
         </View>
       </Overlay>
     )

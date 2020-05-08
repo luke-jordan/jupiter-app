@@ -14,7 +14,7 @@ import { getAuthToken } from '../modules/auth/auth.reducer';
 const DEFAULT_EMAIL = `I've been using the Jupiter Savings app because it REWARDS me for saving, gives a GREAT interest rate - AND I can withdraw at any time!
 \nI'd love you to join my team as a savings buddy so we can earn EXTRA rewards - and help each other build up our savings along the way!`;
 
-const DEFAULT_SMS = `The Jupiter Savings app REWARDS me for saving & gives a GREAT interest rate! If you join me as my savings buddy, we can earn EXTRA rewards!`;
+const DEFAULT_SMS = friendService.DEFAULT_TEXT_MESSAGE;
 
 const mapStateToProps = state => ({
   token: getAuthToken(state),
@@ -83,7 +83,7 @@ class AddFriendMessage extends React.Component {
       >
         <View style={styles.modalContainer}>
           <Text style={styles.modalHeader}>Sent!</Text>
-          <Text style={styles.modalBody}>If you want, you can also share the invite: </Text>
+          <Text style={styles.modalBody}>You can also share the invite directly: </Text>
           <Button 
             title="SHARE NOW"
             onPress={this.shareInvite}

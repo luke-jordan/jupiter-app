@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Share } from 'react-native';
 import { Icon, Input, Button } from 'react-native-elements';
 
 import { Colors } from '../util/Values';
@@ -9,6 +9,8 @@ import { ValidationUtil } from '../util/ValidationUtil';
 import FriendInviteModal from '../elements/friend/FriendInviteModal';
 import { friendService } from '../modules/friend/friend.service';
 
+import { standardFormatAmountDict } from '../util/AmountUtil';
+
 class AddFriend extends React.Component {
 
   constructor(props) {
@@ -16,7 +18,9 @@ class AddFriend extends React.Component {
 
     this.state = {
       token: this.props.navigation.getParam('token'),
-      emailOrPhoneToAdd: 'failure@jupitersave.com',
+      referralData: this.props.navigation.getParam('referralData'),
+
+      emailOrPhoneToAdd: '',
       
       showReferralDetails: true,
       showSearchResults: false,
@@ -33,8 +37,22 @@ class AddFriend extends React.Component {
     };
   };
 
+  async componentDidMount() {
+    const { referralData } = this.state;
+    if (!referralData || !referralData.referralCode) {
+      this.setState({ showReferralDetails: false });
+      return;
+    }
+
+    this.setReferralDetails(referralData);
+  }
+
   onPressBack = () => {
     this.props.navigation.goBack();
+  }
+
+  onShareReferral = () => {
+    Share.share({ message: friendService.sharingMessage(this.state.referralCode) });
   }
 
   onChangeInput = (text) => {
@@ -91,10 +109,11 @@ class AddFriend extends React.Component {
     }
 
     this.setState({ loading: true });
-    const resultOfInvite = await friendService.initiateFriendRequest({ token: this.state.token, ...invitationParams });
-    console.log('Result: ', resultOfInvite);
+    await friendService.initiateFriendRequest({ token: this.state.token, ...invitationParams });
+    // console.log('Result: ', resultOfInvite);
     this.setState({
       loading: false,
+      showFriendInviteModal: false,
       showReferralDetails: true,
       showSearchResults: false,
       foundUsers: [],
@@ -103,6 +122,21 @@ class AddFriend extends React.Component {
     });
 
   };
+
+  setReferralDetails(referralData) {
+    const { referralCode, referralBoostAvailable, boostAmountOffered } = referralData;
+
+    const referralHeader = referralBoostAvailable 
+      ? `Invite a buddy and we'll reward you!` : `Invite a buddy and we'll connect you!`
+
+    const formattedBoostAmount = referralBoostAvailable ? standardFormatAmountDict(boostAmountOffered) : '';
+    
+    const referralBody = referralBoostAvailable
+      ? `If they're new to Jupiter, we'll add ${formattedBoostAmount} to your balance each time a buddy signs up and completes their first save`
+      : `Once they sign up and complete their first save, we'll automatically connect them to you as a saving buddy`;
+
+    this.setState({ referralCode, referralHeader, referralBody });
+  }
 
   showInviteDialogForKnownUser = (friendToView) => {
     this.setState({
@@ -123,11 +157,10 @@ class AddFriend extends React.Component {
     return (
       <View style={styles.footerWrapper}>
         <View style={styles.rewardWrapper}>
-          <Text style={styles.rewardText}>Invite a buddy and we&apos;ll reward you!</Text>
+          <Text style={styles.rewardText}>{this.state.referralHeader}</Text>
         </View>
         <Text style={styles.rewardDescription}>
-          If they&apos;re new to Jupiter, we’ll add R20.00 to your balance each time a buddy signs up and completes 
-          their first save. 
+          {this.state.referralBody}
         </Text>
       </View>
     );
@@ -250,12 +283,12 @@ class AddFriend extends React.Component {
           <Text style={styles.referralNote}>
             Or simply share the referral code below
           </Text>
-          <TouchableOpacity style={styles.referralCode}>
-            <Text style={styles.referralCodeText}>MEMORY</Text>
+          <TouchableOpacity style={styles.referralCode} onPress={this.onShareReferral}>
+            <Text style={styles.referralCodeText}>{this.state.referralCode}</Text>
             <Icon
               name="copy"
               type="font-awesome"
-              size={22}
+              size={25}
               color={Colors.PURPLE}
             />
           </TouchableOpacity>
@@ -355,7 +388,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   referralCode: {
-    marginTop: 5,
+    marginTop: 10,
     width: '100%',
     flexDirection: 'row',
     justifyContent: 'center',
@@ -363,7 +396,7 @@ const styles = StyleSheet.create({
   referralCodeText: {
     color: Colors.PURPLE,
     fontFamily: 'poppins-semibold',
-    fontSize: 14,
+    fontSize: 16,
     marginRight: 5,
   },
   resultBox: {

@@ -1,13 +1,16 @@
 import React from 'react';
 import { connect } from 'react-redux';
 
-import { StyleSheet, View, ScrollView, Text, TouchableOpacity, Image, Switch, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, ScrollView, Text, TouchableOpacity, Image, Switch, ActivityIndicator, Share } from 'react-native';
 import { Button, Icon, Overlay } from 'react-native-elements';
+import { NavigationEvents } from 'react-navigation';
 
 import moment from 'moment';
 
 import NavigationBar from '../elements/NavigationBar';
+
 import { Colors } from '../util/Values';
+import { LoggingUtil } from '../util/LoggingUtil';
 
 import { standardFormatAmountDict } from '../util/AmountUtil';
 
@@ -54,7 +57,6 @@ class Friends extends React.Component {
     this.state = {
       referralCode: '',
       referralText: DEFAULT_REFERRAL_TEXT,
-      requestDataFetched: false,
 
       showFriendModal: false,
       friendToShow: {},
@@ -62,6 +64,8 @@ class Friends extends React.Component {
 
       selfAsFriend: {},
       friendsToDisplay: [],
+
+      // requestDataFetched: false,
     }
   }
   
@@ -83,10 +87,17 @@ class Friends extends React.Component {
     }
   }
 
+  // eslint-disable-next-line react/sort-comp
+  async handleRefocus() {
+    // don't need to do this for referral, which barely ever changes
+    await Promise.all([this.fetchAndUpdateFriends(), this.fetchAndUpdateFriendRequests()]);
+  }
+
   setReferralText() {
-    const referralCode = this.props.referralData && this.props.referralData.referralCode ? this.props.referralData.referralCode : this.props.profile.referralCode;
+    const { referralData } = this.props;
+    const referralCode = referralData && referralData.referralCode ? referralData.referralCode : this.props.profile.referralCode;
     
-    if (!this.props.referralData || !this.props.referralData.referralBoostAvailable) {
+    if (!referralData || !referralData.referralBoostAvailable) {
       this.setState({ referralCode, referralText: DEFAULT_REFERRAL_TEXT });
     }
 
@@ -97,8 +108,14 @@ class Friends extends React.Component {
     this.setState({ referralCode, referralText });
   }
 
+  onPressShareReferral = async () => {
+    LoggingUtil.logEvent('USER_SHARED_REFERRAL_CODE');
+    const shareMessage = friendService.sharingMessage(this.state.referralCode);
+    await Share.share({ message: shareMessage });
+  }
+
   onPressAddFriend = () => {
-    this.props.navigation.navigate('AddFriend', { token: this.props.token });
+    this.props.navigation.navigate('AddFriend', { token: this.props.token, referralData: this.props.referralData });
   }
 
   onPressViewFriend = (friend) => {
@@ -129,7 +146,8 @@ class Friends extends React.Component {
     }
 
     const self = friends.filter((friend) => friend.relationshipId === 'SELF');
-    const friendsToDisplay = friends.filter((friend) => friend.relationshipId !== 'SELF');
+    const friendsToDisplay = friends.filter((friend) => friend.relationshipId !== 'SELF')
+      .sort((friendA, friendB) => friendB.savingHeat - friendA.savingHeat);
     this.setState({ 
       selfAsFriend: self ? self[0] : {},
       friendsToDisplay,
@@ -143,11 +161,10 @@ class Friends extends React.Component {
   }
 
   async fetchAndUpdateReferralData() {
-    console.log('Would fetch referral data');
-    // const referralData = await friendService.fetchReferralData(this.props.token);
+    const referralData = await friendService.fetchReferralData(this.props.token);
     // console.log('Referral data from server: ', referralData);
-    // this.props.updateReferralData(referralData);
-    // this.setReferralText();
+    this.props.updateReferralData(referralData);
+    this.setReferralText();
   }
 
   async fetchAndUpdateFriendRequests() {
@@ -249,6 +266,10 @@ class Friends extends React.Component {
             {this.renderFriendItem(this.state.selfAsFriend, 0)}
             {this.state.friendsToDisplay.map((item, index) => this.renderFriendItem(item, index + 1))}
           </View>
+          <Text style={styles.hasFriendsBodyText}>
+            Stay tuned as we add more and more ways you and your saving buddies can motivate each other to save more,
+            starting with buddy tournaments -- coming soon! 
+          </Text>
         </View>
       </>
     )
@@ -305,14 +326,16 @@ class Friends extends React.Component {
           <Text style={styles.referralText}>
             Or simply share the referral code below:
           </Text>
-          <TouchableOpacity style={styles.referralCode}>
-            <Text style={styles.referralCodeText}>{this.state.referralCode ? this.state.referralCode.toUpperCase() : 'RANDELAS'}</Text>
-            <Image
-              style={styles.copyIcon}
-              source={require('../../assets/copy.png')}
-              resizeMode="contain"
-            />
-          </TouchableOpacity>
+          {this.state.referralCode ? (
+            <TouchableOpacity style={styles.referralCode} onPress={this.onPressShareReferral}>
+              <Text style={styles.referralCodeText}>{this.state.referralCode.toUpperCase()}</Text>
+              <Image
+                style={styles.copyIcon}
+                source={require('../../assets/copy.png')}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
+          ) : null}
         </View>
       </>
     ) 
@@ -371,6 +394,7 @@ class Friends extends React.Component {
   render() {
     return (
       <View style={styles.container}>
+        <NavigationEvents onDidFocus={() => this.handleRefocus()} />
         <View style={styles.titleBar}>
           <Text style={styles.mainTitle}>Saving Buddies</Text>
         </View>
@@ -490,19 +514,20 @@ const styles = StyleSheet.create({
   },
   referralText: {
     marginHorizontal: 15,
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: 'poppins-regular',
     color: Colors.MEDIUM_GRAY,
   },
   referralCode: {
     flexDirection: 'row',
     marginTop: 5,
+    marginBottom: 20,
   },
   referralCodeText: {
     color: Colors.PURPLE,
     fontFamily: 'poppins-semibold',
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: 16,
   },
   copyIcon: {
     width: 22,
@@ -578,6 +603,16 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     alignItems: 'flex-end',
   },
+  hasFriendsBodyText: {
+    fontFamily: 'poppins-regular',
+    fontSize: 14,
+    lineHeight: 20,
+    color: Colors.MEDIUM_GRAY,
+    marginHorizontal: 15,
+    marginTop: 15,
+    textAlign: 'center',
+  },
+
   modalContainer: {
     marginTop: 'auto',
     marginHorizontal: 15,
