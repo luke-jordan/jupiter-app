@@ -202,10 +202,14 @@ export const friendService = {
   },
 
   async postFriendAlertsProcessed(token, logIds) {
+    if (!logIds || logIds.length === 0) {
+      return;
+    }
+    
     try {
       const url = `${Endpoints.CORE}friend/alert/viewed`;
       const result = await postRequest({ token, url, params: { logIds }});
-      console.log('And ? : ', JSON.stringify(result));
+      // console.log('And ? : ', JSON.stringify(result));
       if (!result.ok) {
         throw result;;
       }

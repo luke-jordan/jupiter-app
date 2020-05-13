@@ -18,7 +18,7 @@ import { standardFormatAmountDict } from '../util/AmountUtil';
 
 import { friendService } from '../modules/friend/friend.service';
 import { getFriendList, getReferralData, getFriendRequestList, getFriendAlertData } from '../modules/friend/friend.reducer';
-import { updateFriendList, updateReferralData, updateFriendReqList, removeFriendship, updateHasSeenFriends } from '../modules/friend/friend.actions';
+import { updateFriendList, updateReferralData, updateFriendReqList, removeFriendship, updateHasSeenFriends, updateFriendAlerts } from '../modules/friend/friend.actions';
 
 import { obtainColorForHeat } from '../modules/friend/friend.helper';
 
@@ -40,6 +40,7 @@ const mapDispatchToProps = {
   updateFriendReqList,
   removeFriendship,
   updateHasSeenFriends,
+  updateFriendAlerts,
 };
 
 const DEFAULT_REFERRAL_TEXT = 'Introduce someone new to Jupiter and we’ll connect you as soon as your buddy signs up and completes their first save.';
@@ -60,6 +61,7 @@ class Friends extends React.Component {
       friendsToDisplay: [],
 
       showAlertModal: false,
+      alertData: {},
     }
   }
   
@@ -165,18 +167,21 @@ class Friends extends React.Component {
     });
   }
 
-  displayFriendAlertIfNeeded() {
+  async displayFriendAlertIfNeeded() {
     const { friendAlertData } = this.props;
     if (!friendAlertData) {
-      console.log('NOTHING');
       return;
     }
-    console.log('Have: ', friendAlertData);
+    
     const { alertStatus, logIds } = friendAlertData;
-    // also remove the red dot
+    if (alertStatus === 'NO_ALERTS') {
+      return;
+    }
+
     if (alertStatus === 'SINGLE_ALERT' || alertStatus === 'MULTIPLE_ALERTS') {
-      this.setState({ showAlertModal: true });
-      friendService.postFriendAlertsProcessed(this.props.token, logIds);
+      this.setState({ showAlertModal: true, alertData: friendAlertData });
+      await friendService.postFriendAlertsProcessed(this.props.token, logIds);
+      this.props.updateFriendAlerts({ result: 'NO_ALERTS' });
     }
   }
 
@@ -385,7 +390,7 @@ class Friends extends React.Component {
     return this.state.showAlertModal && (
       <FriendAlertModal
         isVisible={this.state.showAlertModal}
-        friendAlertData={this.props.friendAlertData}
+        friendAlertData={this.state.alertData} // direct connection to props causes over-eager updating
         onRequestClose={() => this.setState({ showAlertModal: false })}
         onPressViewRequests={this.onPressViewFriendRequests}
       />

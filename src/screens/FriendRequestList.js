@@ -387,7 +387,7 @@ class FriendRequestList extends React.Component {
         isVisible={this.state.showInputRequestCodeModal}
         width="90%"
         height="auto"
-        animationType="auto"
+        animationType="fade"
         onBackdropPress={() => this.setState({ showInputRequestCodeModal: false, requestCodeNotFound: false })}
       >
         <View style={styles.modalContainer}>

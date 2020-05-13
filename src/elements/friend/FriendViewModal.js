@@ -97,7 +97,8 @@ export default class FriendViewModal extends React.PureComponent {
             <View style={styles.heatHolder}>
               <Text style={styles.heatTitle}>Jupiter Saving Heat - {obtainDescriptionForHeat(savingHeat)}</Text>
               <Text style={styles.modalBodyText}>
-                This is based on savings growth rate, as well as boost activity and number of saving buddies.
+              Your Savings Heat level tells you how you&apos;re doing on your savings goal. You can increase it by 
+              upping your Rands saved per month, the number of saves you make and of course, by claiming your Jupiter Boosts!
               </Text>
             </View>
             <View style={styles.heatCircles}>
