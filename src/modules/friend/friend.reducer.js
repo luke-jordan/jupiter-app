@@ -25,7 +25,7 @@ export const STATE_KEY = 'friend';
 const friendReducer = (state = initialState, action) => {
   switch (action.type) {
     case UPDATE_HAS_SEEN_FRIENDS: {
-      return { ...state, hasSeenFriendsExists: action.hasSeenFriends};
+      return { ...state, hasSeenFriendsExists: action.hasSeenFriends };
     }
     case UPDATE_FRIEND_LIST: {
       return { ...state, friends: action.friendList }
@@ -92,8 +92,9 @@ const friendReducer = (state = initialState, action) => {
 
 export const isFriendAlertPending = state => {
   const { friendAlertStatus } = state[STATE_KEY];
+  
   if (!friendAlertStatus) {
-    return !state[STATE_KEY].hasSeenFriendExists;
+    return false;
   }
 
   const { alertStatus } = friendAlertStatus;

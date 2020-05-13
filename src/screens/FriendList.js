@@ -67,10 +67,11 @@ class Friends extends React.Component {
   
   async componentDidMount() {
     LoggingUtil.logEvent('USER_ENTERED_FRIEND_LIST');
+    
     this.divideAndDisplayFriends();
+    this.displayFriendAlertIfNeeded();
     await Promise.all([this.fetchAndUpdateFriends(), this.fetchAndUpdateFriendRequests(), this.fetchAndUpdateReferralData()]);
     this.props.updateHasSeenFriends(true);
-    this.displayFriendAlertIfNeeded();
   }
 
   async componentDidUpdate(prevProps) {
