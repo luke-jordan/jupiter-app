@@ -157,7 +157,7 @@ class BalanceNumber extends React.Component {
     // console.log(`Animating tags: to anchor: ${isAnimatingToRightAnchor} and to target: ${isAnimatingToRightTarget}`);
     if (!isAnimatingToRightAnchor && !isAnimatingToRightTarget) {
       // neither heading to anchor balance nor on way to target, so go to anchor quickly
-      console.log('Going to the wrong place, so course correct');
+      // console.log('Going to the wrong place, so course correct');
       this.animateToAnchorBalance();
       return;
     }

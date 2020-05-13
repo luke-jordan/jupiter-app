@@ -80,3 +80,5 @@ typings/
 assetlinks.json
 apple-app-site-association
 
+# services IDs
+google-services.json

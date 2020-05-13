@@ -42,11 +42,15 @@ import { getViewedBoosts, hasViewedFallback, getNextMessage, getAvailableMessage
 import { updateProfileFields, updateOnboardSteps, updateAccountId, updateAllFields } from '../modules/profile/profile.actions';
 import { getOnboardStepsRemaining, getProfileData, getAccountId } from '../modules/profile/profile.reducer'; 
 
+import { updateFriendAlerts } from '../modules/friend/friend.actions';
+import { friendService } from '../modules/friend/friend.service';
+
 import BoostGameModal from '../elements/boost/BoostGameModal';
 import GameResultModal from '../elements/boost/GameResultModal';
 
 const mapDispatchToProps = {
   updateBoostCount,
+  updateFriendAlerts,
   updateServerBalance,
   updateShownBalance,
   updateBoostViewed,
@@ -115,6 +119,7 @@ class Home extends React.Component {
     // console.log('HOME MOUNTED');
     this.showInitialData();
     this.rotateCircle();
+    this.checkForFriendAlerts(); // only do once
   }
 
   async handleRefocus() {
@@ -378,6 +383,16 @@ class Home extends React.Component {
       return false;
     }
   };
+
+  // ALSO HERE CHECK FOR NEW FRIEND AND BOOST CHANGES, TO ALERT USER ACCORDINGLY
+  async checkForFriendAlerts() {
+    const alertResult = await friendService.checkForFriendAlert(this.props.authToken);
+    if (!alertResult) {
+      return;
+    }
+    // console.log('Result of log check: ', alertResult);
+    this.props.updateFriendAlerts(alertResult);
+  }
 
   async checkForTriggeredBoost() {
     // note : we do the check regardless of whether boost count is above 0, because if, e.g., the user

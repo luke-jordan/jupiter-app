@@ -128,6 +128,9 @@ jobs:
           name: Installing expo-cli
           command: yarn global add expo-cli
       - run:
+          name: Store google-services.json
+          command: echo $GSERVICES > google-services.json
+      - run:
           name: Publishing Expo app
           command: |
             expo login -u $EXPO_USERNAME -p $EXPO_PASSWORD --non-interactive

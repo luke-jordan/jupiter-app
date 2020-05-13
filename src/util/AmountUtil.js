@@ -57,6 +57,10 @@ export const standardFormatAmount = (amount, unit, currency, decimals = 2) => {
   return `${getCurrencySymbol(currency)}${getFormattedValue(amount, unit, decimals)}`;
 }
 
+export const standardFormatAmountDict = ({ amount, unit, currency }, decimals = 2) => {
+  return `${getCurrencySymbol(currency)}${getFormattedValue(amount, unit, decimals)}`;
+}
+
 export const formatStringTemplate = (template, argumentDict) => {
     let str = template;
     
@@ -74,3 +78,16 @@ export const extractConditionParameter = (condition) => {
   const paramMatch = condition.match(/#{(.*)}/);
   return paramMatch ? paramMatch[1] : null; // to get what is inside the parens
 };
+
+export const safeAmountStringSplit = (amountString) => {
+  try {
+    if (typeof amountString !== 'string' || amountString.length === 0) {
+      return null;
+    }
+    const [amount, unit, currency] = amountString.split('::');
+    return { amount, unit, currency };
+  } catch (err) {
+    console.log('Error! Server sent bad amount string: ', err);
+    return null;
+  }
+}

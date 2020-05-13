@@ -22,4 +22,19 @@ export const ValidationUtil = {
   isValidId(text) {
     return VALID_ID.test(text);
   },
+
+  validateAndReturnType(text) {
+    const isInputEmail = isEmail(text);
+    if (isInputEmail) {
+      return 'EMAIL';
+    }
+
+    const isValidPhone = this.isValidEmailPhone(text); // since it is not an email, this takes care of phone
+    if (isValidPhone) {
+      return 'PHONE';
+    }
+
+    return 'NONE';
+  },
+
 };
