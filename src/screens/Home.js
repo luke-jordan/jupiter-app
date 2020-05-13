@@ -390,7 +390,7 @@ class Home extends React.Component {
     if (!alertResult) {
       return;
     }
-    console.log('Result of log check: ', alertResult);
+    // console.log('Result of log check: ', alertResult);
     this.props.updateFriendAlerts(alertResult);
   }
 

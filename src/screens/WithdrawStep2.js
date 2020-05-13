@@ -1,12 +1,13 @@
 import React from 'react';
 import { connect } from 'react-redux';
 
-import { ActivityIndicator, StyleSheet, Image, Text, TouchableOpacity, View, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import { ActivityIndicator, StyleSheet, Image, Text, TouchableOpacity, View, Keyboard, TouchableWithoutFeedback, Linking } from 'react-native';
 import { Button, Icon, Input, Overlay } from 'react-native-elements';
 import moment from 'moment';
 
-import { Endpoints, Colors } from '../util/Values';
+import { Endpoints, Colors, FallbackSupportNumber } from '../util/Values';
 import { getDivisor, getFormattedValue } from '../util/AmountUtil';
+import { LoggingUtil } from '../util/LoggingUtil';
 
 import { getAuthToken } from '../modules/auth/auth.reducer';
 import { getAccountId } from '../modules/profile/profile.reducer';
@@ -92,8 +93,20 @@ class WithdrawStep2 extends React.Component {
     this.finishWithdrawal(false);
   };
 
-  showError = () => {
+  onPressErrorWhatsApp = () => {
+    const defaultText = 'Hi, I am trying to withdraw but it is giving me an error';
+    const whatsAppLink = `https://wa.me/${FallbackSupportNumber.link}?text=${encodeURIComponent(defaultText)}`;
+    Linking.openURL(whatsAppLink).catch((err) => {
+      LoggingUtil.logError(err);
+      this.props.navigation.navigate('Support', {
+        preFilledSupportMessage: 'Hi, I have a problem with a withdrawal',
+      });
+    });
+  }
 
+  showError = (err) => {
+    this.setState({ showErrorDialog: true });
+    LoggingUtil.logError(err);
   }
 
   initiateWithdrawal = async () => {
@@ -368,7 +381,7 @@ class WithdrawStep2 extends React.Component {
             <Text style={styles.finalDialogText}>
               We&apos;re sorry, there was an error with our server. We know how important it is
               for you to be able to access your funds, so please try again, or just contact our 
-              support line, via <Text style={styles.finalDialogText}>WhatsApp</Text>
+              support line, via <Text onPress={this.onPressErrorWhatsApp} style={styles.finalDialogLink}>WhatsApp</Text>
             </Text>
           </View>
         </Overlay>
@@ -600,12 +613,16 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
   },
   finalDialogText: {
-    fontFamily: 'poppins-semibold',
+    fontFamily: 'poppins-regular',
     fontSize: 17,
     color: Colors.DARK_GRAY,
     marginTop: 10,
     marginHorizontal: 30,
     textAlign: 'center',
+  },
+  finalDialogLink: {
+    color: Colors.PURPLE,
+    fontFamily: 'poppins-semibold',
   },
 });
 
