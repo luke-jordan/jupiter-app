@@ -1,13 +1,15 @@
 import React from 'react';
 import { connect } from 'react-redux';
 
-import { StyleSheet, View, ScrollView, Text, TouchableOpacity, Image, Switch, ActivityIndicator, Share } from 'react-native';
-import { Button, Icon, Overlay } from 'react-native-elements';
+import { StyleSheet, View, ScrollView, Text, TouchableOpacity, Image, ActivityIndicator, Share } from 'react-native';
+import { Button, Icon } from 'react-native-elements';
 import { NavigationEvents } from 'react-navigation';
 
 import moment from 'moment';
 
 import NavigationBar from '../elements/NavigationBar';
+import FriendViewModal from '../elements/friend/FriendViewModal';
+import FriendAlertModal from '../elements/friend/FriendAlertModal';
 
 import { Colors } from '../util/Values';
 import { LoggingUtil } from '../util/LoggingUtil';
@@ -15,8 +17,10 @@ import { LoggingUtil } from '../util/LoggingUtil';
 import { standardFormatAmountDict } from '../util/AmountUtil';
 
 import { friendService } from '../modules/friend/friend.service';
-import { getFriendList, getReferralData, getFriendRequestList } from '../modules/friend/friend.reducer';
-import { updateFriendList, updateReferralData, updateFriendReqList, removeFriendship } from '../modules/friend/friend.actions';
+import { getFriendList, getReferralData, getFriendRequestList, getFriendAlertData } from '../modules/friend/friend.reducer';
+import { updateFriendList, updateReferralData, updateFriendReqList, removeFriendship, updateHasSeenFriends } from '../modules/friend/friend.actions';
+
+import { obtainColorForHeat } from '../modules/friend/friend.helper';
 
 import { getAuthToken } from '../modules/auth/auth.reducer';
 import { getProfileData } from '../modules/profile/profile.reducer';
@@ -24,6 +28,7 @@ import { getProfileData } from '../modules/profile/profile.reducer';
 const mapStateToProps = state => ({
   friends: getFriendList(state),
   friendRequests: getFriendRequestList(state),
+  friendAlertData: getFriendAlertData(state),
   referralData: getReferralData(state),
   profile: getProfileData(state),
   token: getAuthToken(state),
@@ -34,18 +39,7 @@ const mapDispatchToProps = {
   updateReferralData,
   updateFriendReqList,
   removeFriendship,
-};
-
-const obtainColorForHeat = (friendHeat) => {
-  if (friendHeat > 10) {
-    return Colors.RED;
-  } else if (friendHeat > 5) {
-    return Colors.PURPLE;
-  } else if (friendHeat > 1) {
-    return Colors.GOLD;
-  } else {
-    return Colors.LIGHT_BLUE;
-  }
+  updateHasSeenFriends,
 };
 
 const DEFAULT_REFERRAL_TEXT = 'Introduce someone new to Jupiter and we’ll connect you as soon as your buddy signs up and completes their first save.';
@@ -62,21 +56,24 @@ class Friends extends React.Component {
       friendToShow: {},
       loading: false,
 
-      selfAsFriend: {},
+      // selfAsFriend: {},
       friendsToDisplay: [],
 
-      // requestDataFetched: false,
+      showAlertModal: false,
     }
   }
   
   async componentDidMount() {
+    LoggingUtil.logEvent('USER_ENTERED_FRIEND_LIST');
     this.divideAndDisplayFriends();
     await Promise.all([this.fetchAndUpdateFriends(), this.fetchAndUpdateFriendRequests(), this.fetchAndUpdateReferralData()]);
+    this.props.updateHasSeenFriends(true);
+    this.displayFriendAlertIfNeeded();
   }
 
   async componentDidUpdate(prevProps) {
-    const { referralData, friends } = this.props;
-    const { referralData: prevReferralData, friends: prevFriends } = prevProps;
+    const { referralData, friends, friendAlertData } = this.props;
+    const { referralData: prevReferralData, friends: prevFriends, friendAlertData: prevAlertData } = prevProps;
     // immutable change means reference changes, so this works
     if (referralData !== prevReferralData) {
       this.setReferralText();
@@ -84,6 +81,11 @@ class Friends extends React.Component {
 
     if (friends !== prevFriends) {
       this.divideAndDisplayFriends();
+    }
+
+    // note : home will take care of fetching this on startup, so we don't check again
+    if (friendAlertData !== prevAlertData) {
+      this.displayFriendAlertIfNeeded();
     }
   }
 
@@ -101,7 +103,11 @@ class Friends extends React.Component {
       this.setState({ referralCode, referralText: DEFAULT_REFERRAL_TEXT });
     }
 
-    const { boostAmountOffered } = this.props.referralData;
+    const { boostAmountOffered } = referralData;
+    if (!boostAmountOffered) {
+      this.setState({ referralCode, referralText: DEFAULT_REFERRAL_TEXT });
+    }
+
     const boostAmountFormatted = standardFormatAmountDict(boostAmountOffered);
     const referralText = `Introduce someone new to Jupiter and we’ll add ${boostAmountFormatted} to your balance each time a buddy signs up and completes their first save.`;
     
@@ -129,13 +135,17 @@ class Friends extends React.Component {
     this.setState({ showFriendModal: false, friendToShow: {}, loading: true });
     const { relationshipId } = this.state.friendToShow;
     const resultOfDeactivation = await friendService.deactivateFriendship(this.props.token, relationshipId);
-    if (resultOfDeactivation === 'SUCCESS') {
+    console.log('Result of deactivation: ', resultOfDeactivation);
+
+    if (resultOfDeactivation) {
       this.props.removeFriendship(relationshipId);
     }
     this.setState({ loading: false });
   }
 
   onPressViewFriendRequests = () => {
+    // clear modals, just in case
+    this.setState({ showAlertModal: false, showFriendModal: false });
     this.props.navigation.navigate('FriendRequestList');
   }
 
@@ -145,13 +155,29 @@ class Friends extends React.Component {
       return;
     }
 
-    const self = friends.filter((friend) => friend.relationshipId === 'SELF');
-    const friendsToDisplay = friends.filter((friend) => friend.relationshipId !== 'SELF')
-      .sort((friendA, friendB) => friendB.savingHeat - friendA.savingHeat);
+    // const self = friends.filter((friend) => friend.relationshipId === 'SELF');
+    // const friendsToDisplay = friends.filter((friend) => friend.relationshipId !== 'SELF')
+    //   .sort((friendA, friendB) => friendB.savingHeat - friendA.savingHeat);
+    const friendsToDisplay = friends.sort((friendA, friendB) => friendB.savingHeat - friendA.savingHeat);
     this.setState({ 
-      selfAsFriend: self ? self[0] : {},
+      // selfAsFriend: self ? self[0] : {},
       friendsToDisplay,
     });
+  }
+
+  displayFriendAlertIfNeeded() {
+    const { friendAlertData } = this.props;
+    if (!friendAlertData) {
+      console.log('NOTHING');
+      return;
+    }
+    console.log('Have: ', friendAlertData);
+    const { alertStatus, logIds } = friendAlertData;
+    // also remove the red dot
+    if (alertStatus === 'SINGLE_ALERT' || alertStatus === 'MULTIPLE_ALERTS') {
+      this.setState({ showAlertModal: true });
+      friendService.postFriendAlertsProcessed(this.props.token, logIds);
+    }
   }
 
   async fetchAndUpdateFriends() {
@@ -175,6 +201,10 @@ class Friends extends React.Component {
 
   renderFriendItem(friend, index) {
     // console.log('Rendering: ', friend);
+    if (!friend) { // just in case
+      return null;
+    }
+
     const friendName = friend.relationshipId === 'SELF' ? 'You' :
       `${friend.calledName || friend.personalName} ${friend.familyName}`;
     
@@ -190,7 +220,6 @@ class Friends extends React.Component {
         style={styles.friendItemWrapper} 
         key={friend.relationshipId}
         onPress={() => this.onPressViewFriend(friend)}
-        disabled={friend.relationshipId === 'SELF'}
       >
         <Text style={styles.friendItemIndex}>{index}</Text>
         <View style={styles.friendItemBodyWrapper}>
@@ -263,7 +292,7 @@ class Friends extends React.Component {
             Your buddies
           </Text>
           <View style={styles.friendsListHolder}>
-            {this.renderFriendItem(this.state.selfAsFriend, 0)}
+            {/* {this.state.selfAsFriend ? this.renderFriendItem(this.state.selfAsFriend, 0) : null} */}
             {this.state.friendsToDisplay.map((item, index) => this.renderFriendItem(item, index + 1))}
           </View>
           <Text style={styles.hasFriendsBodyText}>
@@ -343,44 +372,24 @@ class Friends extends React.Component {
 
   renderViewFriendModal() {
     return this.state.showFriendModal && (
-      <Overlay
+      <FriendViewModal
         isVisible={this.state.showFriendModal}
-        animationType="fade"
-        height="auto"
-        width="90%"
+        friend={this.state.friendToShow}
         onRequestClose={() => this.setState({ showFriendModal: false, friendToShow: null })}
-        onBackdropPress={() => this.setState({ showFriendModal: false, friendToShow: null })}
-      >
-        <View style={styles.modalContainer}>
-          <Text style={styles.modalHeader}>
-            {this.state.friendToShow.calledName || this.state.friendToShow.personalName}{' '}{this.state.friendToShow.familyName}
-          </Text>
-          <Text style={styles.modalBody}>
-            Your saving buddy&apos;s saving heat is {this.state.friendToShow.savingHeat}. You share with them:
-          </Text>
-          <View style={styles.sharingOptionWrapper}>
-            <Text style={styles.sharingOptionLabel}>When you save</Text>
-            <Switch 
-              trackColor={Colors.PURPLE} 
-              value={this.state.friendToShow.shareActivity}
-            />
-          </View>
-          <View style={styles.sharingOptionWrapper}>
-            <Text style={styles.sharingOptionLabel}>How much you save</Text>
-            <Switch
-              trackColor={Colors.PURPLE}
-              value={this.state.friendToShow.shareAmount}
-            />
-          </View>
-          <Text style={styles.modalFooterText}>
-            You can remove this saving buddy. Note: this cannot be undone, except by sending a new buddy request.
-          </Text>
-          <Text style={styles.modalFooterLink} onPress={this.onPressDeactivateFriend}>
-            Deactivate friendship
-          </Text>
-        </View>
-      </Overlay>
+        onRemoveFriend={this.onPressDeactivateFriend}
+      />
     );
+  }
+
+  renderAlertModal() {
+    return this.state.showAlertModal && (
+      <FriendAlertModal
+        isVisible={this.state.showAlertModal}
+        friendAlertData={this.props.friendAlertData}
+        onRequestClose={() => this.setState({ showAlertModal: false })}
+        onPressViewRequests={this.onPressViewFriendRequests}
+      />
+    )
   }
 
   renderLoading() {
@@ -404,6 +413,7 @@ class Friends extends React.Component {
         </ScrollView>
         <NavigationBar navigation={this.props.navigation} currentTab={1} />
         {this.renderViewFriendModal()}
+        {this.renderAlertModal()}
       </View>
     )
   }
@@ -611,56 +621,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 15,
     marginTop: 15,
     textAlign: 'center',
-  },
-
-  modalContainer: {
-    marginTop: 'auto',
-    marginHorizontal: 15,
-    marginBottom: 'auto',
-    backgroundColor: Colors.WHITE,
-    borderRadius: 10,
-    maxWidth: '90%',
-  },  
-  modalHeader: {
-    fontFamily: 'poppins-semibold',
-    fontSize: 18,
-    color: Colors.DARK_GRAY,
-    textAlign: 'center',
-    marginTop: 10,
-    marginBottom: 18,
-  },
-  modalBody: {
-    fontFamily: 'poppins-regular',
-    fontSize: 14,
-    color: Colors.MEDIUM_GRAY,
-  },
-  sharingOptionWrapper: {
-    backgroundColor: Colors.WHITE,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    borderBottomColor: Colors.LIGHT_GRAY,
-    borderBottomWidth: 1,
-  },
-  sharingOptionLabel: {
-    fontFamily: 'poppins-regular',
-    color: Colors.DARK_GRAY,
-    fontSize: 14,
-    flex: 1,
-  },
-  modalFooterText: {
-    fontFamily: 'poppins-regular',
-    fontSize: 13,
-    color: Colors.MEDIUM_GRAY,
-    marginTop: 10,
-    lineHeight: 20,
-  },
-  modalFooterLink: {
-    fontFamily: 'poppins-semibold',
-    fontSize: 13,
-    color: Colors.PURPLE,
-    textAlign: 'center',
-    marginTop: 10,
   },
   redText: {
     color: Colors.RED,

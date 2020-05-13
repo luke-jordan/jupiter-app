@@ -10,6 +10,7 @@ import FriendInviteModal from '../elements/friend/FriendInviteModal';
 import { friendService } from '../modules/friend/friend.service';
 
 import { standardFormatAmountDict } from '../util/AmountUtil';
+import { LoggingUtil } from '../util/LoggingUtil';
 
 class AddFriend extends React.Component {
 
@@ -38,6 +39,7 @@ class AddFriend extends React.Component {
   };
 
   async componentDidMount() {
+    LoggingUtil.logEvent('USER_ENTERED_ADD_FRIEND_SCREEN');
     const { referralData } = this.state;
     if (!referralData || !referralData.referralCode) {
       this.setState({ showReferralDetails: false });
@@ -52,6 +54,7 @@ class AddFriend extends React.Component {
   }
 
   onShareReferral = () => {
+    LoggingUtil.logEvent('USER_SHARED_REFERRAL_CODE');
     Share.share({ message: friendService.sharingMessage(this.state.referralCode) });
   }
 
@@ -109,6 +112,7 @@ class AddFriend extends React.Component {
     }
 
     this.setState({ loading: true });
+    LoggingUtil.logEvent('USER_SENT_FRIEND_REQUEST', { type: 'EXISTING' });
     await friendService.initiateFriendRequest({ token: this.state.token, ...invitationParams });
     // console.log('Result: ', resultOfInvite);
     this.setState({

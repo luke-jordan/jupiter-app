@@ -79,7 +79,6 @@ export default class FriendInviteModal extends React.PureComponent {
               end: { x: 1, y: 0.5 },
             }}
           />
-
         </View>
       </Overlay>
     )

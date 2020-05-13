@@ -166,4 +166,54 @@ export const friendService = {
     }
   },
 
+  async connectFriendRequest(token, enteredRequestCode) {
+    try {
+      const url = `${Endpoints.CORE}friend/request/connect`;
+      const requestCode = enteredRequestCode.trim().toUpperCase();
+      const params = { requestCode };
+      // console.log('Sending params: ', params);
+      const result = await postRequest({ token, url, params });
+      if (!result.ok) {
+        return false;
+      }
+      const { result: connectResult } = await result.json();
+      if (connectResult === 'SUCCESS') {
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.log('Error connecting request: ', JSON.stringify(err));
+      return false;
+    }
+  },
+
+  async checkForFriendAlert(token) {
+    try {
+      const url = `${Endpoints.CORE}friend/alert/fetch`;
+      const result = await getRequest({ token, url });
+      if (!result.ok) {
+        throw result;
+      }
+      return result.json();
+    } catch (err) {
+      console.log('Error fetching alerts: ', JSON.stringify(err));
+      return false;
+    }
+  },
+
+  async postFriendAlertsProcessed(token, logIds) {
+    try {
+      const url = `${Endpoints.CORE}friend/alert/viewed`;
+      const result = await postRequest({ token, url, params: { logIds }});
+      console.log('And ? : ', JSON.stringify(result));
+      if (!result.ok) {
+        throw result;;
+      }
+      return true; // we don't need to do anything with it at present
+    } catch (err) {
+      console.log('Error marking alerts as seen: ', JSON.stringify(err));
+      return false;
+    }
+  },
+
 }

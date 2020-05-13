@@ -2,11 +2,14 @@ import React from 'react';
 import { connect } from 'react-redux';
 
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
-import { Button, Icon, Overlay } from 'react-native-elements';
+import { Button, Icon, Overlay, Input } from 'react-native-elements';
+
+import moment from 'moment';
 
 import { Colors } from '../util/Values';
 
 import { friendService } from '../modules/friend/friend.service';
+import { LoggingUtil } from '../util/LoggingUtil';
 
 import { getAuthToken } from '../modules/auth/auth.reducer';
 import { getFriendRequestList } from '../modules/friend/friend.reducer';
@@ -25,6 +28,22 @@ const mapPropsToDispatch = {
   addFriendship,
 }
 
+const shareItemsDescription = (shareItems) => {
+  if (!shareItems || shareItems.length === 0) {
+    return 'just your saving heat';
+  }
+
+  const shareDesc = [];
+  if (shareItems.includes('LAST_ACTIVITY')) {
+    shareDesc.push('when you last saved');
+  }
+  if (shareItems.includes('LAST_AMOUNT')) {
+    shareDesc.push('the last amount you saved')
+  }
+
+  return shareDesc.length > 0 ? shareDesc.join(' and ') : 'your saving heat';
+};
+
 class FriendRequestList extends React.Component {
 
   constructor(props) {
@@ -38,7 +57,9 @@ class FriendRequestList extends React.Component {
       showIgnoreModal: false,
       
       showSentInviteModal: false,
-      
+      showInputRequestCodeModal: false,
+      loadingRequestCode: false,
+
       showFinishedModal: false,
       // finishedModalMessage: '',
 
@@ -47,6 +68,7 @@ class FriendRequestList extends React.Component {
   }
 
   async componentDidMount() {
+    LoggingUtil.logEvent('USER_ENTERED_FRIEND_REQUEST_LIST');
     this.splitFriendRequests();
     // todo : make this only call if the friend list request did not complete 
     const requestList = await friendService.fetchFriendReqList(this.props.token);
@@ -77,6 +99,7 @@ class FriendRequestList extends React.Component {
     // console.log('Here we go, sharing level: ', sharingLevel);
     const { requestId } = this.state.requestBeingHandled;
     // console.log('Accepting request with ID: ', requestId);  
+    LoggingUtil.logEvent('USER_ACCEPTED_FRIEND_REQUEST');
     const acceptResult = await friendService.acceptFriendRequest(this.props.token, requestId, sharingLevel);
     // console.log('Acceptance result: ', acceptResult);
     if (!acceptResult) {
@@ -92,6 +115,7 @@ class FriendRequestList extends React.Component {
   }
 
   onPressIgnoreFriendRequest = (request) => {
+    LoggingUtil.logEvent('USER_IGNORED_FRIEND_REQUEST');
     this.setState({ requestBeingHandled: request, showIgnoreModal: true });
   }
 
@@ -118,6 +142,24 @@ class FriendRequestList extends React.Component {
       this.props.removeFriendRequest(requestId); // component update will automatically split again
     }
     this.closeDialogs();
+  }
+
+  onSubmitRequestCode = async () => {
+    this.setState({ loadingRequestCode: true });
+    
+    // console.log('Submitting request code');
+    const requestCodeResult = await friendService.connectFriendRequest(this.props.token, this.state.requestCodeEnterred);
+    // console.log('Result of code seek: ', requestCodeResult);
+
+    if (requestCodeResult) {
+      // might as well refresh it (in future might make more efficient)
+      const requestList = await friendService.fetchFriendReqList(this.props.token);
+      this.props.updateFriendReqList(requestList);
+      this.setState({ loadingRequestCode: false, showInputRequestCodeModal: false, requestCodeNotFound: false });
+      return;
+    }
+    
+    this.setState({ loadingRequestCode: false, requestCodeNotFound: true });
   }
 
   splitFriendRequests() {
@@ -221,7 +263,7 @@ class FriendRequestList extends React.Component {
       <FriendInviteModal 
         isVisible={this.state.showAcceptModal}
         inviteType="RECEIVING"
-        relevantUserName={this.state.requestBeingHandled.targetUserName}
+        relevantUserName={this.state.requestBeingHandled ? this.state.requestBeingHandled.calledName : ''}
         onRequestClose={() => this.setState({ showAcceptModal: false })}
         onSubmitAcceptance={this.onConfirmAcceptRequest}
       />
@@ -265,7 +307,7 @@ class FriendRequestList extends React.Component {
     )
   }
 
-  renderSentInviteModal() {
+  renderSentInviteModal() {    
     return this.state.showSentInviteModal && (
       <Overlay
         isVisible={this.state.showSentInviteModal}
@@ -278,12 +320,79 @@ class FriendRequestList extends React.Component {
         <View style={styles.modalContainer}>
           <Text style={styles.modalHeader}>Sent invite</Text>
           <Text style={styles.modalBody}>
-            You sent this invite on (date). You asked to share X and Y. You can no 
+            You sent this invite {moment(this.state.requestBeingHandled.creationTime).fromNow()}.{' '}
+            You asked to share {shareItemsDescription(this.state.requestBeingHandled.shareItems)}. You can no 
             longer change this invitation, but you can cancel it.
           </Text>
           <Text style={styles.modalFooterLink} onPress={this.onConfirmCancelSentRequest}>
             Cancel invitation
           </Text>
+        </View>
+      </Overlay>
+    )
+  }
+
+  renderRequestCodeInput() {
+    return (
+      <>
+        <Text style={styles.modalBody}>
+          Please enter the request code you were sent as part of your invite:
+        </Text>
+        <Input 
+          value={this.state.requestCodeEnterred}
+          onChangeText={text => this.setState({ requestCodeEnterred: text })}
+          placeholder="Enter Request Code"
+          containerStyle={styles.requestCodeInputWrapperStyle}
+          inputContainerStyle={styles.requestCodeInputContainerStyle}
+          inputStyle={styles.requestCodeInputStyle}
+        />
+        <Button 
+          title="CHECK FOR REQUEST"
+          loading={this.state.loadingRequestCode}
+          onPress={this.onSubmitRequestCode}
+          titleStyle={styles.requestCodeTitleStyle}
+          buttonStyle={styles.requestCodeBtnStyle}
+          linearGradientProps={{
+            colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+            start: { x: 0, y: 0.5 },
+            end: { x: 1, y: 0.5 },
+          }}
+        />
+      </>
+    );
+  }
+
+  renderRequestCodeNotFound() {
+    return (
+      <>
+        <Text style={styles.codeNotFoundSubTitle}>
+          The request code you entered could unfortunately not be found.
+        </Text>
+        <Text style={styles.codeNotFoundBody}>
+          Please ask your buddy to invite you again with the email or phone number you use to login to Jupiter.
+        </Text>
+        <Text style={styles.codeNotFoundBody}>
+          - OR -
+        </Text>
+        <Text style={styles.supportLinkText}>
+          Contact support
+        </Text>
+      </>
+    );
+  }
+
+  renderInputRequestCodeModal() {
+    return this.state.showInputRequestCodeModal && (
+      <Overlay
+        isVisible={this.state.showInputRequestCodeModal}
+        width="90%"
+        height="auto"
+        animationType="auto"
+        onBackdropPress={() => this.setState({ showInputRequestCodeModal: false, requestCodeNotFound: false })}
+      >
+        <View style={styles.modalContainer}>
+          <Text style={styles.modalHeader}>Check for Buddy Request</Text>
+          {this.state.requestCodeNotFound ? this.renderRequestCodeNotFound() : this.renderRequestCodeInput()}
         </View>
       </Overlay>
     )
@@ -314,7 +423,7 @@ class FriendRequestList extends React.Component {
               colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
               start: { x: 0, y: 0.5 },
               end: { x: 1, y: 0.5 },
-            }}          
+            }}
           />
           {this.props.friendRequests && this.props.friendRequests.length > 0 && (
             <Button 
@@ -361,13 +470,14 @@ class FriendRequestList extends React.Component {
           <Text style={styles.receivedFooter}>
             <Text style={styles.boldFooter}>Don’t see a request you were expecting?</Text>
             {' '}It might not have matched your Jupiter contact details.
-            {' '}<Text style={styles.footerLink}>Check here</Text>
+            {' '}<Text onPress={() => this.setState({ showInputRequestCodeModal: true})} style={styles.footerLink}>Check here</Text>
           </Text>
         </ScrollView>
         {this.renderSentInviteModal()}
         {this.renderAcceptanceModal()}
         {this.renderIgnoreModal()}
         {this.renderFinishedModal()}
+        {this.renderInputRequestCodeModal()}
       </View>
     );
   }
@@ -520,6 +630,55 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: Colors.WHITE,
+  },
+  requestCodeInputWrapperStyle: {
+    backgroundColor: Colors.WHITE,
+    minHeight: 50,
+    borderRadius: 10,
+    borderColor: Colors.GRAY,
+    borderWidth: 1,
+    marginVertical: 10,
+    paddingTop: 5,
+  },
+  requestCodeInputContainerStyle: {
+    borderBottomWidth: 0,
+  },
+  requestCodeInputStyle: {
+    backgroundColor: Colors.WHITE,
+    fontFamily: 'poppins-regular',
+    fontSize: 14,
+  },
+  requestCodeTitleStyle: {
+    fontFamily: 'poppins-semibold',
+    color: Colors.WHITE,
+    fontSize: 16,
+  },
+  requestCodeBtnStyle: {
+    height: 55,
+    borderRadius: 10,
+    paddingHorizontal: 15,
+  },
+  codeNotFoundSubTitle: {
+    fontFamily: 'poppins-regular',
+    fontWeight: '600',
+    color: Colors.DARK_GRAY,
+    lineHeight: 22,
+    fontSize: 15,
+    textAlign: 'center',
+  },
+  codeNotFoundBody: {
+    marginTop: 10,
+    fontFamily: 'poppins-regular',
+    color: Colors.MEDIUM_GRAY,
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'center',
+  },
+  supportLinkText: {
+    marginTop: 10,
+    fontFamily: 'poppins-semibold',
+    textAlign: 'center',
+    color: Colors.PURPLE,
   },
 });
 

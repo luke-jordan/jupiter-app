@@ -34,6 +34,7 @@ class WithdrawStep2 extends React.Component {
       cardTitle: data.cardTitle,
       cardBody: data.cardBody,
       withdrawLoading: false,
+      showErrorDialog: false,
     };
   }
 
@@ -90,6 +91,10 @@ class WithdrawStep2 extends React.Component {
     this.onCloseDialog();
     this.finishWithdrawal(false);
   };
+
+  showError = () => {
+
+  }
 
   initiateWithdrawal = async () => {
     if (this.state.loading) return;
@@ -351,6 +356,23 @@ class WithdrawStep2 extends React.Component {
             <Text style={styles.finalDialogText}>Please wait...</Text>
           </View>
         </Overlay>
+
+
+        <Overlay
+          isVisible={this.state.showErrorDialog}
+          height="auto"
+          width="auto"
+          onBackdropPress={() => this.setState({ showErrorDialog: false })}
+        >
+          <View style={styles.finalDialogWrapper}>
+            <Text style={styles.finalDialogText}>
+              We&apos;re sorry, there was an error with our server. We know how important it is
+              for you to be able to access your funds, so please try again, or just contact our 
+              support line, via <Text style={styles.finalDialogText}>WhatsApp</Text>
+            </Text>
+          </View>
+        </Overlay>
+
       </View>
     );
   }

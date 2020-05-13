@@ -34,6 +34,7 @@
       "package": "com.jupitersave.app",
       "versionCode": 33,
       "permissions": [],
+      "googleServicesFile": "./google-services.json",
       "intentFilters": [
         {
           "action": "VIEW",

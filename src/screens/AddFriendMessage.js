@@ -5,6 +5,7 @@ import { View, ScrollView, Text, StyleSheet, TouchableOpacity, Switch, Share } f
 import { Icon, Input, Button, Overlay } from 'react-native-elements';
 
 import { Colors } from '../util/Values';
+import { LoggingUtil } from '../util/LoggingUtil';
 
 import { friendService } from '../modules/friend/friend.service';
 import { addFriendRequest } from '../modules/friend/friend.actions';
@@ -60,6 +61,7 @@ class AddFriendMessage extends React.Component {
       },
     }
     this.setState({ loading: true });
+    LoggingUtil.logEvent('USER_SENT_FRIEND_REQUEST', { type: 'NEW_USER' });
     const resultOfInvite = await friendService.initiateFriendRequest({ token: this.props.token, ...invitationParams });
     console.log('Result: ', resultOfInvite);
     const { request } = resultOfInvite;

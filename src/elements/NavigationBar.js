@@ -5,12 +5,19 @@ import { connect } from 'react-redux';
 
 import { getHasBoostsAvailable } from '../modules/boost/boost.reducer';
 import { getOnboardStepsRemaining } from '../modules/profile/profile.reducer';
+import { isFriendAlertPending } from '../modules/friend/friend.reducer';
 
 import { Colors, Sizes } from '../util/Values';
 
 const NOTIFICATION_DOT_SIZE = 9;
 
 const bgColor = '#00000000';
+
+const mapStateToProps = state => ({
+  hasBoostAvailable: getHasBoostsAvailable(state),
+  onboardStepsRemaining: getOnboardStepsRemaining(state),
+  isFriendAlertPending: isFriendAlertPending(state),
+});
 
 class NavigationBar extends React.Component {
   onPressAddCash = () => {
@@ -72,15 +79,22 @@ class NavigationBar extends React.Component {
             style={styles.navButton}
             onPress={() => this.onPressTab(1)}
           >
-            <Image
-              style={[
-                styles.navImage,
-                this.props.currentTab === 1
-                  ? styles.purpleTint
-                  : styles.grayTint,
-              ]}
-              source={require('../../assets/friends_1.png')}
-            />
+            <View>
+              <Image
+                style={[
+                  styles.navImage,
+                  this.props.currentTab === 1
+                    ? styles.purpleTint
+                    : styles.grayTint,
+                ]}
+                source={require('../../assets/friends_1.png')}
+              />
+              {this.props.isFriendAlertPending ? (
+                <View style={styles.notificationDot}>
+                  <View style={styles.notificationDotCenter} />
+                </View>
+              ) : null}
+            </View>
           </TouchableOpacity>
           <View style={styles.navButton} />
           <TouchableOpacity
@@ -198,11 +212,6 @@ const styles = StyleSheet.create({
     height: NOTIFICATION_DOT_SIZE / 4,
     backgroundColor: Colors.WHITE,
   },
-});
-
-const mapStateToProps = state => ({
-  hasBoostAvailable: getHasBoostsAvailable(state),
-  onboardStepsRemaining: getOnboardStepsRemaining(state),
 });
 
 export default connect(mapStateToProps)(NavigationBar);

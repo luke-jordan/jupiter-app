@@ -368,7 +368,7 @@ class Register extends React.Component {
               />
               {this.state.hasErrors ? null : (
                 <Text style={styles.noteMessage}>
-                  Please enter your legal names (i.e. the same as on your ID)
+                  Please enter your legal name (i.e. same as on your ID)
                 </Text>
               )}
               {this.state.errors && this.state.errors.firstName ? (
@@ -424,7 +424,11 @@ class Register extends React.Component {
                     ? 'Please enter a valid ID number'
                     : this.state.errors.idNumber}
                 </Text>
-              ) : null}
+              ) : (
+                <Text style={styles.noteMessage}>
+                  ID numbers are safely stored and only used to FICA you without requiring proof of address
+                </Text>
+              )}
             </View>
             <View style={styles.profileField}>
               <Text style={styles.profileFieldTitle}>

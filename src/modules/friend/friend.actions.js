@@ -1,6 +1,8 @@
 export const namespace = 'FRIENDS';
 
-export const UPDATE_FRIEND_ALERT_PENDING = `${namespace}/UPDATE_FRIEND_ALERT_PENDING`;
+export const UPDATE_HAS_SEEN_FRIENDS = `${namespace}/UPDATE_FRIEND_SEEN`;
+export const UPDATE_FRIEND_ALERT = `${namespace}/UPDATE_FRIEND_ALERT_PENDING`;
+
 export const UPDATE_FRIEND_LIST = `${namespace}/UPDATE_FRIEND_LIST`;
 export const UPDATE_FRIEND_REQUEST_LIST = `${namespace}/UPDATE_FRIEND_REQUEST_LIST`;
 export const UPDATE_REFERRAL_DATA = `${namespace}/UPDATE_REFERRAL_DATA`;
@@ -11,9 +13,14 @@ export const ADD_FRIEND_REQUEST = `${namespace}/ADD_FRIEND_REQUEST`;
 export const REMOVE_FRIENDSHIP = `${namespace}/REMOVE_FRIENDSHIP`;
 export const REMOVE_FRIEND_REQUEST = `${namespace}/REMOVE_FRIEND_REQUEST`;
 
-export const updateFriendAlertPending = isPending => ({
-  type: UPDATE_FRIEND_ALERT_PENDING,
-  isPending,
+export const updateHasSeenFriends = hasSeenFriends => ({
+  type: UPDATE_HAS_SEEN_FRIENDS,
+  hasSeenFriends,
+});
+
+export const updateFriendAlerts = payload => ({
+  type: UPDATE_FRIEND_ALERT,
+  payload,
 });
 
 export const updateFriendList = friendList => ({

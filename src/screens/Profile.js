@@ -214,6 +214,17 @@ class Profile extends React.Component {
     }
   };
 
+  handleErrorResult = async (severResult) => {
+    const { result } = await severResult.json();
+    if (result === 'PHONE_INVALID') {
+      this.setState({ phoneError: true });
+    } else if (result === 'EMAIL_INVALID') {
+      this.setState({ emailError: true });
+    } else if (result === 'CANNOT_CHANGE_BOTH') {
+      this.setState({ changingBothError: true });
+    }
+  }
+
   submitPayload = async (payload) => {
     try {
       const result = await fetch(`${Endpoints.AUTH}profile/update`, {
@@ -224,6 +235,9 @@ class Profile extends React.Component {
 
       if (result.ok) {
         return result.json();
+      } else if (result.statusCode === 400) {
+        await this.handleErrorResult(result);
+        return null;
       } else {
         throw result;
       }
@@ -482,6 +496,7 @@ class Profile extends React.Component {
                       ]}
                       containerStyle={styles.containerStyle}
                     />
+                    {this.state.emailError && <Text style={styles.redText}>Sorry, that is not a valid email</Text>}
                   </View>
                   <View style={styles.separator} />
                   <View style={styles.profileField}>
@@ -495,6 +510,7 @@ class Profile extends React.Component {
                       inputStyle={[styles.profileFieldValue, this.state.errors && this.state.errors.idNumber ? styles.redText : null]}
                       containerStyle={styles.containerStyle}
                     />
+                    {this.state.phoneError && <Text style={styles.redText}>Sorry, that is not a valid phone number</Text>}
                   </View>
                 </>
                 )}
@@ -521,6 +537,12 @@ class Profile extends React.Component {
                       </Text>
                     )}
                   </View>
+                )}
+                {this.state.changingBothError && (
+                  <Text style={[styles.disclaimer, styles.redText]}>
+                    Sorry, but for security reasons you can only change one contact method at the time (since we use an 
+                    OTP to the other method to make sure it is you changing the number or address)
+                  </Text>
                 )}
               </View>
             </KeyboardAvoidingView>
