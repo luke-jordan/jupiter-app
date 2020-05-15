@@ -11,7 +11,10 @@ const getMessageCardButtonText = (action) => {
       return 'VIEW HISTORY';
 
     case 'VIEW_BOOSTS':
-      return 'VIEW BOOSTS'
+      return 'VIEW BOOSTS';
+
+    case 'VIEW_FRIENDS':
+      return 'VIEW BUDDIES';
 
     case 'VISIT_WEB':
       return 'VISIT SITE';

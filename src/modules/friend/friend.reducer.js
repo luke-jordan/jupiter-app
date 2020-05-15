@@ -65,7 +65,7 @@ const friendReducer = (state = initialState, action) => {
 
     case ADD_FRIENDSHIP: {
       const { friends: priorFriends } = state;
-      const friends = [...priorFriends, action.friend];
+      const friends = Array.isArray(priorFriends) ? [...priorFriends, action.friend] : [action.friend];
       return { ...state, friends }; 
     }
     case ADD_FRIEND_REQUEST: {
