@@ -27,6 +27,10 @@ const handleMessageActionPress = (messageDetails, navigation) => {
       navigation.navigate('History');
       break;
 
+    case 'VIEW_FRIENDS':
+      navigation.navigate('Friends');
+      break;
+
     case 'VIEW_BOOSTS':
       navigation.navigate('Boosts');
       break;
