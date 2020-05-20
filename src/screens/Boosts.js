@@ -104,8 +104,10 @@ class Boosts extends React.Component {
       const condition = conditions[0];
       if (condition.includes('save_event')) thresholdEventType = 'save_event';
       if (condition.includes('first_save_above')) thresholdEventType = 'onboard_save_event';
-      if (condition.includes('social_event')) thresholdEventType = 'social_event';
+      if (condition.includes('friends_added_since')) thresholdEventType = 'social_event';
+      if (condition.includes('total_number_friends')) thresholdEventType = 'social_event';
       if (condition.includes('number_taps')) thresholdEventType = 'game_event';
+      if (condition.includes('percent_destroyed')) thresholdEventType = 'game_event';
     }
     
     return { nextStatus, thresholdEventType };
@@ -118,6 +120,7 @@ class Boosts extends React.Component {
     }
 
     const { nextStatus, thresholdEventType } = this.getNextStatusAndThresholdEvent(boostDetails.boostStatus, boostDetails.statusConditions);
+    // console.log('Next status: ', nextStatus, 'threshold event: ', thresholdEventType);
     if (!nextStatus) {
       return null;
     }
@@ -135,10 +138,11 @@ class Boosts extends React.Component {
         title = 'SAVE NOW';
         action = this.onPressFirstAddCash;
       } else if (thresholdEventType === 'social_event') {
-        title = 'INVITE FRIENDS';
+        title = 'ADD BUDDIES';
         action = this.onPressInviteFriends;
       } else if (thresholdEventType === 'game_event') {
         title = 'PLAY GAME';
+        console.log('Boost details: ', boostDetails);
         action = () => this.props.navigation.navigate('Home', { showGameUnlockedModal: true, boostDetails });
       }
 

@@ -104,11 +104,13 @@ class Friends extends React.Component {
     
     if (!referralData || !referralData.referralBoostAvailable) {
       this.setState({ referralCode, referralText: DEFAULT_REFERRAL_TEXT });
+      return;
     }
 
     const { boostAmountOffered } = referralData;
     if (!boostAmountOffered) {
       this.setState({ referralCode, referralText: DEFAULT_REFERRAL_TEXT });
+      return;
     }
 
     const boostAmountFormatted = standardFormatAmountDict(boostAmountOffered);

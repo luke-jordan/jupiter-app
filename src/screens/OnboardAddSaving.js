@@ -247,6 +247,9 @@ class OnboardAddSaving extends React.Component {
 
   logAndRemoveStep = (paymentMethod) => {
     LoggingUtil.logEvent('USER_INITIATED_FIRST_ADD_CASH', { amountAdded: this.state.amountToAdd, paymentMethod });
+    // for bid strategies, etc.
+    LoggingUtil.logFirebaseEvent('USER_INITIATED_FIRST_ADD_CASH', { amountAddded: this.state.amountToAdd });
+    
     this.props.removeOnboardStep('ADD_CASH');
   }
 

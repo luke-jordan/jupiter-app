@@ -1,6 +1,6 @@
 // at some point, into a service, but dep injection, service connections etc., more pain than worth, for now
 export const getRequest = async ({ token, url, params }) => {
-  const urlString = `${url}?${new URLSearchParams(params).toString()}`
+  const urlString = params ? `${url}?${new URLSearchParams(params).toString()}` : url;
   const options = {
     headers: {
       Authorization: `Bearer ${token}`,

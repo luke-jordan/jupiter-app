@@ -6,7 +6,7 @@ import { Button } from 'react-native-elements';
 
 import { Colors } from '../../util/Values';
 
-import { getCurrencySymbol } from '../../util/AmountUtil';
+import { getCurrencySymbol, standardFormatAmountDict } from '../../util/AmountUtil';
 
 export default class GameResultModal extends React.PureComponent {
 
@@ -29,8 +29,12 @@ export default class GameResultModal extends React.PureComponent {
       case 'PENDING': {
         resultIcon = require('../../../assets/boost_thumbs_up.png');
         resultHeader = gameDetails.customTitle || 'Nice Work!';
-        const resultClause = endTime ? `, in about ${moment(endTime).fromNow(true)}` : ''; 
-        resultBody = `You tapped ${gameDetails.numberOfTaps} times in ${gameDetails.timeTaken} seconds!\n` +
+        const resultClause = endTime ? `, in about ${moment(endTime).fromNow(true)}` : '';
+        
+        const tappedOrPercentClause = gameDetails.numberOfTaps 
+          ? `tapped ${gameDetails.numberOfTaps} times` : `broke ${gameDetails.percentDestroyed}% of the credit card`;
+        
+        resultBody = `You ${tappedOrPercentClause} in ${gameDetails.timeTaken} seconds!\n` +
           `Winners of the challenge will be notified when time is up${resultClause}. Good luck!`;
         break;
       }
@@ -86,10 +90,8 @@ export default class GameResultModal extends React.PureComponent {
   }
   
   renderTournamentResult (gameDetails) {
-    console.log('Rendering tournament result');
-
     const userWon = gameDetails.gameResult === 'REDEEMED';
-    const { numberTaps, ranking, topScore } = gameDetails.gameLog;
+    const { numberTaps, percentAchieved, ranking, topScore, topPercent } = gameDetails.gameLog;
 
     const title = userWon ? 'You won the boost challenge!' : 'The boost results are in!';
 
@@ -125,11 +127,11 @@ export default class GameResultModal extends React.PureComponent {
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
             <View style={styles.tournamentLossScoreHolder}>
               <Text style={styles.tournamentScoreTitle}>Your Score</Text>
-              <Text style={styles.tournamentScoreNumber}>{numberTaps}</Text>
+              <Text style={styles.tournamentScoreNumber}>{numberTaps || `${percentAchieved}%`}</Text>
             </View>
             <View style={styles.tournamentLossScoreHolder}>
               <Text style={styles.tournamentScoreTitle}>Top Score</Text>
-              <Text style={styles.tournamentScoreNumber}>{topScore}</Text>
+              <Text style={styles.tournamentScoreNumber}>{topScore || `${topPercent}%`}</Text>
             </View>
           </View>
         )}
@@ -157,21 +159,23 @@ export default class GameResultModal extends React.PureComponent {
   
         
   render() {
-    if (!this.props.gameDetails) {
+    if (!this.props.resultOfGame) {
       return null;
     }
-          
-    const { gameDetails } = this.props;
+    
+    const { resultOfGame } = this.props;
 
-    if (gameDetails.awardBasis === 'TOURNAMENT' && !gameDetails.gameLog) {
+    const { awardBasis, amountWon: amountWonDict, gameLog } = resultOfGame;
+    const amountWon = amountWonDict ? standardFormatAmountDict(amountWonDict) : null;
+
+    const isTournament = awardBasis === 'TOURNAMENT';
+
+    if (isTournament && !gameLog) {
       console.log('Error, must be legacy : tournament with no outcome log');
       return null;
     }
-      
-    const { awardBasis } = gameDetails;
-    const isTournament = awardBasis === 'TOURNAMENT';
-    
-    // console.log('Is this a tournament ? : ', isTournament, ' and details: ', gameDetails);
+
+    const gameDetails = { ...resultOfGame, amountWon };
 
     return (
       <View style={styles.backgroundWrapper}>

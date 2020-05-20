@@ -5,6 +5,8 @@ import { Button } from 'react-native-elements';
 
 import { Colors } from '../../util/Values';
 
+const KNOWN_GAMES = ['TAP_SCREEN', 'CHASE_ARROW', 'DESTROY_IMAGE'];
+
 export default class BoostGameModal extends React.PureComponent {
           
     getTitle() {
@@ -18,7 +20,7 @@ export default class BoostGameModal extends React.PureComponent {
         return gameDetails.customStartMessage;
       }
       
-      if (gameDetails.gameType === 'TAP_SCREEN' || gameDetails.gameType === 'CHASE_ARROW') {
+      if (KNOWN_GAMES.includes(gameDetails.gameType)) {
         return `Your top up was successful and you now stand a chance to win ${gameDetails.boostAmount}`;
       }
       
@@ -33,16 +35,25 @@ export default class BoostGameModal extends React.PureComponent {
       if (gameDetails.gameType === 'CHASE_ARROW') {
         return `Tap the arrow of the circle as it spins at least ${gameDetails.winningThreshold} times in ${gameDetails.timeLimitSeconds} seconds`;
       }
+
+      if (gameDetails.gameType === 'DESTROY_IMAGE') {
+        return `Break the image by tapping on the grid squares until they are gone - destroy at least ${gameDetails.winningThreshold}% in ${gameDetails.timeLimitSeconds} seconds`;
+      }
     };
 
     getTournamentStrap = (gameDetails) => {
+      const winnerPhrase = gameDetails.numberWinners === 1 ? 'top score' : `top ${gameDetails.numberWinners} scores`;
+
       if (gameDetails.gameType === 'TAP_SCREEN') {
-        const winnerPhrase = gameDetails.numberWinners === 1 ? 'top score' : `top ${gameDetails.numberWinners} scores`; 
         return `Tap the screen as much as you can in ${gameDetails.timeLimitSeconds} seconds! The ${winnerPhrase} will win the boost`;
       }
       
       if (gameDetails.gameType === 'CHASE_ARROW') {
         return `Tap the arrow of the circle as much as you can in ${gameDetails.timeLimitSeconds} seconds! The top ${gameDetails.numberWinners} scores will win the boost`;
+      }
+
+      if (gameDetails.gameType === 'DESTROY_IMAGE') {
+        return `Tap the image grid to destroy as much of it as you can in ${gameDetails.timeLimitSeconds} seconds! The ${winnerPhrase} will win the boost`;
       }
 
     };

@@ -65,12 +65,12 @@ const friendReducer = (state = initialState, action) => {
 
     case ADD_FRIENDSHIP: {
       const { friends: priorFriends } = state;
-      const friends = [...priorFriends, action.friend];
+      const friends = Array.isArray(priorFriends) ? [...priorFriends, action.friend] : [action.friend];
       return { ...state, friends }; 
     }
     case ADD_FRIEND_REQUEST: {
       const { friendRequests: oldRequests } = state;
-      const friendRequests = [...oldRequests, action.friendRequest];
+      const friendRequests = Array.isArray(oldRequests) ? [...oldRequests, action.friendRequest] : [action.friendRequest];
       return { ...state, friendRequests };
     }
     case REMOVE_FRIENDSHIP: {
