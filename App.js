@@ -53,6 +53,8 @@ import FriendRequestList from './src/screens/FriendRequestList';
 import AddFriend from './src/screens/AddFriend';
 import AddFriendMessage from './src/screens/AddFriendMessage';
 
+import BreakingGame from './src/screens/BreakingGame';
+
 const AppContainer = createAppContainer(
   createStackNavigator(
     {
@@ -99,6 +101,8 @@ const AppContainer = createAppContainer(
       AddFriend: { screen: AddFriend },
       AddFriendMessage: { screen: AddFriendMessage },
       FriendRequestList: { screen: FriendRequestList },
+
+      BreakingGame: { screen: BreakingGame },
     },
     { initialRouteName: 'Splash', headerMode: 'none' }
   )

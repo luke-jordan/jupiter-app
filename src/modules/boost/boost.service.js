@@ -2,7 +2,7 @@ import { Endpoints } from '../../util/Values';
 
 export const boostService = {
 
-    async sendTapGameResults({ boostId, numberTaps, timeTaken, authenticationToken }) {
+    async sendTapGameResults({ boostId, numberTaps, percentDestroyed, timeTaken, authenticationToken }) {
         try {
             const timeTakenMillis = timeTaken * 1000; // at present, just the length of the game, but may change in future
             const result = await fetch(`${Endpoints.CORE}boost/respond`, {
@@ -16,6 +16,7 @@ export const boostService = {
                     boostId,
                     eventType: 'USER_GAME_COMPLETION',
                     numberTaps,
+                    percentDestroyed,
                     timeTakenMillis,
                 }),
             });
