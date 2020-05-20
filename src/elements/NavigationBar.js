@@ -34,6 +34,7 @@ class NavigationBar extends React.Component {
 
   onPressTab = async index => {
     if (this.props.currentTab === index) return;
+    if (this.props.disabled) return;
     switch (index) {
       case 0:
         this.props.navigation.navigate('Home');
