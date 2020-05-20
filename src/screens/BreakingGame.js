@@ -1,14 +1,22 @@
 import React from 'react';
+import { connect } from 'react-redux';
 
-import { StyleSheet, View, Text, TouchableWithoutFeedback, Image, Dimensions } from 'react-native';
+import { StyleSheet, View, Text, TouchableWithoutFeedback, Image, Modal, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
+import GameResultModal from '../elements/boost/GameResultModal';
 import NavigationBar from '../elements/NavigationBar';
 
 import { boostService } from '../modules/boost/boost.service';
+
 import { LoggingUtil } from '../util/LoggingUtil';
 
-import { Colors } from '../util/Values';
+import { getAuthToken } from '../modules/auth/auth.reducer';
+import { updateBoostViewed } from '../modules/boost/boost.actions';
+import { updateServerBalance } from '../modules/balance/balance.actions';
+
+import { Colors, Endpoints } from '../util/Values';
+import { getRequest } from '../modules/auth/auth.helper';
 
 // the need to use absolute positions etc in the grid requires these calculations
 const { width, height } = Dimensions.get('window');
@@ -19,7 +27,16 @@ const IMAGE_WIDTH = 320;
 const GRID_SIDE_LENGTH = 4;
 const SIDE_PADDING = Math.max(0, (width - IMAGE_WIDTH) / 2);
 
-export default class BreakingGame extends React.PureComponent {
+const mapStateToProps = state => ({
+  token: getAuthToken(state),
+});
+
+const mapPropsToDispatch = {
+  updateBoostViewed,
+  updateServerBalance,
+}
+
+class BreakingGame extends React.PureComponent {
   
   constructor(props) {
     super(props);
@@ -36,18 +53,24 @@ export default class BreakingGame extends React.PureComponent {
       opacityGrid,
 
       gameInProgress: false,
+
+      showGameResultModal: false,
     }
   }
 
   async componentDidMount() {
-    // const { gameParams } = this.props;
-    // if (!gameParams) {
-    //   return;
-    // }
+    const gameParams = this.props.navigation.getParam('gameParams');
+    if (!gameParams) {
+      LoggingUtil.logError(Error('Breaking game initiated with no parameters'));
+      return;
+    }
 
-    // this.setState({
-    //   tapsPerSquare: gameParams.tapsPerSquare || 5,
-    // });
+    this.setState({
+      tapsPerSquare: gameParams.tapsPerSquare || 5,
+      timeLimit: gameParams.timeLimitSeconds,
+      gameTimer: gameParams.timeLimitSeconds,
+      boostId: gameParams.boostId,
+    });
 
     LoggingUtil.logEvent('USER_PLAYED_BREAKING_GAME');
     this.startGame();
@@ -57,7 +80,7 @@ export default class BreakingGame extends React.PureComponent {
   startGame() {
     this.setState({ gameInProgress: true },  () => {
       // set up so at end of game we are complete
-      setTimeout(() => { this.handleGameEnd(); }, this.state.timeLimit * 1000);
+      // setTimeout(() => { this.handleGameEnd(); }, this.state.timeLimit * 1000);
       
       // initiate countdown for user
       setTimeout(() => { this.decrementGameTimer(); }, 1000);
@@ -95,6 +118,26 @@ export default class BreakingGame extends React.PureComponent {
     this.setState({ tapCounter, opacityGrid });
   }
 
+  onPressDone = () => {
+    this.setState({ showGameResultDialog: false, gameResult: null });
+    this.props.navigation.navigate('Home');
+  }
+
+  onPressBoosts = () => {
+    this.setState({ showGameResultDialog: false, gameResult: null });
+    this.props.navigation.navigate('Boosts');
+  }
+
+  onPressErrorGoHome = () => {
+    this.setState({ showErrorDialog: false });
+    this.props.navigation.navigate('Home');
+  }
+
+  onPressErrorSupport = () => {
+    this.setState({ showErrorDialog: false });
+    this.props.navigation.navigate('Support');
+  }
+
   calculateOpacity = (rowNumber, columnNumber) => {
     const numberTaps = this.state[rowNumber][columnNumber];
     const proportionDestroyed = numberTaps / this.state.tapsPerSquare;
@@ -105,6 +148,8 @@ export default class BreakingGame extends React.PureComponent {
     if (this.state.gameTimer > 0) {
       setTimeout(() => { this.decrementGameTimer(); }, 1000);
       this.setState({ gameTimer: this.state.gameTimer - 1 });
+    } else {
+      this.handleGameEnd();
     }
   };
 
@@ -112,26 +157,25 @@ export default class BreakingGame extends React.PureComponent {
     const { tapCounter } = this.state;
     const summedRows = tapCounter.map((row) => row.reduce((sum, columnValue) => sum + columnValue, 0));
     const summedTaps = summedRows.reduce((sum, summedRow) => sum + summedRow, 0);
-    return summedTaps / (this.state.tapsPerSquare * GRID_SIDE_LENGTH * GRID_SIDE_LENGTH);
+    return summedTaps * 100 / (this.state.tapsPerSquare * GRID_SIDE_LENGTH * GRID_SIDE_LENGTH);
   }
 
   handleGameEnd() {
     this.setState({ gameInProgress: false, showSubmittingModal: true }, () => {
-      const percentDestroyed = this.calculatePercentDestroyed();
-      console.log('Percent destroyed: ', percentDestroyed);
       this.submitGameResults();
     });
   }
 
   async submitGameResults() {
-    const { gameParams } = this.state;
     const resultOptions = {
-      timeTaken: gameParams,
-      boostId: gameParams.boostId,
+      timeTaken: this.state.timeLimit,
+      boostId: this.state.boostId,
       percentDestroyed: this.calculatePercentDestroyed(),
+      authenticationToken: this.props.token,
     }
 
     const resultOfSubmission = await boostService.sendTapGameResults(resultOptions);
+    console.log('SUBMITTED : ', resultOfSubmission);
     if (!resultOfSubmission) {
       LoggingUtil.logError(Error('Result of game was null'));
       this.showErrorDialog();
@@ -147,20 +191,48 @@ export default class BreakingGame extends React.PureComponent {
     });
   }
 
-  showGameResultDialog(resultOfGame) {
+  async showGameResultDialog(resultOfGame) {
+    const { amountWon, statusMet } = resultOfGame;
+    const percentDestroyed = this.calculatePercentDestroyed();
+    const gameResultParams = { ...resultOfGame, percentDestroyed, timeTaken: this.state.timeLimit };
+
+    console.log('Game result params: ', gameResultParams);
+    if (amountWon) {
+      // want to force this, for now (but check speed)
+      await this.updateBalance();
+    }
+
     this.setState({
       showSubmittingModal: false,
       showGameResultDialog: true,
-      resultOfGame,
+      gameResultParams,
     });
 
-    if (resultOfGame.amountWon) {
-      this.updateBalance();
+    console.log('Statusses met: ', statusMet);
+    if (Array.isArray(statusMet) && statusMet.length > 0) {
+      statusMet.forEach((viewedStatus) => this.props.updateBoostViewed({ boostId: this.state.boostId, viewedStatus }));
     }
   }
 
   async updateBalance() {
-    // do this and return
+    // do this and return, so on home screen balance is correct
+    try {
+      const balanceResult = await getRequest({ 
+        token: this.props.token,
+        url: `${Endpoints.CORE}balance`,
+      });
+
+      if (!balanceResult.ok) {
+        throw balanceResult;
+      }
+
+      const serverBalance = await balanceResult.json();
+      console.log('Retrieved server balance after game: ', serverBalance);
+      this.props.updateServerBalance(serverBalance);
+    } catch (err) {
+      console.log('ERROR fetching new balance: ', JSON.stringify(err));
+      LoggingUtil.logError(err);
+    }
   }
 
   // https://stackoverflow.com/questions/47362222/how-to-show-the-only-part-of-the-image
@@ -234,6 +306,39 @@ export default class BreakingGame extends React.PureComponent {
             </Text>
           </View>
           <NavigationBar navigation={this.props.navigation} currentTab={0} disabled />
+          {this.state.showSubmittingModal && (
+            <Modal
+              animationType="slide"
+              transparent
+              visible={this.state.showSubmittingModal}
+            >
+              <View style={styles.modalContent}>
+                <Text style={styles.modalText}>Submitting...</Text>
+              </View>
+            </Modal>
+          )}
+          {this.state.showErrorDialog && (
+            <Modal
+              animationType="slide"
+              transparent
+              visible={this.state.showErrorDialog}
+            >
+              <View style={styles.modalContent}>
+                <Text style={styles.modalText}>Sorry! There was an error submitting the game.
+                  Please <Text style={styles.modalLink} onPress={this.onPressErrorSupport}>contact support</Text> or go{' '}
+                  <Text onPress={this.onPressErrorGoHome} style={styles.modalLink}>back to home</Text>
+                </Text>
+              </View>
+            </Modal>
+          )}
+          {this.state.showGameResultDialog && (
+          <GameResultModal
+            showModal={this.state.showGameResultDialog}
+            resultOfGame={this.state.gameResultParams}
+            onPressViewOtherBoosts={this.onPressBoosts}
+            onCloseGameDialog={this.onPressDone}
+          />
+          )}
         </LinearGradient>
       </View>
     );
@@ -276,4 +381,26 @@ const styles = StyleSheet.create({
   gridRow: {
     flexDirection: 'row',
   },
+  modalContent: {
+    marginTop: 'auto',
+    marginHorizontal: 40,
+    marginBottom: 'auto',
+    minHeight: 120,
+    backgroundColor: Colors.WHITE,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  modalText: {
+    color: Colors.DARK_GRAY,
+    fontSize: 20,
+    fontFamily: 'poppins-semibold',
+    marginTop: 'auto',
+    marginBottom: 'auto',
+    padding: 10,
+  },
+  modalLink: {
+    color: Colors.PURPLE,
+  },
 });
+
+export default connect(mapStateToProps, mapPropsToDispatch)(BreakingGame);

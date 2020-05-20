@@ -107,6 +107,7 @@ class Boosts extends React.Component {
       if (condition.includes('friends_added_since')) thresholdEventType = 'social_event';
       if (condition.includes('total_number_friends')) thresholdEventType = 'social_event';
       if (condition.includes('number_taps')) thresholdEventType = 'game_event';
+      if (condition.includes('percent_destroyed')) thresholdEventType = 'game_event';
     }
     
     return { nextStatus, thresholdEventType };
@@ -141,6 +142,7 @@ class Boosts extends React.Component {
         action = this.onPressInviteFriends;
       } else if (thresholdEventType === 'game_event') {
         title = 'PLAY GAME';
+        console.log('Boost details: ', boostDetails);
         action = () => this.props.navigation.navigate('Home', { showGameUnlockedModal: true, boostDetails });
       }
 

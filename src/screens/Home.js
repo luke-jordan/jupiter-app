@@ -623,6 +623,9 @@ class Home extends React.Component {
       this.startTapGame(gameParams);
     } else if (gameParams.gameType.includes('CHASE_ARROW')) {
       this.startArrowGame(gameParams);
+    } else if (gameParams.gameType.includes('DESTROY_IMAGE')) {
+      this.setState({ showGameUnlockeModal: false });
+      this.props.navigation.navigate('BreakingGame', { gameParams });
     }
     LoggingUtil.logEvent('GAME_USER_INITIATED');
   };
@@ -742,19 +745,15 @@ class Home extends React.Component {
       return;
     }
     
-    const { gameResult, amountWon, statusMet, endTime } = resultOfGame;
-    // console.log('Completed sending game results');
-    
-    const amountWonToPass = amountWon ? standardFormatAmount(amountWon.amount, amountWon.unit, amountWon.currency) : null;
-    
-    const gameResultParams = {
-      gameResult,
-      amountWon: amountWonToPass,
-      numberOfTaps,
-      endTime,
-      timeTaken: gameParams.timeLimitSeconds,
-    };
+    const { amountWon, statusMet } = resultOfGame;
+  
+    const gameResultParams = { ...resultOfGame, numberOfTaps, timeTaken: gameParams.timeLimitSeconds };
 
+    if (amountWon) {
+      // also do an update, so we increase balance
+      this.fetchCurrentProfileFromServer();
+    }
+  
     if (Array.isArray(statusMet) && statusMet.length > 0) {
       statusMet.forEach((viewedStatus) => this.props.updateBoostViewed({ boostId: gameParams.boostId, viewedStatus }));
     }
@@ -765,10 +764,6 @@ class Home extends React.Component {
       showSubmittingModal: false,
     }, () => this.cleanUpGameParamsAndShowResult());
 
-    if (amountWon) {
-      // also do an update, so we increase balance
-      this.fetchCurrentProfileFromServer();
-    }
   }
 
   cleanUpGameParamsAndShowResult() {
@@ -1009,7 +1004,7 @@ class Home extends React.Component {
         {this.state.showGameResultModal && (
           <GameResultModal
             showModal={this.state.showGameResultModal}
-            gameDetails={this.state.gameResultParams}
+            resultOfGame={this.state.gameResultParams}
             onPressViewOtherBoosts={this.onPressViewOtherBoosts}
             onCloseGameDialog={this.onCloseGameDialog}
           />

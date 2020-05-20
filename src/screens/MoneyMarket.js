@@ -25,11 +25,6 @@ export default class Stokvel extends React.PureComponent {
     Linking.openURL('https://jupitersave.com/blog/so-how-does-jupiter-pay-us-6');
   }
 
-  onPressEasterEgg = () =>{
-    console.log('AAARGGGGHHHH FUCK');
-    this.props.navigation.navigate('BreakingGame');
-  }
-
   render() {
     return (
       <View style={styles.container}>
@@ -54,7 +49,6 @@ export default class Stokvel extends React.PureComponent {
           contentContainerStyle={styles.mainContent}
         >
           <Text style={styles.bodyText}>
-            <Text onPress={this.onPressEasterEgg} style={styles.bodyLink}>Easter Egg</Text>{'\n'}
             <Text style={styles.bodyEmphasis}>
               Last updated: February 2020{'\n'}
             </Text>
