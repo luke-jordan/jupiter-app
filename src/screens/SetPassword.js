@@ -68,6 +68,7 @@ class SetPassword extends React.Component {
     if (params) {
       this.setState({
         isReset: params.isReset,
+        systemWideUserId: params.systemWideUserId,
       });
     }
   }
@@ -146,7 +147,7 @@ class SetPassword extends React.Component {
         },
         method: 'POST',
         body: JSON.stringify({
-          systemWideUserId: this.props.systemWideUserId,
+          systemWideUserId: this.state.systemWideUserId,
           newPassword: this.state.password,
           deviceId: DeviceInfo.DEVICE_ID,
         }),
@@ -164,6 +165,7 @@ class SetPassword extends React.Component {
         throw result;
       }
     } catch (error) {
+      console.log('Error completing password reset : ', JSON.stringify(error));
       this.showError();
     }
   };

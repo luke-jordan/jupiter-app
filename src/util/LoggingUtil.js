@@ -2,10 +2,7 @@ import * as Amplitude from 'expo-analytics-amplitude';
 import * as Analytics from 'expo-firebase-analytics';
 import * as Sentry from 'sentry-expo';
 
-import Constants from 'expo-constants';
-
-import { Endpoints } from '../util/Values';
-
+import { Endpoints, AnalyticsPrefix } from '../util/Values';
 
 export const LoggingUtil = {
   initialize() {
@@ -43,7 +40,7 @@ export const LoggingUtil = {
   // distinguish projects by namespace
   logFirebaseEvent(eventName, properties) {
     try {
-      Analytics.logEvent(`${Constants.manifest.releaseChannel.toUpper()}::${eventName}`, properties);
+      Analytics.logEvent(`${AnalyticsPrefix}::${eventName}`, properties);
     } catch (err) {
       try {
         Sentry.captureException(err);

@@ -63,6 +63,11 @@ export default class ResetPassword extends React.Component {
           systemWideUserId: resultJson.systemWideUserId,
           redirection: 'Reset',
         });
+      } else if (result.status === 400) {
+        this.showError();
+      } else if (result.status === 403) {
+        // note : this is a potential flaw, as it will allow some probing, to be remedied when there are sufficient users to justify it
+        this.showError('Sorry, we could not find your profile. Did you use another contact method to register?');
       } else {
         throw result;
       }
@@ -71,10 +76,11 @@ export default class ResetPassword extends React.Component {
     }
   };
 
-  showError() {
+  showError(errorText = 'Sorry, that does not appear to be a valid phone number or email address') {
     this.setState({
       loading: false,
       hasError: true,
+      errorText,
     });
   }
 
@@ -126,7 +132,7 @@ export default class ResetPassword extends React.Component {
           />
           {this.state.hasError ? (
             <Text style={styles.errorMessage}>
-              Please enter a valid phone number or email address
+              {this.state.errorText}
             </Text>
           ) : null}
         </View>
