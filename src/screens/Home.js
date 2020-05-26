@@ -202,7 +202,7 @@ class Home extends React.Component {
 
     LoggingUtil.setUserId(info.systemWideUserId);
     LoggingUtil.logEvent('USER_ENTERED_HOME_SCREEN');
-    LoggingUtil.logFirebaseEvent('USER_ENTERED_HOME', { previewMode: this.state.inPreviewMode });
+    LoggingUtil.logFirebaseEvent('login'); // to force seeing if these are registering on FB
 
     if (info.balance) {
       this.props.updateServerBalance(info.balance);

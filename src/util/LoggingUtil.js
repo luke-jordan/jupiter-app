@@ -1,8 +1,10 @@
+import { Platform } from 'react-native';
+
 import * as Amplitude from 'expo-analytics-amplitude';
 import * as Analytics from 'expo-firebase-analytics';
 import * as Sentry from 'sentry-expo';
 
-import { Endpoints, AnalyticsPrefix } from '../util/Values';
+import { Endpoints } from '../util/Values';
 
 export const LoggingUtil = {
   initialize() {
@@ -40,8 +42,14 @@ export const LoggingUtil = {
   // distinguish projects by namespace
   logFirebaseEvent(eventName, properties) {
     try {
-      Analytics.logEvent(`${AnalyticsPrefix}::${eventName}`, properties);
+      if (Platform.OS === 'ios') {
+        // for the moment we are not bothering with this, because we only use it for Play Store CPA bidding
+        return;
+      }
+      // Analytics.logEvent(`${AnalyticsPrefix}::${eventName}`, properties);
+      Analytics.logEvent(eventName, properties);
     } catch (err) {
+      console.log('Error sending to Firebase: ', err);
       try {
         Sentry.captureException(err);
       } catch (sentryErr) {

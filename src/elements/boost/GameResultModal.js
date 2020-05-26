@@ -6,7 +6,7 @@ import { Button } from 'react-native-elements';
 
 import { Colors } from '../../util/Values';
 
-import { getCurrencySymbol, standardFormatAmountDict } from '../../util/AmountUtil';
+import { getCurrencySymbol, standardFormatAmountDict, formatPercent } from '../../util/AmountUtil';
 
 export default class GameResultModal extends React.PureComponent {
 
@@ -32,7 +32,7 @@ export default class GameResultModal extends React.PureComponent {
         const resultClause = endTime ? `, in about ${moment(endTime).fromNow(true)}` : '';
         
         const tappedOrPercentClause = gameDetails.numberOfTaps 
-          ? `tapped ${gameDetails.numberOfTaps} times` : `broke ${gameDetails.percentDestroyed}% of the credit card`;
+          ? `tapped ${gameDetails.numberOfTaps} times` : `broke ${formatPercent(gameDetails.percentDestroyed)} of the credit card`;
         
         resultBody = `You ${tappedOrPercentClause} in ${gameDetails.timeTaken} seconds!\n` +
           `Winners of the challenge will be notified when time is up${resultClause}. Good luck!`;
@@ -91,8 +91,9 @@ export default class GameResultModal extends React.PureComponent {
   
   renderTournamentResult (gameDetails) {
     const userWon = gameDetails.gameResult === 'REDEEMED';
-    const { numberTaps, percentAchieved, ranking, topScore, topPercent } = gameDetails.gameLog;
-
+    const { accountScore, ranking, topScore, scoreType } = gameDetails.gameLog;
+    const scoreIsPercent = scoreType === 'PERCENT';
+    
     const title = userWon ? 'You won the boost challenge!' : 'The boost results are in!';
 
     const boostAwardAmount = `${getCurrencySymbol(gameDetails.boostCurrency)}${gameDetails.boostAmount}`
@@ -121,17 +122,17 @@ export default class GameResultModal extends React.PureComponent {
         {userWon ? (
           <View style={styles.tournamentWonScoreHolder}>
             <Text style={styles.tournamentScoreTitle}>Your Top Score</Text>
-            <Text style={styles.tournamentScoreNumber}>{numberTaps}</Text>
+            <Text style={styles.tournamentScoreNumber}>{scoreIsPercent ? formatPercent(accountScore) : accountScore}</Text>
           </View>
         ) : (
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
             <View style={styles.tournamentLossScoreHolder}>
               <Text style={styles.tournamentScoreTitle}>Your Score</Text>
-              <Text style={styles.tournamentScoreNumber}>{numberTaps || `${percentAchieved}%`}</Text>
+              <Text style={styles.tournamentScoreNumber}>{scoreIsPercent ? formatPercent(accountScore) : accountScore}</Text>
             </View>
             <View style={styles.tournamentLossScoreHolder}>
               <Text style={styles.tournamentScoreTitle}>Top Score</Text>
-              <Text style={styles.tournamentScoreNumber}>{topScore || `${topPercent}%`}</Text>
+              <Text style={styles.tournamentScoreNumber}>{scoreIsPercent ? formatPercent(topScore) : topScore}</Text>
             </View>
           </View>
         )}

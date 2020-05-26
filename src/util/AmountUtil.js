@@ -90,4 +90,6 @@ export const safeAmountStringSplit = (amountString) => {
     console.log('Error! Server sent bad amount string: ', err);
     return null;
   }
-}
+};
+
+export const formatPercent = (percentNumber) => `${parseInt(percentNumber, 10).toFixed(0)}%`;

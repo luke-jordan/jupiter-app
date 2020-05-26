@@ -40,6 +40,10 @@ export default class ChangePassword extends React.Component {
       defaultPasswordErrorMessage: 'Please enter a valid password',
       generalErrorText: 'There is a problem with your request',
       checkingForCompletion: false,
+
+      hideOldPassword: true,
+      hideNewPassword1: true,
+      hideNewPassword2: true,
     };
   }
 
@@ -228,11 +232,7 @@ export default class ChangePassword extends React.Component {
 
   render() {
     return (
-      <KeyboardAvoidingView
-        style={styles.container}
-        contentContainerStyle={styles.container}
-        behavior="padding"
-      >
+      <View style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.headerButton}
@@ -256,7 +256,7 @@ export default class ChangePassword extends React.Component {
               <Text style={styles.profileFieldTitle}>Old Password*</Text>
               <Input
                 value={this.state.oldPassword}
-                secureTextEntry
+                secureTextEntry={this.state.hideOldPassword}
                 onChangeText={text => this.onEditField(text, 'oldPassword')}
                 onEndEditing={() => this.onEndEditing('oldPassword')}
                 inputContainerStyle={styles.inputContainerStyle}
@@ -267,6 +267,15 @@ export default class ChangePassword extends React.Component {
                     : null,
                 ]}
                 containerStyle={styles.containerStyle}
+                rightIcon={(
+                  <Icon
+                    name={this.state.hideOldPassword ? "eye" : "eye-off"}
+                    size={20}
+                    color={Colors.PURPLE}
+                    type="material-community"
+                    onPress={() => this.setState({ hideOldPassword: !this.state.hideOldPassword })}
+                  />
+                )}
               />
               {this.state.errors && this.state.errors.oldPassword ? (
                 <Text style={styles.errorMessage}>
@@ -278,7 +287,7 @@ export default class ChangePassword extends React.Component {
               <Text style={styles.profileFieldTitle}>New Password*</Text>
               <Input
                 value={this.state.password}
-                secureTextEntry
+                secureTextEntry={this.state.hideNewPassword1}
                 onChangeText={text => this.onEditField(text, 'password')}
                 onEndEditing={() => this.onEndEditing('password')}
                 inputContainerStyle={styles.inputContainerStyle}
@@ -289,6 +298,15 @@ export default class ChangePassword extends React.Component {
                     : null,
                 ]}
                 containerStyle={styles.containerStyle}
+                rightIcon={(
+                  <Icon
+                    name={this.state.hideNewPassword1 ? "eye" : "eye-off"}
+                    size={20}
+                    color={Colors.PURPLE}
+                    type="material-community"
+                    onPress={() => this.setState({ hideNewPassword1: !this.state.hideNewPassword1 })}
+                  />
+                )}    
               />
               {this.state.errors && this.state.errors.newPassword ? (
                 <Text style={styles.errorMessage}>
@@ -300,7 +318,7 @@ export default class ChangePassword extends React.Component {
               <Text style={styles.profileFieldTitle}>Retype New Password*</Text>
               <Input
                 value={this.state.passwordConfirm}
-                secureTextEntry
+                secureTextEntry={this.state.hideNewPassword2}
                 onChangeText={text => this.onEditField(text, 'passwordConfirm')}
                 onEndEditing={() => this.onEndEditing('passwordConfirm')}
                 inputContainerStyle={styles.inputContainerStyle}
@@ -311,6 +329,15 @@ export default class ChangePassword extends React.Component {
                     : null,
                 ]}
                 containerStyle={styles.containerStyle}
+                rightIcon={(
+                  <Icon
+                    name={this.state.hideNewPassword2 ? "eye" : "eye-off"}
+                    size={20}
+                    color={Colors.PURPLE}
+                    type="material-community"
+                    onPress={() => this.setState({ hideNewPassword2: !this.state.hideNewPassword2 })}
+                  />
+                )}    
               />
               {this.state.errors && this.state.errors.passwordConfirm ? (
                 <Text style={styles.errorMessage}>
@@ -405,7 +432,7 @@ export default class ChangePassword extends React.Component {
         </Overlay>
 
         <Toast ref={this.toastRef} opacity={1} style={styles.toast} />
-      </KeyboardAvoidingView>
+      </View>
     );
   }
 }
