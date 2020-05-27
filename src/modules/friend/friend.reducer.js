@@ -8,6 +8,8 @@ import {
   REMOVE_FRIENDSHIP,
   REMOVE_FRIEND_REQUEST,
   UPDATE_HAS_SEEN_FRIENDS,
+  UPDATE_FRIEND_SAVING_POOLS,
+  ADD_FRIEND_SAVING_POOL,
 } from './friend.actions';
 
 import { safeAmountStringSplit } from '../../util/AmountUtil';
@@ -15,12 +17,15 @@ import { safeAmountStringSplit } from '../../util/AmountUtil';
 const initialState = {
   friends: [],
   friendRequests: [],
+  friendSavingPools: [],
   referralData: {},
   friendAlertStatus: {}, 
   hasSeenFriendsExists: false, // just to make sure user knows it is there (will wipe on logout)
 };
 
 export const STATE_KEY = 'friend';
+
+const safeAddToArray = (oldArray, valueToAdd) => Array.isArray(oldArray) ? [...oldArray, valueToAdd] : [valueToAdd];
 
 const friendReducer = (state = initialState, action) => {
   switch (action.type) {
@@ -40,6 +45,9 @@ const friendReducer = (state = initialState, action) => {
     }
     case UPDATE_FRIEND_REQUEST_LIST: {
       return { ...state, friendRequests: action.friendRequestList };
+    }
+    case UPDATE_FRIEND_SAVING_POOLS: {
+      return { ...state, friendSavingPools: action.savingPools };
     }
     case UPDATE_REFERRAL_DATA: {
       const referralData = { referralBoostAvailable: false };
@@ -73,6 +81,12 @@ const friendReducer = (state = initialState, action) => {
       const friendRequests = Array.isArray(oldRequests) ? [...oldRequests, action.friendRequest] : [action.friendRequest];
       return { ...state, friendRequests };
     }
+    case ADD_FRIEND_SAVING_POOL: {
+      const { friendSavingPools: oldSavingPools } = state;
+      const friendSavingPools = safeAddToArray(oldSavingPools, action.savingPool);
+      return { ...state, friendSavingPools };
+    }
+
     case REMOVE_FRIENDSHIP: {
       const { friends: priorFriends } = state;
       const friends = priorFriends.filter((friend) => friend.relationshipId !== action.relationshipId);
@@ -111,6 +125,7 @@ export const getFriendAlertData = state => {
 
 export const getFriendList = state => state[STATE_KEY].friends;
 export const getFriendRequestList = state => state[STATE_KEY].friendRequests;
+export const getFriendSavingPools = state => state[STATE_KEY].friendSavingPools;
 export const getReferralData = state => state[STATE_KEY].referralData;
 
 export default friendReducer;

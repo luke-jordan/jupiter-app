@@ -43,11 +43,6 @@ class SelectTransferMethod extends React.PureComponent {
       amountToAdd: params.amountToAdd,
       isOnboarding: params.isOnboarding,
       accountId: params.accountId,
-      
-      // going to use these
-      savingPoolId: params.savingPoolId,
-      messageInstructionId: params.messageId,
-      boostId: params.boostId,
     });
 
   }
@@ -112,13 +107,14 @@ class SelectTransferMethod extends React.PureComponent {
 
   assembleTags = () => {
     const tags = [];
-    if (this.state.savingPoolId) {
+    const { savingPoolId, messageInstructionId, boostId } = this.props.transactionDetails;
+    if (savingPoolId) {
       tags.push(`SAVING_POOL::${this.state.savingPoolId}`);
     }
-    if (this.state.messageInstructionId) {
+    if (messageInstructionId) {
       tags.push(`MESSAGE_INSTRUCTION::${this.state.messageInstructionId}`);
     }
-    if (this.state.boostId) {
+    if (boostId) {
       tags.push(`BOOST_ID::${this.state.boostId}`);
     }
     return tags;

@@ -17,7 +17,7 @@ import { LoggingUtil } from '../util/LoggingUtil';
 import { standardFormatAmountDict } from '../util/AmountUtil';
 
 import { friendService } from '../modules/friend/friend.service';
-import { getFriendList, getReferralData, getFriendRequestList, getFriendAlertData } from '../modules/friend/friend.reducer';
+import { getFriendList, getReferralData, getFriendRequestList, getFriendAlertData, getFriendSavingPools } from '../modules/friend/friend.reducer';
 import { updateFriendList, updateReferralData, updateFriendReqList, removeFriendship, updateHasSeenFriends, updateFriendAlerts } from '../modules/friend/friend.actions';
 
 import { obtainColorForHeat } from '../modules/friend/friend.helper';
@@ -28,6 +28,7 @@ import { getProfileData } from '../modules/profile/profile.reducer';
 const mapStateToProps = state => ({
   friends: getFriendList(state),
   friendRequests: getFriendRequestList(state),
+  friendSavingPools: getFriendSavingPools(state),
   friendAlertData: getFriendAlertData(state),
   referralData: getReferralData(state),
   profile: getProfileData(state),
@@ -207,6 +208,44 @@ class Friends extends React.Component {
     this.props.updateFriendReqList(friendRequests);
   }
 
+  // primary use of styles is for friends themselves, but reusing here as very similar
+  renderSavingPool(savingPool) {
+    return (
+      <TouchableOpacity
+        style={styles.friendItemWrapper}
+        key={savingPool.savingPoolId}
+        onPress={() => this.props.navigation.navigate('ViewSavingPool', { savingPoolId: savingPool.savingPoolId })}
+      >
+        <Image />
+        <Text style={styles.friendItemBodyWrapper}>
+          {savingPool.poolName}
+        </Text>
+        <View style={styles.friendItemHeat}>
+          {savingPool.targetAmount}
+        </View>
+        <Icon
+          name="chevron-right"
+          type="evilicon"
+          size={30}
+          color={Colors.MEDIUM_GRAY}
+        />
+      </TouchableOpacity>
+    )
+  }
+
+  renderSavingPools() {
+    return this.props.friendSavingPools && this.props.friendSavingPools.length > 0 ? (
+      <>
+        <Text style={styles.hasFriendsTitle}>
+          Buddy saving pots
+        </Text>
+        <View style={styles.friendsListHolder}>
+          {this.props.friendSavingPools.map((savingPool) => this.renderSavingPools(savingPool))}
+        </View>
+      </>
+    ) : null;
+  }
+
   renderFriendItem(friend, index) {
     // console.log('Rendering: ', friend);
     if (!friend) { // just in case
@@ -252,6 +291,20 @@ class Friends extends React.Component {
     )
   }
 
+  renderFriends() {
+    return (
+      <>
+        <Text style={styles.hasFriendsTitle}>
+          Your buddies
+        </Text>
+        <View style={styles.friendsListHolder}>
+          {/* {this.state.selfAsFriend ? this.renderFriendItem(this.state.selfAsFriend, 0) : null} */}
+          {this.state.friendsToDisplay.map((item, index) => this.renderFriendItem(item, index + 1))}
+        </View>
+      </>
+    )
+  }
+
   renderWithFriends() {
     const hasRequests = this.props.friendRequests && this.props.friendRequests.length > 0;
     return (
@@ -280,6 +333,23 @@ class Friends extends React.Component {
           <View style={styles.internalSeparator} />
           <TouchableOpacity 
             style={styles.hasFriendsTopButton}
+            onPress={() => this.props.navigation.navigate('AddSavingPool')}
+          >
+            <Image
+              source={require('../../assets/rocket-gradient.png')}
+              style={styles.buddyRequestIcon}
+            />
+            <Text style={styles.buddyRequestText}>Create Savings Pot</Text>
+            <Icon
+              name="chevron-right"
+              type="evilicon"
+              size={30}
+              color={Colors.MEDIUM_GRAY}
+            />
+          </TouchableOpacity>
+          <View style={styles.internalSeparator} />
+          <TouchableOpacity 
+            style={styles.hasFriendsTopButton}
             onPress={this.onPressAddFriend}
           >
             <Image
@@ -296,13 +366,8 @@ class Friends extends React.Component {
           </TouchableOpacity>
         </View>
         <View style={styles.hasFriendsBody}>
-          <Text style={styles.hasFriendsTitle}>
-            Your buddies
-          </Text>
-          <View style={styles.friendsListHolder}>
-            {/* {this.state.selfAsFriend ? this.renderFriendItem(this.state.selfAsFriend, 0) : null} */}
-            {this.state.friendsToDisplay.map((item, index) => this.renderFriendItem(item, index + 1))}
-          </View>
+          {this.renderSavingPools()}
+          {this.renderFriends()}
           <Text style={styles.hasFriendsBodyText}>
             Stay tuned as we add more and more ways you and your saving buddies can motivate each other to save more,
             starting with buddy tournaments -- coming soon! 

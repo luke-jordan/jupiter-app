@@ -68,6 +68,10 @@ class AddCash extends React.Component {
         amountToAdd: parseFloat(lastSave).toFixed(0),
       });
     }
+
+    if (params.savingPoolId) {
+      this.props.updateCurrentTransaction({ savingPoolId: params.savingPoolId });
+    }
   
   }
 
