@@ -8,6 +8,8 @@ import { NavigationEvents } from 'react-navigation';
 import moment from 'moment';
 
 import NavigationBar from '../elements/NavigationBar';
+
+import FriendSavingPotList from '../elements/friend/FriendSavingPotList';
 import FriendViewModal from '../elements/friend/FriendViewModal';
 import FriendAlertModal from '../elements/friend/FriendAlertModal';
 
@@ -17,8 +19,8 @@ import { LoggingUtil } from '../util/LoggingUtil';
 import { standardFormatAmountDict } from '../util/AmountUtil';
 
 import { friendService } from '../modules/friend/friend.service';
-import { getFriendList, getReferralData, getFriendRequestList, getFriendAlertData, getFriendSavingPools } from '../modules/friend/friend.reducer';
-import { updateFriendList, updateReferralData, updateFriendReqList, removeFriendship, updateHasSeenFriends, updateFriendAlerts } from '../modules/friend/friend.actions';
+import { getFriendList, getReferralData, getFriendRequestList, getFriendAlertData, getListOfSavingPools } from '../modules/friend/friend.reducer';
+import { updateFriendList, updateReferralData, updateFriendReqList, removeFriendship, updateHasSeenFriends, updateFriendAlerts, updateFriendSavingPools } from '../modules/friend/friend.actions';
 
 import { obtainColorForHeat } from '../modules/friend/friend.helper';
 
@@ -28,7 +30,7 @@ import { getProfileData } from '../modules/profile/profile.reducer';
 const mapStateToProps = state => ({
   friends: getFriendList(state),
   friendRequests: getFriendRequestList(state),
-  friendSavingPools: getFriendSavingPools(state),
+  friendSavingPools: getListOfSavingPools(state),
   friendAlertData: getFriendAlertData(state),
   referralData: getReferralData(state),
   profile: getProfileData(state),
@@ -42,6 +44,7 @@ const mapDispatchToProps = {
   removeFriendship,
   updateHasSeenFriends,
   updateFriendAlerts,
+  updateFriendSavingPools,
 };
 
 const DEFAULT_REFERRAL_TEXT = 'Introduce someone new to Jupiter and we’ll connect you as soon as your buddy signs up and completes their first save.';
@@ -71,7 +74,12 @@ class Friends extends React.Component {
     
     this.divideAndDisplayFriends();
     this.displayFriendAlertIfNeeded();
-    await Promise.all([this.fetchAndUpdateFriends(), this.fetchAndUpdateFriendRequests(), this.fetchAndUpdateReferralData()]);
+    await Promise.all([
+      this.fetchAndUpdateFriends(), 
+      this.fetchAndUpdateFriendRequests(), 
+      this.fetchAndUpdateReferralData(),
+      this.fetchAndUpdateFriendPools(),
+    ]);
     this.props.updateHasSeenFriends(true);
   }
 
@@ -208,29 +216,10 @@ class Friends extends React.Component {
     this.props.updateFriendReqList(friendRequests);
   }
 
-  // primary use of styles is for friends themselves, but reusing here as very similar
-  renderSavingPool(savingPool) {
-    return (
-      <TouchableOpacity
-        style={styles.friendItemWrapper}
-        key={savingPool.savingPoolId}
-        onPress={() => this.props.navigation.navigate('ViewSavingPool', { savingPoolId: savingPool.savingPoolId })}
-      >
-        <Image />
-        <Text style={styles.friendItemBodyWrapper}>
-          {savingPool.poolName}
-        </Text>
-        <View style={styles.friendItemHeat}>
-          {savingPool.targetAmount}
-        </View>
-        <Icon
-          name="chevron-right"
-          type="evilicon"
-          size={30}
-          color={Colors.MEDIUM_GRAY}
-        />
-      </TouchableOpacity>
-    )
+  async fetchAndUpdateFriendPools() {
+    const friendSavingPools = await friendService.fetchFriendSavingPools(this.props.token);
+    // console.log('Obtained pools: ', friendSavingPools);
+    this.props.updateFriendSavingPools(friendSavingPools);
   }
 
   renderSavingPools() {
@@ -239,9 +228,12 @@ class Friends extends React.Component {
         <Text style={styles.hasFriendsTitle}>
           Buddy saving pots
         </Text>
-        <View style={styles.friendsListHolder}>
-          {this.props.friendSavingPools.map((savingPool) => this.renderSavingPools(savingPool))}
-        </View>
+        <FriendSavingPotList 
+          savingPoolList={this.props.friendSavingPools}
+          listContainerStyle={{ marginBottom: 10 }}
+          itemContainerStyle={styles.friendItemWrapper}
+          onPressPool={(savingPoolId) => this.props.navigation.navigate('ViewSavingPool', { savingPoolId })}
+        />
       </>
     ) : null;
   }
@@ -336,7 +328,7 @@ class Friends extends React.Component {
             onPress={() => this.props.navigation.navigate('AddSavingPool')}
           >
             <Image
-              source={require('../../assets/rocket-gradient.png')}
+              source={require('../../assets/piggy_bank.png')}
               style={styles.buddyRequestIcon}
             />
             <Text style={styles.buddyRequestText}>Create Savings Pot</Text>

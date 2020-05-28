@@ -11,7 +11,9 @@ export const UPDATE_FRIEND_SAVING_POOLS = `${namespace}/UPDATE_FRIEND_SAVING_POO
 // since 90% of operations only work on one at a time
 export const ADD_FRIENDSHIP = `${namespace}/ADD_FRIENDSHIP`;
 export const ADD_FRIEND_REQUEST = `${namespace}/ADD_FRIEND_REQUEST`;
+
 export const ADD_FRIEND_SAVING_POOL = `${namespace}/ADD_FRIEND_SAVING_POOL`;
+export const UPDATE_FRIEND_SAVING_POOL = `${namespace}/UPDATE_FRIEND_SAVING_POOL`;
 
 export const REMOVE_FRIENDSHIP = `${namespace}/REMOVE_FRIENDSHIP`;
 export const REMOVE_FRIEND_REQUEST = `${namespace}/REMOVE_FRIEND_REQUEST`;
@@ -71,7 +73,12 @@ export const addSavingPool = savingPool => ({
   savingPool,
 });
 
-export const updateSavingPools = savingPools => ({
+export const updateFriendSavingPools = savingPools => ({
   type: UPDATE_FRIEND_SAVING_POOLS,
   savingPools,
+});
+
+export const updateSingleFriendPool = savingPool => ({
+  type: UPDATE_FRIEND_SAVING_POOL,
+  savingPool,
 });

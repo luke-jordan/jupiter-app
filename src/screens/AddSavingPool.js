@@ -33,6 +33,8 @@ class AddSavingPool extends React.Component {
       currency: 'R',
 
       selectedFriends: [],
+
+      showCreatedDialog: false,
     }
   }
 
@@ -42,7 +44,15 @@ class AddSavingPool extends React.Component {
 
   onChangeInput = (value, field) => {
     this.setState({ [field]: value })
-  }
+  };
+
+  onChangeAmountEnd = () => {
+    if (this.state.targetAmount.trim().length > 0) {
+      this.setState({
+        targetAmount: parseFloat(this.state.targetAmount).toFixed(0),
+      });
+    }
+  };
 
   onSelectOrDeselectFriend = (friendshipId) => {
     const { selectedFriends: priorSelection } = this.state;
@@ -57,27 +67,38 @@ class AddSavingPool extends React.Component {
 
   onCreatePot = async () => {
     this.setState({ loading: true });
-    const { poolName: name, targetAmount: amount, selectedFriends: friendships, token } = this.state;
+    const { name, targetAmount: amount, selectedFriends: friendships } = this.state;
     const target = { amount, unit: 'WHOLE_CURRENCY', currency: 'ZAR' };
-    const createdSavingPool = await friendService.createSavingPool({ token, name, target, friendships });
+    const createdSavingPool = await friendService.createSavingPool({ token: this.props.token, name, target, friendships });
+    if (!createdSavingPool) {
+      console.log('ERROR');
+      this.setState({ loading: false });
+      return;
+    }
     this.props.addSavingPool(createdSavingPool);
     this.setState({
+      loading: false,
       showCreatedDialog: true,
       savingPoolId: createdSavingPool.savingPoolId,
     });
   };
 
   onPressAddSavings = () => {
-    this.props.navigation.navigate('AddCash', {
-      startNewTransaction: true,
-      savingPoolId: this.state.savingPoolId,
-      priorScreen: 'SavingPotList',
-    })
-  }
+    this.setState({ showCreatedDialog: false }, () => 
+      this.props.navigation.navigate('AddCash', {
+        startNewTransaction: true,
+        savingPoolId: this.state.savingPoolId,
+        priorScreen: 'SavingPotList',
+      })
+    );
+  };
 
   renderPropertyInput() {
     return (
       <View style={styles.propertyInputHolder}>
+        <Text style={styles.inputTitle}>
+          Give this pot a name (what&apos;s its purpose?)
+        </Text>
         <Input
           value={this.state.name}
           onChangeText={text => this.onChangeInput(text, 'name')}
@@ -86,6 +107,9 @@ class AddSavingPool extends React.Component {
           inputContainerStyle={styles.inputContainerStyle}
           inputStyle={styles.inputStyle}
         />
+        <Text style={styles.inputTitle}>
+          What&apos;s the target for the pot?
+        </Text>
         <View style={styles.targetAmountWrapper}>
           <View style={styles.targetWrapperLeft}>
             <Text style={styles.currencyLabel}>{this.state.currency}</Text>
@@ -95,9 +119,9 @@ class AddSavingPool extends React.Component {
             value={this.state.targetAmount}
             onChangeText={text => this.onChangeInput(text, 'targetAmount')}
             onEndEditing={() => this.onChangeAmountEnd()}
-            inputContainerStyle={styles.inputContainerStyle}
-            inputStyle={styles.inputStyle}
-            containerStyle={styles.containerStyle}
+            inputContainerStyle={styles.amountInputContainerStyle}
+            inputStyle={styles.amountInputStyle}
+            containerStyle={styles.amountContainerStyle}
           />
         </View>
         {this.state.notWholeNumber ? (
@@ -175,6 +199,9 @@ class AddSavingPool extends React.Component {
         </View>
         <ScrollView containerStyle={styles.scrollContainer} style={styles.scrollInternal}>
           {this.renderPropertyInput()}
+          <Text style={[styles.inputTitle, { paddingHorizontal: 15 }]}>
+            Which of your buddies will join in?
+          </Text>
           <FriendSelector 
             friendList={this.props.friendList}
             onToggleFriendship={this.onSelectOrDeselectFriend}
@@ -193,12 +220,136 @@ class AddSavingPool extends React.Component {
             end: { x: 1, y: 0.5 },
           }}
         />
+        {this.renderFinishedDialog()}
       </View>
     );
   }
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.BACKGROUND_GRAY,
+  },
+  header: {
+    width: '100%',
+    height: 50,
+    flexDirection: 'row',
+    backgroundColor: Colors.WHITE,
+    alignItems: 'center',
+  },
+  headerButton: {
+    marginLeft: 10,
+  },
+  headerTitle: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 18,
+    color: Colors.DARK_GRAY,
+  },
+  scrollContainer: {
+    backgroundColor: Colors.BACKGROUND_GRAY,
+    alignItems: 'center',
+    paddingBottom: 14,
+  },
+  propertyInputHolder: {
+    paddingHorizontal: 15,
+  },
+  inputTitle: {
+    marginTop: 20,
+    marginBottom: 10,
+    fontFamily: 'poppins-semibold',
+    fontSize: 14,
+    color: Colors.MEDIUM_GRAY,
+  },
+  inputWrapperStyle: {
+    backgroundColor: Colors.WHITE,
+    minHeight: 50,
+    borderRadius: 10,
+    paddingVertical: 10,
+  },
+  inputContainerStyle: {
+    borderBottomWidth: 0,
+  },
+  inputStyle: {
+    backgroundColor: Colors.WHITE,
+    fontFamily: 'poppins-regular',
+    fontSize: 14,
+    marginLeft: 5,
+  },
+  targetAmountWrapper: {
+    flexDirection: 'row',
+    minHeight: 50,
+    backgroundColor: Colors.WHITE,
+    borderWidth: 1,
+    borderColor: Colors.PURPLE,
+    borderRadius: 20,
+  },
+  targetWrapperLeft: {
+    width: '13%',
+    marginVertical: -1,
+    marginLeft: -1,
+    backgroundColor: Colors.PURPLE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderTopLeftRadius: 18,
+    borderBottomLeftRadius: 18,
+  },
+  currencyLabel: {
+    fontFamily: 'poppins-regular',
+    color: Colors.WHITE,
+    fontSize: 24,
+  },
+  amountInputContainerStyle: {
+    borderBottomWidth: 0,
+  },
+  amountInputStyle: {
+    marginLeft: 12,
+    fontFamily: 'poppins-regular',
+    fontSize: 24,
+  },
+  amountContainerStyle: {
+    width: '86%',
+    borderRadius: 10,
+    minHeight: 50,
+    alignItems: 'center',
+    justifyContent: 'center', 
+  },
+  submitBtnTitle: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 17,
+    color: Colors.WHITE,
+  },
+  submitBtnStyle: {
+    borderRadius: 10,
+    minHeight: 55,
+    minWidth: 220,
+  },
+  submitBtnContainerStyle: {
+    marginVertical: 15,
+    justifyContent: 'center',
+    paddingHorizontal: 15,
+  },
+  modalContainer: {
+    marginTop: 'auto',
+    marginHorizontal: 15,
+    marginBottom: 'auto',
+    backgroundColor: Colors.WHITE,
+    borderRadius: 10,
+    paddingBottom: 15,
+  },  
+  modalHeader: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 18,
+    color: Colors.DARK_GRAY,
+    textAlign: 'center',
+    marginTop: 10,
+    marginBottom: 18,
+  },
+  modalBody: {
+    fontFamily: 'poppins-regular',
+    fontSize: 14,
+    color: Colors.MEDIUM_GRAY,
+  },
 
 });
 

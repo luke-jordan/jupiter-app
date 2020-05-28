@@ -44,7 +44,7 @@ class SelectTransferMethod extends React.PureComponent {
       isOnboarding: params.isOnboarding,
       accountId: params.accountId,
     });
-
+    console.log('What we have : ', this.props.transactionDetails);
   }
 
   onPressInstantEft = async () => {
@@ -109,13 +109,13 @@ class SelectTransferMethod extends React.PureComponent {
     const tags = [];
     const { savingPoolId, messageInstructionId, boostId } = this.props.transactionDetails;
     if (savingPoolId) {
-      tags.push(`SAVING_POOL::${this.state.savingPoolId}`);
+      tags.push(`SAVING_POOL::${savingPoolId}`);
     }
     if (messageInstructionId) {
-      tags.push(`MESSAGE_INSTRUCTION::${this.state.messageInstructionId}`);
+      tags.push(`MESSAGE_INSTRUCTION::${messageInstructionId}`);
     }
     if (boostId) {
-      tags.push(`BOOST_ID::${this.state.boostId}`);
+      tags.push(`BOOST_ID::${boostId}`);
     }
     return tags;
   }

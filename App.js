@@ -52,7 +52,9 @@ import Friends from './src/screens/FriendList';
 import FriendRequestList from './src/screens/FriendRequestList';
 import AddFriend from './src/screens/AddFriend';
 import AddFriendMessage from './src/screens/AddFriendMessage';
-import AddSavingPool from './src/screens/AddSavingPot';
+
+import AddSavingPool from './src/screens/AddSavingPool';
+import ViewSavingPool from './src/screens/ViewSavingPool';
 
 import BreakingGame from './src/screens/BreakingGame';
 

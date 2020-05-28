@@ -222,7 +222,7 @@ export const friendService = {
     }
   },
 
-  async getFriendSavingPools(token) {
+  async fetchFriendSavingPools(token) {
     try {
       const url = `${Endpoints.CORE}friend/pool/read/list`;
       const result = await getRequest({ url, token });
@@ -246,7 +246,7 @@ export const friendService = {
     }
   },
 
-  async viewSavingPoolDetails(token, savingPoolId) {
+  async fetchSavingPoolDetails(token, savingPoolId) {
     try {
       const url = `${Endpoints.CORE}friend/pool/read/fetch`;
       const result = await getRequest({ token, url, params: { savingPoolId } });
@@ -264,13 +264,14 @@ export const friendService = {
     try {
       const url = `${Endpoints.CORE}friend/pool/write/create`;
       const params = { name, target, friendships };
-      const result = await getRequest({ token, url, params });
+      console.log('Submitting with params: ', params);
+      const result = await postRequest({ token, url, params });
       if (!result.ok) {
         throw result;
       }
       const resultBody = await result.json();
-      if (resultBody.operationResult !== 'SUCCESS') {
-        JSON.stringify('Error creating pool: ', resultBody);
+      if (resultBody.result !== 'SUCCESS') {
+        console.log('Error creating pool: ', resultBody);
         return null;
       } 
       return resultBody.createdSavingPool;
@@ -282,8 +283,9 @@ export const friendService = {
 
   async addFriendToSavingPool({ token, savingPoolId, friendshipsToAdd }) {
     try {
-      const url = `${Endpoints.CORE}friend/pool/write/add`;
+      const url = `${Endpoints.CORE}friend/pool/write/update`;
       const params = { savingPoolId, friendshipsToAdd };
+      console.log('Submitting with params: ', params);
       const result = await postRequest({ token, url, params });
       if (!result.ok) {
         throw result;
