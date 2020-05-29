@@ -285,7 +285,7 @@ export const friendService = {
     try {
       const url = `${Endpoints.CORE}friend/pool/write/update`;
       const params = { savingPoolId, friendshipsToAdd };
-      console.log('Submitting with params: ', params);
+      // console.log('Submitting with params: ', params);
       const result = await postRequest({ token, url, params });
       if (!result.ok) {
         throw result;

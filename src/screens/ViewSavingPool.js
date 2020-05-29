@@ -80,14 +80,12 @@ class ViewSavingPool extends React.Component {
 
   // we actually don't want a render unless necessary here, hence naughty mutating
   onToggleFriendToAdd = (friendshipId) => {
-    console.log('Toggling: ', friendshipId);
     if (this.state.friendsToAdd.includes(friendshipId)) {
       const selectedFriends = this.state.friendsToAdd.filter((friendId) => friendId !== friendshipId);
       this.setState({ friendsToAdd: selectedFriends });
     }
 
     this.state.friendsToAdd.push(friendshipId);
-    console.log('Toggled friend, state: ', this.state.friendsToAdd);
   }
 
   onConfirmAddFriends = async () => {
@@ -99,8 +97,9 @@ class ViewSavingPool extends React.Component {
     })
     
     if (result) {
-      // add person to list
-      this.setState({ submittingEdits: false });
+      // add person to list (just via a new fetch)
+      this.fetchDetails();
+      this.setState({ submittingEdits: false, showAddFriendOverlay: false });
     }
   }
 
@@ -194,7 +193,6 @@ class ViewSavingPool extends React.Component {
             }}
           />
         )}
-        // badge={{ value: standardFormatAmountDict(transaction.saveAmount) }}
       />
     )
   }
@@ -245,25 +243,27 @@ class ViewSavingPool extends React.Component {
         width="90%"
         height="70%"
       >
-        <ScrollView>
-          <FriendSelector
-            friendList={this.state.possibleFriendsToAdd}
-            onToggleFriendship={this.onToggleFriendToAdd}
+        <View>
+          <ScrollView>
+            <FriendSelector
+              friendList={this.state.possibleFriendsToAdd}
+              onToggleFriendship={this.onToggleFriendToAdd}
+            />
+          </ScrollView>
+          <Button
+            title="+ ADD"
+            onPress={this.onConfirmAddFriends}
+            loading={this.state.submittingEdits}
+            titleStyle={styles.addSavingBtnTitle}
+            buttonStyle={styles.addSavingBtnStyle}
+            containerStyle={styles.addSavingBtnContainerStyle}
+            linearGradientProps={{
+              colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+              start: { x: 0, y: 0.5 },
+              end: { x: 1, y: 0.5 },
+            }}
           />
-        </ScrollView>
-        <Button
-          title="+ ADD"
-          onPress={this.onConfirmAddFriends}
-          loading={this.state.submittingEdits}
-          titleStyle={styles.addSavingBtnTitle}
-          buttonStyle={styles.addSavingBtnStyle}
-          containerStyle={styles.addSavingBtnContainerStyle}
-          linearGradientProps={{
-            colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
-            start: { x: 0, y: 0.5 },
-            end: { x: 1, y: 0.5 },
-          }}
-        />
+        </View>
       </Overlay>
     );
   }
