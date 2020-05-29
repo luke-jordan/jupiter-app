@@ -43,7 +43,8 @@ class SelectTransferMethod extends React.PureComponent {
       amountToAdd: params.amountToAdd,
       isOnboarding: params.isOnboarding,
       accountId: params.accountId,
-    })
+    });
+    console.log('What we have : ', this.props.transactionDetails);
   }
 
   onPressInstantEft = async () => {
@@ -103,8 +104,25 @@ class SelectTransferMethod extends React.PureComponent {
     return resultOfCall;
   };
 
+
+  assembleTags = () => {
+    const tags = [];
+    const { savingPoolId, messageInstructionId, boostId } = this.props.transactionDetails;
+    if (savingPoolId) {
+      tags.push(`SAVING_POOL::${savingPoolId}`);
+    }
+    if (messageInstructionId) {
+      tags.push(`MESSAGE_INSTRUCTION::${messageInstructionId}`);
+    }
+    if (boostId) {
+      tags.push(`BOOST_ID::${boostId}`);
+    }
+    return tags;
+  }
+
   tellBackendToInitiate = async (paymentMethod) => {
     try {
+      const transactionTags = this.assembleTags();
       const result = await fetch(`${Endpoints.CORE}addcash/initiate`, {
         headers: {
           'Content-Type': 'application/json',
@@ -118,6 +136,7 @@ class SelectTransferMethod extends React.PureComponent {
           currency: 'ZAR', // TODO implement for handling other currencies
           unit: 'HUNDREDTH_CENT',
           paymentProvider: paymentMethod,
+          tags: transactionTags,
         }),
       });
 
