@@ -1,7 +1,8 @@
+/* eslint-disable jsx-a11y/accessible-emoji */
 import React from 'react';
 import { connect } from 'react-redux';
 
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView } from 'react-native';
 import { Icon, Button, Input, Overlay } from 'react-native-elements';
 
 import FriendSelector from '../elements/friend/FriendSelector';
@@ -70,6 +71,7 @@ class AddSavingPool extends React.Component {
     const { name, targetAmount: amount, selectedFriends: friendships } = this.state;
     const target = { amount, unit: 'WHOLE_CURRENCY', currency: 'ZAR' };
     const createdSavingPool = await friendService.createSavingPool({ token: this.props.token, name, target, friendships });
+    console.log('Received pool as created: ', createdSavingPool);
     if (!createdSavingPool) {
       console.log('ERROR');
       this.setState({ loading: false });
@@ -92,10 +94,20 @@ class AddSavingPool extends React.Component {
       })
     );
   };
+  
+  onCompleteButNotSaving = () => {
+    console.log('NAVIGATE PLEASE');
+    this.setState({ showCreatedDialog: false });
+    this.props.navigation.navigate('Friends');
+  }
 
   renderPropertyInput() {
     return (
       <View style={styles.propertyInputHolder}>
+        <Text style={styles.inputTitle}>
+          Want to save together? We&apos;ve created Saving Pots🍯 to let you save with your Saving Buddies.
+          {' '}<Text style={{ color: Colors.PURPLE }} onPress={() => this.setState({ showFaqDialog: true })}>More info</Text>
+        </Text>
         <Text style={styles.inputTitle}>
           Give this pot a name (what&apos;s its purpose?)
         </Text>
@@ -142,6 +154,35 @@ class AddSavingPool extends React.Component {
     )
   }
 
+  renderFaqDialog() {
+    return this.state.showFaqDialog && (
+      <Overlay
+        isVisible={this.state.showFaqDialog}
+        transparent
+        width="90%"
+        height="auto"
+        animationType="fade"
+        onBackdropPress={() => this.setState({ showFaqDialog: false })}
+      >
+        <View style={styles.modalContainer}>
+          <Text style={styles.modalHeader}>
+            About Saving Pots
+          </Text>
+          <Text style={styles.modalBody}>
+            Buddy Saving Pots are a way for you and your saving buddies to save together, 
+            whether for a holiday together next year, or just to challenge yourselves to build better saving habits.
+            After you create a Saving Pot, you and your buddies can contribute to it just by starting your save from
+            the Saving Pot. Your save is still yours, no on else can touch it, but it will show up here and count 
+            to reaching the target. Start saving together!
+          </Text>
+          <TouchableOpacity style={styles.closeDialog} onPress={() => this.setState({ showFaqDialog: false })}>
+            <Image source={require('../../assets/close.png')} resizeMode="contain" style={{ width: 25 }} />
+          </TouchableOpacity>
+        </View>
+      </Overlay>
+    )
+  }
+
   renderFinishedDialog() {
     return this.state.showCreatedDialog && (
       <Overlay
@@ -158,10 +199,9 @@ class AddSavingPool extends React.Component {
             Saving pot created!
           </Text>
           <Text style={styles.modalBody}>
-            We have created the saving pool and notified the friends you added 
-            to it. Why don&apos;t you get it started by adding the first savings?{' '}
-            Remember: any savings you add are your savings, buddies in this pool will
-            see the contribution, but cannot withdraw it
+            Fantastic! Your Saving Pot has been created and we&apos;ve messaged the friends you&apos;ve chosen.
+            {' '}Let&apos;s make the first contribution to the Pot now? 
+            {' '}Remember, Saving Buddies can only SEE your contribution, they cannot withdraw your money😉
           </Text>
           <Button
             title="ADD SAVINGS"
@@ -175,6 +215,9 @@ class AddSavingPool extends React.Component {
               end: { x: 1, y: 0.5 },
             }}
           />
+          <TouchableOpacity style={styles.closeDialog} onPress={this.onCompleteButNotSaving}>
+            <Image source={require('../../assets/close.png')} resizeMode="contain" style={{ width: 25 }} />
+          </TouchableOpacity>
         </View>
       </Overlay>
     )
@@ -220,6 +263,7 @@ class AddSavingPool extends React.Component {
             end: { x: 1, y: 0.5 },
           }}
         />
+        {this.renderFaqDialog()}
         {this.renderFinishedDialog()}
       </View>
     );
@@ -350,7 +394,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.MEDIUM_GRAY,
   },
-
+  closeDialog: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+  },
 });
 
 export default connect(mapStateToProps, mapPropsToDispatch)(AddSavingPool);
