@@ -32,6 +32,7 @@ class AddSavingPool extends React.Component {
     this.state = {
       loading: false,
       currency: 'R',
+      targetAmount: '',
 
       selectedFriends: [],
 
@@ -61,7 +62,7 @@ class AddSavingPool extends React.Component {
     if (this.state.selectedFriends.includes(friendshipId)) {
       selectedFriends = priorSelection.filter((existingId) => existingId !== friendshipId);
     } else {
-      selectedFriends = [ ...priorSelection, friendshipId];
+      selectedFriends = [...priorSelection, friendshipId];
     }
     this.setState({ selectedFriends });
   }
@@ -86,7 +87,7 @@ class AddSavingPool extends React.Component {
   };
 
   onPressAddSavings = () => {
-    this.setState({ showCreatedDialog: false }, () => 
+    this.setState({ showCreatedDialog: false }, () =>
       this.props.navigation.navigate('AddCash', {
         startNewTransaction: true,
         savingPoolId: this.state.savingPoolId,
@@ -94,9 +95,8 @@ class AddSavingPool extends React.Component {
       })
     );
   };
-  
+
   onCompleteButNotSaving = () => {
-    console.log('NAVIGATE PLEASE');
     this.setState({ showCreatedDialog: false });
     this.props.navigation.navigate('Friends');
   }
@@ -169,11 +169,10 @@ class AddSavingPool extends React.Component {
             About Saving Pots
           </Text>
           <Text style={styles.modalBody}>
-            Buddy Saving Pots are a way for you and your saving buddies to save together, 
-            whether for a holiday together next year, or just to challenge yourselves to build better saving habits.
-            After you create a Saving Pot, you and your buddies can contribute to it just by starting your save from
-            the Saving Pot. Your save is still yours, no on else can touch it, but it will show up here and count 
-            to reaching the target. Start saving together!
+            Saving Pots are a way for Saving Buddies to save together for that next group holiday, your kids education or home improvements!
+            It’s as easy as this: create your Savings Pot, set the saving target, choose the Saving Buddies you want to save with – and make 
+            the first save! Your Saving Buddies can only SEE your contribution to the Pot, they cannot withdraw your money😉 
+            Now, let’s reach those goals together!          
           </Text>
           <TouchableOpacity style={styles.closeDialog} onPress={() => this.setState({ showFaqDialog: false })}>
             <Image source={require('../../assets/close.png')} resizeMode="contain" style={{ width: 25 }} />
@@ -200,7 +199,7 @@ class AddSavingPool extends React.Component {
           </Text>
           <Text style={styles.modalBody}>
             Fantastic! Your Saving Pot has been created and we&apos;ve messaged the friends you&apos;ve chosen.
-            {' '}Let&apos;s make the first contribution to the Pot now? 
+            {' '}Let&apos;s make the first contribution to the Pot now?
             {' '}Remember, Saving Buddies can only SEE your contribution, they cannot withdraw your money😉
           </Text>
           <Button
@@ -208,7 +207,7 @@ class AddSavingPool extends React.Component {
             onPress={this.onPressAddSavings}
             titleStyle={styles.submitBtnTitle}
             buttonStyle={styles.submitBtnStyle}
-            containerStyle={styles.submitBtnContainerStyle}      
+            containerStyle={styles.submitBtnContainerStyle}
             linearGradientProps={{
               colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
               start: { x: 0, y: 0.5 },
@@ -245,12 +244,12 @@ class AddSavingPool extends React.Component {
           <Text style={[styles.inputTitle, { paddingHorizontal: 15 }]}>
             Which of your buddies will join in?
           </Text>
-          <FriendSelector 
+          <FriendSelector
             friendList={this.props.friendList}
             onToggleFriendship={this.onSelectOrDeselectFriend}
           />
         </ScrollView>
-        <Button 
+        <Button
           title="CREATE POT"
           onPress={this.onCreatePot}
           loading={this.state.loading}
@@ -356,7 +355,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     minHeight: 50,
     alignItems: 'center',
-    justifyContent: 'center', 
+    justifyContent: 'center',
   },
   submitBtnTitle: {
     fontFamily: 'poppins-semibold',
@@ -380,7 +379,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.WHITE,
     borderRadius: 10,
     paddingBottom: 15,
-  },  
+  },
   modalHeader: {
     fontFamily: 'poppins-semibold',
     fontSize: 18,

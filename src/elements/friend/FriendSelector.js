@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { CheckBox, ListItem, Icon } from 'react-native-elements';
+import { CheckBox, Icon } from 'react-native-elements';
 
 import { Colors } from '../../util/Values';
 import { obtainColorForHeat } from '../../modules/friend/friend.helper';
@@ -24,7 +24,6 @@ export default class FriendSelector extends React.PureComponent {
   }
 
   onToggleFriend = (friendshipId) => {
-    console.log('AARARARSRRARS: ', friendshipId);
     if (friendshipId === 'SELF') {
       return; // nothing to do
     }

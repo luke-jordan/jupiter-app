@@ -147,10 +147,8 @@ export const getFriendRequestList = state => state[STATE_KEY].friendRequests;
 export const getReferralData = state => state[STATE_KEY].referralData;
 
 export const getListOfSavingPools = state => {
-  // console.log('Current pools: ', state[STATE_KEY].friendSavingPools);
   const isValidObject = state[STATE_KEY].friendSavingPools && typeof state[STATE_KEY].friendSavingPools === 'object';
   const poolsAsList = isValidObject ? Object.values(state[STATE_KEY].friendSavingPools) : [];
-  // console.log('Pools as list: ', poolsAsList);
   return poolsAsList;
 } 
 

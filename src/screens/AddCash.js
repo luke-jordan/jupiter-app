@@ -70,7 +70,7 @@ class AddCash extends React.Component {
     }
 
     if (params.savingPoolId) {
-      console.log('Updating saving pool, will tag with: ', params.savingPoolId);
+      // console.log('Updating saving pool, will tag with: ', params.savingPoolId);
       this.props.updateCurrentTransaction({ savingPoolId: params.savingPoolId });
     }
   
