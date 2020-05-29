@@ -8,7 +8,7 @@
       "ios",
       "android"
     ],
-    "version": "0.0.34",
+    "version": "0.0.35",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "jupiter",
@@ -26,13 +26,14 @@
     "ios": {
       "bundleIdentifier": "com.jupitersaving.app",
       "buildNumber": "1",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "associatedDomains": [
         "applinks:message.jupitersave.com"
       ]
     },
     "android": {
       "package": "com.jupitersave.app",
-      "versionCode": 34,
+      "versionCode": 35,
       "permissions": [],
       "googleServicesFile": "./google-services.json",
       "intentFilters": [

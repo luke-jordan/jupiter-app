@@ -8,6 +8,8 @@ import { NavigationEvents } from 'react-navigation';
 import moment from 'moment';
 
 import NavigationBar from '../elements/NavigationBar';
+
+import FriendSavingPotList from '../elements/friend/FriendSavingPotList';
 import FriendViewModal from '../elements/friend/FriendViewModal';
 import FriendAlertModal from '../elements/friend/FriendAlertModal';
 
@@ -17,8 +19,8 @@ import { LoggingUtil } from '../util/LoggingUtil';
 import { standardFormatAmountDict } from '../util/AmountUtil';
 
 import { friendService } from '../modules/friend/friend.service';
-import { getFriendList, getReferralData, getFriendRequestList, getFriendAlertData } from '../modules/friend/friend.reducer';
-import { updateFriendList, updateReferralData, updateFriendReqList, removeFriendship, updateHasSeenFriends, updateFriendAlerts } from '../modules/friend/friend.actions';
+import { getFriendList, getReferralData, getFriendRequestList, getFriendAlertData, getListOfSavingPools } from '../modules/friend/friend.reducer';
+import { updateFriendList, updateReferralData, updateFriendReqList, removeFriendship, updateHasSeenFriends, updateFriendAlerts, updateFriendSavingPools } from '../modules/friend/friend.actions';
 
 import { obtainColorForHeat } from '../modules/friend/friend.helper';
 
@@ -28,6 +30,7 @@ import { getProfileData } from '../modules/profile/profile.reducer';
 const mapStateToProps = state => ({
   friends: getFriendList(state),
   friendRequests: getFriendRequestList(state),
+  friendSavingPools: getListOfSavingPools(state),
   friendAlertData: getFriendAlertData(state),
   referralData: getReferralData(state),
   profile: getProfileData(state),
@@ -41,6 +44,7 @@ const mapDispatchToProps = {
   removeFriendship,
   updateHasSeenFriends,
   updateFriendAlerts,
+  updateFriendSavingPools,
 };
 
 const DEFAULT_REFERRAL_TEXT = 'Introduce someone new to Jupiter and we’ll connect you as soon as your buddy signs up and completes their first save.';
@@ -70,7 +74,12 @@ class Friends extends React.Component {
     
     this.divideAndDisplayFriends();
     this.displayFriendAlertIfNeeded();
-    await Promise.all([this.fetchAndUpdateFriends(), this.fetchAndUpdateFriendRequests(), this.fetchAndUpdateReferralData()]);
+    await Promise.all([
+      this.fetchAndUpdateFriends(), 
+      this.fetchAndUpdateFriendRequests(), 
+      this.fetchAndUpdateReferralData(),
+      this.fetchAndUpdateFriendPools(),
+    ]);
     this.props.updateHasSeenFriends(true);
   }
 
@@ -207,6 +216,28 @@ class Friends extends React.Component {
     this.props.updateFriendReqList(friendRequests);
   }
 
+  async fetchAndUpdateFriendPools() {
+    const friendSavingPools = await friendService.fetchFriendSavingPools(this.props.token);
+    // console.log('Obtained pools: ', friendSavingPools);
+    this.props.updateFriendSavingPools(friendSavingPools);
+  }
+
+  renderSavingPools() {
+    return this.props.friendSavingPools && this.props.friendSavingPools.length > 0 ? (
+      <>
+        <Text style={styles.hasFriendsTitle}>
+          Buddy saving pots
+        </Text>
+        <FriendSavingPotList 
+          savingPoolList={this.props.friendSavingPools}
+          listContainerStyle={{ marginBottom: 10 }}
+          itemContainerStyle={styles.friendItemWrapper}
+          onPressPool={(savingPoolId) => this.props.navigation.navigate('ViewSavingPool', { savingPoolId })}
+        />
+      </>
+    ) : null;
+  }
+
   renderFriendItem(friend, index) {
     // console.log('Rendering: ', friend);
     if (!friend) { // just in case
@@ -252,6 +283,20 @@ class Friends extends React.Component {
     )
   }
 
+  renderFriends() {
+    return (
+      <>
+        <Text style={styles.hasFriendsTitle}>
+          Your buddies
+        </Text>
+        <View style={styles.friendsListHolder}>
+          {/* {this.state.selfAsFriend ? this.renderFriendItem(this.state.selfAsFriend, 0) : null} */}
+          {this.state.friendsToDisplay.map((item, index) => this.renderFriendItem(item, index + 1))}
+        </View>
+      </>
+    )
+  }
+
   renderWithFriends() {
     const hasRequests = this.props.friendRequests && this.props.friendRequests.length > 0;
     return (
@@ -280,6 +325,23 @@ class Friends extends React.Component {
           <View style={styles.internalSeparator} />
           <TouchableOpacity 
             style={styles.hasFriendsTopButton}
+            onPress={() => this.props.navigation.navigate('AddSavingPool')}
+          >
+            <Image
+              source={require('../../assets/piggy_bank.png')}
+              style={styles.buddyRequestIcon}
+            />
+            <Text style={styles.buddyRequestText}>Create Savings Pot</Text>
+            <Icon
+              name="chevron-right"
+              type="evilicon"
+              size={30}
+              color={Colors.MEDIUM_GRAY}
+            />
+          </TouchableOpacity>
+          <View style={styles.internalSeparator} />
+          <TouchableOpacity 
+            style={styles.hasFriendsTopButton}
             onPress={this.onPressAddFriend}
           >
             <Image
@@ -296,13 +358,8 @@ class Friends extends React.Component {
           </TouchableOpacity>
         </View>
         <View style={styles.hasFriendsBody}>
-          <Text style={styles.hasFriendsTitle}>
-            Your buddies
-          </Text>
-          <View style={styles.friendsListHolder}>
-            {/* {this.state.selfAsFriend ? this.renderFriendItem(this.state.selfAsFriend, 0) : null} */}
-            {this.state.friendsToDisplay.map((item, index) => this.renderFriendItem(item, index + 1))}
-          </View>
+          {this.renderSavingPools()}
+          {this.renderFriends()}
           <Text style={styles.hasFriendsBodyText}>
             Stay tuned as we add more and more ways you and your saving buddies can motivate each other to save more,
             starting with buddy tournaments -- coming soon! 

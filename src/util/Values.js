@@ -34,6 +34,8 @@ export const DeviceInfo = {
 
 const isMaster = Boolean(Constants.manifest.releaseChannel === 'master');
 
+export const AnalyticsPrefix = isMaster ? 'JUPITER_MASTER' : 'JUPITER_STAGING';
+
 export const FallbackSupportNumber = isMaster
   ? { display: '073 659 3063', link: '27736593063' }
   : { display: '073 659 3063', link: '27736593063' };
@@ -79,3 +81,4 @@ export const Defaults = isMaster
       PASS: '#NewPass1234',
       REFERRAL: 'LETMEIN',
     };
+

@@ -1,6 +1,8 @@
 import { Endpoints } from '../../util/Values';
 import { getRequest, postRequest } from '../auth/auth.helper';
 
+import { getConvertor } from '../../util/AmountUtil';
+
 export const friendService = {
 
   DEFAULT_TEXT_MESSAGE: `The Jupiter Savings app REWARDS me for saving & gives a GREAT interest rate! ` +
@@ -211,11 +213,87 @@ export const friendService = {
       const result = await postRequest({ token, url, params: { logIds }});
       // console.log('And ? : ', JSON.stringify(result));
       if (!result.ok) {
-        throw result;;
+        throw result;
       }
       return true; // we don't need to do anything with it at present
     } catch (err) {
       console.log('Error marking alerts as seen: ', JSON.stringify(err));
+      return false;
+    }
+  },
+
+  async fetchFriendSavingPools(token) {
+    try {
+      const url = `${Endpoints.CORE}friend/pool/read/list`;
+      const result = await getRequest({ url, token });
+      if (!result.ok) {
+        throw result;
+      }
+      const { currentSavingPools } = await result.json();
+      if (!Array.isArray(currentSavingPools)) {
+        console.log('No saving pools sent from server');
+        return [];
+      }
+
+      return currentSavingPools.map((pool) => ({
+        ...pool,
+        percentComplete: pool.current && pool.target 
+          ? (pool.current.amount * getConvertor(pool.current.unit, pool.target.unit) / pool.target.amount) : 0,
+      }));
+    } catch (err) {
+      console.log('Error fetching saving pools: ', JSON.stringify(err));
+      return [];
+    }
+  },
+
+  async fetchSavingPoolDetails(token, savingPoolId) {
+    try {
+      const url = `${Endpoints.CORE}friend/pool/read/fetch`;
+      const result = await getRequest({ token, url, params: { savingPoolId } });
+      if (!result.ok) {
+        throw result;
+      }
+      return result.json();
+    } catch (err) {
+      console.log('Error fetching pool details: ', JSON.stringify(err));
+      return null;
+    }
+  },
+
+  async createSavingPool({ token, name, target, friendships }) {
+    try {
+      const url = `${Endpoints.CORE}friend/pool/write/create`;
+      const params = { name, target, friendships };
+      console.log('Submitting with params: ', params);
+      const result = await postRequest({ token, url, params });
+      if (!result.ok) {
+        throw result;
+      }
+      const resultBody = await result.json();
+      if (resultBody.result !== 'SUCCESS') {
+        console.log('Error creating pool: ', resultBody);
+        return null;
+      } 
+      return resultBody.createdSavingPool;
+    } catch (err) {
+      console.log('Error creating pool: ', JSON.stringify(err));
+      return null;
+    }
+  },
+
+  async addFriendToSavingPool({ token, savingPoolId, friendshipsToAdd }) {
+    try {
+      const url = `${Endpoints.CORE}friend/pool/write/update`;
+      const params = { savingPoolId, friendshipsToAdd };
+      // console.log('Submitting with params: ', params);
+      const result = await postRequest({ token, url, params });
+      if (!result.ok) {
+        throw result;
+      }
+      const { result: serverResult } = await result.json();
+      return serverResult === 'SUCCESS';
+    } catch (err) {
+      console.log('Error adding friend to pool: ', JSON.stringify(err));
       return false;
     }
   },
