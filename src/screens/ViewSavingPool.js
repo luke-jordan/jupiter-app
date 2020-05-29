@@ -90,12 +90,12 @@ class ViewSavingPool extends React.Component {
 
   onConfirmAddFriends = async () => {
     this.setState({ submittingEdits: true });
-    const result = await friendService.addFriendToSavingPool({ 
+    const result = await friendService.addFriendToSavingPool({
       token: this.props.token,
       savingPoolId: this.props.savingPool.savingPoolId,
       friendshipsToAdd: this.state.friendsToAdd,
     })
-    
+
     if (result) {
       // add person to list (just via a new fetch)
       this.fetchDetails();
@@ -111,19 +111,20 @@ class ViewSavingPool extends React.Component {
 
     const { savingPoolId } = this.props.savingPool;
     const savingPoolDetails = await friendService.fetchSavingPoolDetails(this.props.token, savingPoolId);
-    
+
     const { participatingUsers, transactionRecord: rawTransactionRecord } = savingPoolDetails;
 
-    const transactionRecord = rawTransactionRecord.map((transaction, index) => ({ ...transaction, id: index}))
+    const transactionRecord = rawTransactionRecord.map((transaction, index) => ({ ...transaction, id: index }))
       .sort((txA, txB) => txB.creationTimeMillis - txA.creationTimeMillis);
 
     const participantRelId = participatingUsers.
       filter((participant) => participant.relationshipId).
       map((participant) => participant.relationshipId);
-    
+
     const participants = this.props.friendList.filter((friend) => friend.relationshipId === 'SELF' || participantRelId.includes(friend.relationshipId));
-    const possibleFriendsToAdd = this.props.friendList.filter((friend) => friend.relationshipId !== 'SELF' && !participantRelId.includes(friend.relationshipId));
-    
+    const possibleFriendsToAdd = savingPoolDetails.createdByFetcher ? 
+      this.props.friendList.filter((friend) => friend.relationshipId !== 'SELF' && !participantRelId.includes(friend.relationshipId)) : [];
+
     this.setState({ loadingDetails: false, transactionRecord, participants, possibleFriendsToAdd })
   }
 
@@ -140,7 +141,7 @@ class ViewSavingPool extends React.Component {
         </Text>
         <Text style={styles.titleMain}>{poolName}</Text>
         <Text style={styles.amountsDescription}>
-          You and your buddies have put in{' '} 
+          You and your buddies have put in{' '}
           <Text style={styles.amountText}>{standardFormatAmountDict(current, 0)}{' '}</Text>
           towards a target of{' '}
           <Text style={styles.amountText}>{standardFormatAmountDict(target, 0)}</Text>
@@ -180,7 +181,7 @@ class ViewSavingPool extends React.Component {
         titleStyle={styles.txSaverStyle}
         subtitleStyle={styles.txDateStyle}
         rightElement={(
-          <Button 
+          <Button
             title="ADD"
             onPress={this.onPressAddSaving}
             titleStyle={styles.matchBtnTitle}
@@ -207,7 +208,7 @@ class ViewSavingPool extends React.Component {
         titleStyle={styles.txSaverStyle}
         subtitleStyle={styles.txDateStyle}
         rightElement={(
-          <Button 
+          <Button
             title="MATCH"
             onPress={() => this.onPressAddSaving(transaction.saveAmount)}
             titleStyle={styles.matchBtnTitle}
@@ -228,8 +229,8 @@ class ViewSavingPool extends React.Component {
     return (
       <View style={styles.listHolder}>
         <Text style={styles.listTitle}>Contributions to this pot:</Text>
-        {this.state.transactionRecord && this.state.transactionRecord.length > 0 
-          ? this.renderContributions() : this.renderNoTransaction() }
+        {this.state.transactionRecord && this.state.transactionRecord.length > 0
+          ? this.renderContributions() : this.renderNoTransaction()}
       </View>
     )
   }
@@ -241,7 +242,7 @@ class ViewSavingPool extends React.Component {
         animationType="fade"
         onBackdropPress={() => this.setState({ showAddFriendOverlay: false })}
         width="90%"
-        height="70%"
+        height="auto"
       >
         <View>
           <ScrollView>
@@ -291,7 +292,7 @@ class ViewSavingPool extends React.Component {
           {!this.state.loadingDetails && this.renderTransactions()}
           {!this.state.loadingDetails && this.renderFriends()}
         </ScrollView>
-        <Button 
+        <Button
           title="CONTRIBUTE NOW"
           onPress={this.onPressAddSaving}
           titleStyle={styles.addSavingBtnTitle}

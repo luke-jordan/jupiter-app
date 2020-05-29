@@ -131,6 +131,9 @@ jobs:
           name: Store google-services.json
           command: echo $GSERVICES > google-services.json
       - run:
+          name: Store GoogleService-Info.plist
+          command: echo $GLISTAPPL > GoogleService-Info.plist
+      - run:
           name: Publishing Expo app
           command: |
             expo login -u $EXPO_USERNAME -p $EXPO_PASSWORD --non-interactive
