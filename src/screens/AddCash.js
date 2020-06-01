@@ -69,11 +69,18 @@ class AddCash extends React.Component {
       });
     }
 
+    // at the moment, these three are mutually exclusive, so will not have multiple calls
     if (params.savingPoolId) {
-      // console.log('Updating saving pool, will tag with: ', params.savingPoolId);
       this.props.updateCurrentTransaction({ savingPoolId: params.savingPoolId });
     }
-  
+
+    if (params.messageInstructionId) {
+      this.props.updateCurrentTransaction({ messageInstructionId: params.messageInstructionId });
+    }
+
+    if (params.boostId) {
+      this.props.updateCurrentTransaction({ boostId: params.boostId });
+    }
   }
 
   onPressBack = () => {

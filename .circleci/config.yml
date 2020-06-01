@@ -92,6 +92,14 @@ commands:
           name: Setting up environment for Turtle
           command: turtle setup:$PLATFORM --sdk-version `cat /tmp/expo-sdk-version`
 
+  setup_gservices:
+    steps:
+      - run:
+          name: Echoing Google services files
+          command: |
+            echo $GSERVICES > google-services.json
+            echo $GLISTAPPL > GoogleService-Info.plist
+
   restore_yarn_cache:
     steps:
       - restore_cache:
@@ -152,6 +160,7 @@ jobs:
       - restore_turtle_cache
       - install_turtle_ios
       - setup_turtle
+      - setup_gservices
       - save_turtle_cache
       - run:
           name: Building Expo standalone app

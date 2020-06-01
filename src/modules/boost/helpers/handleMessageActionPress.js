@@ -19,6 +19,9 @@ const handleMessageActionPress = (messageDetails, navigation) => {
         if (addCashEmbeddedAmount) {
           params.preFilledAmount = extractAmount(addCashEmbeddedAmount, 'WHOLE_CURRENCY');
         }
+        if (messageDetails.instructionId) {
+          params.messageInstructionId = messageDetails.instructionId;
+        }
         navigation.navigate('AddCash', params);
         break;
     }
