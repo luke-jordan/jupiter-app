@@ -29,14 +29,16 @@ const FriendItem = ({ friend, index, chevronVisible, onPressViewFriend }) => {
         <Text style={styles.friendItemName}>{friendName}</Text>
         {lastAction && <Text style={styles.friendItemSubtitle}>{lastAction}</Text>}
       </View>
-      <View style={styles.friendItemHeat}>
-        <Icon
-          name="circle-o"
-          type="font-awesome"
-          size={30}
-          color={obtainColorForHeat(savingHeat)}
-        />
-      </View>
+      {savingHeat && (
+        <View style={styles.friendItemHeat}>
+          <Icon
+            name="circle-o"
+            type="font-awesome"
+            size={30}
+            color={obtainColorForHeat(savingHeat)}
+          />
+        </View>
+      )}
       {chevronVisible && (
         <Icon
           name="chevron-right"

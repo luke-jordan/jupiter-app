@@ -133,7 +133,7 @@ class Boosts extends React.Component {
       if (thresholdEventType === 'save_event') {
         title = 'SAVE NOW';
         const amount = this.extractStatusThreshold(boostDetails.statusConditions, nextStatus);
-        action = () => this.onPressAddCash(amount);
+        action = () => this.onPressAddCash(amount, boostDetails.boostId);
       } else if (thresholdEventType === 'onboard_save_event') {
         title = 'SAVE NOW';
         action = this.onPressFirstAddCash;
@@ -287,7 +287,7 @@ class Boosts extends React.Component {
     }
   };
 
-  onPressAddCash = amount => this.props.navigation.navigate('AddCash', { preFilledAmount: amount, startNewTransaction: true });
+  onPressAddCash = (amount, boostId) => this.props.navigation.navigate('AddCash', { preFilledAmount: amount, boostId, startNewTransaction: true });
 
   onPressFirstAddCash = () => {
     this.props.navigation.navigate('OnboardAddSaving', { startNewTransaction: true });

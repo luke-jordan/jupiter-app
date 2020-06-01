@@ -156,6 +156,9 @@ class AddFriendMessage extends React.Component {
               inputStyle={styles.msgInputStyle}
               textAlignVertical="top"    
             />
+            <Text style={styles.messageNote}>Note: Jupiter will automatically insert your referral code and a link to 
+              download the app underneath the message you write
+            </Text>
           </View>
           <Text style={styles.shareOptionsLabel}>Share the following with this saving buddy:</Text>
           <View style={styles.sharingOptionWrapper}>
@@ -251,7 +254,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.WHITE,
     borderRadius: 10,
     paddingVertical: 10,
-    marginBottom: 25,
+    marginBottom: 10,
   },
   msgContainerStyle: {
     borderBottomWidth: 0,
@@ -289,6 +292,7 @@ const styles = StyleSheet.create({
   sendInviteBtnContainerStyle: {
     marginTop: 20,
     paddingHorizontal: 15,
+    marginBottom: 30,
   },
   sendInviteBtnStyle: {
     height: 55,
@@ -336,6 +340,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: Colors.WHITE,
+  },
+  messageNote: {
+    fontFamily: 'poppins-semibold',
+    color: Colors.MEDIUM_GRAY,
+    fontSize: 12,
+    lineHeight: 18,
+    marginBottom: 20,
   },
 });
 

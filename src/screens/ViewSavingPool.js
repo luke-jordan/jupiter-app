@@ -121,10 +121,14 @@ class ViewSavingPool extends React.Component {
       filter((participant) => participant.relationshipId).
       map((participant) => participant.relationshipId);
 
-    const participants = this.props.friendList.filter((friend) => friend.relationshipId === 'SELF' || participantRelId.includes(friend.relationshipId));
-    const possibleFriendsToAdd = savingPoolDetails.createdByFetcher ? 
-      this.props.friendList.filter((friend) => friend.relationshipId !== 'SELF' && !participantRelId.includes(friend.relationshipId)) : [];
+    let participants = participatingUsers;
+    let possibleFriendsToAdd = [];
 
+    if (savingPoolDetails.createdByFetcher) {
+      participants = this.props.friendList.filter((friend) => friend.relationshipId === 'SELF' || participantRelId.includes(friend.relationshipId));
+      possibleFriendsToAdd = this.props.friendList.filter((friend) => friend.relationshipId !== 'SELF' && !participantRelId.includes(friend.relationshipId));
+    }
+    
     this.setState({ loadingDetails: false, transactionRecord, participants, possibleFriendsToAdd })
   }
 
