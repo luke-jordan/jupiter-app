@@ -2,7 +2,7 @@ import React from 'react';
 
 import moment from 'moment';
 
-import { View, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { ListItem } from 'react-native-elements';
 
 import { Colors } from '../../util/Values';
@@ -25,12 +25,9 @@ const FriendSavingPotList = ({
         subtitleStyle={styles.subtitleStyle}
         chevron={{ size: 30, color: Colors.MEDIUM_GRAY, name: "chevron-right", type: "evilicon" }}
         leftAvatar={{ source: require("../../../assets/piggy_bank.png") }}
-        badge={{
-          value: `${savingPool.percentComplete ? (savingPool.percentComplete * 100).toFixed(0) : 0}%`,
-          textStyle: styles.percentStyle,
-          badgeStyle: styles.percentCompleteBadge,
-          containerStyle: styles.badgeContainerStyle,
-        }}
+        rightElement={(
+          <Text style={styles.percentStyle}>{`${savingPool.percentComplete ? (savingPool.percentComplete * 100).toFixed(0) : 0}%`}</Text>
+        )}
         underlayColor={Colors.WHITE}
       />
     ))}
@@ -48,15 +45,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.MEDIUM_GRAY,
   },
-  percentCompleteBadge: {
-    backgroundColor: Colors.PURPLE,
-    padding: 5,
-  },
   percentStyle: {
     fontFamily: 'poppins-regular',
-    color: Colors.WHITE,
-    fontSize: 13,
-    paddingVertical: 5,
+    color: Colors.PURPLE,
+    fontSize: 15,
     // backgroundColor: Colors.PURPLE,
   },
 })

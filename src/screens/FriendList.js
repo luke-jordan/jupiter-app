@@ -1,14 +1,13 @@
 import React from 'react';
 import { connect } from 'react-redux';
 
-import { StyleSheet, View, ScrollView, Text, TouchableOpacity, Image, ActivityIndicator, Share } from 'react-native';
+import { StyleSheet, View, ScrollView, Text, TouchableOpacity, Image, ActivityIndicator, Share, ImageBackground } from 'react-native';
 import { Button, Icon } from 'react-native-elements';
 import { NavigationEvents } from 'react-navigation';
 
-import moment from 'moment';
-
 import NavigationBar from '../elements/NavigationBar';
 
+import FriendItem from '../elements/friend/FriendItem';
 import FriendSavingPotList from '../elements/friend/FriendSavingPotList';
 import FriendViewModal from '../elements/friend/FriendViewModal';
 import FriendAlertModal from '../elements/friend/FriendAlertModal';
@@ -21,8 +20,6 @@ import { standardFormatAmountDict } from '../util/AmountUtil';
 import { friendService } from '../modules/friend/friend.service';
 import { getFriendList, getReferralData, getFriendRequestList, getFriendAlertData, getListOfSavingPools } from '../modules/friend/friend.reducer';
 import { updateFriendList, updateReferralData, updateFriendReqList, removeFriendship, updateHasSeenFriends, updateFriendAlerts, updateFriendSavingPools } from '../modules/friend/friend.actions';
-
-import { obtainColorForHeat } from '../modules/friend/friend.helper';
 
 import { getAuthToken } from '../modules/auth/auth.reducer';
 import { getProfileData } from '../modules/profile/profile.reducer';
@@ -244,43 +241,15 @@ class Friends extends React.Component {
       return null;
     }
 
-    const friendName = friend.relationshipId === 'SELF' ? 'You' :
-      `${friend.calledName || friend.personalName} ${friend.familyName}`;
-    
-    const { savingHeat, lastActivity } = friend;
-
-    let lastAction = null;
-    if (lastActivity && lastActivity.USER_SAVING_EVENT && lastActivity.USER_SAVING_EVENT.creationTime) {
-      lastAction = `Saved on ${moment(lastActivity.USER_SAVING_EVENT.creationTime).format('D MMMM')}`
-    }
-
     return (
-      <TouchableOpacity 
-        style={styles.friendItemWrapper} 
+      <FriendItem 
         key={friend.relationshipId}
-        onPress={() => this.onPressViewFriend(friend)}
-      >
-        <Text style={styles.friendItemIndex}>{index}</Text>
-        <View style={styles.friendItemBodyWrapper}>
-          <Text style={styles.friendItemName}>{friendName}</Text>
-          {lastAction && <Text style={styles.friendItemSubtitle}>{lastAction}</Text>}
-        </View>
-        <View style={styles.friendItemHeat}>
-          <Icon
-            name="circle-o"
-            type="font-awesome"
-            size={30}
-            color={obtainColorForHeat(savingHeat)}
-          />
-        </View>
-        <Icon
-          name="chevron-right"
-          type="evilicon"
-          size={30}
-          color={Colors.MEDIUM_GRAY}
-        />
-      </TouchableOpacity>
-    )
+        friend={friend}
+        index={index}
+        chevronVisible
+        onPressViewFriend={this.onPressViewFriend}
+      />
+    );
   }
 
   renderFriends() {
@@ -308,7 +277,7 @@ class Friends extends React.Component {
             // disabled={!this.state.requestDataFetched || this.props.friendRequests.length === 0}
           >
             <Image
-              source={require('../../assets/messages.png')}
+              source={require('../../assets/buddy.png')}
               style={styles.buddyRequestIcon}
             />
             <Text style={styles.buddyRequestText}>Buddy Requests</Text>
@@ -344,10 +313,17 @@ class Friends extends React.Component {
             style={styles.hasFriendsTopButton}
             onPress={this.onPressAddFriend}
           >
-            <Image
-              source={require('../../assets/messages.png')}
-              style={styles.buddyRequestIcon}
-            />
+            <ImageBackground 
+              style={[styles.buddyRequestIcon, { justifyContent: 'center' }]} 
+              source={require('../../assets/gradient_background.png')}
+            >
+              <Icon
+                name="plus"
+                type="entypo"
+                size={26}
+                color={Colors.WHITE}
+              />
+            </ImageBackground>
             <Text style={styles.buddyRequestText}>Add Savings Buddies</Text>
             <Icon
               name="chevron-right"
@@ -652,31 +628,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     paddingHorizontal: 14,
-  },
-  friendItemIndex: {
-    marginLeft: 18,
-    color: Colors.PURPLE,
-    fontFamily: 'poppins-semibold',
-    fontSize: 16,
-  },
-  friendItemBodyWrapper: {
-    marginStart: 18, 
-    maxHeight: '100%',
-    maxWidth: '70%',
-  },
-  friendItemName: {
-    fontFamily: 'poppins-semibold',
-    fontSize: 15,
-    color: Colors.DARK_GRAY,
-  },
-  friendItemSubtitle: {
-    fontFamily: 'poppins-regular',
-    fontSize: 12,
-    color: Colors.MEDIUM_GRAY,
-  },
-  friendItemHeat: {
-    flexGrow: 1,
-    alignItems: 'flex-end',
   },
   hasFriendsBodyText: {
     fontFamily: 'poppins-regular',
