@@ -1,7 +1,4 @@
-import { Platform } from 'react-native';
-
 import * as Amplitude from 'expo-analytics-amplitude';
-import * as Analytics from 'expo-firebase-analytics';
 import * as Sentry from 'sentry-expo';
 
 import { Endpoints } from '../util/Values';
@@ -19,7 +16,6 @@ export const LoggingUtil = {
   setUserId(id) {
     try {
       Amplitude.setUserId(id);
-      Analytics.setUserId(id);
     } catch (err) {
       console.log('Error setting amplitude user ID: ', JSON.stringify(err));
     }
@@ -39,24 +35,7 @@ export const LoggingUtil = {
   },
 
   // a bit painful to make FB channel dependent, and we are only using for ad bidding at present, so we just
-  // distinguish projects by namespace
-  logFirebaseEvent(eventName, properties) {
-    try {
-      if (Platform.OS === 'ios') {
-        // for the moment we are not bothering with this, because we only use it for Play Store CPA bidding
-        return;
-      }
-      // Analytics.logEvent(`${AnalyticsPrefix}::${eventName}`, properties);
-      Analytics.logEvent(eventName, properties);
-    } catch (err) {
-      console.log('Error sending to Firebase: ', err);
-      try {
-        Sentry.captureException(err);
-      } catch (sentryErr) {
-        console.log('Well, those are some deep errors');
-      }
-    }
-  },
+  // distinguish projects by namespace -- as elsewhere commented, this is causing more pain than worth, so removing until ejection/native
 
   logError(error) {
     try {
