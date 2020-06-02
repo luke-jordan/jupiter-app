@@ -25,8 +25,7 @@
     ],
     "ios": {
       "bundleIdentifier": "com.jupitersaving.app",
-      "buildNumber": "1",
-      "googleServicesFile": "./GoogleService-Info.plist",
+      "buildNumber": "2",
       "associatedDomains": [
         "applinks:message.jupitersave.com"
       ]
