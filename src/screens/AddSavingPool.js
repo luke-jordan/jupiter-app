@@ -2,7 +2,7 @@
 import React from 'react';
 import { connect } from 'react-redux';
 
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Dimensions } from 'react-native';
 import { Icon, Button, Input, Overlay } from 'react-native-elements';
 
 import FriendSelector from '../elements/friend/FriendSelector';
@@ -14,6 +14,9 @@ import { getFriendList } from '../modules/friend/friend.reducer';
 import { addSavingPool } from '../modules/friend/friend.actions';
 
 import { friendService } from '../modules/friend/friend.service';
+
+const { width } = Dimensions.get('window');
+const FONT_UNIT = 0.01 * width;
 
 const mapStateToProps = state => ({
   token: getAuthToken(state),
@@ -104,7 +107,7 @@ class AddSavingPool extends React.Component {
   renderPropertyInput() {
     return (
       <View style={styles.propertyInputHolder}>
-        <Text style={styles.inputTitle}>
+        <Text style={styles.introText}>
           Want to save together? We&apos;ve created Saving Pots🍯 to let you save with your Saving Buddies.
           {' '}<Text style={{ color: Colors.PURPLE }} onPress={() => this.setState({ showFaqDialog: true })}>More info</Text>
         </Text>
@@ -297,11 +300,19 @@ const styles = StyleSheet.create({
   propertyInputHolder: {
     paddingHorizontal: 15,
   },
+  introText: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 4 * FONT_UNIT,
+    textAlign: 'center',    
+    marginTop: 5 * FONT_UNIT,
+    marginBottom: 2 * FONT_UNIT,
+    color: Colors.DARK_GRAY,
+  },
   inputTitle: {
-    marginTop: 20,
+    marginTop: 7 * FONT_UNIT,
     marginBottom: 10,
     fontFamily: 'poppins-semibold',
-    fontSize: 14,
+    fontSize: 3.8 * FONT_UNIT,
     color: Colors.MEDIUM_GRAY,
   },
   inputWrapperStyle: {
