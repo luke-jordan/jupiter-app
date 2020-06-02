@@ -98,7 +98,7 @@ commands:
           name: Echoing Google services files
           command: |
             echo $GSERVICES > google-services.json
-            echo $GLISTAPPL > GoogleService-Info.plist
+            # echo $GLISTAPPL > GoogleService-Info.plist
 
   restore_yarn_cache:
     steps:
@@ -138,9 +138,9 @@ jobs:
       - run:
           name: Store google-services.json
           command: echo $GSERVICES > google-services.json
-      - run:
-          name: Store GoogleService-Info.plist
-          command: echo $GLISTAPPL > GoogleService-Info.plist
+      # - run:
+      #     name: Store GoogleService-Info.plist
+      #     command: echo $GLISTAPPL > GoogleService-Info.plist
       - run:
           name: Publishing Expo app
           command: |
