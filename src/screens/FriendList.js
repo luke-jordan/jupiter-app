@@ -306,6 +306,23 @@ class Friends extends React.Component {
           <View style={styles.internalSeparator} />
           <TouchableOpacity 
             style={styles.hasFriendsTopButton}
+            onPress={() => this.props.navigation.navigate('AddFriendTournament')}
+          >
+            <Image
+              source={require('../../assets/rocket.png')}
+              style={styles.buddyRequestIcon}
+            />
+            <Text style={styles.buddyRequestText}>Create Buddy Tournament</Text>
+            <Icon
+              name="chevron-right"
+              type="evilicon"
+              size={30}
+              color={Colors.MEDIUM_GRAY}
+            />
+          </TouchableOpacity>
+          <View style={styles.internalSeparator} />
+          <TouchableOpacity 
+            style={styles.hasFriendsTopButton}
             onPress={() => this.props.navigation.navigate('AddSavingPool')}
           >
             <Image
@@ -320,7 +337,6 @@ class Friends extends React.Component {
               color={Colors.MEDIUM_GRAY}
             />
           </TouchableOpacity>
-          {/* <View style={styles.internalSeparator} /> */}
         </View>
         <View style={styles.hasFriendsBody}>
           {this.renderSavingPools()}

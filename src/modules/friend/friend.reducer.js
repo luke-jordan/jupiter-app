@@ -11,6 +11,8 @@ import {
   UPDATE_FRIEND_SAVING_POOLS,
   ADD_FRIEND_SAVING_POOL,
   UPDATE_FRIEND_SAVING_POOL,
+  UPDATE_FRIEND_TOURNAMENTS,
+  ADD_FRIEND_TOURNAMENT,
 } from './friend.actions';
 
 import { safeAmountStringSplit } from '../../util/AmountUtil';
@@ -19,6 +21,7 @@ const initialState = {
   friends: [],
   friendRequests: [],
   friendSavingPools: {},
+  friendTournaments: {},
   referralData: {},
   friendAlertStatus: {}, 
   hasSeenFriendsExists: false, // just to make sure user knows it is there (will wipe on logout)
@@ -64,6 +67,14 @@ const friendReducer = (state = initialState, action) => {
       
       return { ...state, friendSavingPools };
     }
+
+    case UPDATE_FRIEND_TOURNAMENTS: {
+      // denormalizing, as above
+      const { tournaments } = action;
+      const friendTournaments = Array.isArray(tournaments) ? tournaments.reduce((obj, tournament) => ({ ...obj, [tournament.boostId]: tournament }), {}) : {};
+      return { ...state, friendTournaments };
+    }
+
     case UPDATE_REFERRAL_DATA: {
       const referralData = { referralBoostAvailable: false };
       const rawData = action.payload;
@@ -104,6 +115,15 @@ const friendReducer = (state = initialState, action) => {
       friendSavingPools[savingPool.savingPoolId] = savingPool;
       
       return { ...state, friendSavingPools };
+    }
+    case ADD_FRIEND_TOURNAMENT: {
+      const oldFriendTournaments = state.friendTournaments || {};
+
+      const friendTournaments = { ...oldFriendTournaments };
+      const { tournament } = action;
+      friendTournaments[tournament.boostId] = tournament;
+      
+      return { ...state, friendTournaments };
     }
 
     case REMOVE_FRIENDSHIP: {

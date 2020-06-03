@@ -298,4 +298,37 @@ export const friendService = {
     }
   },
 
+  async createFriendTournament({ token, params }) {
+    try {
+      const url = `${Endpoints.CORE}friend/boost/create`;
+      const result = await postRequest({ token, url, params });
+      if (!result.ok) {
+        throw result;
+      }
+      const resultBody = await result.json();
+      if (resultBody.resut !== 'SUCCESS') {
+        console.log('Error creating friend boost: ', resultBody);
+        return false;
+      }
+      return resultBody.createdBoost;
+    } catch (err) {
+      console.log('Error creating boost tournamnet: ', JSON.stringify(err));
+      return false;
+    }
+  },
+
+  async fetchFriendTournaments({ token }) {
+    try {
+      const url = `${Endpoints.CORE}friend/boost/list`;
+      const result = await getRequest({ token, url });
+      if (!result.ok) {
+        throw result;
+      }
+      return result.json();
+    } catch (err) {
+      console.log('Error retrieving friend tournaments: ', JSON.stringify(err));
+      return [];
+    }
+  },
+
 }
