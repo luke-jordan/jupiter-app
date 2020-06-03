@@ -270,6 +270,18 @@ class Friends extends React.Component {
     const hasRequests = this.props.friendRequests && this.props.friendRequests.length > 0;
     return (
       <>
+        <Button
+          onPress={this.onPressAddFriend}
+          title="+ ADD SAVING BUDDIES"
+          titleStyle={styles.addFriendBtnTitle}
+          buttonStyle={styles.addWithFriendBtnStyle}
+          containerStyle={styles.addWithFriendsBtnContainerStyle}
+          linearGradientProps={{
+            colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+            start: { x: 0, y: 0.5 },
+            end: { x: 1, y: 0.5 },
+          }}  
+        />
         <View style={styles.hasFriendsTopButtonWrapper}>
           <TouchableOpacity 
             onPress={this.onPressViewFriendRequests}
@@ -308,30 +320,7 @@ class Friends extends React.Component {
               color={Colors.MEDIUM_GRAY}
             />
           </TouchableOpacity>
-          <View style={styles.internalSeparator} />
-          <TouchableOpacity 
-            style={styles.hasFriendsTopButton}
-            onPress={this.onPressAddFriend}
-          >
-            <ImageBackground 
-              style={[styles.buddyRequestIcon, { justifyContent: 'center' }]} 
-              source={require('../../assets/gradient_background.png')}
-            >
-              <Icon
-                name="plus"
-                type="entypo"
-                size={26}
-                color={Colors.WHITE}
-              />
-            </ImageBackground>
-            <Text style={styles.buddyRequestText}>Add Savings Buddies</Text>
-            <Icon
-              name="chevron-right"
-              type="evilicon"
-              size={30}
-              color={Colors.MEDIUM_GRAY}
-            />
-          </TouchableOpacity>
+          {/* <View style={styles.internalSeparator} /> */}
         </View>
         <View style={styles.hasFriendsBody}>
           {this.renderSavingPools()}
@@ -548,6 +537,7 @@ const styles = StyleSheet.create({
     color: Colors.DARK_GRAY,
     marginTop: 12,
   },
+
   addFriendBtnContainerStyle: {
     marginVertical: 20,
     justifyContent: 'center',
@@ -563,6 +553,19 @@ const styles = StyleSheet.create({
     color: Colors.WHITE,
     fontSize: 16,
   },
+
+  addWithFriendsBtnContainerStyle: {
+    marginTop: 15,
+    marginBottom: 10,
+    justifyContent: 'center',
+    paddingHorizontal: 15,
+  },
+  addWithFriendBtnStyle: {
+    minWidth: '100%',
+    minHeight: 50,
+    borderRadius: 4,
+  },
+
   referralText: {
     marginHorizontal: 15,
     fontSize: 15,
