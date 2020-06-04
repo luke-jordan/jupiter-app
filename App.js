@@ -56,6 +56,8 @@ import AddFriendMessage from './src/screens/AddFriendMessage';
 import AddSavingPool from './src/screens/AddSavingPool';
 import ViewSavingPool from './src/screens/ViewSavingPool';
 
+import AddFriendTournament from './src/screens/AddFriendTournament';
+
 import BreakingGame from './src/screens/BreakingGame';
 
 const AppContainer = createAppContainer(
@@ -107,6 +109,8 @@ const AppContainer = createAppContainer(
 
       AddSavingPool: { screen: AddSavingPool },
       ViewSavingPool: { screen: ViewSavingPool },
+
+      AddFriendTournament: { screen: AddFriendTournament },
 
       BreakingGame: { screen: BreakingGame },
     },
