@@ -3,6 +3,17 @@ import { getRequest, postRequest } from '../auth/auth.helper';
 
 import { getConvertor } from '../../util/AmountUtil';
 
+const transformBoostToTournament = (boost) => ({
+  boostId: boost.boostId,
+  label: boost.label,
+  endTime: boost.endTime,
+  boostStatus: boost.boostStatus,
+  gameParams: boost.gameParams,
+  boostCategory: boost.boostCategory,
+  percentPoolAsReward: boost.rewardParameters ? boost.rewardParameters.percentPoolAsReward : 0,
+  poolContributionPerUser: boost.rewardParameters ? boost.rewardParameters.poolContributionPerUser : {},
+});
+
 export const friendService = {
 
   DEFAULT_TEXT_MESSAGE: `The Jupiter Savings app REWARDS me for saving & gives a GREAT interest rate! ` +
@@ -298,35 +309,96 @@ export const friendService = {
     }
   },
 
+  async deactivateSavingPool({ token, savingPoolId }) {
+    try {
+      const url = `${Endpoints.CORE}friend/pool/write/deactivate`;
+      const result = await postRequest({ token, url, params: { savingPoolId }});
+      if (!result.ok) {
+        throw result;
+      }
+      return true;
+    } catch (err) {
+      console.log('Error deactivating pool: ', JSON.stringify(err));
+      return false;
+    }
+  },
+
+  async editSavingPoolDetails({ token, savingPoolId, propsToChange }) {
+    try {
+      const url = `${Endpoints.CORE}friend/pool/write/update`;
+      const params = { savingPoolId, ...propsToChange };
+      const result = await postRequest({ token, url, params });
+      if (!result.ok) {
+        throw result;
+      }
+      return true; // just edits properties, no need to do full update
+    } catch (err) {
+      console.log('Error editing details: ', JSON.stringify(err));
+      return false;
+    }
+  },
+
+  async removeSaveFromPool({ token, savingPoolId, transactionId }) {
+    try {
+      const url = `${Endpoints.CORE}friend/pool/write/retract`;
+      const result = await postRequest({ token, url, params: { savingPoolId, transactionId }});
+      if (!result.ok) {
+        throw result;
+      }
+      return result.json();
+    } catch (err) {
+      console.log('Error retracting save from pool: ', JSON.stringify(err));
+    }
+  },
+
+  async removeFriendFromPool({ token, savingPoolId, friendshipId }) {
+    try {
+      const url = `${Endpoints.CORE}friend/pool/write/update`;
+      const params = { savingPoolId, friendshipToRemove: friendshipId };
+      const result = await postRequest({ token, url, params });
+      if (!result.ok) {
+        throw result;
+      } 
+      return true;
+    } catch (err) {
+      console.log('Error removing person from pool: ', JSON.stringify(err));
+    }
+  },
+
   async createFriendTournament({ token, params }) {
     try {
-      const url = `${Endpoints.CORE}friend/boost/create`;
+      const url = `${Endpoints.CORE}friend/tournament`;
+      console.log('Creating tournament, with params: ', params);
       const result = await postRequest({ token, url, params });
       if (!result.ok) {
         throw result;
       }
       const resultBody = await result.json();
-      if (resultBody.resut !== 'SUCCESS') {
-        console.log('Error creating friend boost: ', resultBody);
+      if (resultBody.result !== 'SUCCESS') {
+        console.log('Error creating friend boost, WTF: ', resultBody);
         return false;
       }
-      return resultBody.createdBoost;
+      return resultBody.createdBoost ? transformBoostToTournament(resultBody.createdBoost) : {};
     } catch (err) {
       console.log('Error creating boost tournamnet: ', JSON.stringify(err));
       return false;
     }
   },
 
-  async fetchFriendTournaments({ token }) {
+  async fetchFriendTournaments(token) {
     try {
-      const url = `${Endpoints.CORE}friend/boost/list`;
-      const result = await getRequest({ token, url });
+      const url = `${Endpoints.CORE}boost/list`;
+      const params = { flag: 'FRIEND_TOURNAMENT', onlyActive: true };
+      const result = await getRequest({ token, url, params });
       if (!result.ok) {
         throw result;
       }
-      return result.json();
+      const rawBoosts = await result.json();
+      // there can sometimes be a lag between boosts ending and statuses etc tying up (scheduled jobs etc), so
+      // just filter on this here too
+      return rawBoosts.filter((boost) => boost.active).map(transformBoostToTournament)
     } catch (err) {
-      console.log('Error retrieving friend tournaments: ', JSON.stringify(err));
+      console.log('Error retrieving friend tournaments: ', err);
       return [];
     }
   },

@@ -1,6 +1,8 @@
 import React from 'react';
 import { connect } from 'react-redux';
 
+import moment from 'moment';
+
 import { StyleSheet, View, ScrollView, Text, TouchableOpacity, Image, ActivityIndicator, Share, ImageBackground } from 'react-native';
 import { Button, Icon } from 'react-native-elements';
 import { NavigationEvents } from 'react-navigation';
@@ -11,15 +13,16 @@ import FriendItem from '../elements/friend/FriendItem';
 import FriendSavingPotList from '../elements/friend/FriendSavingPotList';
 import FriendViewModal from '../elements/friend/FriendViewModal';
 import FriendAlertModal from '../elements/friend/FriendAlertModal';
+import GenericFriendModal from '../elements/friend/GenericFriendModal';
 
 import { Colors } from '../util/Values';
 import { LoggingUtil } from '../util/LoggingUtil';
 
-import { standardFormatAmountDict } from '../util/AmountUtil';
+import { standardFormatAmountDict, getDivisor } from '../util/AmountUtil';
 
 import { friendService } from '../modules/friend/friend.service';
-import { getFriendList, getReferralData, getFriendRequestList, getFriendAlertData, getListOfSavingPools } from '../modules/friend/friend.reducer';
-import { updateFriendList, updateReferralData, updateFriendReqList, removeFriendship, updateHasSeenFriends, updateFriendAlerts, updateFriendSavingPools } from '../modules/friend/friend.actions';
+import { getFriendList, getReferralData, getFriendRequestList, getFriendAlertData, getListOfSavingPools, getListOfTournaments } from '../modules/friend/friend.reducer';
+import { updateFriendList, updateReferralData, updateFriendReqList, removeFriendship, updateHasSeenFriends, updateFriendAlerts, updateFriendSavingPools, updateFriendTournaments, removeFriendSavingPool } from '../modules/friend/friend.actions';
 
 import { getAuthToken } from '../modules/auth/auth.reducer';
 import { getProfileData } from '../modules/profile/profile.reducer';
@@ -28,6 +31,7 @@ const mapStateToProps = state => ({
   friends: getFriendList(state),
   friendRequests: getFriendRequestList(state),
   friendSavingPools: getListOfSavingPools(state),
+  friendTournaments: getListOfTournaments(state),
   friendAlertData: getFriendAlertData(state),
   referralData: getReferralData(state),
   profile: getProfileData(state),
@@ -42,9 +46,18 @@ const mapDispatchToProps = {
   updateHasSeenFriends,
   updateFriendAlerts,
   updateFriendSavingPools,
+  updateFriendTournaments,
+  removeFriendSavingPool,
 };
 
 const DEFAULT_REFERRAL_TEXT = 'Introduce someone new to Jupiter and we’ll connect you as soon as your buddy signs up and completes their first save.';
+
+// todo : in debt paydown, swap to using tinted font
+const GOLD_ROCKET = require('../../assets/rocket_gold_outline.png');
+const PURPLE_ROCKET = require('../../assets/boost_challenge.png'); 
+
+// for game descriptions (should also move somewhere nice)
+const GAME_TEXT = { 'TAP_SCREEN': 'Tap the screen!', 'CHASE_ARROW': 'Chase the arrow!', 'DESTROY_IMAGE': 'Break the card!' };
 
 class Friends extends React.Component {
 
@@ -71,12 +84,21 @@ class Friends extends React.Component {
     
     this.divideAndDisplayFriends();
     this.displayFriendAlertIfNeeded();
+
+    // bit tricky if return from saving pool removal will remount or just do a focus
+    // include this here in case the former, as don't want to wait for all calls to complete
+    if (this.props.navigation.getParam('removeSavingPoolId')) {
+      this.props.removeFriendSavingPool(this.props.navigation.getParam('removeSavingPoolId'));
+    }
+
     await Promise.all([
       this.fetchAndUpdateFriends(), 
       this.fetchAndUpdateFriendRequests(), 
       this.fetchAndUpdateReferralData(),
       this.fetchAndUpdateFriendPools(),
+      this.fetchAndUpdateFriendTournaments(),
     ]);
+
     this.props.updateHasSeenFriends(true);
   }
 
@@ -96,11 +118,17 @@ class Friends extends React.Component {
     if (friendAlertData !== prevAlertData) {
       this.displayFriendAlertIfNeeded();
     }
+
   }
 
   // eslint-disable-next-line react/sort-comp
   async handleRefocus() {
-    // don't need to do this for referral, which barely ever changes
+    // don't need to do this for referral, which barely ever changes, and pools
+    // and tournaments are pretty heavy, so just update them locally (for now)
+    if (this.props.navigation.getParam('removeSavingPoolId')) {
+      this.props.removeFriendSavingPool(this.props.navigation.getParam('removeSavingPoolId'));
+    }
+
     await Promise.all([this.fetchAndUpdateFriends(), this.fetchAndUpdateFriendRequests()]);
   }
 
@@ -158,6 +186,28 @@ class Friends extends React.Component {
     // clear modals, just in case
     this.setState({ showAlertModal: false, showFriendModal: false });
     this.props.navigation.navigate('FriendRequestList');
+  }
+
+  onPressEnterTournament = ({ boostId, poolContributionPerUser, percentPoolAsReward }) => {
+    const poolContributionAmount = poolContributionPerUser.amount * percentPoolAsReward;
+    const poolContributionDict = { ...poolContributionPerUser, amount: poolContributionAmount };
+    
+    this.setState({
+      tournamentBoostId: boostId,
+      entryAmountFormatted: standardFormatAmountDict(poolContributionPerUser),
+      poolAmountFormatted: standardFormatAmountDict(poolContributionDict),
+      addCashPrefilled: poolContributionPerUser.amount / getDivisor(poolContributionPerUser.unit),
+      showEnterTournModal: true,
+    });
+  }
+
+  onConfirmEnterTournament = () => {
+    const boostId = this.state.tournamentBoostId;
+    this.props.navigation.navigate('AddCash', { 
+      preFilledAmount: this.state.addCashPrefilled,
+      boostId, 
+      startNewTransaction: true,
+    });
   }
 
   divideAndDisplayFriends() {
@@ -219,6 +269,14 @@ class Friends extends React.Component {
     this.props.updateFriendSavingPools(friendSavingPools);
   }
 
+  async fetchAndUpdateFriendTournaments() {
+    const fetchedTournaments = await friendService.fetchFriendTournaments(this.props.token);
+    console.log('Received: ', fetchedTournaments);
+    if (fetchedTournaments.length > 0 || this.props.friendTournaments.length > 0) {
+      this.props.updateFriendTournaments(fetchedTournaments);
+    }
+  }
+
   renderSavingPools() {
     return this.props.friendSavingPools && this.props.friendSavingPools.length > 0 ? (
       <>
@@ -227,7 +285,7 @@ class Friends extends React.Component {
         </Text>
         <FriendSavingPotList 
           savingPoolList={this.props.friendSavingPools}
-          listContainerStyle={{ marginBottom: 10 }}
+          listContainerStyle={styles.listHolder}
           itemContainerStyle={styles.friendItemWrapper}
           onPressPool={(savingPoolId) => this.props.navigation.navigate('ViewSavingPool', { savingPoolId })}
         />
@@ -235,8 +293,79 @@ class Friends extends React.Component {
     ) : null;
   }
 
+  renderTournament(friendTournament) {
+    const isStillOffered = friendTournament.boostStatus === 'OFFERED';
+
+    const gameInjunction = isStillOffered ? GAME_TEXT[friendTournament.boostCategory] : 'You played!';
+    const endTime = moment(friendTournament.endTime).fromNow();
+    const entryAmount = friendTournament.poolContributionPerUser ? standardFormatAmountDict(friendTournament.poolContributionPerUser, 0) : null;
+
+    return (
+      <TouchableOpacity
+        key={friendTournament.boostId}
+        style={styles.friendItemWrapper} 
+        onPress={() => this.onPressEnterTournament(friendTournament)}
+        disabled={!isStillOffered}
+      >
+        <Image
+          source={isStillOffered ? GOLD_ROCKET : PURPLE_ROCKET}
+          style={styles.buddyRequestIcon}
+          resizeMode="center"
+        />
+
+        <View style={styles.tournamentTextHolder}>
+          <Text style={styles.tournamentLabel}>{friendTournament.label}</Text>
+          <Text style={styles.tournamentDesc}>{gameInjunction} Tournament ends {endTime}</Text>
+        </View>
+        {entryAmount && (
+          <View style={styles.tournamentAmountHolder}>
+            <Text style={styles.tournamentAmountText}>{entryAmount}</Text>
+          </View>
+        )}
+        <Icon
+          name="chevron-right"
+          type="evilicon"
+          size={30}
+          color={Colors.MEDIUM_GRAY}
+        />
+      </TouchableOpacity>
+    )
+  }
+
+  renderTournamentEnterModal() {
+    return (
+      <GenericFriendModal
+        isVisible={this.state.showEnterTournModal}
+        onPressClose={() => this.setState({ showEnterTournModal: false })}
+        loading={false}
+        heading="Enter Tournament"
+        buttonTitle="ADD SAVINGS"
+        onPressButton={this.onConfirmEnterTournament}
+        bodyContent={(
+          <Text style={styles.hasFriendsBodyText}>
+            You can enter this Buddy Tournament by making a save of at least {this.state.entryAmountFormatted}.{' '}
+            Like with any Buddy Tournament, some of the save goes to the winner (in this case {this.state.poolAmountFormatted}).
+            <Text style={styles.modalBoldText}>{' '}Enter now?</Text>
+          </Text>
+        )}
+      />
+    );
+  }
+
+  renderBuddyTournaments() {
+    return this.props.friendTournaments && this.props.friendTournaments.length > 0 ? (
+      <>
+        <Text style={styles.hasFriendsTitle}>
+          Active tournaments
+        </Text>
+        <View style={styles.listHolder}>
+          {this.props.friendTournaments.map((tournament) => this.renderTournament(tournament))}
+        </View>
+      </>
+    ) : null;
+  }
+
   renderFriendItem(friend, index) {
-    // console.log('Rendering: ', friend);
     if (!friend) { // just in case
       return null;
     }
@@ -308,10 +437,12 @@ class Friends extends React.Component {
             style={styles.hasFriendsTopButton}
             onPress={() => this.props.navigation.navigate('AddFriendTournament')}
           >
-            <Image
-              source={require('../../assets/rocket.png')}
-              style={styles.buddyRequestIcon}
-            />
+            <ImageBackground
+              source={require('../../assets/gradient_background.png')}
+              style={[styles.buddyRequestIcon, styles.buddyRequestBackground]}
+            >
+              <Image source={require('../../assets/rocket_white_outline.png')} />
+            </ImageBackground>
             <Text style={styles.buddyRequestText}>Create Buddy Tournament</Text>
             <Icon
               name="chevron-right"
@@ -339,9 +470,10 @@ class Friends extends React.Component {
           </TouchableOpacity>
         </View>
         <View style={styles.hasFriendsBody}>
+          {this.renderBuddyTournaments()}
           {this.renderSavingPools()}
           {this.renderFriends()}
-          <Text style={styles.hasFriendsBodyText}>
+          <Text style={{ marginTop: 10, fontFamily: 'poppins-regular', fontSize: 15, color: Colors.MEDIUM_GRAY }}>
             Stay tuned as we add more and more ways you and your saving buddies can motivate each other to save more,
             starting with buddy tournaments -- coming soon! 
           </Text>
@@ -460,6 +592,7 @@ class Friends extends React.Component {
         <NavigationBar navigation={this.props.navigation} currentTab={1} />
         {this.renderViewFriendModal()}
         {this.renderAlertModal()}
+        {this.state.showEnterTournModal && this.renderTournamentEnterModal()}
       </View>
     )
   }
@@ -507,6 +640,10 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     resizeMode: 'contain',
+  },
+  buddyRequestBackground: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   buddyRequestCount: {
     fontSize: 15,
@@ -659,6 +796,44 @@ const styles = StyleSheet.create({
   },
   redText: {
     color: Colors.RED,
+  },
+  tournamentTextHolder: {
+    marginStart: 18, 
+    maxHeight: '100%',
+    maxWidth: '70%',
+    flex: 1,
+  },
+  tournamentLabel: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 15,
+    color: Colors.DARK_GRAY,
+  },
+  tournamentDesc: {
+    fontFamily: 'poppins-regular',
+    fontSize: 12,
+    color: Colors.MEDIUM_GRAY,
+    paddingRight: 5,
+  },
+  tournamentAmountHolder: {
+    backgroundColor: Colors.SKY_BLUE,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tournamentAmountText: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 14,
+    textAlign: 'center',
+    color: Colors.PURPLE,
+  },
+  listHolder: {
+    marginBottom: 15,
+  },
+  modalBoldText: {
+    fontFamily: 'poppins-semibold',
+    color: Colors.PURPLE,
   },
 });
 

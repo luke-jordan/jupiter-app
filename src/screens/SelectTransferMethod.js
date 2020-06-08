@@ -115,7 +115,7 @@ class SelectTransferMethod extends React.PureComponent {
       tags.push(`MESSAGE_INSTRUCTION::${messageInstructionId}`);
     }
     if (boostId) {
-      tags.push(`BOOST_ID::${boostId}`);
+      tags.push(`BOOST::${boostId}`);
     }
     return tags;
   }
