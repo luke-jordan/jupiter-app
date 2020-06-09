@@ -58,6 +58,7 @@ class AddCash extends React.Component {
     });
 
     const preFilledAmount = this.props.navigation.getParam('preFilledAmount');
+    
     if (preFilledAmount) {
       this.setState({ 
         amountToAdd: preFilledAmount.toFixed(0),

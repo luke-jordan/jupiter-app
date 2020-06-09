@@ -19,12 +19,17 @@ import { getFormattedValue } from '../util/AmountUtil';
 import { Endpoints, Colors } from '../util/Values';
 
 import { getAuthToken } from '../modules/auth/auth.reducer';
+import { getCurrentTransactionDetails } from '../modules/transaction/transaction.reducer';
+
 import { updateAllFields } from '../modules/profile/profile.actions';
 
 const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
-const mapStateToProps = state => ({ authToken: getAuthToken(state) });
+const mapStateToProps = state => ({ 
+  authToken: getAuthToken(state),
+  transactionDetails: getCurrentTransactionDetails(state),
+});
 const mapDispatchToProps = { updateAllFields };
 
 class PaymentComplete extends React.Component {
@@ -43,7 +48,7 @@ class PaymentComplete extends React.Component {
       'hardwareBackPress',
       this.handleHardwareBackPress
     );
-
+    
     const { params } = this.props.navigation.state;
     if (params) {
       if (params.isOnboarding) {
@@ -68,21 +73,27 @@ class PaymentComplete extends React.Component {
     // need this here because otherwise event is passed in to argument from on press, which causes proceed to happen too quickly
     if (!attempts || !Number.isInteger(attempts)) attempts = 0;
     this.setState({ loading: true });
-    // console.log('Pressed done, is profile fetched ? :', this.state.fetchingProfile, ' and attempts: ', attempts);
     if ((this.state.fetchingProfile || !this.state.userInfo) && attempts < 10) {
-      // console.log('State not finished fetching profile, wait for next attempt');
       setTimeout(() => {
         this.onPressDone(attempts + 1);
       }, 300);
     } else {
-      // console.log('State is set to profile has been fetched, wait before continuing');
       this.setState({ loading: false });
+      this.onMoveToNextScreen();
+    }
+  };
+
+  onMoveToNextScreen = () => {
+    const { savingPoolId } = this.props.transactionDetails;
+    if (savingPoolId) {
+      NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'ViewSavingPool', { savingPoolId });
+    } else {
       NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', {
         userInfo: this.state.userInfo,
         showModal: this.state.showModal,
       });
     }
-  };
+  }
 
   handleHardwareBackPress = () => {
     this.backHandler.remove();

@@ -454,10 +454,15 @@ class Home extends React.Component {
     
     const isGameBoost = boostToView.boostType === 'GAME';
     const hasGameLog = typeof boostToView.gameLog === 'object' && boostToView.gameLog !== null;
+
+    const isFriendTournament = Array.isArray(boostToView.flags) && boostToView.flags.includes('FRIEND_TOURNAMENT');
+    const shouldSkipResult = isFriendTournament && !hasGameLog; // ie tournament that did not play
+    console.log('Is this a friend tournament ? :', isFriendTournament, ' should we skip it ? ', shouldSkipResult);
+
     if (isGameBoost && hasGameLog) {
       stateUpdate.showGameResultModal = true;
       stateUpdate.gameResultParams = boostToView;
-    } else {
+    } else if (!shouldSkipResult) {
       stateUpdate.showBoostResultModal = true;
       stateUpdate.boostResultDetails = boostToView; 
     }
