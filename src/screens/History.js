@@ -68,6 +68,7 @@ class History extends React.Component {
       case 'USER_SAVING_EVENT':
         return require('../../assets/add.png');
       case 'WITHDRAWAL':
+      case 'BOOST_POOL_FUNDING':
         return require('../../assets/withdrawal.png');
       case 'CAPITALIZATION':
         return require('../../assets/interest.png');
@@ -94,6 +95,9 @@ class History extends React.Component {
 
       case 'CAPITALIZATION':
         return 'Interest paid';
+
+      case 'BOOST_POOL_FUNDING':
+        return 'Buddy tournament';
 
       case 'USER_REGISTERED':
         return 'Registered your account';

@@ -17,7 +17,10 @@ export const UPDATE_FRIEND_SAVING_POOL = `${namespace}/UPDATE_FRIEND_SAVING_POOL
 
 export const REMOVE_FRIENDSHIP = `${namespace}/REMOVE_FRIENDSHIP`;
 export const REMOVE_FRIEND_REQUEST = `${namespace}/REMOVE_FRIEND_REQUEST`;
-// will add remove pool when called for
+export const REMOVE_FRIEND_SAVING_POOL = `${namespace}/REMOVE_FRIEND_SAVING_POOL`;
+
+export const UPDATE_FRIEND_TOURNAMENTS = `${namespace}/UPDATE_FRIEND_TOURNAMENTS`;
+export const ADD_FRIEND_TOURNAMENT = `${namespace}/ADD_FRIEND_TOURNAMENT`;
 
 export const updateHasSeenFriends = hasSeenFriends => ({
   type: UPDATE_HAS_SEEN_FRIENDS,
@@ -81,4 +84,20 @@ export const updateFriendSavingPools = savingPools => ({
 export const updateSingleFriendPool = savingPool => ({
   type: UPDATE_FRIEND_SAVING_POOL,
   savingPool,
+});
+
+export const removeFriendSavingPool = savingPoolId => ({
+  type: REMOVE_FRIEND_SAVING_POOL,
+  savingPoolId,
+});
+
+// and now for the tournament actions
+export const updateFriendTournaments = tournaments => ({
+  type: UPDATE_FRIEND_TOURNAMENTS,
+  tournaments,
+});
+
+export const addFriendTournament = tournament => ({
+  type: ADD_FRIEND_TOURNAMENT,
+  tournament,
 });

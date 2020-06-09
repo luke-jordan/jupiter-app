@@ -11,6 +11,9 @@ import {
   UPDATE_FRIEND_SAVING_POOLS,
   ADD_FRIEND_SAVING_POOL,
   UPDATE_FRIEND_SAVING_POOL,
+  UPDATE_FRIEND_TOURNAMENTS,
+  ADD_FRIEND_TOURNAMENT,
+  REMOVE_FRIEND_SAVING_POOL,
 } from './friend.actions';
 
 import { safeAmountStringSplit } from '../../util/AmountUtil';
@@ -19,14 +22,21 @@ const initialState = {
   friends: [],
   friendRequests: [],
   friendSavingPools: {},
+  friendTournaments: {},
   referralData: {},
   friendAlertStatus: {}, 
   hasSeenFriendsExists: false, // just to make sure user knows it is there (will wipe on logout)
+  hasSeenTournamentModal: false, // as we will pop this up if they haven't
 };
 
 export const STATE_KEY = 'friend';
 
 const safeAddToArray = (oldArray, valueToAdd) => Array.isArray(oldArray) ? [...oldArray, valueToAdd] : [valueToAdd];
+
+const safeExtractListFromMap = (friendEntityMap) => {
+  const isValidObject = friendEntityMap && typeof friendEntityMap === 'object';
+  return isValidObject ? Object.values(friendEntityMap) : [];
+};
 
 const friendReducer = (state = initialState, action) => {
   // console.log('Received Action: ', action);
@@ -64,6 +74,14 @@ const friendReducer = (state = initialState, action) => {
       
       return { ...state, friendSavingPools };
     }
+
+    case UPDATE_FRIEND_TOURNAMENTS: {
+      // denormalizing, as above
+      const { tournaments } = action;
+      const friendTournaments = Array.isArray(tournaments) ? tournaments.reduce((obj, tournament) => ({ ...obj, [tournament.boostId]: tournament }), {}) : {};
+      return { ...state, friendTournaments };
+    }
+
     case UPDATE_REFERRAL_DATA: {
       const referralData = { referralBoostAvailable: false };
       const rawData = action.payload;
@@ -105,6 +123,15 @@ const friendReducer = (state = initialState, action) => {
       
       return { ...state, friendSavingPools };
     }
+    case ADD_FRIEND_TOURNAMENT: {
+      const oldFriendTournaments = state.friendTournaments || {};
+
+      const friendTournaments = { ...oldFriendTournaments };
+      const { tournament } = action;
+      friendTournaments[tournament.boostId] = tournament;
+      
+      return { ...state, friendTournaments };
+    }
 
     case REMOVE_FRIENDSHIP: {
       const { friends: priorFriends } = state;
@@ -115,6 +142,13 @@ const friendReducer = (state = initialState, action) => {
       const { friendRequests: priorRequests } = state;
       const friendRequests = priorRequests.filter((request) => request.requestId !== action.friendRequestId);
       return { ...state, friendRequests };
+    }
+    case REMOVE_FRIEND_SAVING_POOL: {
+      const { friendSavingPools: priorPools } = state;
+      const { savingPoolId } = action;
+      const friendSavingPools = Object.keys(priorPools).filter((poolId) => poolId !== savingPoolId).
+        reduce((obj, poolId) => ({ ...obj, [poolId]: priorPools[poolId] }), {});
+      return { ...state, friendSavingPools };
     }
     
     default: {
@@ -146,11 +180,7 @@ export const getFriendList = state => state[STATE_KEY].friends;
 export const getFriendRequestList = state => state[STATE_KEY].friendRequests;
 export const getReferralData = state => state[STATE_KEY].referralData;
 
-export const getListOfSavingPools = state => {
-  const isValidObject = state[STATE_KEY].friendSavingPools && typeof state[STATE_KEY].friendSavingPools === 'object';
-  const poolsAsList = isValidObject ? Object.values(state[STATE_KEY].friendSavingPools) : [];
-  return poolsAsList;
-} 
+export const getListOfSavingPools = state => safeExtractListFromMap(state[STATE_KEY].friendSavingPools);
 
 export const getSavingPool = (state, savingPoolId) => state[STATE_KEY].friendSavingPools ? state[STATE_KEY].friendSavingPools[savingPoolId] : null;
 
@@ -159,5 +189,7 @@ export const getSavingPool = (state, savingPoolId) => state[STATE_KEY].friendSav
 // users having lots of these, we can assume only one or two, and as we only store the high-level info (details are rendered per view)
 // this will be relatively small, so we can leave it
 export const getMapOfSavingPools = state => state[STATE_KEY].friendSavingPools;
+
+export const getListOfTournaments = state => safeExtractListFromMap(state[STATE_KEY].friendTournaments)
 
 export default friendReducer;

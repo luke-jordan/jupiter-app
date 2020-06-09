@@ -57,7 +57,7 @@ export const standardFormatAmount = (amount, unit, currency, decimals = 2) => {
   return `${getCurrencySymbol(currency)}${getFormattedValue(amount, unit, decimals)}`;
 }
 
-export const standardFormatAmountDict = ({ amount, unit, currency }, decimals = 2) => {
+export const standardFormatAmountDict = ({ amount, unit, currency } = { amount: 0, unit: 'WHOLE_CURRENCY', currency: 'ZAR' }, decimals = 2) => {
   return `${getCurrencySymbol(currency)}${getFormattedValue(amount, unit, decimals)}`;
 }
 
