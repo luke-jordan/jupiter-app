@@ -153,9 +153,9 @@ class AddFriendTournament extends React.Component {
       rewardParameters,
     };
     
-    console.log('And here you go, assembled params: ', boostParams);
+    // console.log('And here you go, assembled params: ', boostParams);
     const resultOfTournamentCreate = await friendService.createFriendTournament({ token: this.props.token, params: boostParams });
-    console.log('And the result of creation: ', resultOfTournamentCreate);
+    // console.log('And the result of creation: ', resultOfTournamentCreate);
 
     if (resultOfTournamentCreate) {
       const { boostId, poolContributionPerUser } = resultOfTournamentCreate;
@@ -164,7 +164,7 @@ class AddFriendTournament extends React.Component {
       
       const requiredEntryAmount = standardFormatAmountDict(poolContributionPerUser); // as maxes might be in place on backend
       this.setState({ loading: false, showCreatedModal: true, boostId, requiredEntryAmount, poolContributionPerUser });
-      console.log('Finally done');  
+      // console.log('Finally done');  
     } else {
       this.setState({ loading: false, showCreatedModal: true });
     }

@@ -368,7 +368,7 @@ export const friendService = {
   async createFriendTournament({ token, params }) {
     try {
       const url = `${Endpoints.CORE}friend/tournament`;
-      console.log('Creating tournament, with params: ', params);
+      // console.log('Creating tournament, with params: ', params);
       const result = await postRequest({ token, url, params });
       if (!result.ok) {
         throw result;

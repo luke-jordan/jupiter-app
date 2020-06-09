@@ -86,7 +86,6 @@ class PaymentComplete extends React.Component {
   onMoveToNextScreen = () => {
     const { savingPoolId } = this.props.transactionDetails;
     if (savingPoolId) {
-      // this.props.navigation.navigate('ViewSavingPool', { savingPoolId })
       NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'ViewSavingPool', { savingPoolId });
     } else {
       NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', {

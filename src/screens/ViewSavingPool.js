@@ -133,7 +133,6 @@ class ViewSavingPool extends React.Component {
   };
 
   onShowRemoveTx = (transactionId) => {
-    console.log('Showing: ', transactionId);
     this.setState({ showRemoveTxModal: true, transactionId });
   };
 

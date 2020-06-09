@@ -128,7 +128,6 @@ const friendReducer = (state = initialState, action) => {
 
       const friendTournaments = { ...oldFriendTournaments };
       const { tournament } = action;
-      console.log('UGHGHGHGHHGHG: ', tournament);
       friendTournaments[tournament.boostId] = tournament;
       
       return { ...state, friendTournaments };

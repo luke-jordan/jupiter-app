@@ -123,12 +123,13 @@ class Friends extends React.Component {
 
   // eslint-disable-next-line react/sort-comp
   async handleRefocus() {
-    // don't need to do this for referral, which barely ever changes, and pools
-    // and tournaments are pretty heavy, so just update them locally (for now)
+    // doing this here in case did not remount on return from pool view
     if (this.props.navigation.getParam('removeSavingPoolId')) {
       this.props.removeFriendSavingPool(this.props.navigation.getParam('removeSavingPoolId'));
     }
 
+    // don't need to do this for referral, which barely ever changes, and pools
+    // and tournaments are pretty heavy, so just update them locally (for now)
     await Promise.all([this.fetchAndUpdateFriends(), this.fetchAndUpdateFriendRequests()]);
   }
 
@@ -271,7 +272,7 @@ class Friends extends React.Component {
 
   async fetchAndUpdateFriendTournaments() {
     const fetchedTournaments = await friendService.fetchFriendTournaments(this.props.token);
-    console.log('Received: ', fetchedTournaments);
+    // console.log('Received: ', fetchedTournaments);
     if (fetchedTournaments.length > 0 || this.props.friendTournaments.length > 0) {
       this.props.updateFriendTournaments(fetchedTournaments);
     }
@@ -473,9 +474,8 @@ class Friends extends React.Component {
           {this.renderBuddyTournaments()}
           {this.renderSavingPools()}
           {this.renderFriends()}
-          <Text style={{ marginTop: 10, fontFamily: 'poppins-regular', fontSize: 15, color: Colors.MEDIUM_GRAY }}>
-            Stay tuned as we add more and more ways you and your saving buddies can motivate each other to save more,
-            starting with buddy tournaments -- coming soon! 
+          <Text style={styles.stayTunedText}>
+            Stay tuned as we add more and more ways you and your saving buddies can motivate each other to save more!
           </Text>
         </View>
       </>
@@ -834,6 +834,15 @@ const styles = StyleSheet.create({
   modalBoldText: {
     fontFamily: 'poppins-semibold',
     color: Colors.PURPLE,
+  },
+  stayTunedText: {
+    marginTop: 10, 
+    fontFamily: 'poppins-regular', 
+    fontSize: 15, 
+    color: Colors.MEDIUM_GRAY,
+    width: '100%',
+    textAlign: 'center',
+    paddingHorizontal: 15,
   },
 });
 

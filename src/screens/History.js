@@ -97,7 +97,7 @@ class History extends React.Component {
         return 'Interest paid';
 
       case 'BOOST_POOL_FUNDING':
-        return 'Buddy tournament entry';
+        return 'Buddy tournament';
 
       case 'USER_REGISTERED':
         return 'Registered your account';

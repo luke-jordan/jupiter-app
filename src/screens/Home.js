@@ -450,7 +450,7 @@ class Home extends React.Component {
 
   showBoostObtainedOrMissedModal(boostToView) {
     const stateUpdate = {};
-    console.log('SHOWING: ', boostToView);
+    // console.log('SHOWING: ', boostToView);
     
     const isGameBoost = boostToView.boostType === 'GAME';
     const hasGameLog = typeof boostToView.gameLog === 'object' && boostToView.gameLog !== null;
@@ -468,7 +468,6 @@ class Home extends React.Component {
     }
     // console.log('State update: ', stateUpdate);
     this.setState(stateUpdate, () => this.props.updateBoostViewed({ boostId: boostToView.boostId, viewedStatus: boostToView.boostStatus }));
-    // this.setState(stateUpdate);
 
     // finally, update balance, if boost was redeemed (and, if we are onboarding, get the whole profile)
     if (boostToView.boostStatus === 'REDEEMED') {
