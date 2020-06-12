@@ -434,7 +434,8 @@ class Home extends React.Component {
     const expiredBoosts = boostArray.filter((boost) => statusNotViewedFilter(boost, 'EXPIRED'));
 
     const redeemedOrExpiredBoosts = [...redeemedBoosts, ...expiredBoosts];
-    
+    // console.log('redeemed or expired length: ', redeemedOrExpiredBoosts.length);
+
     if (redeemedOrExpiredBoosts.length > 0) {
       this.showBoostObtainedOrMissedModal(redeemedOrExpiredBoosts[0]); // i.e., first one, relies on backend to have sorted it for us
       return;

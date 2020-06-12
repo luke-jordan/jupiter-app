@@ -4,7 +4,7 @@ import { Modal, StyleSheet, Text, View, Image, TouchableOpacity } from 'react-na
 import { Button } from 'react-native-elements';
 
 import { Colors } from '../../util/Values';
-import { formatStringTemplate, getCurrencySymbol, getFormattedValue } from '../../util/AmountUtil';
+import { formatStringTemplate, getCurrencySymbol, getFormattedValue, hasDecimals } from '../../util/AmountUtil';
 
 import getSomeActionToTake from '../../modules/boost/helpers/getSomeActionToTake';
 
@@ -38,7 +38,9 @@ const BoostOfferModal = ({
     ? `${getCurrencySymbol(boostDetails.boostCurrency)}${boostDetails.boostThreshold.toFixed(0)}` : 'ERROR';
   const boostExpiryFormatted = moment(boostDetails.endTime).format('dddd DD MMM [at] hA');
   const currency = getCurrencySymbol(boostDetails.boostCurrency);
-  const boostAmountFormatted = `${currency}${getFormattedValue(boostDetails.boostAmount, boostDetails.boostUnit, 0)}`;
+  
+  const amountHasDecimals = hasDecimals(boostDetails.boostAmount, boostDetails.boostUnit);
+  const boostAmountFormatted = `${currency}${getFormattedValue(boostDetails.boostAmount, boostDetails.boostUnit, amountHasDecimals ? 2 : 0)}`;
     
   const stringParameters = { boostThresholdFormatted, boostExpiryFormatted, boostAmountFormatted };
   
@@ -75,7 +77,7 @@ const BoostOfferModal = ({
             titleStyle={styles.buttonTitleStyle}
             buttonStyle={styles.buttonStyle}
             containerStyle={styles.buttonContainerStyle}
-            onPress={() => onPressHandler(navigation, hideModal, boostDetails.boostThreshold)}
+            onPress={() => onPressHandler(navigation, hideModal, boostDetails.boostThreshold, boostDetails.boostId)}
             linearGradientProps={{
               colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
               start: { x: 0, y: 0.5 },

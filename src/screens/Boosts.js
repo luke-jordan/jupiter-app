@@ -142,7 +142,6 @@ class Boosts extends React.Component {
         action = this.onPressInviteFriends;
       } else if (thresholdEventType === 'game_event') {
         title = 'PLAY GAME';
-        console.log('Boost details: ', boostDetails);
         action = () => this.props.navigation.navigate('Home', { showGameUnlockedModal: true, boostDetails });
       }
 

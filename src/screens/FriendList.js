@@ -204,11 +204,13 @@ class Friends extends React.Component {
 
   onConfirmEnterTournament = () => {
     const boostId = this.state.tournamentBoostId;
-    this.props.navigation.navigate('AddCash', { 
-      preFilledAmount: this.state.addCashPrefilled,
-      boostId, 
-      startNewTransaction: true,
-    });
+    this.setState({ showEnterTournModal: false }, () => 
+      this.props.navigation.navigate('AddCash', { 
+        preFilledAmount: this.state.addCashPrefilled,
+        boostId, 
+        startNewTransaction: true,
+      })
+    );
   }
 
   divideAndDisplayFriends() {

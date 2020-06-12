@@ -6,7 +6,7 @@ import { Button } from 'react-native-elements';
 
 import { Colors } from '../../util/Values';
 
-import { getCurrencySymbol, standardFormatAmountDict, formatPercent } from '../../util/AmountUtil';
+import { standardFormatAmountDict, formatPercent, standardFormatAmount } from '../../util/AmountUtil';
 
 export default class GameResultModal extends React.PureComponent {
 
@@ -96,7 +96,8 @@ export default class GameResultModal extends React.PureComponent {
     
     const title = userWon ? 'You won the boost challenge!' : 'The boost results are in!';
 
-    const boostAwardAmount = `${getCurrencySymbol(gameDetails.boostCurrency)}${gameDetails.boostAmount}`
+    // const boostAwardAmount = `${getCurrencySymbol(gameDetails.boostCurrency)}${gameDetails.boostAmount}`
+    const boostAwardAmount = standardFormatAmount(gameDetails.boostAmount, gameDetails.boostUnit, gameDetails.boostCurrency);
     const body = userWon ? `Congrats! ${boostAwardAmount} will be add to your Jupiter savings` : 'Thank you for taking part in this challenge';
 
     return (

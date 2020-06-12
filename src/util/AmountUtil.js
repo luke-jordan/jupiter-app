@@ -47,6 +47,10 @@ export const extractAmount = (amountString, targetUnit = 'DEFAULT') => {
   return parseInt(amountArray[0], 10) * divisor;
 };
 
+export const hasDecimals = (value, unit) => {
+  return ((value / getDivisor(unit)) % 1) !== 0;
+}
+
 export const getFormattedValue = (value, unit, decimals = 2) => {
   let result = (value / getDivisor(unit)).toFixed(decimals);
   result = result.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ','); // I don't understand how this works. It's a plain copy paste which allows comma separators
