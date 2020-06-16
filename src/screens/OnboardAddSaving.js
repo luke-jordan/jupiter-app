@@ -42,12 +42,12 @@ class OnboardAddSaving extends React.Component {
     }
   }
 
-  componentDidMount() {
-    const { params } = this.props.navigation.state;
-    if (params && params.startNewTransaction) {
-      this.props.clearCurrentTransaction(); // we do this even here so we can handle back presses and continues
-    }
-  }
+  // componentDidMount() {
+  //   const { params } = this.props.navigation.state;
+  //   if (params && params.startNewTransaction) {
+  //     this.props.clearCurrentTransaction(); // we do this even here so we can handle back presses and continues
+  //   }
+  // }
 
   onChangeAmount = text => {
     if (['NA', 'NAN'].includes(text.trim().toUpperCase())) {
@@ -127,7 +127,7 @@ class OnboardAddSaving extends React.Component {
   }
 
   initiateOrUpdateTransaction = async (paymentMethod) => {
-    // console.log('Initiating or updating, anything present: ', this.props.transactionDetails);
+    console.log('Initiating or updating, anything present: ', this.props.transactionDetails);
     const { transactionId } = this.props.transactionDetails;
     if (transactionId) {
       return this.tellBackendToUpdate(paymentMethod);

@@ -199,7 +199,10 @@ class Boosts extends React.Component {
     const sortByTime = (a, b) =>
       moment(b.startTime).isAfter(moment(a.startTime)) && 1;
 
-    return boosts.sort(sortByTime);
+    // there may be lots of these and we don't want to show them here for the moment (as get in the way of other boosts)
+    const isExpiredFriendTournament = (boost) => this.isBoostExpired(boost) && Array.isArray(boost.flags) && boost.flags.includes('FRIEND_TOURNAMENT');
+
+    return boosts.filter((boost) => !isExpiredFriendTournament(boost)).sort(sortByTime);
 
     // keeping this here, in case
 

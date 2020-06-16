@@ -36,6 +36,16 @@ const mapPropsToDispatch = {
   updateServerBalance,
 }
 
+const GAME_BACKGROUNDS = {
+  'CREDIT_CARD': require('../../assets/credit-card.png'),
+  'LOAN_SHARK': require('../../assets/loan-shark.png'),
+};
+
+const GAME_TITLES = {
+  'CREDIT_CARD': 'credit card',
+  'LOAN_SHARK': 'loan shark'
+};
+
 class BreakingGame extends React.PureComponent {
   
   constructor(props) {
@@ -70,6 +80,7 @@ class BreakingGame extends React.PureComponent {
       timeLimit: gameParams.timeLimitSeconds,
       gameTimer: gameParams.timeLimitSeconds,
       boostId: gameParams.boostId,
+      gameImage: gameParams.gameImage,
     });
 
     LoggingUtil.logEvent('USER_PLAYED_BREAKING_GAME');
@@ -175,7 +186,7 @@ class BreakingGame extends React.PureComponent {
     }
 
     const resultOfSubmission = await boostService.sendTapGameResults(resultOptions);
-    console.log('SUBMITTED : ', resultOfSubmission);
+    // console.log('SUBMITTED : ', resultOfSubmission);
     if (!resultOfSubmission) {
       LoggingUtil.logError(Error('Result of game was null'));
       this.showErrorDialog();
@@ -196,7 +207,7 @@ class BreakingGame extends React.PureComponent {
     const percentDestroyed = this.calculatePercentDestroyed();
     const gameResultParams = { ...resultOfGame, percentDestroyed, timeTaken: this.state.timeLimit };
 
-    console.log('Game result params: ', gameResultParams);
+    // console.log('Game result params: ', gameResultParams);
     if (amountWon) {
       // want to force this, for now (but check speed)
       await this.updateBalance();
@@ -208,7 +219,7 @@ class BreakingGame extends React.PureComponent {
       gameResultParams,
     });
 
-    console.log('Statusses met: ', statusMet);
+    // console.log('Statusses met: ', statusMet);
     if (Array.isArray(statusMet) && statusMet.length > 0) {
       statusMet.forEach((viewedStatus) => this.props.updateBoostViewed({ boostId: this.state.boostId, viewedStatus }));
     }
@@ -217,26 +228,24 @@ class BreakingGame extends React.PureComponent {
   async updateBalance() {
     // do this and return, so on home screen balance is correct
     try {
-      const balanceResult = await getRequest({ 
-        token: this.props.token,
-        url: `${Endpoints.CORE}balance`,
-      });
+      const url = `${Endpoints.CORE}balance`; 
+      const balanceResult = await getRequest({  token: this.props.token, url });
 
       if (!balanceResult.ok) {
+        LoggingUtil.logApiError(url, balanceResult);
         throw balanceResult;
       }
 
       const serverBalance = await balanceResult.json();
-      console.log('Retrieved server balance after game: ', serverBalance);
+      // console.log('Retrieved server balance after game: ', serverBalance);
       this.props.updateServerBalance(serverBalance);
     } catch (err) {
       console.log('ERROR fetching new balance: ', JSON.stringify(err));
-      LoggingUtil.logError(err);
     }
   }
 
   // https://stackoverflow.com/questions/47362222/how-to-show-the-only-part-of-the-image
-  renderGridElement(rowNumber, columnNumber) {
+  renderGridElement(rowNumber, columnNumber, backgroundImage) {
     const GRID_ITEM_SQUARE_LENGTH = 80;
 
     const OFFSET_TOP = rowNumber * GRID_ITEM_SQUARE_LENGTH;
@@ -262,7 +271,7 @@ class BreakingGame extends React.PureComponent {
           }}
         >
           <Image
-            source={require("../../assets/credit-card.png")}
+            source={backgroundImage}
             style={{
               overflow: 'hidden',
               marginTop: -OFFSET_TOP,
@@ -275,16 +284,17 @@ class BreakingGame extends React.PureComponent {
     )
   }
 
-  renderGridRow(rowNumber) {
+  renderGridRow(rowNumber, backgroundImage) {
     return (
       <View key={`row-${rowNumber}`} style={styles.gridRow}>
-        {Array(GRID_SIDE_LENGTH).fill().map((_, index) => this.renderGridElement(rowNumber, index))}
+        {Array(GRID_SIDE_LENGTH).fill().map((_, index) => this.renderGridElement(rowNumber, index, backgroundImage))}
       </View>
     )
   }
 
   renderGrid() {
-    return Array(GRID_SIDE_LENGTH).fill().map((_, index) => this.renderGridRow(index));
+    const backgroundImage = this.state.gameImage ? GAME_BACKGROUNDS[this.state.gameImage] : GAME_BACKGROUNDS.CREDIT_CARD;
+    return Array(GRID_SIDE_LENGTH).fill().map((_, index) => this.renderGridRow(index, backgroundImage));
   }
 
   render() {
@@ -295,7 +305,7 @@ class BreakingGame extends React.PureComponent {
           style={styles.gradientContainer}
         >
           <Text style={styles.gameHeader}>
-            Break the credit card
+            Break the {this.state.gameImage ? GAME_TITLES[this.state.gameImage] : 'credit card'}
           </Text>
           <View style={styles.imageHolder}>
             {this.renderGrid()}

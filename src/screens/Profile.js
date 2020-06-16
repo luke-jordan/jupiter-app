@@ -40,6 +40,7 @@ const mapStateToProps = state => ({
 const mapDispatchToProps = {
   updateProfileFields,
   updateAllFields,
+  clearState: () => ({ type: 'USER_LOGOUT' }),
 };
 
 // note : backend should convert the other way, so just need this way
@@ -361,7 +362,7 @@ class Profile extends React.Component {
   };
 
   onPressLogout = () => {
-    this.props.dispatch(LogoutUtil.logoutAction);
+    this.props.clearState();
     LogoutUtil.logout(this.props.navigation);
   };
 

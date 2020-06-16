@@ -226,38 +226,11 @@ class Register extends React.Component {
           this.showError();
         }
       } else {
-        const resultJson = await result.json();
-        // console.log('Result JSON: ', resultJson);
-        LoggingUtil.logEvent('USER_PROFILE_REGISTER_FAILED', {
-          reason: resultJson.errorField,
-        });
-        const errors = { ...this.state.errors };
-        if (!resultJson.conflicts) {
-          throw resultJson;
-        }
-        for (const conflict of resultJson.conflicts) {
-          if (conflict.errorField.includes('NATIONAL_ID')) {
-            this.setState({
-              dialogVisible: true,
-            });
-            errors.idNumber = conflict.messageToUser;
-          }
-          if (conflict.errorField.includes('EMAIL_ADDRESS')) {
-            errors.userId = true;
-            errors.email = conflict.messageToUser;
-          }
-          if (conflict.errorField.includes('PHONE_NUMBER')) {
-            errors.userId = true;
-            errors.phone = conflict.messageToUser;
-          }
-        }
-        this.setState({
-          loading: false,
-          errors,
-          hasErrors: true,
-        });
+        // await is important so if it is not interpretable it rejects and triggers catch
+        await this.handleErrorWithResult(result);
       }
     } catch (error) {
+      // this may double log, but given importance of this screen, that is fine
       LoggingUtil.logError(error);
       if (!error) {
         this.showError();
@@ -301,6 +274,43 @@ class Register extends React.Component {
       default:
         return false;
     }
+  }
+
+  async handleErrorWithResult(result) {
+    const resultJson = await result.json();
+    // console.log('Result JSON: ', resultJson);
+    LoggingUtil.logEvent('USER_PROFILE_REGISTER_FAILED', {
+      reason: resultJson.errorField,
+    });
+    const errors = { ...this.state.errors };
+
+    if (!resultJson.conflicts) {
+      LoggingUtil.logApiError(`${Endpoints.AUTH}register/profile`, result);
+      throw resultJson;
+    }
+    
+    for (const conflict of resultJson.conflicts) {
+      if (conflict.errorField.includes('NATIONAL_ID')) {
+        this.setState({
+          dialogVisible: true,
+        });
+        errors.idNumber = conflict.messageToUser;
+      }
+      if (conflict.errorField.includes('EMAIL_ADDRESS')) {
+        errors.userId = true;
+        errors.email = conflict.messageToUser;
+      }
+      if (conflict.errorField.includes('PHONE_NUMBER')) {
+        errors.userId = true;
+        errors.phone = conflict.messageToUser;
+      }
+    }
+
+    this.setState({
+      loading: false,
+      errors,
+      hasErrors: true,
+    });
   }
 
   showError(errorText) {

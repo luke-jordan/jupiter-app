@@ -416,16 +416,7 @@ class AddFriendTournament extends React.Component {
         </View>
         <ScrollView containerStyle={styles.scrollContainer} style={styles.scrollInternal}>
           
-          {this.renderPropertyInput()}
-
-          <Text style={[styles.propertyInputHolder, styles.inputTitle]}>
-            Invite friends to play
-          </Text>
-          <FriendSelector
-            friendList={this.props.friends}
-            onToggleFriendship={this.onSelectOrDeselectFriend}
-          />
-          
+          {/* Once this has been introduced for a while it will go in footer, but for now making it more prominent */}
           <TouchableOpacity style={styles.infoFooterHolder} onPress={() => this.setState({ showFeatureInfo: true })}>
             <Icon
               name="info"
@@ -437,6 +428,17 @@ class AddFriendTournament extends React.Component {
               How do buddy tournaments work?
             </Text>
           </TouchableOpacity>
+
+          {this.renderPropertyInput()}
+
+          <Text style={[styles.propertyInputHolder, styles.inputTitle]}>
+            Invite friends to play
+          </Text>
+          <FriendSelector
+            friendList={this.props.friends}
+            onToggleFriendship={this.onSelectOrDeselectFriend}
+          />
+          
           <Button
             title="CREATE TOURNAMENT"
             onPress={this.onPressCreateTournament}
@@ -599,14 +601,17 @@ const styles = StyleSheet.create({
   infoFooterHolder: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: 15,
     marginTop: 10,
+    width: '100%',
   },
   infoFooterText: {
-    fontSize: 13,
+    fontSize: 14,
     color: Colors.PURPLE,
     fontFamily: 'poppins-regular',
     paddingLeft: 5,
+    textAlign: 'center',
   },
   submitBtnTitle: {
     fontFamily: 'poppins-semibold',

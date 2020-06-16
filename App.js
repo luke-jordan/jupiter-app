@@ -124,6 +124,8 @@ export default class App extends React.Component {
       dsn: Endpoints.SENTRY,
       enableInExpoDevelopment: true,
       debug: true,
+      enableAutoSessionTracking: true,
+      sessionTrackingIntervalMillis: 120000, // to allow for payment flow, we set this to two minutes
     });
   }
 

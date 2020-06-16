@@ -50,11 +50,11 @@ export default class Stokvel extends React.PureComponent {
         >
           <Text style={styles.bodyText}>
             <Text style={styles.bodyEmphasis}>
-              Last updated: February 2020{'\n'}
+              Last updated: June 2020{'\n'}
             </Text>
             A longer version of this article is available on <Text onPress={this.onPressArticleLink} style={styles.bodyLink}>our website</Text>
 
-            {'\n'}{'\n'}<Text style={styles.bodySectionTitle}>SO HOW DOES JUPITER PAY US 5%?{'\n'}</Text>
+            {'\n'}{'\n'}<Text style={styles.bodySectionTitle}>SO HOW DOES JUPITER PAY US 4.5%?{'\n'}</Text>
             By investing all your contributions in something called a Money Market Fund. 
             What exactly is a money market fund, and why is it a great place for my savings?:
             {'\n'}{'\n'}
