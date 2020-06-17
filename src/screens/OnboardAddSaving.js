@@ -127,7 +127,7 @@ class OnboardAddSaving extends React.Component {
   }
 
   initiateOrUpdateTransaction = async (paymentMethod) => {
-    console.log('Initiating or updating, anything present: ', this.props.transactionDetails);
+    // console.log('Initiating or updating, anything present: ', this.props.transactionDetails);
     const { transactionId } = this.props.transactionDetails;
     if (transactionId) {
       return this.tellBackendToUpdate(paymentMethod);

@@ -67,6 +67,16 @@ const FALLBACK_MESSAGES = [
       body: 'Feel like you don\'t have time to read messages from the Jupiter team when we send them? We get it, everyone is super busy! So we\'ll store the most important messages in your own Messages section (click the button to check it out now)',
     },
 
+    { 
+      messageId: 'CANCEL_SAVES',
+      display: {
+        type: 'CARD',
+      },
+      actionToTake: 'VIEW_HISTORY',
+      title: 'How to cancel a pending save in your MoneyWheel ⏳',
+      body: `You can clear the pending save by 1) touching the Green plus icon in your MoneyWheel. Then, in your History screen 2) click the clock icon of your pending save - and finally 3) click the "Cancel Save" button. It's as easy as 1,2,3 😊`,
+    },
+
 ]
 
 const FALLBACK_MSG_IDS = FALLBACK_MESSAGES.map((msg) => msg.messageId);
