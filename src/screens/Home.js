@@ -35,6 +35,7 @@ import { boostService } from '../modules/boost/boost.service';
 import handleMessageActionPress from '../modules/boost/helpers/handleMessageActionPress';
 
 import { updateServerBalance, updateShownBalance } from '../modules/balance/balance.actions';
+import { getCurrentServerBalanceFull } from '../modules/balance/balance.reducer';
 
 import { updateBoostCount, updateBoostViewed, updateMessagesAvailable, updateMessageSequence, updateMessageViewed } from '../modules/boost/boost.actions';
 import { getViewedBoosts, hasViewedFallback, getNextMessage, getAvailableMessages, getViewedMessages } from '../modules/boost/boost.reducer';
@@ -75,6 +76,7 @@ const mapStateToProps = state => ({
   nextMessage: getNextMessage(state),
   availableMessages: getAvailableMessages(state),
   viewedMessages: getViewedMessages(state),
+  currentBalance: getCurrentServerBalanceFull(state),
 });
 
 const { height, width } = Dimensions.get('window');
@@ -562,7 +564,7 @@ class Home extends React.Component {
     }
 
     // console.log('HERE WE GO: ', messageDetails);
-    handleMessageActionPress(messageDetails, this.props.navigation);
+    handleMessageActionPress(messageDetails, this.props.navigation, this.props.currentBalance);
   };
 
   onPressPending = () => {

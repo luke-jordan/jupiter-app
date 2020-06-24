@@ -223,7 +223,7 @@ class AddFriendTournament extends React.Component {
           inputStyle={styles.inputStyle}
         />
         <Text style={styles.inputTitle}>
-          To enter everyone must first save
+          To enter everyone must save this much:
         </Text>
         <View style={styles.targetAmountWrapper}>
           <View style={styles.targetWrapperLeft}>
@@ -310,7 +310,7 @@ class AddFriendTournament extends React.Component {
           </Picker>
         </View>
         <Text style={styles.inputTitle}>
-          What percentage does the winner receive of the collective saving pot?
+          How much of our saves for this Tournament will the winner get?
         </Text>
         <View style={styles.radioHolder}>
           {[1, 5, 10].map(this.renderPoolPercentOption)}
@@ -432,7 +432,7 @@ class AddFriendTournament extends React.Component {
           {this.renderPropertyInput()}
 
           <Text style={[styles.propertyInputHolder, styles.inputTitle]}>
-            Invite friends to play
+            Which of my friends are invited to play?
           </Text>
           <FriendSelector
             friendList={this.props.friends}

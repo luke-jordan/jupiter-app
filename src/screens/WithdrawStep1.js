@@ -178,6 +178,7 @@ class WithdrawStep1 extends React.Component {
                 <Picker.Item label="Standard Bank" value="STANDARD" />
                 <Picker.Item label="Absa" value="ABSA" />
                 <Picker.Item label="Nedbank" value="NEDBANK" />
+                <Picker.Item label="Tyme" value="TYME" />
               </Picker>
             </View>
             {this.state.errors && this.state.errors.bank ? (

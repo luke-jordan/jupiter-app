@@ -97,3 +97,16 @@ export const safeAmountStringSplit = (amountString) => {
 };
 
 export const formatPercent = (percentNumber) => `${parseInt(percentNumber, 10).toFixed(0)}%`;
+
+export const getAmountToNextBalanceLevel = (currentBalance, minimumBalance, anchorDigits = [3, 5, 10]) => {
+  const wholeCurrencyBalance = currentBalance.amount / getDivisor(currentBalance.unit);
+  const minBalanceWhole = minimumBalance.amount / getDivisor(minimumBalance.unit);
+
+  const base10divisor = 10 ** Math.floor(Math.log10(wholeCurrencyBalance));
+  const majorDigit = Math.floor(wholeCurrencyBalance / base10divisor); // as on backend, may be a more elegant way to do this
+  const nextMilestoneDigit = anchorDigits.sort((a, b) => a - b).find((digit) => majorDigit < digit);
+  const nextMilestoneAmount = nextMilestoneDigit * base10divisor;
+
+  const targetAmount = Math.max(minBalanceWhole, nextMilestoneAmount);
+  return targetAmount - wholeCurrencyBalance;
+};

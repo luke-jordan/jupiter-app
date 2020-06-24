@@ -57,6 +57,11 @@ export const LoggingUtil = {
 
   async logApiError(calledUrl, response) {
     try {
+      if (response && response.status === 401) {
+        console.log('Unauthorized error, likely an expired token, do not log, but should logout');
+        return;
+      }
+      
       const safeResponse = await extractContextFromResponse(response);
       // console.log('Decoded body: ', safeResponse);
       const context = {
@@ -64,7 +69,8 @@ export const LoggingUtil = {
         headers: response.headers,
         body: safeResponse, 
       };
-      Sentry.captureException(new Error(`Error calling: ${calledUrl}`), context);
+      // adding in the whole thing because not always getting context on Sentry, and some strange 401s coming up
+      Sentry.captureException(new Error(`Error calling: ${calledUrl}, response: ${JSON.stringify(response)}`), context);
     } catch (err) {
       console.log('Error logging error!');
     }
