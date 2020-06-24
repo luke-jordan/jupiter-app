@@ -190,7 +190,7 @@ class WithdrawStep2 extends React.Component {
   };
 
   getFutureInterestAmount = () => {
-    return getFormattedValue(this.state.interestProjection.amount, this.state.interestProjection.unit);
+    return getFormattedValue(this.state.interestProjection.amount, this.state.interestProjection.unit, 2);
   };
 
   render() {
