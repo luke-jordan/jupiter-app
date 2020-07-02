@@ -38,6 +38,7 @@ export default class ResetQuestions extends React.Component {
     const bodyArray = { ...this.state.answers };
     if (Object.values(bodyArray).some((answer) => answer.trim().length === 0)) {
       this.setState({ emptyAnswers: true });
+      return;
     }
 
     if (this.state.loading) return;
@@ -81,6 +82,7 @@ export default class ResetQuestions extends React.Component {
     this.setState({
       answers,
       hasError: false,
+      emptyAnswers: false,
     });
   };
 
