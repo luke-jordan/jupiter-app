@@ -63,7 +63,11 @@ const MessageCard = ({
                     messageDetails.display.iconType
                   )}
                 />
-              ) : null}
+              ) : (
+                <TouchableOpacity style={styles.closeDialog} onPress={onFlingMessage}>
+                  <Image source={require('../../assets/close.png')} resizeMode="contain" style={{ width: 25 }} />
+                </TouchableOpacity>
+              )}
             </View>
             <ScrollView>
               <Text style={styles.messageCardText}>{messageBody}</Text>
@@ -108,7 +112,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         padding: 10,
-        width: '80%',
+        width: '100%',
     },
     messageCardIcon: {
         marginRight: 10,
@@ -131,6 +135,7 @@ const styles = StyleSheet.create({
         fontFamily: 'poppins-semibold',
         fontSize: 3.7 * FONT_UNIT,
         flexWrap: 'wrap',
+        width: '80%',
     },
     messageCardText: {
         fontFamily: 'poppins-regular',
@@ -155,6 +160,11 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderColor: Colors.PURPLE,
         borderRadius: 4,
+    },
+    closeDialog: {
+      position: 'absolute',
+      top: 5,
+      right: 10,
     },
 });
 

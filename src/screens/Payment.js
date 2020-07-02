@@ -170,7 +170,7 @@ export default class Payment extends React.Component {
     if (serverResponse) {
       paymentError.serverResponse = serverResponse;
     }
-    LoggingUtil.logError(paymentError);
+    LoggingUtil.logError(paymentError); // this will work flexibly enough, so does not need an API error call (which is more generic)
     LoggingUtil.logEvent('PAYMENT_FAILED_SERVER_ERROR');
     this.navigateToPaymentPending();
   }

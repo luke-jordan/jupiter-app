@@ -1,7 +1,28 @@
 import { Linking } from 'react-native';
-import { extractAmount } from '../../../util/AmountUtil';
+import { extractAmount, getAmountToNextBalanceLevel } from '../../../util/AmountUtil';
 
-const handleMessageActionPress = (messageDetails, navigation) => {
+const setPrefilledAddCash = (actionContext, currentBalance) => {
+  const params = { startNewTransaction: true };
+  if (!actionContext) {
+    return params;
+  }
+  
+  // console.log('Action context: ', actionContext);
+
+  if (actionContext.addCashPreFilled) {
+    params.preFilledAmount = extractAmount(actionContext.addCashPreFilled, 'WHOLE_CURRENCY');
+  } else if (actionContext.addCashTargetMinimum) {
+    // console.log('Add cash target minimum: ', actionContext.addCashTargetMinimum, ' and balance : ', currentBalance);
+    const targetMinimum = { amount: extractAmount(actionContext.addCashTargetMinimum, 'WHOLE_CURRENCY'), unit: 'WHOLE_CURRENCY' };
+    const amountToReachNextDigitOrMinimum = getAmountToNextBalanceLevel(currentBalance, targetMinimum, actionContext.addCashDigitThresholds);
+    // console.log(`Target minimum is: ${targetMinimum.amount} and to get to next amount is: ${amountToReachNextDigitOrMinimum}`)
+    params.preFilledAmount = amountToReachNextDigitOrMinimum;
+  }
+
+  return params;
+}
+
+const handleMessageActionPress = (messageDetails, navigation, currentBalance = null) => {
   const actionContext = messageDetails ? messageDetails.actionContext : null;
   const actionToTake = messageDetails.actionToTake || (actionContext && actionContext.actionToTake);
 
@@ -14,11 +35,7 @@ const handleMessageActionPress = (messageDetails, navigation) => {
   
   switch (actionToTake) {
     case 'ADD_CASH': {
-        const addCashEmbeddedAmount = actionContext ? actionContext.addCashPreFilled : null;
-        const params = { startNewTransaction: true };
-        if (addCashEmbeddedAmount) {
-          params.preFilledAmount = extractAmount(addCashEmbeddedAmount, 'WHOLE_CURRENCY');
-        }
+        const params = setPrefilledAddCash(actionContext, currentBalance);
         if (messageDetails.instructionId) {
           params.messageInstructionId = messageDetails.instructionId;
         }

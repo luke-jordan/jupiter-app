@@ -74,7 +74,6 @@ class WithdrawStep1 extends React.Component {
     this.setState({ loading: true });
 
     try {
-      console.log('Initiating withdrawal');
       const result = await fetch(`${Endpoints.CORE}withdrawal/initiate`, {
         headers: {
           'Content-Type': 'application/json',
@@ -178,6 +177,7 @@ class WithdrawStep1 extends React.Component {
                 <Picker.Item label="Standard Bank" value="STANDARD" />
                 <Picker.Item label="Absa" value="ABSA" />
                 <Picker.Item label="Nedbank" value="NEDBANK" />
+                <Picker.Item label="Tyme" value="TYME" />
               </Picker>
             </View>
             {this.state.errors && this.state.errors.bank ? (

@@ -68,8 +68,9 @@ class History extends React.Component {
       case 'USER_SAVING_EVENT':
         return require('../../assets/add.png');
       case 'WITHDRAWAL':
-      case 'BOOST_POOL_FUNDING':
         return require('../../assets/withdrawal.png');
+      case 'BOOST_POOL_FUNDING':
+        return require('../../assets/friends_1.png');
       case 'CAPITALIZATION':
         return require('../../assets/interest.png');
       case 'BOOST_REDEMPTION':
@@ -97,7 +98,7 @@ class History extends React.Component {
         return 'Interest paid';
 
       case 'BOOST_POOL_FUNDING':
-        return 'Buddy tournament';
+        return 'Tournament contribution';
 
       case 'USER_REGISTERED':
         return 'Registered your account';
@@ -265,7 +266,7 @@ class History extends React.Component {
     return (
       <View style={styles.historyItem} key={index ? index : null}>
         <TouchableOpacity onPress={() => this.onPressItem(element)}>
-          <Image style={styles.historyItemIcon} source={this.getItemIcon(type)} />
+          <Image style={styles.historyItemIcon} resizeMode="contain" source={this.getItemIcon(type)} />
         </TouchableOpacity>
         <View style={styles.historyItemInfo}>
           <Text style={styles.historyTitle}>{this.getItemTitle(type)}</Text>
@@ -552,6 +553,8 @@ const styles = StyleSheet.create({
   },
   historyItemIcon: {
     marginHorizontal: 10,
+    maxHeight: 20,
+    maxWidth: 20,
   },
   pendingItemIcon: {
     marginHorizontal: 10,

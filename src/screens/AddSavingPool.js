@@ -40,6 +40,7 @@ class AddSavingPool extends React.Component {
       selectedFriends: [],
 
       showCreatedDialog: false,
+      errors: {},
     }
   }
 
@@ -70,7 +71,27 @@ class AddSavingPool extends React.Component {
     this.setState({ selectedFriends });
   }
 
+  validatePot = () => {
+    const errors = {};
+    const { name, targetAmount } = this.state;
+    if (!name || name.trim().length === 0) {
+      errors.emptyName = true;
+    }
+
+    if (!targetAmount || targetAmount.trim().length === 0) {
+      errors.emptyTarget = true;
+    }
+
+    return errors;
+  }
+
   onCreatePot = async () => {
+    const errors = this.validatePot();
+    if (Object.keys(errors).length > 0) {
+      this.setState({ errors });
+      return;
+    }
+
     this.setState({ loading: true });
     const { name, targetAmount: amount, selectedFriends: friendships } = this.state;
     const target = { amount, unit: 'WHOLE_CURRENCY', currency: 'ZAR' };
@@ -122,6 +143,11 @@ class AddSavingPool extends React.Component {
           inputContainerStyle={styles.inputContainerStyle}
           inputStyle={styles.inputStyle}
         />
+        {this.state.errors.emptyName && (
+          <View style={styles.wholeNumberOnlyView}>
+            <Text style={styles.error}>Please give this pot a name (e.g., what it is for)</Text>
+          </View>
+        )}
         <Text style={styles.inputTitle}>
           What&apos;s the target for the pot?
         </Text>
@@ -146,7 +172,7 @@ class AddSavingPool extends React.Component {
             </Text>
           </View>
         ) : null}
-        {this.state.emptyAmountError && (
+        {this.state.emptyAmountError || this.state.errors.emptyTarget && (
           <View style={styles.wholeNumberOnlyView}>
             <Text style={styles.error}>
               Please enter a target amount to set up the savings pot

@@ -138,6 +138,7 @@ class Account extends React.Component {
                     color={Colors.MEDIUM_GRAY}
                   />
                 </TouchableOpacity>
+                <View style={styles.internalSeparator} />
                 <TouchableOpacity
                   style={[styles.buttonLine, styles.accountButtonLine]}
                   onPress={this.onPressDetails}
@@ -155,6 +156,7 @@ class Account extends React.Component {
                     color={Colors.MEDIUM_GRAY}
                   />
                 </TouchableOpacity>
+                <View style={styles.internalSeparator} />
                 <TouchableOpacity
                   style={[styles.buttonLine, styles.accountButtonLine]}
                   onPress={this.onPressWithdraw}
@@ -172,6 +174,7 @@ class Account extends React.Component {
                     color={Colors.MEDIUM_GRAY}
                   />
                 </TouchableOpacity>
+                <View style={styles.internalSeparator} />
                 <TouchableOpacity
                   style={[styles.buttonLine, styles.accountButtonLine]}
                   onPress={this.onPressMessages}
@@ -190,6 +193,7 @@ class Account extends React.Component {
                   />
                 </TouchableOpacity>
               </View>
+
               <View style={styles.sectionContent}>
                 <Text style={styles.sectionHead}>ABOUT</Text>
                 <TouchableOpacity
@@ -204,6 +208,7 @@ class Account extends React.Component {
                     color={Colors.MEDIUM_GRAY}
                   />
                 </TouchableOpacity>
+                <View style={styles.internalSepWide} />
                 <TouchableOpacity
                   style={styles.buttonLine}
                   onPress={this.onPressMoneyMarket}
@@ -216,6 +221,7 @@ class Account extends React.Component {
                     color={Colors.MEDIUM_GRAY}
                   />
                 </TouchableOpacity>
+                <View style={styles.internalSepWide} />
                 <TouchableOpacity
                   style={styles.buttonLine}
                   onPress={this.onPressTerms}
@@ -228,6 +234,7 @@ class Account extends React.Component {
                     color={Colors.MEDIUM_GRAY}
                   />
                 </TouchableOpacity>
+                <View style={styles.internalSepWide} />
                 <TouchableOpacity
                   style={styles.buttonLine}
                   onPress={this.onPressPrivacy}
@@ -308,6 +315,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontFamily: 'poppins-regular', 
     marginLeft: 14,
+    marginBottom: 10,
   },
   buttonTitleStyle: {
     fontFamily: 'poppins-semibold',
@@ -340,7 +348,7 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
   buttonLine: {
-    height: height * 0.075,
+    height: height * 0.08,
     backgroundColor: Colors.WHITE,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -348,7 +356,19 @@ const styles = StyleSheet.create({
     paddingLeft: 15,
     alignSelf: 'stretch',
     width: '100%',
-    marginTop: 10,
+    // marginTop: 10,
+  },
+  internalSeparator: {
+    marginLeft: 55,
+    width: '100%',
+    height: 1,
+    backgroundColor: Colors.GRAY,
+  },
+  internalSepWide: {
+    marginLeft: 15,
+    width: '100%',
+    height: 1,
+    backgroundColor: Colors.GRAY,
   },
   buttonLineText: {
     flex: 1,
@@ -357,7 +377,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
   },
   accountButtonLine: {
-    height: height * 0.09,
+    height: height * 0.1,
   },
   accountLineContent: {
     flex: 1,

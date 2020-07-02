@@ -23,7 +23,7 @@ export const boostService = {
 
             if (result.ok) {
                 const resultJson = await result.json();
-                console.log('Boost game submission result:', resultJson);
+                // console.log('Boost game submission result:', resultJson);
                 const { result: serverResult, statusMet, endTime } = resultJson;
                 
                 const isBoostTriggered = serverResult && serverResult.includes('TRIGGERED');
@@ -43,7 +43,9 @@ export const boostService = {
                     return { gameResult: 'FAILED', statusMet };
                 }
             } else {
-                throw result;
+              const resultBody = await result.json();
+              console.log('Message: ', resultBody);
+              throw result;
             }
         } catch (error) {
             console.log('Error sending game results!', JSON.stringify(error));

@@ -6,7 +6,6 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
-  KeyboardAvoidingView,
   ActivityIndicator,
 } from 'react-native';
 import { Button, Icon, Input, Overlay } from 'react-native-elements';
@@ -145,8 +144,11 @@ export default class ChangePassword extends React.Component {
         }
         
         const resultBody = await result.json();
-        if (resultBody && resultBody.message) {
-          this.showError(resultBody.message, 'NEW_PASSWORD');
+        // console.log('Result body in error: ', resultBody);
+        if (resultBody && resultBody.errors) {
+          const responseErrors = resultBody.errors;
+          const errorsString = `Your password must: ${responseErrors.map((error) => error.toLowerCase()).join(', ')}.`;
+          this.showError(errorsString, 'NEW_PASSWORD');
           return;
         } 
 

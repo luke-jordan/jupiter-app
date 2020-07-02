@@ -57,6 +57,8 @@ class AddFriendTournament extends React.Component {
       showCreatedModal: false,
 
       requiredEntryAmount: '',
+
+      errors: {},
     }
   }
 
@@ -118,7 +120,28 @@ class AddFriendTournament extends React.Component {
     this.setState({ selectedFriends });
   }
 
+  validateParams = () => {
+    // self is always selected, and need one other
+    const errors = {}
+    if (this.state.selectedFriends.length === 0) {
+      errors.emptyFriendList = true;
+    }
+
+    if (this.state.label.trim().length === 0) {
+      errors.emptyLabel = true;
+    }
+
+    this.setState({ errors });
+    return Object.keys(errors).length === 0;
+  }
+
   onPressCreateTournament = async () => {
+    const isValid = this.validateParams();
+    if (!isValid) {
+      // error flags are set in validate params
+      return;
+    }
+    
     this.setState({ loading: true });
 
     const gameCategory = this.state.gameCategory.includes('DESTROY_IMAGE') ? 'DESTROY_IMAGE' : this.state.gameCategory;
@@ -146,7 +169,7 @@ class AddFriendTournament extends React.Component {
     const endTimeMillis = moment().add(endTimeValue, endTimeUnit).valueOf();
 
     const boostParams = {
-      label: this.state.label,
+      label: this.state.label.trim(),
       endTimeMillis,
       friendships: this.state.selectedFriends,
       gameParams,
@@ -222,8 +245,11 @@ class AddFriendTournament extends React.Component {
           inputContainerStyle={styles.inputContainerStyle}
           inputStyle={styles.inputStyle}
         />
+        {this.state.errors && this.state.errors.emptyLabel && (
+          <Text style={styles.error}>Please give the tournament a name (any name)</Text>
+        )}
         <Text style={styles.inputTitle}>
-          To enter everyone must first save
+          To enter everyone must save this much:
         </Text>
         <View style={styles.targetAmountWrapper}>
           <View style={styles.targetWrapperLeft}>
@@ -310,7 +336,7 @@ class AddFriendTournament extends React.Component {
           </Picker>
         </View>
         <Text style={styles.inputTitle}>
-          What percentage does the winner receive of the collective saving pot?
+          How much of our saves for this Tournament will the winner get?
         </Text>
         <View style={styles.radioHolder}>
           {[1, 5, 10].map(this.renderPoolPercentOption)}
@@ -416,16 +442,7 @@ class AddFriendTournament extends React.Component {
         </View>
         <ScrollView containerStyle={styles.scrollContainer} style={styles.scrollInternal}>
           
-          {this.renderPropertyInput()}
-
-          <Text style={[styles.propertyInputHolder, styles.inputTitle]}>
-            Invite friends to play
-          </Text>
-          <FriendSelector
-            friendList={this.props.friends}
-            onToggleFriendship={this.onSelectOrDeselectFriend}
-          />
-          
+          {/* Once this has been introduced for a while it will go in footer, but for now making it more prominent */}
           <TouchableOpacity style={styles.infoFooterHolder} onPress={() => this.setState({ showFeatureInfo: true })}>
             <Icon
               name="info"
@@ -437,6 +454,20 @@ class AddFriendTournament extends React.Component {
               How do buddy tournaments work?
             </Text>
           </TouchableOpacity>
+
+          {this.renderPropertyInput()}
+
+          <Text style={[styles.propertyInputHolder, styles.inputTitle]}>
+            Which of my friends are invited to play?
+          </Text>
+          {this.state.errors && this.state.errors.emptyFriendList && (
+            <Text style={styles.error}>Please select at least one friend</Text>
+          )}
+          <FriendSelector
+            friendList={this.props.friends}
+            onToggleFriendship={this.onSelectOrDeselectFriend}
+          />
+          
           <Button
             title="CREATE TOURNAMENT"
             onPress={this.onPressCreateTournament}
@@ -599,14 +630,17 @@ const styles = StyleSheet.create({
   infoFooterHolder: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: 15,
     marginTop: 10,
+    width: '100%',
   },
   infoFooterText: {
-    fontSize: 13,
+    fontSize: 14,
     color: Colors.PURPLE,
     fontFamily: 'poppins-regular',
     paddingLeft: 5,
+    textAlign: 'center',
   },
   submitBtnTitle: {
     fontFamily: 'poppins-semibold',

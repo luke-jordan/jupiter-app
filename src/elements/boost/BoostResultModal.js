@@ -3,7 +3,7 @@ import { Modal, StyleSheet, Text, View, Image, TouchableOpacity } from 'react-na
 import { Button } from 'react-native-elements';
 
 import { Colors } from '../../util/Values';
-import { formatStringTemplate, getCurrencySymbol } from '../../util/AmountUtil';
+import { formatStringTemplate, standardFormatAmount, hasDecimals } from '../../util/AmountUtil';
 
 import { BoostStatus } from '../../modules/boost/models/index';
 
@@ -44,8 +44,8 @@ const BoostResultModal = ({
     }
 
     if (newStatus === 'REDEEMED' || newStatus === 'EXPIRED') {
-      const currency = getCurrencySymbol(boostDetails.boostCurrency);
-      boostDetails.boostAwardedAmount = `${currency}${boostDetails.boostAmount}`
+      const amountHasDecimals = hasDecimals(boostDetails.boostAmount, boostDetails.boostUnit);
+      boostDetails.boostAwardedAmount = standardFormatAmount(boostDetails.boostAmount, boostDetails.boostUnit, boostDetails.boostCurrency, amountHasDecimals ? 2 : 0);
     }
 
     body = formatStringTemplate(body, boostDetails);

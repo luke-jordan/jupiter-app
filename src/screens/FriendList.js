@@ -70,6 +70,7 @@ class Friends extends React.Component {
       showFriendModal: false,
       friendToShow: {},
       loading: false,
+      loadingTournament: false,
 
       // selfAsFriend: {},
       friendsToDisplay: [],
@@ -202,13 +203,29 @@ class Friends extends React.Component {
     });
   }
 
+  onPressViewTournament = async ({ boostId }) => {
+    if (this.state.loadingTournament) {
+      return;
+    }
+
+    this.setState({ loadingTournament: true });
+    const tournamentDetails = await friendService.fetchTournamentDetails(this.props.token, boostId);
+    if (tournamentDetails) {
+      console.log('Very strange: ', tournamentDetails);
+      this.props.navigation.navigate('ViewFriendTournament', { tournament: tournamentDetails });
+    } 
+    this.setState({ loadingTournament: false });
+  }
+
   onConfirmEnterTournament = () => {
     const boostId = this.state.tournamentBoostId;
-    this.props.navigation.navigate('AddCash', { 
-      preFilledAmount: this.state.addCashPrefilled,
-      boostId, 
-      startNewTransaction: true,
-    });
+    this.setState({ showEnterTournModal: false }, () => 
+      this.props.navigation.navigate('AddCash', { 
+        preFilledAmount: this.state.addCashPrefilled,
+        boostId, 
+        startNewTransaction: true,
+      })
+    );
   }
 
   divideAndDisplayFriends() {
@@ -305,8 +322,8 @@ class Friends extends React.Component {
       <TouchableOpacity
         key={friendTournament.boostId}
         style={styles.friendItemWrapper} 
-        onPress={() => this.onPressEnterTournament(friendTournament)}
-        disabled={!isStillOffered}
+        onPress={() => isStillOffered ? this.onPressEnterTournament(friendTournament) : this.onPressViewTournament(friendTournament)}
+        disabled={this.state.loadingTournament}
       >
         <Image
           source={isStillOffered ? GOLD_ROCKET : PURPLE_ROCKET}
@@ -318,17 +335,24 @@ class Friends extends React.Component {
           <Text style={styles.tournamentLabel}>{friendTournament.label}</Text>
           <Text style={styles.tournamentDesc}>{gameInjunction} Tournament ends {endTime}</Text>
         </View>
-        {entryAmount && (
-          <View style={styles.tournamentAmountHolder}>
-            <Text style={styles.tournamentAmountText}>{entryAmount}</Text>
-          </View>
+
+        {this.state.loadingTournament ? (
+          <ActivityIndicator size="large" color={Colors.PURPLE} />
+        ) : (
+          <>
+            {entryAmount && (
+              <View style={styles.tournamentAmountHolder}>
+                <Text style={styles.tournamentAmountText}>{entryAmount}</Text>
+              </View>
+            )}
+            <Icon
+              name="chevron-right"
+              type="evilicon"
+              size={30}
+              color={Colors.MEDIUM_GRAY}
+            />
+          </>
         )}
-        <Icon
-          name="chevron-right"
-          type="evilicon"
-          size={30}
-          color={Colors.MEDIUM_GRAY}
-        />
       </TouchableOpacity>
     )
   }

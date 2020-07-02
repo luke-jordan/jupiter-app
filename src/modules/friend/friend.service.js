@@ -3,6 +3,8 @@ import { getRequest, postRequest } from '../auth/auth.helper';
 
 import { getConvertor } from '../../util/AmountUtil';
 
+import { LoggingUtil } from '../../util/LoggingUtil';
+
 const transformBoostToTournament = (boost) => ({
   boostId: boost.boostId,
   label: boost.label,
@@ -30,6 +32,7 @@ export const friendService = {
       const url = `${Endpoints.CORE}friend/list`;
       const result = await getRequest({ token, url });
       if (!result.ok) {
+        LoggingUtil.logApiError(url, result);
         throw result;
       }
 
@@ -44,6 +47,7 @@ export const friendService = {
       const url = `${Endpoints.CORE}friend/request/referral`;
       const result = await getRequest({ token, url });
       if (!result.ok) {
+        LoggingUtil.logApiError(url, result);
         throw result;
       }
       return result.json();
@@ -57,6 +61,7 @@ export const friendService = {
       const url = `${Endpoints.CORE}friend/request/list`;
       const result = await getRequest({ token, url });
       if (!result.ok) {
+        LoggingUtil.logApiError(url, result);
         throw result;
       }
 
@@ -71,6 +76,7 @@ export const friendService = {
       const url = `${Endpoints.CORE}friend/request/seek`;
       const result = await getRequest({ token, url, params: { phoneOrEmail }});
       if (!result.ok) {
+        LoggingUtil.logApiError(url, result);
         throw result;
       }
 
@@ -100,6 +106,7 @@ export const friendService = {
       
       const apiResult = await postRequest({ token, url, params });
       if (!apiResult.ok) {
+        LoggingUtil.logApiError(url, apiResult);
         throw apiResult;
       }
 
@@ -126,6 +133,7 @@ export const friendService = {
       // console.log('Sending: ', params);
       const result = await postRequest({ token, url, params });
       if (!result.ok) {
+        LoggingUtil.logApiError(url, result);
         throw result;
       }
       return result.json(); // todo : return the new friendship
@@ -141,6 +149,7 @@ export const friendService = {
       const url = `${Endpoints.CORE}friend/request/ignore`;
       const result = await postRequest({ token, url, params: { requestId }});
       if (!result.ok) {
+        LoggingUtil.logApiError(url, result);
         throw result;
       }
       return true;
@@ -156,6 +165,7 @@ export const friendService = {
       const params = { relationshipId: friendshipId };
       const result = await postRequest({ token, url, params });
       if (!result.ok) {
+        LoggingUtil.logApiError(url, result);
         throw result;
       }
       return true;
@@ -170,6 +180,7 @@ export const friendService = {
       const params = { requestId };
       const result = await postRequest({ token, url, params });
       if (!result.ok) {
+        LoggingUtil.logApiError(url, result);
         throw result;
       }
       return true;
@@ -180,13 +191,14 @@ export const friendService = {
   },
 
   async connectFriendRequest(token, enteredRequestCode) {
+    const url = `${Endpoints.CORE}friend/request/connect`;
     try {
-      const url = `${Endpoints.CORE}friend/request/connect`;
       const requestCode = enteredRequestCode.trim().toUpperCase();
       const params = { requestCode };
       // console.log('Sending params: ', params);
       const result = await postRequest({ token, url, params });
       if (!result.ok) {
+        // means nothing returned, e.g., a 404
         return false;
       }
       const { result: connectResult } = await result.json();
@@ -196,6 +208,7 @@ export const friendService = {
       return false;
     } catch (err) {
       console.log('Error connecting request: ', JSON.stringify(err));
+      LoggingUtil.logApiError(url, err);
       return false;
     }
   },
@@ -205,6 +218,7 @@ export const friendService = {
       const url = `${Endpoints.CORE}friend/alert/fetch`;
       const result = await getRequest({ token, url });
       if (!result.ok) {
+        LoggingUtil.logApiError(url, result);
         throw result;
       }
       return result.json();
@@ -224,6 +238,7 @@ export const friendService = {
       const result = await postRequest({ token, url, params: { logIds }});
       // console.log('And ? : ', JSON.stringify(result));
       if (!result.ok) {
+        LoggingUtil.logApiError(url, result);
         throw result;
       }
       return true; // we don't need to do anything with it at present
@@ -238,6 +253,7 @@ export const friendService = {
       const url = `${Endpoints.CORE}friend/pool/read/list`;
       const result = await getRequest({ url, token });
       if (!result.ok) {
+        LoggingUtil.logApiError(url, result);
         throw result;
       }
       const { currentSavingPools } = await result.json();
@@ -262,6 +278,7 @@ export const friendService = {
       const url = `${Endpoints.CORE}friend/pool/read/fetch`;
       const result = await getRequest({ token, url, params: { savingPoolId } });
       if (!result.ok) {
+        LoggingUtil.logApiError(url, result);
         throw result;
       }
       return result.json();
@@ -278,6 +295,7 @@ export const friendService = {
       console.log('Submitting with params: ', params);
       const result = await postRequest({ token, url, params });
       if (!result.ok) {
+        LoggingUtil.logApiError(url, result);
         throw result;
       }
       const resultBody = await result.json();
@@ -299,6 +317,7 @@ export const friendService = {
       // console.log('Submitting with params: ', params);
       const result = await postRequest({ token, url, params });
       if (!result.ok) {
+        LoggingUtil.logApiError(url, result);
         throw result;
       }
       const { result: serverResult } = await result.json();
@@ -314,6 +333,7 @@ export const friendService = {
       const url = `${Endpoints.CORE}friend/pool/write/deactivate`;
       const result = await postRequest({ token, url, params: { savingPoolId }});
       if (!result.ok) {
+        LoggingUtil.logApiError(url, result);
         throw result;
       }
       return true;
@@ -329,6 +349,7 @@ export const friendService = {
       const params = { savingPoolId, ...propsToChange };
       const result = await postRequest({ token, url, params });
       if (!result.ok) {
+        LoggingUtil.logApiError(url, result);
         throw result;
       }
       return true; // just edits properties, no need to do full update
@@ -343,6 +364,7 @@ export const friendService = {
       const url = `${Endpoints.CORE}friend/pool/write/retract`;
       const result = await postRequest({ token, url, params: { savingPoolId, transactionId }});
       if (!result.ok) {
+        LoggingUtil.logApiError(url, result);
         throw result;
       }
       return result.json();
@@ -357,6 +379,7 @@ export const friendService = {
       const params = { savingPoolId, friendshipToRemove: friendshipId };
       const result = await postRequest({ token, url, params });
       if (!result.ok) {
+        LoggingUtil.logApiError(url, result);
         throw result;
       } 
       return true;
@@ -371,6 +394,7 @@ export const friendService = {
       // console.log('Creating tournament, with params: ', params);
       const result = await postRequest({ token, url, params });
       if (!result.ok) {
+        LoggingUtil.logApiError(url, result);
         throw result;
       }
       const resultBody = await result.json();
@@ -391,6 +415,7 @@ export const friendService = {
       const params = { flag: 'FRIEND_TOURNAMENT', onlyActive: true };
       const result = await getRequest({ token, url, params });
       if (!result.ok) {
+        LoggingUtil.logApiError(url, result);
         throw result;
       }
       const rawBoosts = await result.json();
@@ -400,6 +425,27 @@ export const friendService = {
     } catch (err) {
       console.log('Error retrieving friend tournaments: ', err);
       return [];
+    }
+  },
+
+  async fetchTournamentDetails(token, boostId) {
+    try {
+      const url = `${Endpoints.CORE}boost/detail`;
+      const params = { boostId };
+      console.log('Submitting request');
+      const result = await getRequest({ token, url, params });
+      console.log('Result raw: ', JSON.stringify(result));
+      if (!result.ok) {
+        // this one should not give any 400/404s etc., so would be a true error
+        LoggingUtil.logApiError(url, result);
+        throw result;
+      }
+      const boostDetails = await result.json();
+      console.log('Received from backend: ', boostDetails);
+      return boostDetails;  
+    } catch (err) {
+      console.log('Error getting tournament: ', JSON.stringify(err));
+      return null;
     }
   },
 

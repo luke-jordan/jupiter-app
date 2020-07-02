@@ -47,6 +47,10 @@ export const extractAmount = (amountString, targetUnit = 'DEFAULT') => {
   return parseInt(amountArray[0], 10) * divisor;
 };
 
+export const hasDecimals = (value, unit) => {
+  return ((value / getDivisor(unit)) % 1) !== 0;
+}
+
 export const getFormattedValue = (value, unit, decimals = 2) => {
   let result = (value / getDivisor(unit)).toFixed(decimals);
   result = result.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ','); // I don't understand how this works. It's a plain copy paste which allows comma separators
@@ -93,3 +97,21 @@ export const safeAmountStringSplit = (amountString) => {
 };
 
 export const formatPercent = (percentNumber) => `${parseInt(percentNumber, 10).toFixed(0)}%`;
+
+export const getAmountToNextBalanceLevel = (currentBalance, minimumBalance, anchorDigits = [3, 5, 10]) => {
+  if (!currentBalance) {
+    // must be from message screen, just use the whole amount (will connect up redux later)
+    return minimumBalance.amount / getDivisor(minimumBalance.amount);
+  }
+
+  const wholeCurrencyBalance = currentBalance.amount / getDivisor(currentBalance.unit);
+  const minBalanceWhole = minimumBalance.amount / getDivisor(minimumBalance.unit);
+
+  const base10divisor = 10 ** Math.floor(Math.log10(wholeCurrencyBalance));
+  const majorDigit = Math.floor(wholeCurrencyBalance / base10divisor); // as on backend, may be a more elegant way to do this
+  const nextMilestoneDigit = anchorDigits.sort((a, b) => a - b).find((digit) => majorDigit < digit);
+  const nextMilestoneAmount = nextMilestoneDigit * base10divisor;
+
+  const targetAmount = Math.max(minBalanceWhole, nextMilestoneAmount);
+  return targetAmount - wholeCurrencyBalance;
+};

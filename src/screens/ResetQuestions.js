@@ -13,7 +13,7 @@ export default class ResetQuestions extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      answers: [],
+      answers: {},
       questions: [],
       loading: false,
     };
@@ -35,10 +35,15 @@ export default class ResetQuestions extends React.Component {
   }
 
   onPressContinue = async () => {
-    if (this.state.loading) return;
-    this.setState({ loading: true });
-
     const bodyArray = { ...this.state.answers };
+    if (Object.values(bodyArray).some((answer) => answer.trim().length === 0)) {
+      this.setState({ emptyAnswers: true });
+      return;
+    }
+
+    if (this.state.loading) return;
+    this.setState({ loading: true, emptyAnswers: false });
+
     try {
       const result = await fetch(`${Endpoints.AUTH}password/reset/answerqs`, {
         headers: {
@@ -77,6 +82,7 @@ export default class ResetQuestions extends React.Component {
     this.setState({
       answers,
       hasError: false,
+      emptyAnswers: false,
     });
   };
 
@@ -150,6 +156,9 @@ export default class ResetQuestions extends React.Component {
               )
             : null}
         </ScrollView>
+        {this.state.emptyAnswers && (
+          <Text style={styles.errorMessage}>Please answer all the questions to continue</Text>
+        )}
         {this.state.hasError ? (
           <Text style={styles.errorMessage} onPress={this.onPressSupport}>
             Sorry, some of those answers are too far away from the correct values. Please try again, 

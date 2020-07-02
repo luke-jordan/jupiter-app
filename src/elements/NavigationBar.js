@@ -24,8 +24,14 @@ class NavigationBar extends React.Component {
     const { onboardStepsRemaining } = this.props;
     
     // for new onboard experiment
-    if (Array.isArray(onboardStepsRemaining) && onboardStepsRemaining.includes('ADD_CASH')) {
-      this.props.navigation.navigate('OnboardAddSaving', { startNewTransaction: true });
+    if (!Array.isArray(onboardStepsRemaining) || onboardStepsRemaining.length === 0) {
+      this.props.navigation.navigate('AddCash', { startNewTransaction: true });
+      return;
+    }
+
+    const stillAddingCash = onboardStepsRemaining.includes('ADD_CASH') || onboardStepsRemaining.includes('FINISH_SAVE');
+    if (stillAddingCash) {
+      this.props.navigation.navigate('OnboardAddSaving');
       return;
     }
 

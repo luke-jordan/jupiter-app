@@ -11,6 +11,7 @@ import { friendService } from '../modules/friend/friend.service';
 
 import { standardFormatAmountDict } from '../util/AmountUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
+import HeaderWithBack from '../elements/HeaderWithBack';
 
 class AddFriend extends React.Component {
 
@@ -249,20 +250,10 @@ class AddFriend extends React.Component {
   render() {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.headerButton}
-            onPress={this.onPressBack}
-          >
-            <Icon
-              name="chevron-left"
-              type="evilicon"
-              size={35}
-              colors={Colors.MEDIUM_GRAY}
-            />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Add Saving Buddies</Text>
-        </View>
+        <HeaderWithBack
+          headerText="Add Saving Buddies"
+          onPressBack={this.onPressBack}
+        />
         <View style={styles.mainBody}>
           {this.state.showSnackbar && this.renderSnackbar()}
           <Input 
@@ -321,21 +312,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.BACKGROUND_GRAY,
-  },
-  header: {
-    width: '100%',
-    height: 50,
-    flexDirection: 'row',
-    backgroundColor: Colors.WHITE,
-    alignItems: 'center',
-  },
-  headerButton: {
-    marginLeft: 10,
-  },
-  headerTitle: {
-    fontFamily: 'poppins-semibold',
-    fontSize: 18,
-    color: Colors.DARK_GRAY,
   },
   mainBody: {
     flex: 1,
