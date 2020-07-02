@@ -6,7 +6,6 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
-  KeyboardAvoidingView,
   ActivityIndicator,
 } from 'react-native';
 import { Button, Icon, Input, Overlay } from 'react-native-elements';

@@ -57,6 +57,8 @@ class AddFriendTournament extends React.Component {
       showCreatedModal: false,
 
       requiredEntryAmount: '',
+
+      errors: {},
     }
   }
 
@@ -118,7 +120,28 @@ class AddFriendTournament extends React.Component {
     this.setState({ selectedFriends });
   }
 
+  validateParams = () => {
+    // self is always selected, and need one other
+    const errors = {}
+    if (this.state.selectedFriends.length === 0) {
+      errors.emptyFriendList = true;
+    }
+
+    if (this.state.label.trim().length === 0) {
+      errors.emptyLabel = true;
+    }
+
+    this.setState({ errors });
+    return Object.keys(errors).length === 0;
+  }
+
   onPressCreateTournament = async () => {
+    const isValid = this.validateParams();
+    if (!isValid) {
+      // error flags are set in validate params
+      return;
+    }
+    
     this.setState({ loading: true });
 
     const gameCategory = this.state.gameCategory.includes('DESTROY_IMAGE') ? 'DESTROY_IMAGE' : this.state.gameCategory;
@@ -146,7 +169,7 @@ class AddFriendTournament extends React.Component {
     const endTimeMillis = moment().add(endTimeValue, endTimeUnit).valueOf();
 
     const boostParams = {
-      label: this.state.label,
+      label: this.state.label.trim(),
       endTimeMillis,
       friendships: this.state.selectedFriends,
       gameParams,
@@ -222,6 +245,9 @@ class AddFriendTournament extends React.Component {
           inputContainerStyle={styles.inputContainerStyle}
           inputStyle={styles.inputStyle}
         />
+        {this.state.errors && this.state.errors.emptyLabel && (
+          <Text style={styles.error}>Please give the tournament a name (any name)</Text>
+        )}
         <Text style={styles.inputTitle}>
           To enter everyone must save this much:
         </Text>
@@ -434,6 +460,9 @@ class AddFriendTournament extends React.Component {
           <Text style={[styles.propertyInputHolder, styles.inputTitle]}>
             Which of my friends are invited to play?
           </Text>
+          {this.state.errors && this.state.errors.emptyFriendList && (
+            <Text style={styles.error}>Please select at least one friend</Text>
+          )}
           <FriendSelector
             friendList={this.props.friends}
             onToggleFriendship={this.onSelectOrDeselectFriend}

@@ -99,6 +99,11 @@ export const safeAmountStringSplit = (amountString) => {
 export const formatPercent = (percentNumber) => `${parseInt(percentNumber, 10).toFixed(0)}%`;
 
 export const getAmountToNextBalanceLevel = (currentBalance, minimumBalance, anchorDigits = [3, 5, 10]) => {
+  if (!currentBalance) {
+    // must be from message screen, just use the whole amount (will connect up redux later)
+    return minimumBalance.amount / getDivisor(minimumBalance.amount);
+  }
+
   const wholeCurrencyBalance = currentBalance.amount / getDivisor(currentBalance.unit);
   const minBalanceWhole = minimumBalance.amount / getDivisor(minimumBalance.unit);
 

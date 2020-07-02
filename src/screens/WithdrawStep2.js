@@ -30,7 +30,8 @@ class WithdrawStep2 extends React.Component {
       accountNumber,
       currency: 'R',
       amountToWithdraw: '',
-      balance: 0,
+      balance: data.availableBalance ? data.availableBalance.amount : -1,
+      unit: data.availableBalance ? data.availableBalance.unit : 'WHOLE_CURRENCY',
       dialogVisible: false,
       cardTitle: data.cardTitle,
       cardBody: data.cardBody,
@@ -40,13 +41,19 @@ class WithdrawStep2 extends React.Component {
   }
 
   async componentDidMount() {
-    // LoggingUtil.logEvent('USER_ENTERED_....');
+    LoggingUtil.logEvent('USER_SUBMITTED_WITHDRAWAL_BANK_ACCOUNT');
+    
     this.setState({
-      balance: this.props.currentBalance.amount,
-      unit: this.props.currentBalance.unit,
       accountId: this.props.accountId,
       token: this.props.authToken,
     });
+
+    if (this.state.balance === -1) {
+      this.setState({
+        balance: this.props.currentBalance.amount,
+        unit: this.props.currentBalance.unit,  
+      })
+    }
   }
 
   onPressBack = () => {
@@ -114,6 +121,7 @@ class WithdrawStep2 extends React.Component {
     this.setState({ loading: true });
 
     try {
+      LoggingUtil.logEvent('USER_ENTERED_WITHDRAWAL_AMOUNT');
       const result = await fetch(`${Endpoints.CORE}withdrawal/amount`, {
         headers: {
           'Content-Type': 'application/json',
@@ -137,6 +145,7 @@ class WithdrawStep2 extends React.Component {
           delayOffer: resultJson.delayOffer,
           interestProjection: resultJson.potentialInterest,
         });
+        LoggingUtil.logEvent('USER_PRESENTED_WITHDRAWAL_LOSS');
       } else {
         throw result;
       }
@@ -147,11 +156,11 @@ class WithdrawStep2 extends React.Component {
   };
 
   finishWithdrawal = async isWithdrawing => {
-    console.log('Finishing withdrawal, user chose to: ', isWithdrawing);
     if (this.state.withdrawLoading) return;
     this.setState({ withdrawLoading: true });
 
     try {
+      LoggingUtil.logEvent(`USER_DECIDED_TO_${isWithdrawing ? 'WITHDRAW' : 'CANCEL_WITHDRAWAL'}`);
       const result = await fetch(`${Endpoints.CORE}withdrawal/decision`, {
         headers: {
           'Content-Type': 'application/json',
@@ -245,7 +254,7 @@ class WithdrawStep2 extends React.Component {
               </View>
               <Text style={styles.makeSureDisclaimer}>
                 <Text style={styles.bold}>
-                  Your current balance is {this.state.currency}
+                  Your available balance is {this.state.currency}
                   {this.getFormattedBalance(this.state.balance)}.{'\n'}
                 </Text>
               </Text>

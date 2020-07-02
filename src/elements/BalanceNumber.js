@@ -154,10 +154,12 @@ class BalanceNumber extends React.Component {
     const isAnimatingToRightAnchor = this.state.animationTargetNumber === referenceAnchor;
     // as below note, end of day target is *always* above current, so this will guard against accidental declines
     const isAnimatingToRightTarget = this.state.animationTargetNumber === Math.max(this.props.currentTargetBalance, referenceAnchor);
-    // console.log(`Animating tags: to anchor: ${isAnimatingToRightAnchor} and to target: ${isAnimatingToRightTarget}`);
-    if (!isAnimatingToRightAnchor && !isAnimatingToRightTarget) {
+    // this is a hard block to make sure we never show users their balance "ticking down"; note that this may cause some issues
+    // on occasion with users seeing balances that are too high, but history, add cash, etc., all others will reflect the current balance
+    const isReferenceAboveLastShown = referenceAnchor > this.state.lastShownBalance;
+
+    if (isReferenceAboveLastShown && !isAnimatingToRightAnchor && !isAnimatingToRightTarget) {
       // neither heading to anchor balance nor on way to target, so go to anchor quickly
-      // console.log('Going to the wrong place, so course correct');
       this.animateToAnchorBalance();
       return;
     }
@@ -196,7 +198,8 @@ class BalanceNumber extends React.Component {
     console.log(`*** TARGET: ${this.props.currentTargetBalance} and anchor: ${this.props.currentReferenceBalance}`);
     const animationTargetNumber = Math.max(
       this.props.currentTargetBalance,
-      this.props.currentReferenceBalance
+      this.props.currentReferenceBalance,
+      0 // see note above on making sure we do not go negative
     );
 
     // in here we calculate this (animated number can, but would then require reverting to two differently set up anim-numbers, which

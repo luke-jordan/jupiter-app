@@ -74,7 +74,6 @@ class WithdrawStep1 extends React.Component {
     this.setState({ loading: true });
 
     try {
-      console.log('Initiating withdrawal');
       const result = await fetch(`${Endpoints.CORE}withdrawal/initiate`, {
         headers: {
           'Content-Type': 'application/json',
