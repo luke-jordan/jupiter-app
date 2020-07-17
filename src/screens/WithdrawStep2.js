@@ -1,22 +1,37 @@
 import React from 'react';
 import { connect } from 'react-redux';
 
-import { ActivityIndicator, StyleSheet, Image, Text, TouchableOpacity, View, Keyboard, TouchableWithoutFeedback, Linking } from 'react-native';
-import { Button, Icon, Input, Overlay } from 'react-native-elements';
+import { ActivityIndicator, StyleSheet, Image, Text, TouchableOpacity, View, Keyboard, TouchableWithoutFeedback, Linking, Dimensions } from 'react-native';
+import { Button, Input, Overlay } from 'react-native-elements';
+
 import moment from 'moment';
 
+import HeaderWithBack from '../elements/HeaderWithBack';
+
 import { Endpoints, Colors, FallbackSupportNumber } from '../util/Values';
-import { getDivisor, getFormattedValue } from '../util/AmountUtil';
+import { getFormattedValue, standardFormatAmount } from '../util/AmountUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
 
 import { getAuthToken } from '../modules/auth/auth.reducer';
 import { getAccountId } from '../modules/profile/profile.reducer';
-import { getCurrentServerBalanceFull } from '../modules/balance/balance.reducer';
+import { getCurrentServerBalanceFull, getComparatorRates } from '../modules/balance/balance.reducer';
+
+const { height } = Dimensions.get('window');
+
+// need this correspondence as displayed names and names here (keyed to bank verifier) are not exact matches
+const bankNameMap = {
+  'FNB': 'FNB',
+  'CAPITEC': 'Capitec',
+  'STANDARD': 'Standard_Bank',
+  'ABSA': 'ABSA',
+  'NEDBANK': 'Nedbank',
+};
 
 const mapStateToProps = state => ({
   authToken: getAuthToken(state),
   accountId: getAccountId(state),
   currentBalance: getCurrentServerBalanceFull(state),
+  comparatorRates: getComparatorRates(state),
 });
 
 class WithdrawStep2 extends React.Component {
@@ -30,35 +45,68 @@ class WithdrawStep2 extends React.Component {
       accountNumber,
       currency: 'R',
       amountToWithdraw: '',
-      balance: 0,
-      dialogVisible: false,
+      balance: data.availableBalance ? data.availableBalance.amount : -1,
+      unit: data.availableBalance ? data.availableBalance.unit : 'WHOLE_CURRENCY',
+      bankRates: {},
+
       cardTitle: data.cardTitle,
       cardBody: data.cardBody,
+
+      dialogVisible: false,
+      showAccountDetails: height > 640,
       withdrawLoading: false,
       showErrorDialog: false,
     };
   }
 
   async componentDidMount() {
-    // LoggingUtil.logEvent('USER_ENTERED_....');
+    LoggingUtil.logEvent('USER_SUBMITTED_WITHDRAWAL_ACCOUNT');
+    
     this.setState({
-      balance: this.props.currentBalance.amount,
-      unit: this.props.currentBalance.unit,
       accountId: this.props.accountId,
       token: this.props.authToken,
     });
+    
+    if (this.props.comparatorRates && this.props.comparatorRates.rates) {
+      const rateMapKey = bankNameMap[this.state.bank];
+      this.setState({
+        bankRates: this.props.comparatorRates.rates[rateMapKey],
+      })
+    }
+
+    if (this.state.balance === -1) {
+      this.setState({
+        balance: this.props.currentBalance.amount,
+        unit: this.props.currentBalance.unit,  
+      })
+    }
+
+    this.keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', this.onShowKeyboard);
+    this.keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', this.onHideKeyboard);
+  }
+
+  async componentWillUnmount() {
+    this.keyboardDidShowListener.remove();
+    this.keyboardDidHideListener.remove();
+  }
+
+  onShowKeyboard = () => {
+    this.setState({ showAccountDetails: false });
+  }
+
+  onHideKeyboard = () => {
+    this.setState({ showAccountDetails: height > 640 });
   }
 
   onPressBack = () => {
     this.props.navigation.goBack();
   };
 
-  onPressWithdraw = () => {
-    this.initiateWithdrawal();
-  };
-
   onChangeAmount = text => {
     this.setState({ amountToWithdraw: text });
+    if (parseInt(text, 10) > 0) {
+      this.calculateProjectedLoss(parseInt(text, 10));
+    }
   };
 
   onChangeAmountEnd = () => {
@@ -71,10 +119,6 @@ class WithdrawStep2 extends React.Component {
   onPressEditAccount = () => {
     this.props.navigation.navigate('WithdrawStep1');
   };
-
-  getFormattedBalance(balance) {
-    return (balance / getDivisor(this.state.unit)).toFixed(2);
-  }
 
   onCloseDialog = () => {
     this.setState({
@@ -114,6 +158,7 @@ class WithdrawStep2 extends React.Component {
     this.setState({ loading: true });
 
     try {
+      LoggingUtil.logEvent('USER_SUBMITTED_WITHDRAWAL_AMOUNT');
       const result = await fetch(`${Endpoints.CORE}withdrawal/amount`, {
         headers: {
           'Content-Type': 'application/json',
@@ -137,6 +182,7 @@ class WithdrawStep2 extends React.Component {
           delayOffer: resultJson.delayOffer,
           interestProjection: resultJson.potentialInterest,
         });
+        LoggingUtil.logEvent('USER_PRESENTED_WITHDRAWAL_LOSS');
       } else {
         throw result;
       }
@@ -147,11 +193,11 @@ class WithdrawStep2 extends React.Component {
   };
 
   finishWithdrawal = async isWithdrawing => {
-    console.log('Finishing withdrawal, user chose to: ', isWithdrawing);
     if (this.state.withdrawLoading) return;
     this.setState({ withdrawLoading: true });
 
     try {
+      LoggingUtil.logEvent(`USER_DECIDED_TO_${isWithdrawing ? 'WITHDRAW' : 'CANCEL_WITHDRAWAL'}`);
       const result = await fetch(`${Endpoints.CORE}withdrawal/decision`, {
         headers: {
           'Content-Type': 'application/json',
@@ -190,40 +236,89 @@ class WithdrawStep2 extends React.Component {
   };
 
   getFutureInterestAmount = () => {
-    return getFormattedValue(this.state.interestProjection.amount, this.state.interestProjection.unit);
+    return getFormattedValue(this.state.interestProjection.amount, this.state.interestProjection.unit, 2);
   };
+
+  calculateProjectedLoss = (relevantAmount) => {
+    try {
+      if (!this.state.bankRates) {
+        return;
+      }
+
+      const { bankRates } = this.state;
+
+      let result = 0;
+      let bankThreshold = -1;
+
+      for (const key in bankRates) {
+        if (key === 'label') continue;
+
+        const keyInt = parseInt(key);
+        if (relevantAmount > keyInt && keyInt > bankThreshold) {
+          result = bankRates[key];
+          bankThreshold = keyInt;
+        }
+      }
+
+      const amountBankRate = parseFloat(result / 100);
+      const jupiterRate = parseFloat(this.props.comparatorRates.referenceRate / 100);
+      
+      const jupiterProjection = relevantAmount * ((1 + (jupiterRate / 100)) ** 5);
+      const bankProjection = relevantAmount * ((1 + (amountBankRate / 100)) ** 5);
+      const projectedLoss = jupiterProjection - bankProjection;
+
+      const bankLabel = bankRates.label;
+
+      this.setState({ 
+        amountBankRate, jupiterProjection, bankProjection, projectedLoss, bankLabel, jupiterRate,
+      });
+    } catch (err) {
+      // being very cautious, given sensitivity of this step
+      LoggingUtil.logError(err);
+    }
+  }
+
+  formatProjection = (amount, decimals = 0) => standardFormatAmount(amount, 'WHOLE_CURRENCY', 'ZAR', decimals);
+
+  renderLossCard() {
+    return (
+      <View style={styles.bottomBox}>
+        <Text style={styles.lossProjectionTitle}>
+          You&apos;re losing {this.formatProjection(this.state.projectedLoss, 2)}!
+        </Text>
+        <Text style={styles.bottomBoxText}>
+          At {this.state.bankLabel}, saving accounts pay you {this.state.amountBankRate.toFixed(1)}%, but 
+          Jupiter pays more - {this.state.jupiterRate.toFixed(1)}% per year. So this withdrawal will only
+          grow to {this.formatProjection(this.state.bankProjection)} in {this.state.bankLabel} after 5 years
+          vs {this.formatProjection(this.state.jupiterProjection)} in your MoneyWheel.
+        </Text>
+      </View>
+    )
+  }
 
   render() {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.headerButton}
-            onPress={this.onPressBack}
-          >
-            <Icon
-              name="chevron-left"
-              type="evilicon"
-              size={45}
-              color={Colors.GRAY}
-            />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Withdraw Cash</Text>
-        </View>
+        <HeaderWithBack
+          headerText="Withdraw Cash"
+          onPressBack={this.onPressBack}
+        />
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.content}>
-            <View style={styles.topBox}>
-              <Text style={styles.topBoxText}>
-                Cash withdrawn will be paid into:
-              </Text>
-              <Text style={styles.topBoxText}>
-                Bank: <Text style={styles.bold}>{this.state.bank}</Text> | Acc No:{' '}
-                <Text style={styles.bold}>{this.state.accountNumber}</Text>
-              </Text>
-              <Text style={styles.topBoxLink} onPress={this.onPressEditAccount}>
-                Edit Account Details
-              </Text>
-            </View>
+            {this.state.showAccountDetails && (
+              <View style={styles.topBox}>
+                <Text style={styles.topBoxText}>
+                  Cash withdrawn will be paid into:
+                </Text>
+                <Text style={styles.topBoxText}>
+                  Bank: <Text style={styles.bold}>{this.state.bank}</Text> | Acc No:{' '}
+                  <Text style={styles.bold}>{this.state.accountNumber}</Text>
+                </Text>
+                <Text style={styles.topBoxLink} onPress={this.onPressEditAccount}>
+                  Edit Account Details
+                </Text>
+              </View>
+            )}
             <View style={styles.midSection}>
               <Text style={styles.inputLabel}>Enter an amount to withdraw</Text>
               <View style={styles.inputWrapper}>
@@ -245,21 +340,23 @@ class WithdrawStep2 extends React.Component {
               </View>
               <Text style={styles.makeSureDisclaimer}>
                 <Text style={styles.bold}>
-                  Your current balance is {this.state.currency}
-                  {this.getFormattedBalance(this.state.balance)}.{'\n'}
+                  Your available balance is {this.state.currency}
+                  {getFormattedValue(this.state.balance, this.state.unit)}.{'\n'}
                 </Text>
               </Text>
             </View>
-            <View style={styles.bottomBox}>
-              <View style={styles.bottomBoxImageWrapper}>
-                <Image
-                  style={styles.bottomBoxImage}
-                  source={require('../../assets/bulb.png')}
-                />
+            {this.state.projectedLoss ? this.renderLossCard() : (
+              <View style={styles.bottomBox}>
+                <View style={styles.bottomBoxImageWrapper}>
+                  <Image
+                    style={styles.bottomBoxImage}
+                    source={require('../../assets/bulb.png')}
+                  />
+                </View>
+                <Text style={styles.bottomBoxTitle}>{this.state.cardTitle}</Text>
+                <Text style={styles.bottomBoxText}>{this.state.cardBody}</Text>
               </View>
-              <Text style={styles.bottomBoxTitle}>{this.state.cardTitle}</Text>
-              <Text style={styles.bottomBoxText}>{this.state.cardBody}</Text>
-            </View>
+            )}
           </View>
         </TouchableWithoutFeedback>
         <Button
@@ -268,7 +365,7 @@ class WithdrawStep2 extends React.Component {
           titleStyle={styles.buttonTitleStyle}
           buttonStyle={styles.buttonStyle}
           containerStyle={styles.buttonContainerStyle}
-          onPress={this.onPressWithdraw}
+          onPress={this.initiateWithdrawal}
           linearGradientProps={{
             colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
             start: { x: 0, y: 0.5 },
@@ -398,19 +495,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: Colors.BACKGROUND_GRAY,
   },
-  header: {
-    width: '100%',
-    height: 50,
-    backgroundColor: Colors.WHITE,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 5,
-  },
-  headerTitle: {
-    marginLeft: -5,
-    fontFamily: 'poppins-semibold',
-    fontSize: 22,
-  },
   content: {
     flex: 1,
     width: '100%',
@@ -478,7 +562,6 @@ const styles = StyleSheet.create({
     color: Colors.DARK_GRAY,
     textAlign: 'left',
     width: '90%',
-    marginTop: 25,
     marginBottom: -15,
   },
   topBox: {
@@ -486,20 +569,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: Colors.WHITE,
     borderRadius: 20,
-    paddingVertical: 25,
+    paddingVertical: 15,
   },
   topBoxText: {
     fontFamily: 'poppins-regular',
     color: Colors.DARK_GRAY,
-    fontSize: 16,
+    fontSize: 13,
   },
   bold: {
     fontFamily: 'poppins-semibold',
   },
   topBoxLink: {
-    marginTop: 20,
+    marginTop: 10,
     fontFamily: 'poppins-semibold',
-    fontSize: 16,
+    fontSize: 13,
     color: Colors.PURPLE,
   },
   makeSureDisclaimer: {
@@ -512,7 +595,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: Colors.WHITE,
     borderRadius: 20,
-    paddingVertical: 25,
+    paddingVertical: 15,
   },
   bottomBoxImageWrapper: {
     marginTop: -50,
@@ -531,6 +614,11 @@ const styles = StyleSheet.create({
     marginTop: 10,
     color: Colors.MEDIUM_GRAY,
     textAlign: 'center',
+  },
+  lossProjectionTitle: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 16,
+    color: Colors.RED,
   },
   dialogContent: {
     width: '90%',

@@ -98,15 +98,35 @@ export const safeAmountStringSplit = (amountString) => {
 
 export const formatPercent = (percentNumber) => `${parseInt(percentNumber, 10).toFixed(0)}%`;
 
-export const getAmountToNextBalanceLevel = (currentBalance, minimumBalance, anchorDigits = [3, 5, 10]) => {
+/**
+ * Method to calculate how much user needs to save to get from current balance to some target, where the target
+ * is one of (i) an absolute target, or (ii) a major digit (e.g., $300), so long as that is above the minimum
+ * @param {object} currentBalance User current balance, standard dict format
+ * @param {object} minOrTargetBalance The target or minimum balance, standard dict format
+ * @param {array} majorDigits If included, the target will be either the next major digit (i.e., multiple of 10 in the array)
+ * or the minimum. For example, if this is [3, 5, 10], with a minOrTarget of $100, then current balance of $15 returns $85 (= $100 - $15)
+ * whereas a current balance of $115 returns $185 (= $300 - $115), $300 being the next major digit (= 3 * 10 ^ 2) from $115, 
+ * but $30 being lower than the minimum which is $100.
+ */
+export const calculateAmountToBalanceOrMajorDigit = (currentBalance, minOrTargetBalance, majorDigits) => {
+  if (!currentBalance) {
+    // must be from message screen, just use the whole amount (will connect up redux later)
+    return minOrTargetBalance.amount / getDivisor(minOrTargetBalance.amount);
+  }
+
   const wholeCurrencyBalance = currentBalance.amount / getDivisor(currentBalance.unit);
-  const minBalanceWhole = minimumBalance.amount / getDivisor(minimumBalance.unit);
+  const minBalanceWhole = minOrTargetBalance.amount / getDivisor(minOrTargetBalance.unit);
 
   const base10divisor = 10 ** Math.floor(Math.log10(wholeCurrencyBalance));
-  const majorDigit = Math.floor(wholeCurrencyBalance / base10divisor); // as on backend, may be a more elegant way to do this
-  const nextMilestoneDigit = anchorDigits.sort((a, b) => a - b).find((digit) => majorDigit < digit);
-  const nextMilestoneAmount = nextMilestoneDigit * base10divisor;
+  let nextMilestoneAmount = 0;
+
+  if (majorDigits) {
+    const majorDigit = Math.floor(wholeCurrencyBalance / base10divisor); // as on backend, may be a more elegant way to do this
+    const nextMilestoneDigit = majorDigits.sort((a, b) => a - b).find((digit) => majorDigit < digit);
+    nextMilestoneAmount = nextMilestoneDigit * base10divisor;  
+  }
 
   const targetAmount = Math.max(minBalanceWhole, nextMilestoneAmount);
-  return targetAmount - wholeCurrencyBalance;
+  const roundedUpTarget = Math.ceil(targetAmount - wholeCurrencyBalance + 1); // adding the one just as sometimes the cents are tricky
+  return Math.max(10, roundedUpTarget); // just to prevent negatives, and avoid signalling overly small add savings
 };

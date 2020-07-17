@@ -191,14 +191,14 @@ export const friendService = {
   },
 
   async connectFriendRequest(token, enteredRequestCode) {
+    const url = `${Endpoints.CORE}friend/request/connect`;
     try {
-      const url = `${Endpoints.CORE}friend/request/connect`;
       const requestCode = enteredRequestCode.trim().toUpperCase();
       const params = { requestCode };
       // console.log('Sending params: ', params);
       const result = await postRequest({ token, url, params });
       if (!result.ok) {
-        LoggingUtil.logApiError(url, result);
+        // means nothing returned, e.g., a 404
         return false;
       }
       const { result: connectResult } = await result.json();
@@ -208,6 +208,7 @@ export const friendService = {
       return false;
     } catch (err) {
       console.log('Error connecting request: ', JSON.stringify(err));
+      LoggingUtil.logApiError(url, err);
       return false;
     }
   },
@@ -424,6 +425,27 @@ export const friendService = {
     } catch (err) {
       console.log('Error retrieving friend tournaments: ', err);
       return [];
+    }
+  },
+
+  async fetchTournamentDetails(token, boostId) {
+    try {
+      const url = `${Endpoints.CORE}boost/detail`;
+      const params = { boostId };
+      // console.log('Submitting request');
+      const result = await getRequest({ token, url, params });
+      // console.log('Result raw: ', JSON.stringify(result));
+      if (!result.ok) {
+        // this one should not give any 400/404s etc., so would be a true error
+        LoggingUtil.logApiError(url, result);
+        throw result;
+      }
+      const boostDetails = await result.json();
+      // console.log('Received from backend: ', boostDetails);
+      return boostDetails;  
+    } catch (err) {
+      console.log('Error getting tournament: ', JSON.stringify(err));
+      return null;
     }
   },
 

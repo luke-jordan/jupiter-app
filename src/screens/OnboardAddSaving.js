@@ -10,17 +10,19 @@ import { LoggingUtil } from '../util/LoggingUtil';
 import { getAuthToken } from '../modules/auth/auth.reducer';
 import { getAccountId } from '../modules/profile/profile.reducer';
 import { getCurrentTransactionDetails } from '../modules/transaction/transaction.reducer';
+import { getComparatorRates } from '../modules/balance/balance.reducer';
 
 import { removeOnboardStep } from '../modules/profile/profile.actions'; 
 import { updateCurrentTransaction, clearCurrentTransaction } from '../modules/transaction/transaction.actions';
 
 import { Colors, Endpoints } from '../util/Values';
-import { getDivisor } from '../util/AmountUtil';
+import { getDivisor, standardFormatAmount } from '../util/AmountUtil';
 
 const mapStateToProps = state => ({
   authToken: getAuthToken(state),
   accountId: getAccountId(state),
   transactionDetails: getCurrentTransactionDetails(state),
+  comparatorRates: getComparatorRates(state),
 });
 
 const mapDispatchToProps = {
@@ -80,6 +82,24 @@ class OnboardAddSaving extends React.Component {
     }
     this.amountInputRef.blur();
   };
+
+  getProjectedAmount() {
+    const unit = 'WHOLE_CURRENCY';
+    const currency = 'ZAR';
+
+    if (!this.state.amountToAdd || this.state.amountToAdd.trim().length === 0) {
+      return standardFormatAmount(0, unit, currency, 0);
+    }
+
+    if (this.props.comparatorRates.referenceRate) {
+      const relevantAmount = parseInt(this.state.amountToAdd, 10);
+      const referenceRate = parseFloat(this.props.comparatorRates.referenceRate / (100 * 100)); // rate is in bps, need as 0-1
+      const projectedAmount = relevantAmount * ((1 + referenceRate) ** 5);
+      return standardFormatAmount(projectedAmount, unit, currency, 2);
+    }
+
+    return standardFormatAmount(0, unit, currency, 0);
+  }
 
   isNoAmount = () => this.state.amountToAdd.trim().length === 0;
 
@@ -288,9 +308,17 @@ class OnboardAddSaving extends React.Component {
                 containerStyle={styles.containerStyle}
               />
             </View>
-            {!this.state.notWholeNumber && !this.state.emptyAmountError && <Text style={styles.footnoteText}>* no minimum required</Text>}
+            {!this.state.notWholeNumber && !this.state.emptyAmountError && this.state.amountToAdd.trim() === '' && (
+              <Text style={styles.footnoteText}>* no minimum required</Text>
+            )}
+
             {this.state.notWholeNumber && <Text style={styles.errorText}>Please enter a whole number</Text>}
             {this.state.emptyAmountError && <Text style={styles.errorText}>Please enter an amount to continue</Text>}
+            {this.props.comparatorRates && this.state.amountToAdd.trim() !== '' ? (
+              <Text style={styles.moneyGrowth}>
+                This save grows to <Text style={styles.boldAmount}>{this.getProjectedAmount()}</Text> in five years!
+              </Text>
+            ) : null}
 
             <TouchableOpacity 
               style={styles.optionBox} 
@@ -340,7 +368,7 @@ class OnboardAddSaving extends React.Component {
                   type="evilicon"
                   size={40}
                   color={Colors.MEDIUM_GRAY}
-                />
+                />  
               </View>
             </TouchableOpacity>
             
@@ -368,14 +396,14 @@ const styles = StyleSheet.create({
     fontSize: 20,
     width: '100%',
     textAlign: 'center',
-    marginTop: 30,
+    marginTop: 15,
     paddingHorizontal: 15,
     color: Colors.DARK_GRAY,
   },
   contentBody: {
     fontFamily: 'poppins-regular',
     fontSize: 14,
-    lineHeight: 22,
+    lineHeight: 20,
     width: '100%',
     textAlign: 'center',
     marginTop: 10,
@@ -430,6 +458,12 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     fontFamily: 'poppins-regular',
     fontSize: 35,
+  },
+  moneyGrowth: {
+    fontFamily: 'poppins-semibold',
+    color: Colors.PURPLE,
+    marginVertical: 10,
+    textAlign: 'center',
   },
   containerStyle: {
     width: '86%',

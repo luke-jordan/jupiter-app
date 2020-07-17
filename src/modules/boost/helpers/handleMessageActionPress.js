@@ -1,5 +1,5 @@
 import { Linking } from 'react-native';
-import { extractAmount, getAmountToNextBalanceLevel } from '../../../util/AmountUtil';
+import { extractAmount, calculateAmountToBalanceOrMajorDigit } from '../../../util/AmountUtil';
 
 const setPrefilledAddCash = (actionContext, currentBalance) => {
   const params = { startNewTransaction: true };
@@ -7,14 +7,12 @@ const setPrefilledAddCash = (actionContext, currentBalance) => {
     return params;
   }
   
-  // console.log('Action context: ', actionContext);
-
   if (actionContext.addCashPreFilled) {
     params.preFilledAmount = extractAmount(actionContext.addCashPreFilled, 'WHOLE_CURRENCY');
   } else if (actionContext.addCashTargetMinimum) {
     // console.log('Add cash target minimum: ', actionContext.addCashTargetMinimum, ' and balance : ', currentBalance);
     const targetMinimum = { amount: extractAmount(actionContext.addCashTargetMinimum, 'WHOLE_CURRENCY'), unit: 'WHOLE_CURRENCY' };
-    const amountToReachNextDigitOrMinimum = getAmountToNextBalanceLevel(currentBalance, targetMinimum, actionContext.addCashDigitThresholds);
+    const amountToReachNextDigitOrMinimum = calculateAmountToBalanceOrMajorDigit(currentBalance, targetMinimum, actionContext.addCashDigitThresholds);
     // console.log(`Target minimum is: ${targetMinimum.amount} and to get to next amount is: ${amountToReachNextDigitOrMinimum}`)
     params.preFilledAmount = amountToReachNextDigitOrMinimum;
   }

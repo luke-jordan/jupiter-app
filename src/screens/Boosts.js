@@ -23,7 +23,7 @@ import { LoggingUtil } from '../util/LoggingUtil';
 import { Sizes, Endpoints, Colors } from '../util/Values';
 import { equalizeAmounts } from '../modules/boost/helpers/parseAmountValue';
 
-import { extractConditionParameter, getDivisor, extractAmount, getAmountToNextBalanceLevel } from '../util/AmountUtil';
+import { extractConditionParameter, getDivisor, extractAmount, calculateAmountToBalanceOrMajorDigit } from '../util/AmountUtil';
 
 import { getAuthToken } from '../modules/auth/auth.reducer';
 import { getCurrentServerBalanceFull } from '../modules/balance/balance.reducer';
@@ -106,6 +106,7 @@ class Boosts extends React.Component {
       const condition = conditions[0];
       if (condition.includes('save_event')) thresholdEventType = 'save_event';
       if (condition.includes('balance_crossed_major_digit')) thresholdEventType = 'save_event';
+      if (condition.includes('balance_crossed_abs_target')) thresholdEventType = 'save_event';
       if (condition.includes('first_save_above')) thresholdEventType = 'onboard_save_event';
       if (condition.includes('friends_added_since')) thresholdEventType = 'social_event';
       if (condition.includes('total_number_friends')) thresholdEventType = 'social_event';
@@ -220,10 +221,16 @@ class Boosts extends React.Component {
   extractRoundUpThreshold = (roundUpSaveCondition) => {
     const targetString = extractConditionParameter(roundUpSaveCondition);
     const targetMinimum = { amount: extractAmount(targetString, 'WHOLE_CURRENCY'), unit: 'WHOLE_CURRENCY' };
-    const amountToReachNextDigitOrMinimum = getAmountToNextBalanceLevel(this.props.currentBalance, targetMinimum);
+    const majorDigits = [3, 5, 10]; // in future make parametr
+    const amountToReachNextDigitOrMinimum = calculateAmountToBalanceOrMajorDigit(this.props.currentBalance, targetMinimum, majorDigits);
     // console.log(`Target minimum is: ${targetMinimum.amount} and to get to next amount is: ${amountToReachNextDigitOrMinimum}`)
     return amountToReachNextDigitOrMinimum;
+  }
 
+  extractAbsoluteThreshold = (absBalanceCondition) => {
+    const targetString = extractConditionParameter(absBalanceCondition);
+    const targetMinimum = { amount: extractAmount(targetString, 'WHOLE_CURRENCY'), unit: 'WHOLE_CURRENCY' };
+    return calculateAmountToBalanceOrMajorDigit(this.props.currentBalance, targetMinimum);
   }
 
   extractStatusThreshold = (statusConditions, boostStatus = BoostStatus.REDEEMED) => {
@@ -239,6 +246,11 @@ class Boosts extends React.Component {
     const roundUpSaveCondition = redeemConditions.find((condition) => condition.startsWith('balance_crossed_major_digit'));
     if (roundUpSaveCondition) {
       return this.extractRoundUpThreshold(roundUpSaveCondition);
+    }
+
+    const absBalanceCondition = redeemConditions.find((condition) => condition.startsWith('balance_crossed_abs_target'));
+    if (absBalanceCondition) {
+      return this.extractAbsoluteThreshold(absBalanceCondition);
     }
 
     return null;

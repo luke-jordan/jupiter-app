@@ -13,7 +13,7 @@ import { Icon, Input, Button } from 'react-native-elements';
 
 import { Colors } from '../util/Values';
 import { LoggingUtil } from '../util/LoggingUtil';
-import { getDivisor } from '../util/AmountUtil';
+import { getDivisor, standardFormatAmount  } from '../util/AmountUtil';
 
 import { getAccountId } from '../modules/profile/profile.reducer';
 import { getCurrentServerBalanceFull, getComparatorRates } from '../modules/balance/balance.reducer';
@@ -184,6 +184,24 @@ class AddCash extends React.Component {
     return '';
   }
 
+  getProjectedAmount() {
+    const unit = 'WHOLE_CURRENCY';
+    const currency = 'ZAR';
+
+    if (!this.state.amountToAdd || this.state.amountToAdd.trim().length === 0) {
+      return standardFormatAmount(0, unit, currency, 0);
+    }
+
+    if (this.props.comparatorRates && this.props.comparatorRates.referenceRate) {
+      const relevantAmount = parseInt(this.state.amountToAdd, 10);
+      const referenceRate = parseFloat(this.props.comparatorRates.referenceRate / (100 * 100)); // rate is in bps, need as 0-1
+      const projectedAmount = relevantAmount * ((1 + referenceRate) ** 5);
+      return standardFormatAmount(projectedAmount, unit, currency, 2);
+    }
+
+    return standardFormatAmount(0, unit, currency, 0);
+  }
+
   renderHeader() {
     return (
       <View style={styles.header}>
@@ -262,9 +280,15 @@ class AddCash extends React.Component {
             </View>
           )}
           {this.props.comparatorRates ? (
+            <Text style={styles.moneyGrowth}>
+              This save grows to <Text style={styles.boldAmount}>{this.getProjectedAmount()}</Text> in five years!
+            </Text>
+          ) : null}
+          {this.props.comparatorRates ? (
             <View style={styles.rateComparison}>
               <Text style={styles.rateComparisonTitle}>
-                Wondering if you&apos;re getting a good rate? We&apos;ve made comparing immediate access saving products easy for you
+                Wondering if you&apos;re getting a GOOD rate?{'\n'}
+                Use the <Text style={styles.boldText}>Rate Comparer</Text> below to compare rates (on savings you can withdraw tomorrow)
               </Text>
               <View style={styles.rateComparisonBox}>
                 <View style={styles.rateLine}>
@@ -412,15 +436,26 @@ const styles = StyleSheet.create({
   error: {
     color: Colors.RED,
   },
+  moneyGrowth: {
+    fontFamily: 'poppins-semibold',
+    color: Colors.PURPLE,
+    marginVertical: 10,
+  },
+  boldText: {
+    fontFamily: 'poppins-semibold',
+    color: Colors.PURPLE,
+  },
   rateComparison: {
     width: '90%',
     marginVertical: 15,
   },
   rateComparisonTitle: {
-    fontFamily: 'poppins-semibold',
+    fontFamily: 'poppins-regular',
     color: Colors.DARK_GRAY,
     fontSize: 13,
+    lineHeight: 22,
     marginBottom: 10,
+    textAlign: 'center',
   },
   rateComparisonBox: {
     width: '100%',
@@ -443,7 +478,7 @@ const styles = StyleSheet.create({
   rateComparisonJupiter: {
     fontFamily: 'poppins-semibold',
     color: Colors.PURPLE,
-    fontSize: 16,
+    fontSize: 15,
   },
   rateComparisonBank: {
     fontFamily: 'poppins-regular',

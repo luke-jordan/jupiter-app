@@ -21,6 +21,7 @@ import { LoggingUtil } from '../util/LoggingUtil';
 import { Endpoints, Colors } from '../util/Values';
 
 import { getAuthToken } from '../modules/auth/auth.reducer';
+import { getCurrentServerBalanceFull } from '../modules/balance/balance.reducer';
 
 import getMessageCardIcon from '../modules/boost/helpers/getMessageIcon';
 import getMessageCardButtonText from '../modules/boost/helpers/getMessageButtonText';
@@ -31,6 +32,7 @@ const FONT_UNIT = 0.01 * width;
 
 const mapStateToProps = state => ({
   authToken: getAuthToken(state),
+  currentBalance: getCurrentServerBalanceFull(state),
 });
 
 class PastMessages extends React.Component {
@@ -89,7 +91,7 @@ class PastMessages extends React.Component {
 
   onPressActionButton = (userMessage) => {
     // console.log('PRESSED: ', actionToTake);
-    handleMessageActionPress(userMessage, this.props.navigation);
+    handleMessageActionPress(userMessage, this.props.navigation, this.props.currentBalance);
   }
 
   onPressAddCash = amount => this.props.navigation.navigate('AddCash', { preFilledAmount: amount, startNewTransaction: true });
