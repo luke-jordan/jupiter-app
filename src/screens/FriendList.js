@@ -211,7 +211,6 @@ class Friends extends React.Component {
     this.setState({ loadingTournament: true });
     const tournamentDetails = await friendService.fetchTournamentDetails(this.props.token, boostId);
     if (tournamentDetails) {
-      console.log('Very strange: ', tournamentDetails);
       this.props.navigation.navigate('ViewFriendTournament', { tournament: tournamentDetails });
     } 
     this.setState({ loadingTournament: false });

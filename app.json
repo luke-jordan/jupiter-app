@@ -8,7 +8,7 @@
       "ios",
       "android"
     ],
-    "version": "0.0.38",
+    "version": "0.0.38b",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "jupiter",
@@ -25,7 +25,7 @@
     ],
     "ios": {
       "bundleIdentifier": "com.jupitersaving.app",
-      "buildNumber": "1",
+      "buildNumber": "3",
       "associatedDomains": [
         "applinks:message.jupitersave.com"
       ]

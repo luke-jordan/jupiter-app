@@ -7,10 +7,11 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
-import { Button, Icon, Input, Overlay } from 'react-native-elements';
+import { Button, Input, Overlay } from 'react-native-elements';
+
+import HeaderWithBack from '../elements/HeaderWithBack';
 
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Endpoints, Colors } from '../util/Values';
@@ -131,20 +132,10 @@ class WithdrawStep1 extends React.Component {
   render() {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.headerButton}
-            onPress={this.onPressBack}
-          >
-            <Icon
-              name="chevron-left"
-              type="evilicon"
-              size={45}
-              color={Colors.GRAY}
-            />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Withdraw Cash</Text>
-        </View>
+        <HeaderWithBack
+          headerText="Withdraw Cash"
+          onPressBack={this.onPressBack}
+        />
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.content}
@@ -186,6 +177,7 @@ class WithdrawStep1 extends React.Component {
           </View>
           <View style={styles.inputWrapper}>
             <Text style={styles.labelStyle}>Account Number</Text>
+            <Text style={styles.note}>We need your bank ACCOUNT number, <Text style={styles.bold}>not</Text> bank CARD number</Text>
             <Input
               value={this.state.accountNumber}
               onChangeText={text =>
