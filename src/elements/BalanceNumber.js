@@ -3,7 +3,7 @@ import { connect } from 'react-redux';
 
 import moment from 'moment';
 
-import { Text, View, StyleSheet, YellowBox } from 'react-native';
+import { Text, TouchableOpacity, StyleSheet, YellowBox } from 'react-native';
 import { getFormattedValue } from '../util/AmountUtil';
 
 import AnimatedNumber from './AnimatedNumber';
@@ -229,7 +229,11 @@ class BalanceNumber extends React.Component {
 
   render() {
     return (
-      <View style={styles.balanceWrapper}>
+      <TouchableOpacity 
+        style={styles.balanceWrapper}
+        disabled={!this.props.onPressWrapper}
+        onPress={this.props.onPressWrapper}
+      >
         <Text style={this.props.currencyStyle}>{this.state.currency}</Text>
         <AnimatedNumber
           style={this.props.balanceStyle}
@@ -245,7 +249,7 @@ class BalanceNumber extends React.Component {
             this.onFinishBalanceAnimation(true);
           }}
         />
-      </View>
+      </TouchableOpacity>
     );
   }
 }

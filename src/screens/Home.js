@@ -49,6 +49,8 @@ import { friendService } from '../modules/friend/friend.service';
 import BoostGameModal from '../elements/boost/BoostGameModal';
 import GameResultModal from '../elements/boost/GameResultModal';
 
+import SnippetOverlay from './SnippetOverlay';
+
 const mapDispatchToProps = {
   updateBoostCount,
   updateFriendAlerts,
@@ -114,6 +116,8 @@ class Home extends React.Component {
       lastFetchTimeMillis: 0,
       
       inPreviewMode: this.props.navigation.getParam('inPreviewMode') || false,
+
+      showSnippet: false,
     };
   }
 
@@ -333,6 +337,10 @@ class Home extends React.Component {
   }
 
   rotateCircle() {
+    if (this.state.showSnippet) {
+      return;
+    }
+
     const rotationDuration = CIRCLE_ROTATION_DURATION;
     Animated.timing(this.state.rotation, {
       toValue: 1,
@@ -344,6 +352,18 @@ class Home extends React.Component {
       });
       this.rotateCircle();
     });
+  }
+
+  showSnippet = () => {
+    this.setState({
+      showSnippet: true,
+    }, () => this.state.rotation.stopAnimation());
+  }
+
+  hideSnippet = () => {
+    this.setState({
+      showSnippet: false,
+    }, () => this.rotateCircle());
   }
 
   // ////////////////////////////////////////////////////////////////////////////////////
@@ -843,7 +863,7 @@ class Home extends React.Component {
     );
   }
 
-  render() {
+  renderRotatingArrow() {
     const circleRotation = this.state.rotation.interpolate({
       inputRange: [0, 1],
       outputRange: ['0deg', '360deg'],
@@ -860,6 +880,65 @@ class Home extends React.Component {
         outputRange: [1, 1.04],
       });
     }
+
+    return (
+      <>
+        <Image
+          style={styles.coloredCircle}
+          source={require('../../assets/oval.png')}
+        />
+        {this.state.chaseArrowGameMode ? (
+          <Animated.View
+            style={[
+              styles.whiteCircle,
+              {
+                transform: [
+                  { rotate: gameCircleRotation },
+                  { scale: circleScale },
+                ],
+              },
+            ]}
+          >
+            <Image
+              source={require('../../assets/circle.png')}
+              style={styles.animatedViewCircle}
+              resizeMode="cover"
+            />
+            <TouchableOpacity
+              activeOpacity={1}
+              style={styles.animatedViewArrow}
+              onPress={this.onPressArrow}
+            >
+              <Image source={require('../../assets/arrow.png')} />
+            </TouchableOpacity>
+          </Animated.View>
+        ) : (
+          <Animated.View
+            style={[
+              styles.whiteCircle,
+              {
+                transform: [
+                  { rotate: circleRotation },
+                  { scale: circleScale },
+                ],
+              },
+            ]}
+          >
+            <Image
+              source={require('../../assets/circle.png')}
+              style={styles.animatedViewCircle}
+              resizeMode="cover"
+            />
+            <View style={styles.animatedViewArrow}>
+              <Image source={require('../../assets/arrow.png')} />
+            </View>
+          </Animated.View>
+        )}
+      </>
+  )
+  }
+
+  render() {
 
     const showMessage = !(
       this.state.showGameUnlockedModal || 
@@ -884,81 +963,19 @@ class Home extends React.Component {
                 resizeMode="contain"
               />
             </View>
-            <View
-              style={
-                this.state.hasMessage ? styles.headerWithMessage : styles.header
-              }
-            >
+
+            <View style={this.state.hasMessage ? styles.headerWithMessage : styles.header}>
               {this.state.firstName && this.state.firstName.length > 0 ? (
-                <Text
-                  style={
-                    this.state.hasMessage
-                      ? styles.helloTextWithMessage
-                      : styles.helloText
-                  }
-                >
+                <Text style={this.state.hasMessage ? styles.helloTextWithMessage : styles.helloText}>
                   Hello,{' '}
                   <Text style={styles.firstName}>{this.state.firstName}</Text>
                 </Text>
               ) : null}
             </View>
+
             <View style={styles.mainContent}>
               <View style={styles.circlesWrapper}>
-                <Image
-                  style={styles.coloredCircle}
-                  source={require('../../assets/oval.png')}
-                />
-                {/*
-                  <Animated.Image style={[styles.coloredCircle, {transform: [{rotate: circleRotation}]}]} source={require('../../assets/oval.png')}/>
-
-                */}
-                {this.state.chaseArrowGameMode ? (
-                  <Animated.View
-                    style={[
-                      styles.whiteCircle,
-                      {
-                        transform: [
-                          { rotate: gameCircleRotation },
-                          { scale: circleScale },
-                        ],
-                      },
-                    ]}
-                  >
-                    <Image
-                      source={require('../../assets/circle.png')}
-                      style={styles.animatedViewCircle}
-                      resizeMode="cover"
-                    />
-                    <TouchableOpacity
-                      activeOpacity={1}
-                      style={styles.animatedViewArrow}
-                      onPress={this.onPressArrow}
-                    >
-                      <Image source={require('../../assets/arrow.png')} />
-                    </TouchableOpacity>
-                  </Animated.View>
-                ) : (
-                  <Animated.View
-                    style={[
-                      styles.whiteCircle,
-                      {
-                        transform: [
-                          { rotate: circleRotation },
-                          { scale: circleScale },
-                        ],
-                      },
-                    ]}
-                  >
-                    <Image
-                      source={require('../../assets/circle.png')}
-                      style={styles.animatedViewCircle}
-                      resizeMode="cover"
-                    />
-                    <View style={styles.animatedViewArrow}>
-                      <Image source={require('../../assets/arrow.png')} />
-                    </View>
-                  </Animated.View>
-                )}
+                {this.renderRotatingArrow()}
               </View>
 
               {this.state.tapScreenGameMode || this.state.chaseArrowGameMode ? (
@@ -968,6 +985,7 @@ class Home extends React.Component {
                   balanceStyle={styles.balance}
                   currencyStyle={styles.currency}
                   onSlowAnimationStarted={() => this.fetchMessagesIfNeeded()}
+                  onPressWrapper={this.showSnippet}
                 />
               )}
 
@@ -996,6 +1014,8 @@ class Home extends React.Component {
             <NavigationBar navigation={this.props.navigation} currentTab={0} />
           </LinearGradient>
         </View>
+
+        {this.state.showSnippet && <SnippetOverlay isVisible={this.state.showSnippet} onCloseSnippet={this.hideSnippet} />}
 
         {this.state.showGameUnlockeModal && (
           <BoostGameModal
