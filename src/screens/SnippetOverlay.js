@@ -80,7 +80,7 @@ class SnippetOverlay extends React.Component {
         console.log('Error updating snippet: ', JSON.stringify(result));
         return;
       }
-      console.log('Result of telling backend snippet viewed: ', JSON.stringify(result));
+      // console.log('Result of telling backend snippet viewed: ', JSON.stringify(result));
     } catch (err) {
       console.log('Raw error updating backend on snippet view: ', JSON.stringify(err));
     }

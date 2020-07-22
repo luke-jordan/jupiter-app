@@ -347,10 +347,6 @@ class Home extends React.Component {
   }
 
   showSnippet = () => {
-    // if (this.state.hasMessage) {
-    //   return; // positioning is just too tricky for now (possibly contain inside view somehow, or pass as prop)
-    // }
-
     this.setState({
       showSnippet: true,
     });
@@ -540,8 +536,7 @@ class Home extends React.Component {
     } else if (!this.props.hasShownFallback) {
       const shownMessages = this.props.viewedMessages;
       const fallbackMessages = MessagingUtil.getFallbackMessages();
-      // const unseenMessageIds = fallbackMessages.map((msg) => msg.messageId).filter((msgId) => !shownMessages.includes(msgId));
-      const unseenMessageIds = fallbackMessages.map((msg) => msg.messageId);
+      const unseenMessageIds = fallbackMessages.map((msg) => msg.messageId).filter((msgId) => !shownMessages.includes(msgId));
 
       if (unseenMessageIds.length === 0) {
         return;
@@ -912,7 +907,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', 
     justifyContent: 'center', 
     height: 'auto', 
-    paddingVertical: 50
+    paddingVertical: 50,
   },
   balance: {
     color: COLOR_WHITE,

@@ -43,7 +43,7 @@ const GAME_BACKGROUNDS = {
 
 const GAME_TITLES = {
   'CREDIT_CARD': 'credit card',
-  'LOAN_SHARK': 'loan shark'
+  'LOAN_SHARK': 'loan shark',
 };
 
 class BreakingGame extends React.PureComponent {

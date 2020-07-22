@@ -9,7 +9,7 @@ import {
   Text,
   View,
   Linking,
-  ScrollView
+  ScrollView,
 } from 'react-native';
 import { Button, Input } from 'react-native-elements';
 
