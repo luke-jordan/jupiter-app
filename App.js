@@ -59,6 +59,7 @@ import ViewSavingPool from './src/screens/ViewSavingPool';
 import AddFriendTournament from './src/screens/AddFriendTournament';
 import ViewFriendTournament from './src/screens/ViewFriendTournament';
 
+import CircleGame from './src/screens/CircleGame';
 import BreakingGame from './src/screens/BreakingGame';
 
 const AppContainer = createAppContainer(
@@ -114,6 +115,7 @@ const AppContainer = createAppContainer(
       AddFriendTournament: { screen: AddFriendTournament },
       ViewFriendTournament: { screen: ViewFriendTournament },
 
+      CircleGame: { screen: CircleGame },
       BreakingGame: { screen: BreakingGame },
     },
     { initialRouteName: 'Splash', headerMode: 'none' }

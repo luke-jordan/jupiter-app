@@ -2,19 +2,29 @@ import React from 'react';
 import { connect } from 'react-redux';
 
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import { Overlay } from 'react-native-elements';
 
-import { Colors } from '../util/Values';
+import { getSortedSnippets, FALLBACK_SNIPPET_ID } from '../modules/snippet/snippet.reducer';
+import { incrementSnippetViewCount, updateAllSnippets, addSnippets } from '../modules/snippet/snippet.actions';
 
-const { width, height } = Dimensions.get('window');
+import { getAuthToken } from '../modules/auth/auth.reducer';
+import { postRequest, getRequest } from '../modules/auth/auth.helper';
+
+import { LoggingUtil } from '../util/LoggingUtil';
+
+import { Colors, Endpoints } from '../util/Values';
+
+const { width } = Dimensions.get('window');
 
 const mapStateToProps = state => ({
-
+  snippets: getSortedSnippets(state),
+  token: getAuthToken(state),
 });
 
-const mapPropsToDispatch = {
-
-}
+const mapPropsToDispatch = ({
+  incrementSnippetViewCount,
+  updateAllSnippets,
+  addSnippets,
+});
 
 class SnippetOverlay extends React.Component {
 
@@ -22,30 +32,87 @@ class SnippetOverlay extends React.Component {
     super(props);
 
     this.state = {
-      title: 'Did you know?',
-      body: 'Put R50 a month into Jupiter, and by year 3 your interest will buy you a Streetwise Bucket! Compound interest-finger licking good',
+      title: '',
+      body: '',
+
+      currentSnippet: {},
     }
   }
 
   async componentDidMount() {
     // select factoid to show
+    // console.log('Snippets: ', this.props.snippets);
+    const nextSnippet = this.props.snippets[0];
+    this.setState({
+      title: nextSnippet.title,
+      body: nextSnippet.body,
+      currentSnippet: nextSnippet,
+      initiatedMillis: Date.now(),
+    }, () => {
+      LoggingUtil.logEvent('USER_VIEWED_SNIPPET', { snippetId: nextSnippet.snippetId });
+      this.tellBackendSnippetViewed();   
+    });
   }
 
   onPressClose = () => {
-    // tell backend, maybe include a time
+    if (this.state.initiatedMillis) {
+      const timeViewed = (Date.now() - this.state.initiatedMillis) / 1000;
+      LoggingUtil.logEvent('USER_CLOSED_SNIPPET', { snippetId: this.state.currentSnippet.snippetId, timeViewed });  
+    }
     this.props.onCloseSnippet();
+  }
+
+  async tellBackendSnippetViewed() {
+    const { snippetId } = this.state.currentSnippet;
+    if (!snippetId || snippetId === FALLBACK_SNIPPET_ID) {
+      await this.fetchSnippets();
+      return;
+    }
+
+    this.props.incrementSnippetViewCount(snippetId);
+    
+    const url = `${Endpoints.CORE}snippet/update`;
+    const params = { snippetId, status: 'VIEWED' };
+
+    try {
+      const result = await postRequest({ token: this.props.token, url, params });
+      if (!result.ok) {
+        console.log('Error updating snippet: ', JSON.stringify(result));
+        return;
+      }
+      console.log('Result of telling backend snippet viewed: ', JSON.stringify(result));
+    } catch (err) {
+      console.log('Raw error updating backend on snippet view: ', JSON.stringify(err));
+    }
+      
+    this.fetchSnippets();
+  }
+
+  // need to store last time here to avoid excessive calls
+  async fetchSnippets() {
+    const url = `${Endpoints.CORE}snippet/fetch`;
+    try {
+      const result = await getRequest({ token: this.props.token, url });
+      if (!result.ok) {
+        console.log('Error fetching snippets: ', JSON.stringify(result));
+        return;
+      }
+      const { type, snippets } = await result.json();
+      // console.log('Retrieved from server: ', snippets);
+      if (type === 'ALL') {
+        this.props.updateAllSnippets(snippets);
+      }
+      if (type === 'UNSEEN') {
+        this.props.addSnippets(snippets);
+      }
+    } catch (err) {
+      console.log('Error fetching snippets: ', err);
+    }
   }
 
   render() {
     return (
-      <Overlay
-        isVisible={this.props.isVisible}
-        animationType="fade"
-        fullScreen
-        overlayStyle={styles.snippetContainer}
-        overlayBackgroundColor='transparent'
-        onBackdropPress={this.onPressClose}
-      >
+      <View style={styles.snippetContainer}>
         <View style={styles.snippetHolder}>
           <Text style={styles.snippetTitle}>{this.state.title}</Text>
           <Text style={styles.snippetBody}>
@@ -55,7 +122,7 @@ class SnippetOverlay extends React.Component {
             Close
           </Text>
         </View>
-      </Overlay>
+      </View>
     )
   }
 
@@ -66,7 +133,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 0,
-    paddingBottom: height * 0.03,
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    width: '100%',
+    height: '100%',
+    paddingTop: 20,
   },
   snippetHolder: {
     backgroundColor: Colors.BACKGROUND_GRAY,

@@ -151,6 +151,11 @@ class BalanceNumber extends React.Component {
 
     // console.log(`Last animation target: ${this.state.animationTargetNumber}, and currentBalance: ${this.props.currentReferenceBalance} and target: ${this.props.currentTargetBalance}`);
     const referenceAnchor = this.calculateTargetBalanceAtReferenceMillis(this.state.referenceMoment);
+    if (referenceAnchor === 0) {
+      // must be logging out, so don't do anything (animating to zero is ugly)
+      return;
+    }
+    
     const isAnimatingToRightAnchor = this.state.animationTargetNumber === referenceAnchor;
     // as below note, end of day target is *always* above current, so this will guard against accidental declines
     const isAnimatingToRightTarget = this.state.animationTargetNumber === Math.max(this.props.currentTargetBalance, referenceAnchor);
