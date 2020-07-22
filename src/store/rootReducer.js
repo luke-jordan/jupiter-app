@@ -24,6 +24,10 @@ import transactionReducer, {
   STATE_KEY as TRANSACTION_STATE_KEY,
 } from '../modules/transaction/transaction.reducer';
 
+import snippetReducer, {
+  STATE_KEY as SNIPPET_STATE_KEY,
+} from '../modules/snippet/snippet.reducer';
+
 const appReducer = combineReducers({
   [BOOST_STATE_KEY]: boostReducer,
   [BALANCE_STATE_KEY]: balanceReducer,
@@ -31,6 +35,7 @@ const appReducer = combineReducers({
   [TRANSACTION_STATE_KEY]: transactionReducer,
   [PROFILE_STATE_KEY]: profileReducer,
   [FRIEND_STATE_KEY]: friendReducer,
+  [SNIPPET_STATE_KEY]: snippetReducer,
 });
 
 // as nicely explained/answered here: https://stackoverflow.com/questions/35622588/how-to-reset-the-state-of-a-redux-store
