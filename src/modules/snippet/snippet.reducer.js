@@ -8,7 +8,8 @@ const FALLBACK_SNIPPET = {
   body: 'Put R50 a month into Jupiter, and by year 3 your interest will buy you a Streetwise Bucket! Compound interest-finger licking good',
   active: true,
   snippetId: FALLBACK_SNIPPET_ID,
-  viewCount: 10, // so relatively near the back
+  viewCount: 1, // so goes to the back as soon as any comes int
+  snippetPriority: 0, 
 };
 
 const initialState = {
@@ -56,13 +57,13 @@ const snippetReducer = (state = initialState, action) => {
 
 export const getSnippets = state => state[STATE_KEY].snippets;
 
-// view count dominates, then priority 
+// view count dominates (ascending - lowest view count first), then priority (descending - highest priority first) 
 const snippetSorter = (snippetA, snippetB) => {
   if (snippetA.viewCount !== snippetB.viewCount) {
     return snippetA.viewCount - snippetB.viewCount;
   }
 
-  return snippetB.priority - snippetA.priority; // priority sorts descending
+  return snippetB.snippetPriority - snippetA.snippetPriority;
 }
 
 export const getSortedSnippets = state => {

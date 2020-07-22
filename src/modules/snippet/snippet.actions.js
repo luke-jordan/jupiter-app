@@ -17,4 +17,4 @@ export const addSnippets = snippets => ({
 export const incrementSnippetViewCount = snippetId => ({
   type: INCREMENT_VIEW_COUNT,
   snippetId,  
-})
+});
