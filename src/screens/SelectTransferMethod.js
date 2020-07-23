@@ -4,6 +4,8 @@ import { connect } from 'react-redux';
 import { View, ScrollView, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Icon } from 'react-native-elements';
 
+import HeaderWithBack from '../elements/HeaderWithBack';
+
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Colors, Endpoints } from '../util/Values';
 
@@ -44,7 +46,6 @@ class SelectTransferMethod extends React.PureComponent {
       isOnboarding: params.isOnboarding,
       accountId: params.accountId,
     });
-    console.log('What we have : ', this.props.transactionDetails);
   }
 
   onPressInstantEft = async () => {
@@ -223,20 +224,10 @@ class SelectTransferMethod extends React.PureComponent {
   render() {
     return (
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.headerButton}
-            onPress={this.onPressBack}
-          >
-            <Icon
-              name="chevron-left"
-              type="evilicon"
-              size={45}
-              color={Colors.MEDIUM_GRAY}
-            />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Transfer Method</Text>
-        </View>
+        <HeaderWithBack
+          headerText="Transfer Method"
+          onPressBack={this.onPressBack}
+        />
         <View style={styles.mainContent}>
           <TouchableOpacity 
             style={styles.optionBox} 
@@ -322,6 +313,10 @@ class SelectTransferMethod extends React.PureComponent {
             </View>
           </View>
 
+          <Text style={styles.warningLabel}>
+            <Text style={styles.bold}>Note:</Text> Cash deposits cost you R5 - Fees eat into your savings, so please pay via EFT or OZOW
+          </Text>
+
         </View>
       </ScrollView>
     )
@@ -337,17 +332,6 @@ const styles = StyleSheet.create({
   scrollContainer: {
     alignItems: 'center',
     justifyContent: 'space-around',
-  },
-  header: {
-    flexDirection: 'row',
-    width: '100%',
-    backgroundColor: Colors.WHITE,
-    alignItems: 'center',
-    padding: 6,
-  },
-  headerTitle: {
-    fontFamily: 'poppins-semibold',
-    fontSize: 18,
   },
   mainContent: {
     flex: 1,
@@ -408,6 +392,15 @@ const styles = StyleSheet.create({
     color: Colors.MEDIUM_GRAY,
     marginLeft: 5,
     paddingRight: 10,
+  },
+  warningLabel: {
+    fontFamily: 'poppins-regular',
+    marginTop: 15,
+    fontSize: 12,
+    color: Colors.DARK_GRAY,
+  },
+  bold: {
+    fontFamily: 'poppins-semibold',
   },
 });
 

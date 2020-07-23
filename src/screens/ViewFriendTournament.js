@@ -19,7 +19,7 @@ export default class ViewFriendTournament extends React.PureComponent {
     const { params } = this.props.navigation.state;
     const { tournament } = params;
 
-    const scores = tournament.tournamentScores.sort((scoreA, scoreB) => scoreB - scoreA)
+    const scores = tournament.tournamentScores.sort((scoreA, scoreB) => scoreB.playerScore - scoreA.playerScore)
       .map((score, index) => ({ ...score, playerRank: index + 1 }));
     const scoreType = tournament.boostCategory === 'DESTROY_IMAGE' ? 'PERCENT' : 'TAPS';
 
@@ -31,6 +31,7 @@ export default class ViewFriendTournament extends React.PureComponent {
   }
 
   renderScoreLine(playerName, playerScore, playerRank) {
+    
     return (
       <View style={styles.playerWrapper} key={playerRank}>
         <Text style={styles.rank}>{playerRank}</Text>
@@ -39,7 +40,7 @@ export default class ViewFriendTournament extends React.PureComponent {
           source={require('../../assets/gradient_background.png')}
           style={styles.scoreHolder}
         >
-          <Text style={styles.score}>{playerScore}{this.state.scoreType === 'PERCENT' && '%'}</Text>
+          <Text style={styles.score}>{playerScore.toFixed(0)}{this.state.scoreType === 'PERCENT' && '%'}</Text>
         </ImageBackground>
       </View>
     )
@@ -154,15 +155,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scoreTitle: {
-    width: 40,
+    width: 50,
     fontFamily: 'poppins-semibold',
     fontSize: 14,
     color: Colors.MEDIUM_GRAY,
     textAlign: 'left',
   },
   scoreHolder: {
-    width: 40,
-    height: 40,
+    width: 50,
+    height: 50,
     alignItems: 'center',
     justifyContent: 'center',
   },

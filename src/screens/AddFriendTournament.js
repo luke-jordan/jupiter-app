@@ -287,6 +287,12 @@ class AddFriendTournament extends React.Component {
           </View>
         )}
         <Text style={styles.inputTitle}>
+          The Tournament Winner gets a bit of you &amp; your buddies&apos; entry fee. How much of your save will the winner win?
+        </Text>
+        <View style={styles.radioHolder}>
+          {[1, 5, 10].map(this.renderPoolPercentOption)}
+        </View>
+        <Text style={styles.inputTitle}>
           Pick a game to play
         </Text>
         <View style={styles.pickerWrapperStyle}>
@@ -334,12 +340,6 @@ class AddFriendTournament extends React.Component {
               <Picker.Item key={timeValue} label={this.extractEndTimeLabel(timeValue)} value={timeValue} />
             ))}
           </Picker>
-        </View>
-        <Text style={styles.inputTitle}>
-          How much of our saves for this Tournament will the winner get?
-        </Text>
-        <View style={styles.radioHolder}>
-          {[1, 5, 10].map(this.renderPoolPercentOption)}
         </View>
       </View>
     )

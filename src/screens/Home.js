@@ -6,7 +6,7 @@ import * as Permissions from 'expo-permissions';
 import moment from 'moment';
 import React from 'react';
 import { connect } from 'react-redux';
-import { Alert, Animated, AsyncStorage, Dimensions, Easing, Image, StyleSheet, Text, TouchableOpacity, View, Modal } from 'react-native';
+import { Alert, Animated, AsyncStorage, Dimensions, Easing, Image, StyleSheet, Text, TouchableOpacity, View, Modal, TouchableWithoutFeedback } from 'react-native';
 import { Icon } from 'react-native-elements';
 
 // import VersionCheck from 'react-native-version-check-expo';
@@ -49,6 +49,8 @@ import { friendService } from '../modules/friend/friend.service';
 import BoostGameModal from '../elements/boost/BoostGameModal';
 import GameResultModal from '../elements/boost/GameResultModal';
 
+import SnippetOverlay from './SnippetOverlay';
+
 const mapDispatchToProps = {
   updateBoostCount,
   updateFriendAlerts,
@@ -84,7 +86,6 @@ const FONT_UNIT = 0.01 * width;
 const TIME_BETWEEN_FETCH = 10 * 1000; // don't fetch if time is between this (i.e., less than a minute)
 
 const CIRCLE_ROTATION_DURATION = 6000;
-const CIRCLE_SCALE_DURATION = 200;
 
 const COLOR_WHITE = '#fff';
 
@@ -96,8 +97,6 @@ class Home extends React.Component {
       loading: false,
 
       rotation: new Animated.Value(0),
-      gameRotation: new Animated.Value(0),
-      circleScale: new Animated.Value(0),
 
       hasMessage: false,
       messageDetails: null,
@@ -107,13 +106,13 @@ class Home extends React.Component {
 
       gameParams: null,
       gameInProgress: false,
-      tapScreenGameMode: false,
-      chaseArrowGameMode: false,
       showSubmittingModal: false,
 
       lastFetchTimeMillis: 0,
       
       inPreviewMode: this.props.navigation.getParam('inPreviewMode') || false,
+
+      showSnippet: false,
     };
   }
 
@@ -168,7 +167,7 @@ class Home extends React.Component {
       if (!storedInfo) {
         this.logout();
         return;
-      } 
+      }
       
       info = JSON.parse(storedInfo);
     }
@@ -346,6 +345,18 @@ class Home extends React.Component {
     });
   }
 
+  showSnippet = () => {
+    this.setState({
+      showSnippet: true,
+    });
+  }
+
+  hideSnippet = () => {
+    this.setState({
+      showSnippet: false,
+    });
+  }
+
   // ////////////////////////////////////////////////////////////////////////////////////
   // ///////////////////  NOTIFICATION AND MESSAGE HANDLING /////////////////////////////
   // ////////////////////////////////////////////////////////////////////////////////////
@@ -416,7 +427,7 @@ class Home extends React.Component {
         throw result;
       }
     } catch (error) {
-      console.log('Error fetching changed boost!', error.message);
+      console.log('Error fetching changed boost!', JSON.stringify(error));
     }
 
   }
@@ -607,7 +618,7 @@ class Home extends React.Component {
   showGameUnlocked(boostDetails) {
     const boostAmount = standardFormatAmount(boostDetails.boostAmount, boostDetails.boostUnit, boostDetails.boostCurrency);
     const gameParams = { ...boostDetails.gameParams, boostId: boostDetails.boostId, boostAmount };
-    // console.log('Showing game with params: ', boostDetails.gameParams);
+    
     this.setState({
       showGameUnlockeModal: true,
       gameParams,
@@ -620,178 +631,21 @@ class Home extends React.Component {
       showGameUnlockeModal: false,
     });
     LoggingUtil.logEvent('GAME_USER_DISMISSED');
-    // TODO show gameDetails.actionContext.gameParams.waitMessage maybe?
   };
 
   onPressStartGame = () => {
     const { gameParams } = this.state;
     // console.log('Starting a game: ', gameParams);
-    if (gameParams.gameType.includes('TAP_SCREEN')) {
-      // console.log('Starting tap screen game!');
-      this.startTapGame(gameParams);
-    } else if (gameParams.gameType.includes('CHASE_ARROW')) {
-      this.startArrowGame(gameParams);
+
+    if (gameParams.gameType.includes('TAP_SCREEN') || gameParams.gameType.includes('CHASE_ARROW')) {
+      this.setState({ showGameUnlockeModal: false });
+      this.props.navigation.navigate('CircleGame', { gameParams });
     } else if (gameParams.gameType.includes('DESTROY_IMAGE')) {
       this.setState({ showGameUnlockeModal: false });
       this.props.navigation.navigate('BreakingGame', { gameParams });
     }
+
     LoggingUtil.logEvent('GAME_USER_INITIATED');
-  };
-
-  startTapGame(gameParams) {
-    this.setState({
-      showGameUnlockeModal: false,
-      gameInProgress: true,
-      tapScreenGameMode: true,
-      tapScreenGameTimer: gameParams.timeLimitSeconds,
-    }, () => {
-      this.tapScreenGameTaps = 0;
-    
-      setTimeout(() => {
-        this.handleTapScreenGameEnd();
-      }, gameParams.timeLimitSeconds * 1000);
-      
-      setTimeout(() => {
-        this.decrementTapScreenGameTimer();
-      }, 1000);
-      
-    });
-
-  }
-
-  startArrowGame(gameParams) {
-    this.setState({
-      showGameUnlockeModal: false,
-      gameInProgress: true,
-      chaseArrowGameMode: true,
-      chaseArrowGameTimer: gameParams.timeLimitSeconds,
-      // "arrowFuzziness": "10%",
-      gameRotation: new Animated.Value(0),
-    });
-    this.chaseArrowGameTaps = 0;
-    const { arrowSpeedMultiplier } = gameParams;
-    this.rotateGameCircle(arrowSpeedMultiplier);
-    setTimeout(() => {
-      this.handleChaseArrrowGameEnd();
-    }, gameParams.timeLimitSeconds * 1000);
-    setTimeout(() => {
-      this.decrementChaseArrowGameTimer();
-    }, 1000);
-
-  }
-
-  rotateGameCircle(arrowSpeedMultiplier) {
-    const rotationDuration = CIRCLE_ROTATION_DURATION / arrowSpeedMultiplier;
-    // console.log(rotationDuration);
-    Animated.timing(this.state.gameRotation, {
-      toValue: 1,
-      duration: rotationDuration,
-      easing: Easing.linear,
-    }).start(() => {
-      if (this.state.chaseArrowGameMode) {
-        this.setState({
-          gameRotation: new Animated.Value(0),
-        });
-        this.rotateGameCircle(arrowSpeedMultiplier);
-      }
-    });
-  };
-
-  scaleCircle() {
-    Animated.timing(this.state.circleScale, {
-      toValue: 1,
-      duration: CIRCLE_SCALE_DURATION,
-      easing: Easing.linear,
-    }).start(() => {
-      this.setState({
-        circleScale: new Animated.Value(0),
-      });
-    });
-  };
-
-  decrementTapScreenGameTimer = () => {
-    if (this.state.tapScreenGameTimer > 0) {
-      setTimeout(() => { this.decrementTapScreenGameTimer(); }, 1000);
-    }
-    this.setState({ tapScreenGameTimer: this.state.tapScreenGameTimer - 1 });
-  };
-
-  handleTapScreenGameEnd = () => {
-    this.setState({ tapScreenGameMode: false, gameInProgress: false, showSubmittingModal: true });
-    this.submitGameResults(this.tapScreenGameTaps);
-  };
-
-  decrementChaseArrowGameTimer = () => {
-    if (this.state.chaseArrowGameTimer > 0) {
-      setTimeout(() => { this.decrementChaseArrowGameTimer(); }, 1000);
-    }
-    this.setState({ chaseArrowGameTimer: this.state.chaseArrowGameTimer - 1 });
-  };
-
-  handleChaseArrrowGameEnd = () => {
-    this.setState({ chaseArrowGameMode: false, gameInProgress: false, showSubmittingModal: true });
-    this.submitGameResults(this.chaseArrowGameTaps);    
-  };
-
-  async submitGameResults(numberOfTaps) {
-    LoggingUtil.logEvent('GAME_USER_COMPLETED');
-
-    const { gameParams } = this.state;
-    const resultOptions = { 
-      numberTaps: numberOfTaps, 
-      timeTaken: gameParams.timeLimitSeconds,
-      boostId: gameParams.boostId,
-      authenticationToken: this.props.authToken,
-    };
-
-    const resultOfGame = await boostService.sendTapGameResults(resultOptions);
-    // seems to sometimes abort before completion on iPhones -- not showing the result is not great, but better than a crash
-    console.log('Result of game in Home: ', resultOfGame);
-    if (!resultOfGame) {
-      LoggingUtil.logError(Error('Result of game was null'));
-      this.setState({ showSubmittingModal: false });
-      return;
-    }
-    
-    const { amountWon, statusMet } = resultOfGame;
-  
-    const gameResultParams = { ...resultOfGame, numberOfTaps, timeTaken: gameParams.timeLimitSeconds };
-
-    if (amountWon) {
-      // also do an update, so we increase balance
-      this.fetchCurrentProfileFromServer();
-    }
-  
-    if (Array.isArray(statusMet) && statusMet.length > 0) {
-      statusMet.forEach((viewedStatus) => this.props.updateBoostViewed({ boostId: gameParams.boostId, viewedStatus }));
-    }
-
-    // An Apple thing. Don't ask.
-    this.setState({
-      gameResultParams,
-      showSubmittingModal: false,
-    }, () => this.cleanUpGameParamsAndShowResult());
-
-  }
-
-  cleanUpGameParamsAndShowResult() {
-    this.setState({ showGameResultModal: true, tapScreenGameTimer: 0, chaseArrowGameTimer: 0 });
-    this.tapScreenGameTaps = 0;
-    this.chaseArrowGameTaps = 0;
-  }
-
-  onPressTapScreenGame = () => {
-    this.tapScreenGameTaps += 1;
-    this.scaleCircle();
-    this.forceUpdate();
-  };
-
-  onPressArrow = () => {
-    if (this.state.chaseArrowGameMode) {
-      this.chaseArrowGameTaps += 1;
-      this.scaleCircle();
-      this.forceUpdate();
-    }
   };
 
   onCloseGameDialog = () => {
@@ -799,11 +653,8 @@ class Home extends React.Component {
     this.setState({ showGameUnlockedModal: false, showGameResultModal: false });
   };
 
-  /**
-   * handler for hide modal with game
-   */
-  hideBoostChallengeModal = async () => {
-    await this.setState({ showGameUnlockedModal: false, showGameResultModal: false });
+  hideBoostChallengeModal = () => {
+    this.setState({ showGameUnlockedModal: false, showGameResultModal: false });
   };
 
   getGameDetailsBody(body) {
@@ -823,43 +674,32 @@ class Home extends React.Component {
     this.props.navigation.navigate('Boosts');
   };
 
-  renderTapCounter() {
-    let taps = 0;
-    let timer = 0;
-    if (this.state.tapScreenGameMode) {
-      taps = this.tapScreenGameTaps ? this.tapScreenGameTaps : 0;
-      timer = this.state.tapScreenGameTimer ? this.state.tapScreenGameTimer : 0;
-    } else if (this.state.chaseArrowGameMode) {
-      taps = this.chaseArrowGameTaps ? this.chaseArrowGameTaps : 0;
-      timer = this.state.chaseArrowGameTimer ? this.state.chaseArrowGameTimer : 0;
-    }
-    return (
-      <View style={styles.tapCounterWrapper}>
-        <Text style={styles.balance}>{taps}</Text>
-        <Text style={styles.timerStyle}>
-          {timer} {timer === 1 ? ' second' : ' seconds'} left
-        </Text>
-      </View>
-    );
-  }
-
-  render() {
+  renderRotatingArrow() {
     const circleRotation = this.state.rotation.interpolate({
       inputRange: [0, 1],
       outputRange: ['0deg', '360deg'],
     });
-    const gameCircleRotation = this.state.gameRotation.interpolate({
-      inputRange: [0, 1],
-      outputRange: ['0deg', '360deg'],
-    });
 
-    let circleScale = 1;
-    if (this.state.tapScreenGameMode || this.state.chaseArrowGameMode) {
-      circleScale = this.state.circleScale.interpolate({
-        inputRange: [0, 1],
-        outputRange: [1, 1.04],
-      });
-    }
+    return (
+      <>
+        <Image style={styles.coloredCircle} source={require('../../assets/oval.png')} />
+        <Animated.View
+          style={[styles.whiteCircle, { transform: [{ rotate: circleRotation }] }]}
+        >
+          <Image
+            source={require('../../assets/circle.png')}
+            style={styles.animatedViewCircle}
+            resizeMode="cover"
+          />
+          <View style={styles.animatedViewArrow}>
+            <Image source={require('../../assets/arrow.png')} />
+          </View>
+        </Animated.View>
+      </>
+    )
+  }
+
+  render() {
 
     const showMessage = !(
       this.state.showGameUnlockedModal || 
@@ -884,105 +724,36 @@ class Home extends React.Component {
                 resizeMode="contain"
               />
             </View>
-            <View
-              style={
-                this.state.hasMessage ? styles.headerWithMessage : styles.header
-              }
-            >
+
+            <View style={this.state.hasMessage ? styles.headerWithMessage : styles.header}>
               {this.state.firstName && this.state.firstName.length > 0 ? (
-                <Text
-                  style={
-                    this.state.hasMessage
-                      ? styles.helloTextWithMessage
-                      : styles.helloText
-                  }
-                >
+                <Text style={this.state.hasMessage ? styles.helloTextWithMessage : styles.helloText}>
                   Hello,{' '}
                   <Text style={styles.firstName}>{this.state.firstName}</Text>
                 </Text>
               ) : null}
             </View>
+
+
             <View style={styles.mainContent}>
               <View style={styles.circlesWrapper}>
-                <Image
-                  style={styles.coloredCircle}
-                  source={require('../../assets/oval.png')}
-                />
-                {/*
-                  <Animated.Image style={[styles.coloredCircle, {transform: [{rotate: circleRotation}]}]} source={require('../../assets/oval.png')}/>
-
-                */}
-                {this.state.chaseArrowGameMode ? (
-                  <Animated.View
-                    style={[
-                      styles.whiteCircle,
-                      {
-                        transform: [
-                          { rotate: gameCircleRotation },
-                          { scale: circleScale },
-                        ],
-                      },
-                    ]}
-                  >
-                    <Image
-                      source={require('../../assets/circle.png')}
-                      style={styles.animatedViewCircle}
-                      resizeMode="cover"
-                    />
-                    <TouchableOpacity
-                      activeOpacity={1}
-                      style={styles.animatedViewArrow}
-                      onPress={this.onPressArrow}
-                    >
-                      <Image source={require('../../assets/arrow.png')} />
-                    </TouchableOpacity>
-                  </Animated.View>
-                ) : (
-                  <Animated.View
-                    style={[
-                      styles.whiteCircle,
-                      {
-                        transform: [
-                          { rotate: circleRotation },
-                          { scale: circleScale },
-                        ],
-                      },
-                    ]}
-                  >
-                    <Image
-                      source={require('../../assets/circle.png')}
-                      style={styles.animatedViewCircle}
-                      resizeMode="cover"
-                    />
-                    <View style={styles.animatedViewArrow}>
-                      <Image source={require('../../assets/arrow.png')} />
-                    </View>
-                  </Animated.View>
-                )}
+                {this.renderRotatingArrow()}
               </View>
 
-              {this.state.tapScreenGameMode || this.state.chaseArrowGameMode ? (
-                this.renderTapCounter()
-              ) : (
-                <BalanceNumber
-                  balanceStyle={styles.balance}
-                  currencyStyle={styles.currency}
-                  onSlowAnimationStarted={() => this.fetchMessagesIfNeeded()}
-                />
-              )}
-
-              {!this.state.gameInProgress && this.state.hasPendingTransactions ? this.renderPendingBalance() : null}
-
-              {/* {<View style={styles.endOfMonthBalanceWrapper}>
-                <Text style={styles.endOfMonthBalance}>+R{this.state.expectedToAdd}</Text>
-                  <Icon
-                    name='chevron-right'
-                    type='evilicon'
-                    size={30}
-                    color={Colors.GRAY}
+              <TouchableWithoutFeedback onPress={this.showSnippet} disabled={this.state.showSnippet}>
+                <View style={this.state.hasPendingTransactions ? styles.balanceWrapper : [styles.balanceWrapper, styles.tapPadding]}>
+                  <BalanceNumber
+                    balanceStyle={styles.balance}
+                    currencyStyle={styles.currency}
+                    onSlowAnimationStarted={() => this.fetchMessagesIfNeeded()}
+                    onPressWrapper={this.showSnippet}
                   />
-              </View>
-              <Text style={styles.endOfMonthDesc}>Due end of month</Text>} */}
+                </View>
+              </TouchableWithoutFeedback>
+
+              {this.state.hasPendingTransactions ? this.renderPendingBalance() : null}
+              {this.state.showSnippet && <SnippetOverlay isVisible={this.state.showSnippet} onCloseSnippet={this.hideSnippet} />}
+            
             </View>
 
             {this.state.hasMessage && showMessage && (
@@ -1039,9 +810,6 @@ class Home extends React.Component {
           </Modal>
         )}
 
-        {this.state.tapScreenGameMode && (
-          <TouchableOpacity style={styles.tapScreenGameWrapper} onPress={this.onPressTapScreenGame} />
-        )}
       </View>
     );
   }
@@ -1050,13 +818,6 @@ class Home extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  tapScreenGameWrapper: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
   },
   gradientWrapper: {
     flex: 1,
@@ -1110,6 +871,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingTop: 20,
+    width: '100%',
   },
   circlesWrapper: {
     position: 'absolute',
@@ -1139,20 +901,20 @@ const styles = StyleSheet.create({
     width: width * 0.895,
     height: width * 0.895,
   },
-  tapCounterWrapper: {
-    alignItems: 'center',
+  balanceWrapper: {
+    width: '100%', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    height: 'auto', 
+  },
+  tapPadding: {
+    paddingVertical: 50,
   },
   balance: {
     color: COLOR_WHITE,
     fontSize: 13 * FONT_UNIT,
     fontFamily: 'poppins-semibold',
     lineHeight: 70,
-  },
-  timerStyle: {
-    color: COLOR_WHITE,
-    fontSize: 5 * FONT_UNIT,
-    fontFamily: 'poppins-semibold',
-    lineHeight: 50,
   },
   currency: {
     color: COLOR_WHITE,

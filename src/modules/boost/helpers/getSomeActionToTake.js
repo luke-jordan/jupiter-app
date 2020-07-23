@@ -11,6 +11,10 @@ const getSomeActionToTake = (action) => {
       buttonLabel: buttonLabel.ADD_CASH,
     };
   }
+
+  if (action === actionType.CANCEL_WITHDRAWAL) {
+    return { onPressHandler: viewHistoryHandler, buttonLabel: buttonLabel.CANCEL_WITHDRAWAL }
+  }
 };
 
 /**
@@ -27,5 +31,13 @@ const addCashHandler = (navigation, hideModal, preFilledAmount, boostId) => {
   navigation.navigate('AddCash', cashParams);
   hideModal();
 };
+
+/**
+ * This React pattern of like 50 files with 10 lines each is seriously misguided, but anyway
+ */
+const viewHistoryHandler = (navigation, hideModal) => {
+  navigation.navigate('History'); // because the transaction will appear there
+  hideModal();
+}
 
 export default getSomeActionToTake;

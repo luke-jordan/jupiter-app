@@ -432,16 +432,16 @@ export const friendService = {
     try {
       const url = `${Endpoints.CORE}boost/detail`;
       const params = { boostId };
-      console.log('Submitting request');
+      // console.log('Submitting request');
       const result = await getRequest({ token, url, params });
-      console.log('Result raw: ', JSON.stringify(result));
+      // console.log('Result raw: ', JSON.stringify(result));
       if (!result.ok) {
         // this one should not give any 400/404s etc., so would be a true error
         LoggingUtil.logApiError(url, result);
         throw result;
       }
       const boostDetails = await result.json();
-      console.log('Received from backend: ', boostDetails);
+      // console.log('Received from backend: ', boostDetails);
       return boostDetails;  
     } catch (err) {
       console.log('Error getting tournament: ', JSON.stringify(err));

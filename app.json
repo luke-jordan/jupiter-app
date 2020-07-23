@@ -8,7 +8,7 @@
       "ios",
       "android"
     ],
-    "version": "0.0.38",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "jupiter",
@@ -32,7 +32,7 @@
     },
     "android": {
       "package": "com.jupitersave.app",
-      "versionCode": 38,
+      "versionCode": 39,
       "permissions": [],
       "googleServicesFile": "./google-services.json",
       "intentFilters": [

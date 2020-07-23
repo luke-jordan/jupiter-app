@@ -1,11 +1,11 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
-import { StyleSheet, View, Text, Dimensions } from 'react-native';
+import { StyleSheet, View, Text, Dimensions, Linking } from 'react-native';
 import { Button } from 'react-native-elements';
 
 import { LoggingUtil } from '../util/LoggingUtil';
 import { LogoutUtil } from '../util/LogoutUtil';
-import { Colors } from '../util/Values';
+import { Colors, FallbackSupportNumber } from '../util/Values';
 
 const { width } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
@@ -32,6 +32,15 @@ export default class FailedVerification extends React.Component {
     this.props.navigation.navigate('Profile', { failedVerification: true });
   };
 
+  onPressMinorSupport = () => {
+    const defaultText = 'Hi! I had a problem on the app with my ID details, I am under 18 and I would like to join Jupiter';
+    const whatsAppLink = `https://wa.me/${FallbackSupportNumber.link}?text=${encodeURIComponent(defaultText)}`;
+    Linking.openURL(whatsAppLink).catch((err) => {
+      LoggingUtil.logError(err);
+      this.onPressContactUs();
+    });
+  };
+
   render() {
     return (
       <View style={styles.container}>
@@ -52,6 +61,9 @@ export default class FailedVerification extends React.Component {
             <Text style={styles.descriptionBold}>
               Please double check both the ID number and spelling of your name
               and retry.
+            </Text>
+            <Text style={styles.description}>
+              Note: If you are under 18, <Text style={styles.descriptionLink} onPress={this.onPressMinorSupport}>contact Jupiter Support</Text> to find out how you can join us
             </Text>
           </View>
           <Button
@@ -120,6 +132,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: Colors.MEDIUM_GRAY,
     marginHorizontal: 25,
+  },
+  descriptionLink: {
+    color: Colors.PURPLE,
   },
   gradientStyle: {
     width: 13 * FONT_UNIT,

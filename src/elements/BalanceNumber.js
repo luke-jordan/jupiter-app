@@ -3,7 +3,7 @@ import { connect } from 'react-redux';
 
 import moment from 'moment';
 
-import { Text, View, StyleSheet, YellowBox } from 'react-native';
+import { Text, TouchableOpacity, StyleSheet, YellowBox } from 'react-native';
 import { getFormattedValue } from '../util/AmountUtil';
 
 import AnimatedNumber from './AnimatedNumber';
@@ -151,6 +151,11 @@ class BalanceNumber extends React.Component {
 
     // console.log(`Last animation target: ${this.state.animationTargetNumber}, and currentBalance: ${this.props.currentReferenceBalance} and target: ${this.props.currentTargetBalance}`);
     const referenceAnchor = this.calculateTargetBalanceAtReferenceMillis(this.state.referenceMoment);
+    if (referenceAnchor === 0) {
+      // must be logging out, so don't do anything (animating to zero is ugly)
+      return;
+    }
+    
     const isAnimatingToRightAnchor = this.state.animationTargetNumber === referenceAnchor;
     // as below note, end of day target is *always* above current, so this will guard against accidental declines
     const isAnimatingToRightTarget = this.state.animationTargetNumber === Math.max(this.props.currentTargetBalance, referenceAnchor);
@@ -229,7 +234,11 @@ class BalanceNumber extends React.Component {
 
   render() {
     return (
-      <View style={styles.balanceWrapper}>
+      <TouchableOpacity 
+        style={styles.balanceWrapper}
+        disabled={!this.props.onPressWrapper}
+        onPress={this.props.onPressWrapper}
+      >
         <Text style={this.props.currencyStyle}>{this.state.currency}</Text>
         <AnimatedNumber
           style={this.props.balanceStyle}
@@ -245,7 +254,7 @@ class BalanceNumber extends React.Component {
             this.onFinishBalanceAnimation(true);
           }}
         />
-      </View>
+      </TouchableOpacity>
     );
   }
 }
