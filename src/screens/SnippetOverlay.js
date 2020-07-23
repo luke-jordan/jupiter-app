@@ -1,7 +1,7 @@
 import React from 'react';
 import { connect } from 'react-redux';
 
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, Animated, Easing } from 'react-native';
 
 import { getSortedSnippets, FALLBACK_SNIPPET_ID } from '../modules/snippet/snippet.reducer';
 import { incrementSnippetViewCount, updateAllSnippets, addSnippets } from '../modules/snippet/snippet.actions';
@@ -36,6 +36,8 @@ class SnippetOverlay extends React.Component {
       body: '',
 
       currentSnippet: {},
+
+      fadeEffect: new Animated.Value(0),
     }
   }
 
@@ -49,17 +51,23 @@ class SnippetOverlay extends React.Component {
       currentSnippet: nextSnippet,
       initiatedMillis: Date.now(),
     }, () => {
+      Animated.timing(this.state.fadeEffect, {
+        toValue: 1, duration: 200, easing: Easing.linear,
+      }).start();
       LoggingUtil.logEvent('USER_VIEWED_SNIPPET', { snippetId: nextSnippet.snippetId });
       this.tellBackendSnippetViewed();   
     });
   }
 
   onPressClose = () => {
+    Animated.timing(this.state.fadeEffect, {
+      toValue: 0, duration: 200, easing: Easing.linear,
+    }).start(() => this.props.onCloseSnippet());
+    
     if (this.state.initiatedMillis) {
       const timeViewed = (Date.now() - this.state.initiatedMillis) / 1000;
       LoggingUtil.logEvent('USER_CLOSED_SNIPPET', { snippetId: this.state.currentSnippet.snippetId, timeViewed });  
     }
-    this.props.onCloseSnippet();
   }
 
   async tellBackendSnippetViewed() {
@@ -112,7 +120,7 @@ class SnippetOverlay extends React.Component {
 
   render() {
     return (
-      <View style={styles.snippetContainer}>
+      <Animated.View style={{ ...styles.snippetContainer, opacity: this.state.fadeEffect }}>
         <View style={styles.snippetHolder}>
           <Text style={styles.snippetTitle}>{this.state.title}</Text>
           <Text style={styles.snippetBody}>
@@ -122,7 +130,7 @@ class SnippetOverlay extends React.Component {
             Close
           </Text>
         </View>
-      </View>
+      </Animated.View>
     )
   }
 
@@ -142,9 +150,9 @@ const styles = StyleSheet.create({
   },
   snippetHolder: {
     backgroundColor: Colors.BACKGROUND_GRAY,
-    height: width * 0.8,
-    width: width * 0.8,
-    borderRadius: (width * 0.8) / 2,
+    height: width * 0.77,
+    width: width * 0.77,
+    borderRadius: (width * 0.77) / 2,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',

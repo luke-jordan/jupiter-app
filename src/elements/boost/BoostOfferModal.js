@@ -13,11 +13,13 @@ const closeImage = require('../../../assets/close.png');
 const DEFAULT_TITLE = {
   'SIMPLE': 'Get rewarded for saving!',
   'GAME': 'Unlock a boost game!',
+  'WITHDRAWAL': 'Keep your savings growing!',
 }
 
 const DEFAULT_BODY = {
   'SIMPLE': 'Save {boostThresholdFormatted} before {boostExpiryFormatted} and you will be rewarded with {boostAmountFormatted}. Save now to get your reward!',
   'GAME': 'Save {boostThresholdFormatted} before {boostExpiryFormatted} and you can play a game that might win you {boostAmountFormatted}. Save now to play!',
+  'WITHDRAWAL': 'We\'ve received your request to withdraw your savings, but to help grow your saving habit, we\'ll top you up by {boostAmountFormatted} if you leave the savings in Jupiter',
 }
 
 const BoostOfferModal = ({
@@ -32,7 +34,8 @@ const BoostOfferModal = ({
   const title = (boostMessage && boostMessage.title) || DEFAULT_TITLE[boostDetails.boostType] || DEFAULT_TITLE.SIMPLE;
   const bodyTemplate = (boostMessage && boostMessage.body) || DEFAULT_BODY[boostDetails.boostType] || DEFAULT_BODY.SIMPLE;
 
-  const actionToTake = (boostMessage && boostMessage.actionToTake) || 'ADD_CASH';
+  const defaultAction = boostDetails.boostType === 'WITHDRAWAL' ? 'CANCEL_WITHDRAWAL' : 'ADD_CASH';
+  const actionToTake = (boostMessage && boostMessage.actionToTake) || defaultAction;
   
   const boostThresholdFormatted = boostDetails.boostThreshold 
     ? `${getCurrencySymbol(boostDetails.boostCurrency)}${boostDetails.boostThreshold.toFixed(0)}` : 'ERROR';

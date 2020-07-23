@@ -12,11 +12,13 @@ export const BoostStatus = {
 export const actionType = {
   ADD_CASH: 'ADD_CASH',
   PLAY_GAME: 'PLAY_GAME',
+  CANCEL_WITHDRAWAL: 'CANCEL_WITHDRAWAL',
   DONE: 'DONE',
 };
 
 export const buttonLabel = {
   ADD_CASH: 'SAVE NOW',
   PLAY_GAME: 'PLAY GAME',
+  CANCEL_WITHDRAWAL: 'CANCEL WITHDRAWAL',
   DONE: 'DONE',
 };

@@ -1,3 +1,4 @@
+/* eslint-disable jsx-a11y/accessible-emoji */
 import React from 'react';
 
 import { connect } from 'react-redux';
@@ -15,7 +16,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 
-import { Icon } from 'react-native-elements';
+import HeaderWithBack from '../elements/HeaderWithBack';
 
 import { LoggingUtil } from '../util/LoggingUtil';
 import { Endpoints, Colors } from '../util/Values';
@@ -90,7 +91,6 @@ class PastMessages extends React.Component {
   };
 
   onPressActionButton = (userMessage) => {
-    // console.log('PRESSED: ', actionToTake);
     handleMessageActionPress(userMessage, this.props.navigation, this.props.currentBalance);
   }
 
@@ -112,8 +112,6 @@ class PastMessages extends React.Component {
     const messageActionText = getMessageCardButtonText(messageAction);
     const messageBody = userMessage.displayedBody.replace(/\n\s*\n/g, '\n');
     const messageDate = moment(userMessage.startTime).format('DD MMM YYYY');
-
-    // console.log('Rendering: ', userMessage);
 
     return (
       <View style={styles.messageCard} key={userMessage.messageId}>
@@ -148,29 +146,32 @@ class PastMessages extends React.Component {
     );
   }
 
+  renderEmptyMessageCard() {
+    return (
+      <View style={styles.messageCard}>
+        <View style={styles.messageCardHeader}>
+          <Text style={styles.messageCardTitle}>This is your 📚 Messages Tab</Text>
+        </View>
+        <View style={{ maxWidth: '100%'}}>
+          <Text style={styles.messageCardText}>
+            In here, you’ll find all the news, information and Money-tips from Jupiter in this part of your App. Each morning, you’ll be able to read a 1-minute summary of money news in the popular Jupiter Roundup 🌍
+            {'\n\n'}
+            Keep checking your Message tab often for more news &amp; info!
+          </Text>
+        </View>
+      </View>
+    )
+  }
+
   renderMainContent() {
     return (
       <View style={styles.contentWrapper}>
-        {this.state.messages && this.state.messages.length > 0 ? (
-          <ScrollView
-            style={styles.scrollView}
-            contentContainerStyle={styles.mainContent}
-          >
-            {this.renderMessages()}
-          </ScrollView>
-        ) : (
-          <View style={styles.contentWrapper}>
-            <Image
-              style={styles.image}
-              source={require('../../assets/group_7.png')}
-              resizeMode="contain"
-            />
-            <Text style={styles.title}>Watch this space…</Text>
-            <Text style={styles.description}>
-              Once you have viewed a few messages they will appear here
-            </Text>
-          </View>
-        )}
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.mainContent}
+        >
+          {this.state.messages && this.state.messages.length > 0 ? this.renderMessages() : this.renderEmptyMessageCard()}
+        </ScrollView>
       </View>
     );
   }
@@ -178,21 +179,10 @@ class PastMessages extends React.Component {
   render() {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.headerButton}
-            onPress={() => this.props.navigation.goBack()}
-          >
-            <Icon
-              name="chevron-left"
-              type="evilicon"
-              size={45}
-              color={Colors.GRAY}
-            />
-          </TouchableOpacity>
-
-          <Text style={styles.headerTitle}>Messages</Text>
-        </View>
+        <HeaderWithBack
+          headerText="Messages"
+          onPressBack={() => this.props.navigation.goBack()}
+        />
         {this.state.loading ? (
           <View style={styles.contentWrapper}>
             <ActivityIndicator size="large" color={Colors.PURPLE} />
@@ -216,35 +206,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
-  },
-  image: {
-    marginBottom: 35,
-  },
-  title: {
-    fontFamily: 'poppins-regular',
-    fontSize: 6.4 * FONT_UNIT,
-    marginBottom: 5,
-    textAlign: 'center',
-  },
-  description: {
-    fontFamily: 'poppins-regular',
-    fontSize: 4.2 * FONT_UNIT,
-    marginBottom: 5,
-    textAlign: 'center',
-  },
-  header: {
-    flexDirection: 'row',
-    width: '100%',
-    marginVertical: 10,
-    backgroundColor: Colors.WHITE,
-    alignItems: 'center',
-    paddingHorizontal: 5,
-    height: 50,
-  },
-  headerTitle: {
-    fontFamily: 'poppins-semibold',
-    fontSize: 20,
-    marginLeft: -5,
   },
   scrollView: {
     backgroundColor: Colors.BACKGROUND_GRAY,

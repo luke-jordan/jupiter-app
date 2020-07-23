@@ -428,7 +428,7 @@ class Home extends React.Component {
         throw result;
       }
     } catch (error) {
-      console.log('Error fetching changed boost!', error.message);
+      console.log('Error fetching changed boost!', JSON.stringify(error));
     }
 
   }
@@ -742,7 +742,7 @@ class Home extends React.Component {
               </View>
 
               <TouchableWithoutFeedback onPress={this.showSnippet} disabled={this.state.showSnippet}>
-                <View style={styles.balanceWrapper}>
+                <View style={this.state.hasPendingTransactions ? styles.balanceWrapper : [styles.balanceWrapper, styles.tapPadding]}>
                   <BalanceNumber
                     balanceStyle={styles.balance}
                     currencyStyle={styles.currency}
@@ -907,6 +907,8 @@ const styles = StyleSheet.create({
     alignItems: 'center', 
     justifyContent: 'center', 
     height: 'auto', 
+  },
+  tapPadding: {
     paddingVertical: 50,
   },
   balance: {

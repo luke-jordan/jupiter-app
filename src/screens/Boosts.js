@@ -83,7 +83,10 @@ class Boosts extends React.Component {
 
     const isBoostPreAction = [BoostStatus.CREATED, BoostStatus.OFFERED].includes(boostStatus);
     if (isBoostPreAction) {
-      return statusConditionKeys.includes(BoostStatus.UNLOCKED) ? BoostStatus.UNLOCKED : BoostStatus.REDEEMED;
+      const hasUnlocked = statusConditionKeys.includes(BoostStatus.UNLOCKED);
+      const hasPending = statusConditionKeys.includes(BoostStatus.PENDING);
+      // eslint-disable-next-line no-nested-ternary
+      return hasUnlocked ? BoostStatus.UNLOCKED : (hasPending ? BoostStatus.PENDING : BoostStatus.REDEEMED);
     }
 
     if (boostStatus === BoostStatus.UNLOCKED) {
@@ -93,7 +96,7 @@ class Boosts extends React.Component {
 
   getNextStatusAndThresholdEvent(boostStatus, statusConditions) {
     const nextStatus = this.getNextStatus(boostStatus, Object.keys(statusConditions));
-    // console.log('BOOST NEXT STATUS: ', nextStatus);
+
     if (!nextStatus) {
       return { nextStatus: null };
     }
@@ -112,6 +115,7 @@ class Boosts extends React.Component {
       if (condition.includes('total_number_friends')) thresholdEventType = 'social_event';
       if (condition.includes('number_taps')) thresholdEventType = 'game_event';
       if (condition.includes('percent_destroyed')) thresholdEventType = 'game_event';
+      if (condition === 'event_occurs #{WITHDRAWAL_EVENT_CANCELLED}') thresholdEventType = 'cancel_withdrawal';
     }
     
     return { nextStatus, thresholdEventType };
@@ -124,7 +128,6 @@ class Boosts extends React.Component {
     }
 
     const { nextStatus, thresholdEventType } = this.getNextStatusAndThresholdEvent(boostDetails.boostStatus, boostDetails.statusConditions);
-    // console.log('Next status: ', nextStatus, 'threshold event: ', thresholdEventType);
     if (!nextStatus) {
       return null;
     }
@@ -147,6 +150,9 @@ class Boosts extends React.Component {
       } else if (thresholdEventType === 'game_event') {
         title = 'PLAY GAME';
         action = () => this.props.navigation.navigate('Home', { showGameUnlockedModal: true, boostDetails });
+      } else if (thresholdEventType === 'cancel_withdrawal') {
+        title = 'CANCEL WITHDRAWAL';
+        action = () => this.props.navigation.navigate('History');
       }
 
       return (
@@ -166,14 +172,50 @@ class Boosts extends React.Component {
     }
   }
 
+  getWithdrawalTimeLabel(updatedTime, redeemConditions) {
+    // lot of fragility in here, hence the try-catch, but a lot of params have to be sent around (complex boost, by necessity)
+    const backupString = `Don't withdraw for a while longer to claim the boost`;
+    const sequenceCondition = redeemConditions[0];
+
+    if (typeof sequenceCondition !== 'string') {
+      return backupString;
+    }
+
+    const parameterMatch = sequenceCondition.match(/#{(.*)}/);
+    if (!parameterMatch) {
+      return backupString;
+    }
+
+    const sequenceValue = parameterMatch[1];
+    const flippedMoment = moment(updatedTime);
+    
+    const withdrawConditionParams = sequenceValue.split('::');
+    if (!withdrawConditionParams || withdrawConditionParams.length < 4) {
+      return backupString;
+    }
+
+    const endMoment = flippedMoment.add(withdrawConditionParams[2], withdrawConditionParams[3]);
+    return `Don't withdraw for ${endMoment.fromNow(true)} from now to claim the boost`;
+  }
+
+  getPendingLabel({ boostType, endTime, updatedTime, statusConditions }) {
+    if (boostType === 'WITHDRAWAL') {
+      return this.getWithdrawalTimeLabel(updatedTime, statusConditions.REDEEMED); 
+    }
+
+    const endMoment = moment(endTime);
+    return `Waiting for results (check back in ${endMoment.fromNow(true)})`;
+  }
+
   getAdditionalLabelRow(boostDetails) {
     if (boostDetails.boostStatus === 'REDEEMED') {
       return <Text style={styles.boostClaimed}>Boost Claimed: </Text>;
     }
+
     if (boostDetails.boostStatus === 'PENDING') {
-      const endTime = moment(boostDetails.endTime);
-      return <Text style={styles.boostExpiring}>Waiting for results (check back in {endTime.fromNow(true)})</Text>;
+      return <Text style={styles.boostExpiring}>{this.getPendingLabel(boostDetails)}</Text>;
     }
+    
     if (
       this.isBoostExpired({
         boostStatus: boostDetails.boostStatus,
@@ -266,6 +308,7 @@ class Boosts extends React.Component {
 
   handleTappedBoost = (boostDetails) => {
     const { nextStatus, thresholdEventType } = this.getNextStatusAndThresholdEvent(boostDetails.boostStatus, boostDetails.statusConditions);
+    
     if (thresholdEventType === 'save_event') {
       const boostThreshold = this.extractStatusThreshold(boostDetails.statusConditions, nextStatus);
       const boostModalParams = { ...boostDetails, boostThreshold };
@@ -275,6 +318,12 @@ class Boosts extends React.Component {
 
     if (thresholdEventType === 'game_event') {
       this.props.navigation.navigate('Home', { showGameUnlockedModal: true, boostDetails });
+      return;
+    }
+
+    if (thresholdEventType === 'cancel_withdrawal') {
+      this.showModalHandler(boostDetails);
+      return;
     }
 
     return false;
@@ -341,22 +390,6 @@ class Boosts extends React.Component {
 
   renderBoostCard(boostDetails) {
     
-    // will come back to this, for now is causing nasty bugs
-    // const permittedTypesOfBoost = getPermittedTypesOfBoost(boostDetails);
-    // if (permittedTypesOfBoost && boostDetails.messageInstructionIds && boostDetails.messageInstructionIds.instructions) {
-    //   const offeredInstructionStatus = boostDetails.messageInstructionIds.instructions.find(
-    //     item => item.status === BoostStatus.OFFERED
-    //   );
-    //   const { msgInstructionId } = offeredInstructionStatus;
-
-    //   if (msgInstructionId) {
-    //     MessagingUtil.fetchInstructionsMessage(
-    //       this.props.authToken,
-    //       msgInstructionId
-    //     );
-    //   }
-    // }
-
     return (
       <TouchableOpacity
         disabled={boostDetails.boostStatus !== BoostStatus.OFFERED && boostDetails.boostStatus !== BoostStatus.UNLOCKED}
