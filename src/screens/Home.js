@@ -86,7 +86,6 @@ const FONT_UNIT = 0.01 * width;
 const TIME_BETWEEN_FETCH = 10 * 1000; // don't fetch if time is between this (i.e., less than a minute)
 
 const CIRCLE_ROTATION_DURATION = 6000;
-// const CIRCLE_SCALE_DURATION = 200;
 
 const COLOR_WHITE = '#fff';
 
