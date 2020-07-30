@@ -14,6 +14,7 @@ const FALLBACK_SNIPPET = {
 
 const initialState = {
   snippets: [FALLBACK_SNIPPET],
+  snippetViewedTimes: {},
 };
 
 const snippetReducer = (state = initialState, action) => {
@@ -46,7 +47,11 @@ const snippetReducer = (state = initialState, action) => {
       const updatedSnippet = { ...snippetToUpdate, viewCount: snippetToUpdate.viewCount + 1 };
       const otherSnippets = state.snippets ? state.snippets.filter((snippet) => snippet.snippetId !== snippetToUpdateId) : [];
       const updatedSnippets = [...otherSnippets, updatedSnippet];
-      return { ...state, snippets: updatedSnippets };
+      
+      const snippetViewedTimes = { ...state.snippetViewedTimes };
+      snippetViewedTimes[snippetToUpdateId] = Date.now();
+
+      return { ...state, snippets: updatedSnippets, snippetViewedTimes };
     }
 
     default: {
@@ -57,8 +62,9 @@ const snippetReducer = (state = initialState, action) => {
 
 export const getSnippets = state => state[STATE_KEY].snippets;
 
-// view count dominates (ascending - lowest view count first), then priority (descending - highest priority first) 
-const snippetSorter = (snippetA, snippetB) => {
+// if one snippet has never been viewed, show it; if both viewed; show the one that was viewed last (i.e., sort ascending)
+// view count dominates (earliest first), then (ascending - lowest view count first), then priority (descending - highest priority first) 
+const snippetOnlySort = (snippetA, snippetB) => {
   if (snippetA.viewCount !== snippetB.viewCount) {
     return snippetA.viewCount - snippetB.viewCount;
   }
@@ -66,9 +72,36 @@ const snippetSorter = (snippetA, snippetB) => {
   return snippetB.snippetPriority - snippetA.snippetPriority;
 }
 
+const snippetSorter = (snippetA, snippetB, snippetViewedTimes) => {
+  if (!snippetViewedTimes) {
+    // console.log('NO SNIPPET VIEWED TIMES');
+    return snippetOnlySort(snippetA, snippetB);
+  }
+  const lastViewTimeA = snippetViewedTimes[snippetA.snippetId];
+  const lastViewTimeB = snippetViewedTimes[snippetB.snippetId];
+
+  const hasAbeenViewed = typeof lastViewTimeA === 'number' && lastViewTimeA > 0;
+  const hasBbeenViewed = typeof lastViewTimeB === 'number' && lastViewTimeB > 0
+  
+  // console.log(`A::${snippetA.snippetId} viewed: ${hasAbeenViewed}, B::${snippetB.snippetId} viewed: ${hasBbeenViewed}`);
+
+  if (hasAbeenViewed && hasBbeenViewed) {
+    return lastViewTimeA - lastViewTimeB;
+  }
+
+  // at least one has not been viewed
+  if (!hasAbeenViewed || !hasBbeenViewed) {
+    return hasAbeenViewed ? 1 : -1; // i.e., put A first if it has not been viewed
+  }
+
+  // neither viewed in current state, go by server view count or priority
+  return snippetOnlySort(snippetA, snippetB);
+}
+
 export const getSortedSnippets = state => {
-  const { snippets } = state[STATE_KEY];
-  // console.log('Getting sorted snippets: ', snippets);
+  const { snippets, snippetViewedTimes } = state[STATE_KEY];
+  // console.log('Getting sorted snippet viewed times: ', snippetViewedTimes);
+  // console.log('View counts: ', snippets.map(({ snippetId, viewCount }) => `${snippetId}::${viewCount}`));
   if (!snippets) {
     return [FALLBACK_SNIPPET];
   }
@@ -80,7 +113,7 @@ export const getSortedSnippets = state => {
     return [FALLBACK_SNIPPET];
   }
 
-  return activeSnippets.sort(snippetSorter);
+  return activeSnippets.sort((snippetA, snippetB) => snippetSorter(snippetA, snippetB, snippetViewedTimes));
 };
 
 export default snippetReducer;

@@ -242,7 +242,11 @@ class Boosts extends React.Component {
   }
 
   sortBoosts = boosts => {
-    const sortByTime = (a, b) => moment(b.startTime).isAfter(moment(a.startTime)) && 1;
+    const sortByTime = (a, b) => {
+      if (this.isUnexpiredWithdrawal(a) && !this.isUnexpiredWithdrawal(b)) return -1;
+      if (this.isUnexpiredWithdrawal(b) && !this.isUnexpiredWithdrawal(a)) return 1;
+      return moment(b.startTime).isAfter(moment(a.startTime)) && 1;
+    };
 
     // there may be lots of these and we don't want to show them here for the moment (as get in the way of other boosts)
     const isExpiredFriendTournament = (boost) => this.isBoostExpired(boost) && Array.isArray(boost.flags) && boost.flags.includes('FRIEND_TOURNAMENT');
@@ -376,6 +380,10 @@ class Boosts extends React.Component {
     }
 
     return moment(endTime).isBefore(moment());
+  }
+
+  isUnexpiredWithdrawal({ boostType, boostStatus, endTime }) {
+    return boostType === 'WITHDRAWAL' && !this.isBoostExpired({ boostStatus, endTime });
   }
 
   renderBoosts() {
