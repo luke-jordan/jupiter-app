@@ -39,6 +39,10 @@ export default class BoostGameModal extends React.PureComponent {
       if (gameDetails.gameType === 'DESTROY_IMAGE') {
         return `Break the image by tapping on the grid squares until they are gone - destroy at least ${gameDetails.winningThreshold}% in ${gameDetails.timeLimitSeconds} seconds`;
       }
+
+      if (gameDetails.gameType === 'MATCH_TILES') {
+        return `Flip tiles to see the pictures, and try to match at least ${gameDetails.winningThreshold} before the time is up!`
+      }
     };
 
     getTournamentStrap = (gameDetails) => {
@@ -54,6 +58,10 @@ export default class BoostGameModal extends React.PureComponent {
 
       if (gameDetails.gameType === 'DESTROY_IMAGE') {
         return `Tap the image grid to destroy as much of it as you can in ${gameDetails.timeLimitSeconds} seconds! The ${winnerPhrase} will win the boost`;
+      }
+
+      if (gameDetails.gameType === 'MATCH_TILES') {
+        return `Flip tiles to see the pictures and match as many as you can! The most matches will win the boost`;
       }
 
     };
