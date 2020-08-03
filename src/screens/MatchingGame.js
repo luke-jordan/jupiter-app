@@ -19,6 +19,8 @@ import { updateServerBalance } from '../modules/balance/balance.actions';
 import { Colors, Endpoints } from '../util/Values';
 import { getRequest } from '../modules/auth/auth.helper';
 
+const { width, height } = Dimensions.get('window');
+
 // feels like one more of these and we should create a holding component to reuse
 // but for the moment, they are simple enough, and repeating elements are just a few lines
 // and we'd have to pass some really complicated stuff in the parameters, so this is for now
@@ -35,13 +37,16 @@ const mapPropsToDispatch = {
 const GRID_WIDTH = 4;
 const GRID_HEIGHT = 5;
 
+const TILE_WIDTH = Math.floor((width * 0.85) / GRID_WIDTH);
+const TILE_HEIGHT = Math.floor((height * 0.55) / GRID_HEIGHT);
+
 const TILE_COLORS = [Colors.LIGHT_BLUE, Colors.GOLD, Colors.NOTIF_RED, Colors.PURPLE];
-const MAX_PER_COLOR = Math.ceil((GRID_WIDTH * GRID_HEIGHT) / TILE_COLORS);
+const MAX_PER_COLOR = Math.ceil((GRID_WIDTH * GRID_HEIGHT) / TILE_COLORS.length);
 
 const ICON_NAMES = ['rocket', 'watch', 'cup', 'bell', 'umbrella', 'piggy', 'music', 'smiley', 'heart', 'cash'];
-const MAX_PER_ICON = Math.ceil((GRID_WIDTH * GRID_HEIGHT) / ICON_NAMES);
+const MAX_PER_ICON = Math.ceil((GRID_WIDTH * GRID_HEIGHT) / ICON_NAMES.length);
 
-const backgroundImage = require('../../assets/logo.png');
+const backgroundImage = require('../../assets/logo_tile.png');
 
 const selectArrayRandom = (list) => list[Math.floor(Math.random() * list.length)];
 
@@ -56,7 +61,7 @@ class MatchingGame extends React.PureComponent {
       gameTimer: 5,
 
       // this guy is the heart of things, an array of array of icon types & background colors
-      tileGrid: [[]],
+      tileGrid: Array(GRID_HEIGHT).fill(Array(GRID_WIDTH).fill()),
 
       // then to record the user taps
       firstTapXY: [],
@@ -84,6 +89,7 @@ class MatchingGame extends React.PureComponent {
     });
 
     LoggingUtil.logEvent('USER_PLAYED_MATCH_GAME');
+    this.populateTiles();
     this.startGame();
   }
 
@@ -92,21 +98,23 @@ class MatchingGame extends React.PureComponent {
     
     let lastColor = null;
     const colorTracker = TILE_COLORS.reduce((obj, color) => ({ ...obj, [color]: 0 }), {});
+    console.log('Max per color: ', MAX_PER_COLOR, ' and color tracker: ', colorTracker);
 
     const iconTracker = ICON_NAMES.reduce((obj, icon) => ({ ...obj, [icon]: 0 }), {});
 
-    const tileGrid = Array(GRID_HEIGHT).fill(Array(GRID_WIDTH).fill());
+    const tileGrid = [];
     
     for (let row = 0; row < GRID_HEIGHT; row += 1) {
-      for (let column = 0; column < GRID_HEIGHT; column += 1) {
-        const tile = { revealed: false }; // since they all start flipped
+      const thisRow = [];
+      for (let column = 0; column < GRID_WIDTH; column += 1) {
+        const tile = { revealed: false, unrolledIndex: row * GRID_WIDTH + column }; // since they all start flipped
         
         // first, we select a color, that is different from the last color (using the intermediate step to guard against scope issues)
         const excludedColor = lastColor;
         const availableColors = TILE_COLORS.filter((color) => (color !== excludedColor && colorTracker[color] < MAX_PER_COLOR));
         const selectedColor = selectArrayRandom(availableColors);
 
-        tile.backgroundColor = selectArrayRandom;
+        tile.backgroundColor = selectedColor;
         colorTracker[selectedColor] += 1;
         lastColor = selectedColor;
 
@@ -117,8 +125,9 @@ class MatchingGame extends React.PureComponent {
         tile.iconName = selectedIcon;
         iconTracker[selectedIcon] += 1;
 
-        tileGrid[row][column] = tile;
+        thisRow.push(tile);
       }
+      tileGrid.push(thisRow);
     }
 
     this.setState({ tileGrid });
@@ -137,37 +146,42 @@ class MatchingGame extends React.PureComponent {
 
     this.setState({ matchInProgress: true }); // so user can't flip many at same time, setting up race
 
-    const { tileGrid } = this.state;
-    if (this.firstTapXY.length === 0) {
-      tileGrid[rowNumber][columnNumber].revealed = true;
-      this.setState({ firstTapXY: [rowNumber, columnNumber], tileGrid, matchInProgress: false });
+    const oldTileGrid = this.state.tileGrid;
+    if (this.state.firstTapXY.length === 0) {
+      const tile = oldTileGrid[rowNumber][columnNumber];
+      tile.revealed = true;
+      const newTileGrid = { ...oldTileGrid };
+      newTileGrid[rowNumber][columnNumber] = tile;
+      this.setState({ firstTapXY: [rowNumber, columnNumber], tileGrid: newTileGrid, matchInProgress: false });
       return;
     }
 
     const secondTap = [rowNumber, columnNumber];
-    tileGrid[rowNumber][columnNumber].revealed = true;
-    this.setState({ tileGrid, secondTapXY: secondTap }, this.checkForMatch);
+    oldTileGrid[rowNumber][columnNumber].revealed = true;
+    this.setState({ tileGrid: oldTileGrid, secondTapXY: secondTap }, this.checkForMatch);
   }
 
   checkForMatch = () => {
     const { tileGrid } = this.state;
     const firstTap = this.state.firstTapXY;
     const firstTile = tileGrid[firstTap[0]][firstTap[1]];
-    const firstIcon = firstTile.iconNames;
+    const firstIcon = firstTile.iconName;
 
     const secondTap = this.state.secondTapXY;
     const secondTile = tileGrid[secondTap[0]][secondTap[1]];
     const secondIcon = secondTile.iconName;
 
     if (firstIcon === secondIcon) {
-      this.setState({ matchCounter: this.state.matchCounter + 1, matchInProgress: false });
+      console.log('Matched!');
+      this.setState({ matchCounter: this.state.matchCounter + 1, firstTapXY: [], secondTapXY: [], matchInProgress: false });
       // do some congratulations and send interim result to server
     } else {
+      console.log('Not matched!');
       tileGrid[firstTap[0]][firstTap[1]].revealed = false;
       tileGrid[secondTap[0]][secondTap[1]].revealed = false;
       // we want to allow users to see the tiles, we flip back after 1 second
       const resetGrid = () => this.setState({ firstTapXY: [], secondTapXY: [], tileGrid, matchInProgress: false })
-      this.setTimeout(resetGrid, 1000);
+      setTimeout(resetGrid, 1000);
     }
   }
 
@@ -197,91 +211,26 @@ class MatchingGame extends React.PureComponent {
     this.props.navigation.navigate('Support');
   }
 
-  calculateOpacity = (rowNumber, columnNumber) => {
-    const numberTaps = this.state[rowNumber][columnNumber];
-    const proportionDestroyed = numberTaps / this.state.tapsPerSquare;
-    return 1 - proportionDestroyed;
-  }
-
-
-  // handleGameEnd() {
-  //   this.setState({ gameInProgress: false, showSubmittingModal: true }, () => {
-  //     this.submitGameResults();
-  //   });
-  // }
-
-  // async submitGameResults() {
-  //   const resultOptions = {
-  //     timeTaken: this.state.timeLimit,
-  //     boostId: this.state.boostId,
-  //     percentDestroyed: this.calculatePercentDestroyed(),
-  //     authenticationToken: this.props.token,
-  //   }
-
-  //   const resultOfSubmission = await boostService.sendTapGameResults(resultOptions);
-  //   // console.log('SUBMITTED : ', resultOfSubmission);
-  //   if (!resultOfSubmission) {
-  //     LoggingUtil.logError(Error('Result of game was null'));
-  //     this.showErrorDialog();
-  //   }
-
-  //   this.showGameResultDialog(resultOfSubmission);
-  // }
-
-  showErrorDialog() {
-    this.setState({ showSubmittingModal: false, showErrorDialog: true });
-  }
-
-  async showGameResultDialog(resultOfGame) {
-    const { amountWon, statusMet } = resultOfGame;
-    const percentDestroyed = this.calculatePercentDestroyed();
-    const gameResultParams = { ...resultOfGame, percentDestroyed, timeTaken: this.state.timeLimit };
-
-    if (amountWon) {
-      await this.updateBalance();
-    }
-
-    this.setState({
-      showSubmittingModal: false,
-      showGameResultDialog: true,
-      gameResultParams,
-    });
-
-    if (Array.isArray(statusMet) && statusMet.length > 0) {
-      statusMet.forEach((viewedStatus) => this.props.updateBoostViewed({ boostId: this.state.boostId, viewedStatus }));
-    }
-  }
-
-  async updateBalance() {
-    try {
-      const balanceResult = await getRequest({ token: this.props.token, url: `${Endpoints.CORE}balance` });
-      if (!balanceResult.ok) {
-        LoggingUtil.logApiError('balance', balanceResult);
-        throw balanceResult;
-      }
-      const serverBalance = await balanceResult.json();
-      this.props.updateServerBalance(serverBalance);
-    } catch (err) {
-      console.log('ERROR fetching new balance: ', JSON.stringify(err));
-    }
-  }
-
   renderGridElement(rowNumber, columnNumber) {
     const tile = this.state.tileGrid[rowNumber][columnNumber];
-    return (
+    return tile && (
       <TouchableOpacity
         key={`row-${rowNumber}-column-${columnNumber}`}
         onPress={() => this.onPressElement(rowNumber, columnNumber)}
         disabled={this.state.matchInProgress || tile.revealed}
-        style={{ backgroundColor: tile.revealed ? tile.backgroundColor : Colors.WHITE }}
+        style={[
+          styles.tileHolder, 
+          { backgroundColor: tile.revealed ? tile.backgroundColor : Colors.WHITE },
+        ]}
       >
         {tile.revealed ? (
-          <Icon 
-            name={tile.iconName}
-            type="jupiter"
-            size={35}
-            colors={Colors.WHITE}
-          />
+          // <Icon 
+          //   name={tile.iconName}
+          //   type="jupiter"
+          //   size={35}
+          //   colors={Colors.WHITE}
+          // />
+          <Text>{tile.iconName}</Text>
         ) : (
           <Image
             source={backgroundImage}
@@ -314,7 +263,7 @@ class MatchingGame extends React.PureComponent {
           <Text style={styles.gameHeader}>
             Uncover the matching tiles
           </Text>
-          <View style={styles.imageHolder}>
+          <View style={styles.gridHolder}>
             {this.renderGrid()}
           </View>
           <View style={styles.gameTimerHolder}>
@@ -364,6 +313,68 @@ class MatchingGame extends React.PureComponent {
       </View>
     );
   }
+
+    // handleGameEnd() {
+  //   this.setState({ gameInProgress: false, showSubmittingModal: true }, () => {
+  //     this.submitGameResults();
+  //   });
+  // }
+
+  // async submitGameResults() {
+  //   const resultOptions = {
+  //     timeTaken: this.state.timeLimit,
+  //     boostId: this.state.boostId,
+  //     percentDestroyed: this.calculatePercentDestroyed(),
+  //     authenticationToken: this.props.token,
+  //   }
+
+  //   const resultOfSubmission = await boostService.sendTapGameResults(resultOptions);
+  //   // console.log('SUBMITTED : ', resultOfSubmission);
+  //   if (!resultOfSubmission) {
+  //     LoggingUtil.logError(Error('Result of game was null'));
+  //     this.showErrorDialog();
+  //   }
+
+  //   this.showGameResultDialog(resultOfSubmission);
+  // }
+
+  // showErrorDialog() {
+  //   this.setState({ showSubmittingModal: false, showErrorDialog: true });
+  // }
+
+  // async showGameResultDialog(resultOfGame) {
+  //   const { amountWon, statusMet } = resultOfGame;
+  //   const percentDestroyed = this.calculatePercentDestroyed();
+  //   const gameResultParams = { ...resultOfGame, percentDestroyed, timeTaken: this.state.timeLimit };
+
+  //   if (amountWon) {
+  //     await this.updateBalance();
+  //   }
+
+  //   this.setState({
+  //     showSubmittingModal: false,
+  //     showGameResultDialog: true,
+  //     gameResultParams,
+  //   });
+
+  //   if (Array.isArray(statusMet) && statusMet.length > 0) {
+  //     statusMet.forEach((viewedStatus) => this.props.updateBoostViewed({ boostId: this.state.boostId, viewedStatus }));
+  //   }
+  // }
+
+  // async updateBalance() {
+  //   try {
+  //     const balanceResult = await getRequest({ token: this.props.token, url: `${Endpoints.CORE}balance` });
+  //     if (!balanceResult.ok) {
+  //       LoggingUtil.logApiError('balance', balanceResult);
+  //       throw balanceResult;
+  //     }
+  //     const serverBalance = await balanceResult.json();
+  //     this.props.updateServerBalance(serverBalance);
+  //   } catch (err) {
+  //     console.log('ERROR fetching new balance: ', JSON.stringify(err));
+  //   }
+  // }
 }
 
 const styles = StyleSheet.create({
@@ -381,7 +392,7 @@ const styles = StyleSheet.create({
     color: Colors.WHITE, 
     width: '100%',
     textAlign: 'center',
-    marginTop: topPadding,
+    marginTop: 10,
     marginBottom: 30,
   },
   gameTimerHolder: {
@@ -391,17 +402,29 @@ const styles = StyleSheet.create({
     fontFamily: 'poppins-regular',
     color: Colors.GOLD,
     fontSize: 45,
-    marginBottom: bottomPadding,
+    marginBottom: 10,
     width: '100%',
     textAlign: 'center',
   },
-  imageHolder: {
+  gridHolder: {
     flex: 1,
-    paddingHorizontal: SIDE_PADDING,
+    paddingHorizontal: 10,
+    minWidth: '100%',
+    justifyContent: 'space-between',
   },
   gridRow: {
     flexDirection: 'row',
+    minWidth: '100%',
+    justifyContent: 'space-between',
   },
+  tileHolder: {
+    minWidth: TILE_WIDTH,
+    minHeight: TILE_HEIGHT,
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
   modalContent: {
     marginTop: 'auto',
     marginHorizontal: 40,
