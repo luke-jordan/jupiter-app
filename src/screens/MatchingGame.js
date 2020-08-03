@@ -3,7 +3,7 @@ import { connect } from 'react-redux';
 
 import { StyleSheet, View, Text, TouchableOpacity, Image, Modal, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Icon } from 'react-native-elements';
+// import { Icon } from 'react-native-elements';
 
 import GameResultModal from '../elements/boost/GameResultModal';
 import NavigationBar from '../elements/NavigationBar';
@@ -43,10 +43,25 @@ const TILE_HEIGHT = Math.floor((height * 0.55) / GRID_HEIGHT);
 const TILE_COLORS = [Colors.LIGHT_BLUE, Colors.GOLD, Colors.NOTIF_RED, Colors.PURPLE];
 const MAX_PER_COLOR = Math.ceil((GRID_WIDTH * GRID_HEIGHT) / TILE_COLORS.length);
 
-const ICON_NAMES = ['rocket', 'watch', 'cup', 'bell', 'umbrella', 'piggy', 'music', 'smiley', 'heart', 'cash'];
-const MAX_PER_ICON = Math.ceil((GRID_WIDTH * GRID_HEIGHT) / ICON_NAMES.length);
-
 const backgroundImage = require('../../assets/logo_tile.png');
+
+// could do this with a font, but (1) custom font import for icons is painful (docs/debugging not clear), (2) a handful of pngs actually smaller
+const TILE_IMAGES = {
+  'bell': require('../../assets/tiles/bell.png'),
+  'coffee': require('../../assets/tiles/coffee.png'),
+  'heart': require('../../assets/tiles/heart.png'),
+  'money': require('../../assets/tiles/money.png'),
+  'music': require('../../assets/tiles/music.png'),
+  'piggy-bank': require('../../assets/tiles/piggy-bank.png'),
+  'smile': require('../../assets/tiles/smile.png'),
+  'umbrella': require('../../assets/tiles/umbrella.png'),
+  'wallet': require('../../assets/tiles/wallet.png'),
+  'watch': require('../../assets/tiles/watch.png'),
+};
+
+const ICON_NAMES = Object.keys(TILE_IMAGES);
+const MAX_PER_ICON = Math.ceil((GRID_WIDTH * GRID_HEIGHT) / ICON_NAMES.length);
+const MAX_MATCHES = GRID_HEIGHT * GRID_WIDTH / 2;
 
 const selectArrayRandom = (list) => list[Math.floor(Math.random() * list.length)];
 
@@ -91,14 +106,13 @@ class MatchingGame extends React.PureComponent {
     LoggingUtil.logEvent('USER_PLAYED_MATCH_GAME');
     this.populateTiles();
     this.startGame();
+
   }
 
   // eslint-disable-next-line react/sort-comp
   populateTiles() {
-    
     let lastColor = null;
     const colorTracker = TILE_COLORS.reduce((obj, color) => ({ ...obj, [color]: 0 }), {});
-    console.log('Max per color: ', MAX_PER_COLOR, ' and color tracker: ', colorTracker);
 
     const iconTracker = ICON_NAMES.reduce((obj, icon) => ({ ...obj, [icon]: 0 }), {});
 
@@ -135,8 +149,17 @@ class MatchingGame extends React.PureComponent {
 
   // eslint-disable-next-line react/sort-comp
   startGame() {
-    this.setState({ gameInProgress: true });
+    this.setState({ gameInProgress: true }, () => setTimeout(() => { this.decrementGameTimer(); }, 1000));
   }
+
+  decrementGameTimer = () => {
+    if (this.state.gameTimer > 0) {
+      setTimeout(() => { this.decrementGameTimer(); }, 1000);
+      this.setState({ gameTimer: this.state.gameTimer - 1 });
+    } else {
+      this.handleGameEnd();
+    }
+  };
 
   // we want to change the reference to force a rerender which adjusts the opacity, but only necessary for one of them
   onPressElement = (rowNumber, columnNumber) => {
@@ -172,44 +195,25 @@ class MatchingGame extends React.PureComponent {
     const secondIcon = secondTile.iconName;
 
     if (firstIcon === secondIcon) {
-      console.log('Matched!');
-      this.setState({ matchCounter: this.state.matchCounter + 1, firstTapXY: [], secondTapXY: [], matchInProgress: false });
-      // do some congratulations and send interim result to server
+      this.setState({ matchCounter: this.state.matchCounter + 1, firstTapXY: [], secondTapXY: [], matchInProgress: false }, 
+          () => this.onMatchMade());
     } else {
-      console.log('Not matched!');
       tileGrid[firstTap[0]][firstTap[1]].revealed = false;
       tileGrid[secondTap[0]][secondTap[1]].revealed = false;
       // we want to allow users to see the tiles, we flip back after 1 second
       const resetGrid = () => this.setState({ firstTapXY: [], secondTapXY: [], tileGrid, matchInProgress: false })
-      setTimeout(resetGrid, 1000);
+      setTimeout(resetGrid, 1500);
     }
   }
 
   onMatchMade = async () => {
-    this.setState({ matchCongratulations: true });
-    setTimeout(() => this.setState({ matchCongratulations: false }), 500);
-    await boostService.sendTapGameResults();
+    this.setState({ matchCongratulations: true }, () => {
+      setTimeout(() => this.setState({ matchCongratulations: false }), 1000);
+      if (this.state.matchCounter === MAX_MATCHES) {
+        this.populateTiles();
+      }
+    });
   };
-
-  onPressDone = () => {
-    this.setState({ showGameResultDialog: false, gameResult: null });
-    this.props.navigation.navigate('Home');
-  }
-
-  onPressBoosts = () => {
-    this.setState({ showGameResultDialog: false, gameResult: null });
-    this.props.navigation.navigate('Boosts');
-  }
-
-  onPressErrorGoHome = () => {
-    this.setState({ showErrorDialog: false });
-    this.props.navigation.navigate('Home');
-  }
-
-  onPressErrorSupport = () => {
-    this.setState({ showErrorDialog: false });
-    this.props.navigation.navigate('Support');
-  }
 
   renderGridElement(rowNumber, columnNumber) {
     const tile = this.state.tileGrid[rowNumber][columnNumber];
@@ -224,13 +228,12 @@ class MatchingGame extends React.PureComponent {
         ]}
       >
         {tile.revealed ? (
-          // <Icon 
-          //   name={tile.iconName}
-          //   type="jupiter"
-          //   size={35}
-          //   colors={Colors.WHITE}
-          // />
-          <Text>{tile.iconName}</Text>
+          <Image 
+            source={TILE_IMAGES[tile.iconName]}
+            size={35}
+            colors={Colors.WHITE}
+            resizeMode="contain"
+          />
         ) : (
           <Image
             source={backgroundImage}
@@ -260,19 +263,27 @@ class MatchingGame extends React.PureComponent {
           colors={[Colors.LIGHT_BLUE, Colors.PURPLE]}
           style={styles.gradientContainer}
         >
-          <Text style={styles.gameHeader}>
-            Uncover the matching tiles
-          </Text>
+          {this.state.matchCongratulations ? (
+            <Text style={[styles.gameHeader, { fontFamily: 'poppins-semibold' }]}>
+              Match found!
+            </Text>
+          ) :(
+            <Text style={styles.gameHeader}>
+              Uncover the matching tiles
+            </Text>
+          )}
           <View style={styles.gridHolder}>
             {this.renderGrid()}
           </View>
-          <View style={styles.gameTimerHolder}>
-            <Text style={styles.matchCounter}>
-              {this.state.matchCounter}
-            </Text>
-            <Text style={styles.gameTimer}>
-              {this.state.gameTimer}
-            </Text>
+          <View style={styles.footerWithCounters}>
+            <View style={styles.matchCounterHolder}>
+              <Text style={styles.matchTitle}>Your matches</Text>
+              <Text style={styles.matchCounter}>{this.state.matchCounter}</Text>
+            </View>
+            <View style={styles.gameTimerHolder}>
+              <Text style={styles.gameTimerTitle}>Time remaining</Text>
+              <Text style={styles.gameTimer}>{this.state.gameTimer}</Text>
+            </View>
           </View>
           <NavigationBar navigation={this.props.navigation} currentTab={0} disabled />
           
@@ -314,67 +325,85 @@ class MatchingGame extends React.PureComponent {
     );
   }
 
-    // handleGameEnd() {
-  //   this.setState({ gameInProgress: false, showSubmittingModal: true }, () => {
-  //     this.submitGameResults();
-  //   });
-  // }
+  handleGameEnd() {
+    this.setState({ gameInProgress: false, showSubmittingModal: true }, () => {
+      this.submitGameResults();
+    });
+  }
 
-  // async submitGameResults() {
-  //   const resultOptions = {
-  //     timeTaken: this.state.timeLimit,
-  //     boostId: this.state.boostId,
-  //     percentDestroyed: this.calculatePercentDestroyed(),
-  //     authenticationToken: this.props.token,
-  //   }
+  async submitGameResults() {
+    const resultOptions = {
+      timeTaken: this.state.timeLimit,
+      boostId: this.state.boostId,
+      numberTaps: this.state.matchCounter,
+      authenticationToken: this.props.token,
+    }
 
-  //   const resultOfSubmission = await boostService.sendTapGameResults(resultOptions);
-  //   // console.log('SUBMITTED : ', resultOfSubmission);
-  //   if (!resultOfSubmission) {
-  //     LoggingUtil.logError(Error('Result of game was null'));
-  //     this.showErrorDialog();
-  //   }
+    const resultOfSubmission = await boostService.sendTapGameResults(resultOptions);
+    if (!resultOfSubmission) {
+      LoggingUtil.logError(Error('Result of game was null'));
+      this.showErrorDialog();
+    }
 
-  //   this.showGameResultDialog(resultOfSubmission);
-  // }
+    this.showGameResultDialog(resultOfSubmission);
+  }
 
-  // showErrorDialog() {
-  //   this.setState({ showSubmittingModal: false, showErrorDialog: true });
-  // }
+  onPressDone = () => {
+    this.setState({ showGameResultDialog: false, gameResultParams: null });
+    this.props.navigation.navigate('Home');
+  }
 
-  // async showGameResultDialog(resultOfGame) {
-  //   const { amountWon, statusMet } = resultOfGame;
-  //   const percentDestroyed = this.calculatePercentDestroyed();
-  //   const gameResultParams = { ...resultOfGame, percentDestroyed, timeTaken: this.state.timeLimit };
+  onPressBoosts = () => {
+    this.setState({ showGameResultDialog: false, gameResultParams: null });
+    this.props.navigation.navigate('Boosts');
+  }
 
-  //   if (amountWon) {
-  //     await this.updateBalance();
-  //   }
+  onPressErrorGoHome = () => {
+    this.setState({ showErrorDialog: false });
+    this.props.navigation.navigate('Home');
+  }
 
-  //   this.setState({
-  //     showSubmittingModal: false,
-  //     showGameResultDialog: true,
-  //     gameResultParams,
-  //   });
+  onPressErrorSupport = () => {
+    this.setState({ showErrorDialog: false });
+    this.props.navigation.navigate('Support');
+  }
 
-  //   if (Array.isArray(statusMet) && statusMet.length > 0) {
-  //     statusMet.forEach((viewedStatus) => this.props.updateBoostViewed({ boostId: this.state.boostId, viewedStatus }));
-  //   }
-  // }
+  showErrorDialog() {
+    this.setState({ showSubmittingModal: false, showErrorDialog: true });
+  }
 
-  // async updateBalance() {
-  //   try {
-  //     const balanceResult = await getRequest({ token: this.props.token, url: `${Endpoints.CORE}balance` });
-  //     if (!balanceResult.ok) {
-  //       LoggingUtil.logApiError('balance', balanceResult);
-  //       throw balanceResult;
-  //     }
-  //     const serverBalance = await balanceResult.json();
-  //     this.props.updateServerBalance(serverBalance);
-  //   } catch (err) {
-  //     console.log('ERROR fetching new balance: ', JSON.stringify(err));
-  //   }
-  // }
+  async showGameResultDialog(resultOfGame) {
+    const { amountWon, statusMet } = resultOfGame;
+    const gameResultParams = { ...resultOfGame, numberOfMatches: this.state.matchCounter, timeTaken: this.state.timeLimit };
+
+    if (amountWon) {
+      await this.updateBalance();
+    }
+
+    this.setState({
+      showSubmittingModal: false,
+      showGameResultDialog: true,
+      gameResultParams,
+    });
+
+    if (Array.isArray(statusMet) && statusMet.length > 0) {
+      statusMet.forEach((viewedStatus) => this.props.updateBoostViewed({ boostId: this.state.boostId, viewedStatus }));
+    }
+  }
+
+  async updateBalance() {
+    try {
+      const balanceResult = await getRequest({ token: this.props.token, url: `${Endpoints.CORE}balance` });
+      if (!balanceResult.ok) {
+        LoggingUtil.logApiError('balance', balanceResult);
+        throw balanceResult;
+      }
+      const serverBalance = await balanceResult.json();
+      this.props.updateServerBalance(serverBalance);
+    } catch (err) {
+      console.log('ERROR fetching new balance: ', JSON.stringify(err));
+    }
+  }
 }
 
 const styles = StyleSheet.create({
@@ -388,23 +417,54 @@ const styles = StyleSheet.create({
   },
   gameHeader: {
     fontFamily: 'poppins-regular',
-    fontSize: 24,
+    fontSize: height > 640 ? 24 : 20,
+    lineHeight: 30,
     color: Colors.WHITE, 
     width: '100%',
     textAlign: 'center',
-    marginTop: 10,
-    marginBottom: 30,
+    marginTop: height > 640 ? 30 : 15,
+    marginBottom: height > 640 ? 10 : 5,
+  },
+  footerWithCounters: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    marginTop: height > 640 ? 15: 5,
+    paddingHorizontal: 15,
+    marginBottom: height > 640 ? 15 : 0,
+  },
+  matchCounterHolder: {
+    alignItems: 'flex-start',
+  },
+  matchTitle: {
+    textTransform: 'uppercase',
+    fontFamily: 'poppins-semibold',
+    fontSize: 13,
+    color: Colors.WHITE,
+  },
+  matchCounter: {
+    fontFamily: 'poppins-regular',
+    color: Colors.GOLD,
+    fontSize: 30,
+    width: '100%',
+    textAlign: 'left',
   },
   gameTimerHolder: {
     justifyContent: 'flex-end',
   },
+  gameTimerTitle: {
+    textTransform: 'uppercase',
+    fontFamily: 'poppins-semibold',
+    fontSize: 13,
+    color: Colors.WHITE,
+  },
   gameTimer: {
     fontFamily: 'poppins-regular',
     color: Colors.GOLD,
-    fontSize: 45,
-    marginBottom: 10,
+    fontSize: 30,
     width: '100%',
-    textAlign: 'center',
+    textAlign: 'right',
   },
   gridHolder: {
     flex: 1,
@@ -424,7 +484,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-
   modalContent: {
     marginTop: 'auto',
     marginHorizontal: 40,

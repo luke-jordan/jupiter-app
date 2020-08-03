@@ -10,6 +10,13 @@ import { standardFormatAmountDict, formatPercent, standardFormatAmount } from '.
 
 export default class GameResultModal extends React.PureComponent {
 
+  getResultClause = (gameDetails) => {
+    if (gameDetails.numberOfTaps) return `tapped ${gameDetails.numberOfTaps} times`;
+    if (gameDetails.percentDestroyed) return `broke ${formatPercent(gameDetails.percentDestroyed)} of the credit card`;
+    if (gameDetails.numberOfMatches) return `made ${gameDetails.numberOfMatches} matches`;
+    return 'finished the game'
+  }
+
   renderImmediateResponse (gameDetails) {
 
     let resultIcon; let resultHeader; let resultBody = '';
@@ -31,8 +38,7 @@ export default class GameResultModal extends React.PureComponent {
         resultHeader = gameDetails.customTitle || 'Nice Work!';
         const resultClause = endTime ? `, in about ${moment(endTime).fromNow(true)}` : '';
         
-        const tappedOrPercentClause = gameDetails.numberOfTaps 
-          ? `tapped ${gameDetails.numberOfTaps} times` : `broke ${formatPercent(gameDetails.percentDestroyed)} of the credit card`;
+        const tappedOrPercentClause = this.getResultClause(gameDetails);
         
         resultBody = `You ${tappedOrPercentClause} in ${gameDetails.timeTaken} seconds!\n` +
           `Winners of the challenge will be notified when time is up${resultClause}. Good luck!`;

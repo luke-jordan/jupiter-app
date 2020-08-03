@@ -90,10 +90,6 @@ class BreakingGame extends React.PureComponent {
   // eslint-disable-next-line react/sort-comp
   startGame() {
     this.setState({ gameInProgress: true },  () => {
-      // set up so at end of game we are complete
-      // setTimeout(() => { this.handleGameEnd(); }, this.state.timeLimit * 1000);
-      
-      // initiate countdown for user
       setTimeout(() => { this.decrementGameTimer(); }, 1000);
     });
   }
