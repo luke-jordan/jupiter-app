@@ -3,7 +3,6 @@ import { connect } from 'react-redux';
 
 import { StyleSheet, View, Text, TouchableOpacity, Image, Modal, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-// import { Icon } from 'react-native-elements';
 
 import GameResultModal from '../elements/boost/GameResultModal';
 import NavigationBar from '../elements/NavigationBar';
@@ -41,7 +40,7 @@ const TILE_WIDTH = Math.floor((width * 0.85) / GRID_WIDTH);
 const TILE_HEIGHT = Math.floor((height * 0.55) / GRID_HEIGHT);
 
 const TILE_COLORS = [Colors.LIGHT_BLUE, Colors.GOLD, Colors.NOTIF_RED, Colors.PURPLE];
-const MAX_PER_COLOR = Math.ceil((GRID_WIDTH * GRID_HEIGHT) / TILE_COLORS.length);
+const MAX_PER_COLOR = Math.ceil((GRID_WIDTH * GRID_HEIGHT) / (TILE_COLORS.length * 2)); // the extra 2 is because colours double 
 
 const backgroundImage = require('../../assets/logo_tile.png');
 
@@ -109,12 +108,14 @@ class MatchingGame extends React.PureComponent {
 
   }
 
+  // if an icon is second in its pair, then we use the same color that it used
   // eslint-disable-next-line react/sort-comp
   populateTiles() {
     let lastColor = null;
-    const colorTracker = TILE_COLORS.reduce((obj, color) => ({ ...obj, [color]: 0 }), {});
-
-    const iconTracker = ICON_NAMES.reduce((obj, icon) => ({ ...obj, [icon]: 0 }), {});
+    
+    const colorCounter = TILE_COLORS.reduce((obj, color) => ({ ...obj, [color]: 0 }), {});
+    const iconCounter = ICON_NAMES.reduce((obj, icon) => ({ ...obj, [icon]: 0 }), {});
+    const iconColorTracker = {};
 
     const tileGrid = [];
     
@@ -122,22 +123,32 @@ class MatchingGame extends React.PureComponent {
       const thisRow = [];
       for (let column = 0; column < GRID_WIDTH; column += 1) {
         const tile = { revealed: false, unrolledIndex: row * GRID_WIDTH + column }; // since they all start flipped
-        
-        // first, we select a color, that is different from the last color (using the intermediate step to guard against scope issues)
-        const excludedColor = lastColor;
-        const availableColors = TILE_COLORS.filter((color) => (color !== excludedColor && colorTracker[color] < MAX_PER_COLOR));
-        const selectedColor = selectArrayRandom(availableColors);
 
-        tile.backgroundColor = selectedColor;
-        colorTracker[selectedColor] += 1;
-        lastColor = selectedColor;
-
-        // then, we randomly select an icon that has not appeared; we do allow two icons next to each other (can be hardest to find)
-        const availableIcons = ICON_NAMES.filter((icon) => iconTracker[icon] < MAX_PER_ICON);
+        // first, we randomly select an icon that has not appeared; we do allow two icons next to each other (can be hardest to find)
+        const availableIcons = ICON_NAMES.filter((icon) => iconCounter[icon] < MAX_PER_ICON);
         const selectedIcon = selectArrayRandom(availableIcons);
 
         tile.iconName = selectedIcon;
-        iconTracker[selectedIcon] += 1;
+        iconCounter[selectedIcon] += 1;
+
+        // then, if the icon has already been selected / has a colour, we use that, otherwise we select one and push it
+        let selectedColor = null;
+        // console.log(`Row: ${row}, column: ${column}, icon: ${selectedIcon}, prior color: ${iconColorTracker[selectedIcon]}`);
+        if (iconColorTracker[selectedIcon]) {
+          // use the prior color, and then remove it (i.e., so just in case icons duplicate, second pair is on new color)
+          selectedColor = iconColorTracker[selectedIcon];
+          Reflect.deleteProperty(iconColorTracker, selectedIcon);
+        } else {
+          // we select a color, that is different from the last color (using the intermediate step to guard against scope issues)
+          const excludedColor = lastColor;
+          const availableColors = TILE_COLORS.filter((color) => (color !== excludedColor && colorCounter[color] < MAX_PER_COLOR));
+          selectedColor = selectArrayRandom(availableColors);
+          iconColorTracker[selectedIcon] = selectedColor;
+        }
+
+        tile.backgroundColor = selectedColor;
+        colorCounter[selectedColor] += 1;
+        lastColor = selectedColor;
 
         thisRow.push(tile);
       }
@@ -198,19 +209,24 @@ class MatchingGame extends React.PureComponent {
       this.setState({ matchCounter: this.state.matchCounter + 1, firstTapXY: [], secondTapXY: [], matchInProgress: false }, 
           () => this.onMatchMade());
     } else {
-      tileGrid[firstTap[0]][firstTap[1]].revealed = false;
-      tileGrid[secondTap[0]][secondTap[1]].revealed = false;
+      const newTileGrid = JSON.parse(JSON.stringify(tileGrid));
+      newTileGrid[firstTap[0]][firstTap[1]].revealed = false;
+      newTileGrid[secondTap[0]][secondTap[1]].revealed = false;
       // we want to allow users to see the tiles, we flip back after 1 second
-      const resetGrid = () => this.setState({ firstTapXY: [], secondTapXY: [], tileGrid, matchInProgress: false })
-      setTimeout(resetGrid, 1500);
+      const resetGrid = () => this.setState({ firstTapXY: [], secondTapXY: [], tileGrid: newTileGrid, matchInProgress: false })
+      setTimeout(resetGrid, 800);
     }
+  }
+
+  onNoMatch = () => {
+    this.setState({ })
   }
 
   onMatchMade = async () => {
     this.setState({ matchCongratulations: true }, () => {
       setTimeout(() => this.setState({ matchCongratulations: false }), 1000);
-      if (this.state.matchCounter === MAX_MATCHES) {
-        this.populateTiles();
+      if (this.state.matchCounter > 0 && this.state.matchCounter % MAX_MATCHES === 0) {
+        setTimeout(() => this.populateTiles(), 1000);
       }
     });
   };
@@ -483,6 +499,8 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.BACKGROUND_GRAY,
   },
   modalContent: {
     marginTop: 'auto',

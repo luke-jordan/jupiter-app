@@ -43,9 +43,20 @@ const BoostResultModal = ({
         body = DEFAULT_BODY[newStatus];
     }
 
-    if (newStatus === 'REDEEMED' || newStatus === 'EXPIRED') {
+    if (newStatus === 'EXPIRED') {
       const amountHasDecimals = hasDecimals(boostDetails.boostAmount, boostDetails.boostUnit);
       boostDetails.boostAwardedAmount = standardFormatAmount(boostDetails.boostAmount, boostDetails.boostUnit, boostDetails.boostCurrency, amountHasDecimals ? 2 : 0);
+    }
+
+    if (newStatus === 'REDEEMED') {
+      const { boostAmount, boostUnit, boostCurrency, statusChangeLogs } = boostDetails;
+      let awardedAmount = boostAmount;
+      if (Array.isArray(statusChangeLogs) && statusChangeLogs.length > 0) {
+        const redemptionLog = statusChangeLogs.find((changeLog) => changeLog.logContext && changeLog.logContext.newStatus === 'REDEEMED');
+        awardedAmount = redemptionLog ? (redemptionLog.logContext.boostAmount) : boostAmount;
+      }
+      const amountHasDecimals = hasDecimals(awardedAmount, boostUnit);
+      boostDetails.boostAwardedAmount = standardFormatAmount(awardedAmount, boostUnit, boostCurrency, amountHasDecimals ? 2 : 0);      
     }
 
     body = formatStringTemplate(body, boostDetails);

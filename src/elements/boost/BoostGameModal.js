@@ -5,7 +5,7 @@ import { Button } from 'react-native-elements';
 
 import { Colors } from '../../util/Values';
 
-const KNOWN_GAMES = ['TAP_SCREEN', 'CHASE_ARROW', 'DESTROY_IMAGE'];
+const KNOWN_GAMES = ['TAP_SCREEN', 'CHASE_ARROW', 'DESTROY_IMAGE', 'MATCH_TILES'];
 
 export default class BoostGameModal extends React.PureComponent {
           
@@ -21,7 +21,10 @@ export default class BoostGameModal extends React.PureComponent {
       }
       
       if (KNOWN_GAMES.includes(gameDetails.gameType)) {
-        return `Your top up was successful and you now stand a chance to win ${gameDetails.boostAmount}`;
+        // console.log('Flags present ? :: ', gameDetails.flags);
+        return gameDetails.flags && gameDetails.flags.includes('RANDOM_AMOUNT') ?
+          `Play your game and you could win a random boost of up to ${gameDetails.boostAmount}` :
+          `Your top up was successful and you now stand a chance to win ${gameDetails.boostAmount}`;
       }
       
       return 'Game failure, please contact support';
