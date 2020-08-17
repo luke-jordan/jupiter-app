@@ -10,11 +10,13 @@ import { BoostStatus } from '../../modules/boost/models/index';
 const DEFAULT_TITLES = {
     [BoostStatus.REDEEMED]: 'Congratulations!',
     [BoostStatus.EXPIRED]: 'Missed a boost!',
+    [BoostStatus.CONSOLED]: 'Runner up prize!',
 };
 
 const DEFAULT_BODY = {
     [BoostStatus.REDEEMED]: 'Congrats! By being awesome and making smart decisions to grow your savings, Jupiter has rewarded you with a {boostAwardedAmount} boost! It\'s already in your MoneyWheel - keep it up :-)',
     [BoostStatus.EXPIRED]: 'That\'s a shame! You missed a boost that would have been worth {boostAwardedAmount}! Keep checking into the Jupiter app to not miss future rewards',
+    [BoostStatus.CONSOLED]: 'Congrats! You didn`\'t win the boost, but for being such an awesome saver, Jupiter has awarded you a consolation prize (check our your history for how much)',
 };
 
 const hideAndNavigage = (screen, navigation, hideModal) => {
@@ -62,11 +64,6 @@ const BoostResultModal = ({
       const awardedAmount = findAwardedAmount(statusChangeLogs, boostAmount); 
       const amountHasDecimals = hasDecimals(awardedAmount, boostUnit);
       boostDetails.boostAwardedAmount = standardFormatAmount(awardedAmount, boostUnit, boostCurrency, amountHasDecimals ? 2 : 0);      
-    }
-
-    if (newStatus === 'CONSOLED') {
-      const { boostAmount, statusChangeLogs } = boostDetails;
-      let awardedAmount = 0;
     }
 
     body = formatStringTemplate(body, boostDetails);
