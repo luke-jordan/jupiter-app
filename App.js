@@ -61,6 +61,7 @@ import ViewFriendTournament from './src/screens/ViewFriendTournament';
 
 import CircleGame from './src/screens/CircleGame';
 import BreakingGame from './src/screens/BreakingGame';
+import MatchingGame from './src/screens/MatchingGame';
 
 const AppContainer = createAppContainer(
   createStackNavigator(
@@ -117,6 +118,7 @@ const AppContainer = createAppContainer(
 
       CircleGame: { screen: CircleGame },
       BreakingGame: { screen: BreakingGame },
+      MatchingGame: { screen: MatchingGame },
     },
     { initialRouteName: 'Splash', headerMode: 'none' }
   )

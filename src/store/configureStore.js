@@ -26,8 +26,6 @@ export default initialState => {
   const store = createStore(persistedReducer, initialState);
   const persistor = persistStore(store);
 
-  console.log('Set up store');
-
   enableStoreDebug(store);
   enableHotReload(store);
 

@@ -7,6 +7,7 @@ export const BoostStatus = {
   EXPIRED: 'EXPIRED',
   REDEEMED: 'REDEEMED',
   REVOKED: 'REVOKED',
+  CONSOLED: 'CONSOLED',
 };
 
 export const actionType = {

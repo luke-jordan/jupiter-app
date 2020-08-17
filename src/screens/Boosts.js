@@ -68,7 +68,7 @@ class Boosts extends React.Component {
   }
 
   getBoostResultIcon(boostStatus, endTime) {
-    if (boostStatus === 'REDEEMED') {
+    if (boostStatus === 'REDEEMED' || boostStatus === 'CONSOLED') {
       return require('../../assets/thumbs_up.png');
     } else if (this.isBoostExpired({ boostStatus, endTime })) {
       return require('../../assets/sad_face.png');
@@ -77,7 +77,7 @@ class Boosts extends React.Component {
 
   // note : 'pending' state means no further action from user, so here is the same as redeemed (thus also skipped over)
   getNextStatus(boostStatus, statusConditionKeys) {
-    if ([BoostStatus.PENDING, BoostStatus.REDEEMED, BoostStatus.EXPIRED, BoostStatus.REVOKED].includes(boostStatus)) {
+    if ([BoostStatus.PENDING, BoostStatus.REDEEMED, BoostStatus.EXPIRED, BoostStatus.REVOKED, BoostStatus.CONSOLED].includes(boostStatus)) {
       return null;
     }
 
@@ -123,7 +123,7 @@ class Boosts extends React.Component {
 
   getBoostButton(boostDetails) {
     const isBoostExpired = this.isBoostExpired({ boostStatus: boostDetails.boostStatus, endTime: boostDetails.endTime });
-    if (boostDetails.boostStatus === 'REDEEMED' || isBoostExpired) {
+    if (boostDetails.boostStatus === 'REDEEMED' || boostDetails.boostStatus === 'CONSOLED' || isBoostExpired) {
       return null;
     }
 
@@ -212,18 +212,18 @@ class Boosts extends React.Component {
       return <Text style={styles.boostClaimed}>Boost Claimed: </Text>;
     }
 
+    if (boostDetails.boostStatus === 'CONSOLED') {
+      return <Text style={styles.boostClaimed}>Runner up prize awarded!</Text>
+    }
+
     if (boostDetails.boostStatus === 'PENDING') {
       return <Text style={styles.boostExpiring}>{this.getPendingLabel(boostDetails)}</Text>;
     }
     
-    if (
-      this.isBoostExpired({
-        boostStatus: boostDetails.boostStatus,
-        endTime: boostDetails.endTime,
-      })
-    ) {
+    if (this.isBoostExpired({ boostStatus: boostDetails.boostStatus, endTime: boostDetails.endTime})) {
       return <Text style={styles.boostExpired}>Boost Expired.</Text>;
     }
+    
     if (this.isBoostExpiringSoon(boostDetails.endTime)) {
       return <Text style={styles.boostExpiring}>Expiring soon</Text>;
     }
@@ -237,12 +237,16 @@ class Boosts extends React.Component {
   }
 
   getCardOpacity(boostStatus, endTime) {
-    if (boostStatus === 'REDEEMED' || this.isBoostExpired({ boostStatus, endTime })) return 0.6;
+    if (boostStatus === 'REDEEMED' || boostStatus === 'CONSOLED' || this.isBoostExpired({ boostStatus, endTime })) return 0.6;
     return 1;
   }
 
   sortBoosts = boosts => {
-    const sortByTime = (a, b) => moment(b.startTime).isAfter(moment(a.startTime)) && 1;
+    const sortByTime = (a, b) => {
+      if (this.isUnexpiredWithdrawal(a) && !this.isUnexpiredWithdrawal(b)) return -1;
+      if (this.isUnexpiredWithdrawal(b) && !this.isUnexpiredWithdrawal(a)) return 1;
+      return moment(b.startTime).isAfter(moment(a.startTime)) && 1;
+    };
 
     // there may be lots of these and we don't want to show them here for the moment (as get in the way of other boosts)
     const isExpiredFriendTournament = (boost) => this.isBoostExpired(boost) && Array.isArray(boost.flags) && boost.flags.includes('FRIEND_TOURNAMENT');
@@ -376,6 +380,10 @@ class Boosts extends React.Component {
     }
 
     return moment(endTime).isBefore(moment());
+  }
+
+  isUnexpiredWithdrawal({ boostType, boostStatus, endTime }) {
+    return boostType === 'WITHDRAWAL' && !this.isBoostExpired({ boostStatus, endTime });
   }
 
   renderBoosts() {

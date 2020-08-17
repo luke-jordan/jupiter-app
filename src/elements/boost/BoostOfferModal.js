@@ -22,6 +22,35 @@ const DEFAULT_BODY = {
   'WITHDRAWAL': 'We\'ve received your request to withdraw your savings, but to help grow your saving habit, we\'ll top you up by {boostAmountFormatted} if you leave the savings in Jupiter',
 }
 
+const FLAG_BODIES = {
+  'SIMPLE': {
+    'RANDOM_AMOUNT': 'Save {boostThresholdFormatted} before {boostExpiryFormatted} and you could win between {boostMin} and {boostMax}. Save now to get your reward!',
+    'RANDOM_SELECTION': 'Save {boostThresholdFormatted} before {boostExpiryFormatted}, and you could get a boost of {boostAmountFormatted}! {numberSelected} will be chosen at random to win',
+  },
+  'GAME': {
+    'RANDOM_AMOUNT': 'Save {boostThresholdFormatted} before {boostExpiryFormatted} and you get to play a game that could win you a random reward of up to {boostMax}!',
+    'RANDOM_SELECTION': DEFAULT_BODY.GAME,
+  },
+  'WITHDRAWAL': {
+    'RANDOM_SELECTION': 'To help grow your saving habit, if you cancel your pending withdrawal you\'ll have a chance to get a {boostAmountFormatted} boost! Just cancel the withdrawal, and each month {numberSelected} will get the boost!',
+    'RANDOM_AMOUNT': 'We\'ve received your request to withdraw your savings, but to help grow your saving habit, we\'ll top you up by between {boostMin} and {boostMax} if you leave the savings in Jupiter'
+  },
+};
+
+const obtainDefaultBody = (boostDetails) => {
+  const { boostType, flags } = boostDetails;
+  if (!flags || flags.length === 0) {
+    return DEFAULT_BODY[boostType];
+  }
+
+  if (flags.includes('RANDOM_SELECTION') || flags.includes('RANDOM_AMOUNT')) {
+    const firstFlag = flags.find((flag) => flag === 'RANDOM_SELECTION' || flag === 'RANDOM_AMOUNT'); // makes a little random but at present no case of both
+    return FLAG_BODIES[boostType][firstFlag];
+  }
+
+  return DEFAULT_BODY[boostType];
+};
+
 const BoostOfferModal = ({
   showModal,
   hideModal,
@@ -32,7 +61,7 @@ const BoostOfferModal = ({
 
   // these provide the ability to customize messages in time, with safe defaults now
   const title = (boostMessage && boostMessage.title) || DEFAULT_TITLE[boostDetails.boostType] || DEFAULT_TITLE.SIMPLE;
-  const bodyTemplate = (boostMessage && boostMessage.body) || DEFAULT_BODY[boostDetails.boostType] || DEFAULT_BODY.SIMPLE;
+  const bodyTemplate = (boostMessage && boostMessage.body) || obtainDefaultBody(boostDetails) || DEFAULT_BODY.SIMPLE;
 
   const defaultAction = boostDetails.boostType === 'WITHDRAWAL' ? 'CANCEL_WITHDRAWAL' : 'ADD_CASH';
   const actionToTake = (boostMessage && boostMessage.actionToTake) || defaultAction;
@@ -47,6 +76,22 @@ const BoostOfferModal = ({
     
   const stringParameters = { boostThresholdFormatted, boostExpiryFormatted, boostAmountFormatted };
   
+  // boostMin, boostMax, numberSelected
+  if (boostDetails.flags && boostDetails.flags.includes('RANDOM_AMOUNT')) {
+    const { rewardParameters } = boostDetails;
+    const minAmount = rewardParameters && rewardParameters.minRewardAmountPerUser ? rewardParameters.minRewardAmountPerUser.amount : 1;
+    const minUnit = rewardParameters && rewardParameters.minRewardAmountPerUser ? rewardParameters.minRewardAmountPerUser.unit : 'WHOLE_CURRENCY';
+    stringParameters.boostMax = boostAmountFormatted;
+    stringParameters.boostMin = `${currency}${getFormattedValue(minAmount, minUnit, 0)}`;
+  }
+
+  if (boostDetails.flags && boostDetails.flags.includes('RANDOM_SELECTION')) {
+    const { statusConditions } = boostDetails;
+    console.log('Status conditions: ', statusConditions);
+    const randomCondition = statusConditions.REDEEMED.filter((condition) => condition.startsWith('randomly_chosen_first_N'));
+    stringParameters.numberSelected = randomCondition.length > 0 ? randomCondition[0].match(/#{(.*)}/)[1] : 1;
+  }
+
   const bodyText = formatStringTemplate(bodyTemplate, stringParameters);
 
   // Get button handler and label depending on the `actionToTake`

@@ -90,10 +90,6 @@ class BreakingGame extends React.PureComponent {
   // eslint-disable-next-line react/sort-comp
   startGame() {
     this.setState({ gameInProgress: true },  () => {
-      // set up so at end of game we are complete
-      // setTimeout(() => { this.handleGameEnd(); }, this.state.timeLimit * 1000);
-      
-      // initiate countdown for user
       setTimeout(() => { this.decrementGameTimer(); }, 1000);
     });
   }
@@ -207,7 +203,6 @@ class BreakingGame extends React.PureComponent {
     const percentDestroyed = this.calculatePercentDestroyed();
     const gameResultParams = { ...resultOfGame, percentDestroyed, timeTaken: this.state.timeLimit };
 
-    // console.log('Game result params: ', gameResultParams);
     if (amountWon) {
       // want to force this, for now (but check speed)
       await this.updateBalance();

@@ -48,6 +48,17 @@ class SelectTransferMethod extends React.PureComponent {
     });
   }
 
+  navigateToEft = (resultOfCall) => {
+    this.props.navigation.navigate('EFTPayment', {
+      amountToAdd: this.state.amountToAdd,
+      token: this.props.authToken,
+      isOnboarding: this.state.isOnboarding,
+      transactionId: resultOfCall.transactionId,
+      humanReference: resultOfCall.humanReference,
+      bankDetails: resultOfCall.bankDetails,
+    });
+  }
+
   onPressInstantEft = async () => {
     if (this.state.loadingInstant || this.state.loadingManual) return true;
 
@@ -59,6 +70,11 @@ class SelectTransferMethod extends React.PureComponent {
     this.setState({ loadingInstant: false });
     
     if (resultOfCall) {
+      if (!resultOfCall.urlToCompletePayment) {
+        this.navigateToEft(resultOfCall); // means payment URL has failed, hence default to manual
+        return;
+      }
+
       this.props.navigation.navigate('Payment', {
         urlToCompletePayment: resultOfCall.urlToCompletePayment,
         transactionId: resultOfCall.transactionId,
@@ -80,14 +96,7 @@ class SelectTransferMethod extends React.PureComponent {
     this.setState({ loadingManual:  false});
 
     if (resultOfCall) {
-      this.props.navigation.navigate('EFTPayment', {
-        amountToAdd: this.state.amountToAdd,
-        token: this.props.authToken,
-        isOnboarding: this.state.isOnboarding,
-        transactionId: resultOfCall.transactionId,
-        humanReference: resultOfCall.humanReference,
-        bankDetails: resultOfCall.bankDetails,
-      });
+      this.navigateToEft(resultOfCall);
     }
   }
 

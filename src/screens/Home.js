@@ -439,14 +439,14 @@ class Home extends React.Component {
     }
 
     const { viewedBoosts } = this.props;
-    // const statusNotViewedFilter = (boost, status) => boost.boostStatus === status;
     const statusNotViewedFilter = (boost, status) => boost.boostStatus === status &&
       (Object.keys(viewedBoosts).indexOf(boost.boostId) < 0 || viewedBoosts[boost.boostId].indexOf(status) < 0); 
 
     const redeemedBoosts = boostArray.filter((boost) => statusNotViewedFilter(boost, 'REDEEMED'));
+    const consoledBoosts = boostArray.filter((boost) => statusNotViewedFilter(boost, 'CONSOLED'));
     const expiredBoosts = boostArray.filter((boost) => statusNotViewedFilter(boost, 'EXPIRED'));
 
-    const redeemedOrExpiredBoosts = [...redeemedBoosts, ...expiredBoosts];
+    const redeemedOrExpiredBoosts = [...redeemedBoosts, ...consoledBoosts, ...expiredBoosts];
     // console.log('redeemed or expired length: ', redeemedOrExpiredBoosts.length);
 
     if (redeemedOrExpiredBoosts.length > 0) {
@@ -464,14 +464,13 @@ class Home extends React.Component {
 
   showBoostObtainedOrMissedModal(boostToView) {
     const stateUpdate = {};
-    // console.log('SHOWING: ', boostToView);
     
     const isGameBoost = boostToView.boostType === 'GAME';
     const hasGameLog = typeof boostToView.gameLog === 'object' && boostToView.gameLog !== null;
 
     const isFriendTournament = Array.isArray(boostToView.flags) && boostToView.flags.includes('FRIEND_TOURNAMENT');
     const shouldSkipResult = isFriendTournament && !hasGameLog; // ie tournament that did not play
-    console.log('Is this a friend tournament ? :', isFriendTournament, ' should we skip it ? ', shouldSkipResult);
+    // console.log('Is this a friend tournament ? :', isFriendTournament, ' should we skip it ? ', shouldSkipResult);
 
     if (isGameBoost && hasGameLog) {
       stateUpdate.showGameResultModal = true;
@@ -484,7 +483,7 @@ class Home extends React.Component {
     this.setState(stateUpdate, () => this.props.updateBoostViewed({ boostId: boostToView.boostId, viewedStatus: boostToView.boostStatus }));
 
     // finally, update balance, if boost was redeemed (and, if we are onboarding, get the whole profile)
-    if (boostToView.boostStatus === 'REDEEMED') {
+    if (boostToView.boostStatus === 'REDEEMED' || boostToView.boostStatus === 'CONSOLED') {
       this.fetchCurrentProfileFromServer();
     }
   }
@@ -617,7 +616,7 @@ class Home extends React.Component {
 
   showGameUnlocked(boostDetails) {
     const boostAmount = standardFormatAmount(boostDetails.boostAmount, boostDetails.boostUnit, boostDetails.boostCurrency);
-    const gameParams = { ...boostDetails.gameParams, boostId: boostDetails.boostId, boostAmount };
+    const gameParams = { ...boostDetails.gameParams, boostId: boostDetails.boostId, flags: boostDetails.flags, boostAmount };
     
     this.setState({
       showGameUnlockeModal: true,
@@ -643,6 +642,9 @@ class Home extends React.Component {
     } else if (gameParams.gameType.includes('DESTROY_IMAGE')) {
       this.setState({ showGameUnlockeModal: false });
       this.props.navigation.navigate('BreakingGame', { gameParams });
+    } else if (gameParams.gameType.includes('MATCH_TILES')) {
+      this.setState({ showGameUnlockeModal: false });
+      this.props.navigation.navigate('MatchingGame', { gameParams });
     }
 
     LoggingUtil.logEvent('GAME_USER_INITIATED');

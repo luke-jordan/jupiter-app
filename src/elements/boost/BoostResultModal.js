@@ -10,16 +10,27 @@ import { BoostStatus } from '../../modules/boost/models/index';
 const DEFAULT_TITLES = {
     [BoostStatus.REDEEMED]: 'Congratulations!',
     [BoostStatus.EXPIRED]: 'Missed a boost!',
+    [BoostStatus.CONSOLED]: 'Runner up prize!',
 };
 
 const DEFAULT_BODY = {
     [BoostStatus.REDEEMED]: 'Congrats! By being awesome and making smart decisions to grow your savings, Jupiter has rewarded you with a {boostAwardedAmount} boost! It\'s already in your MoneyWheel - keep it up :-)',
     [BoostStatus.EXPIRED]: 'That\'s a shame! You missed a boost that would have been worth {boostAwardedAmount}! Keep checking into the Jupiter app to not miss future rewards',
+    [BoostStatus.CONSOLED]: 'Congrats! You didn`\'t win the boost, but for being such an awesome saver, Jupiter has awarded you a consolation prize (check our your history for how much)',
 };
 
 const hideAndNavigage = (screen, navigation, hideModal) => {
   navigation.navigate(screen);
   hideModal();
+};
+
+const findAwardedAmount = (statusChangeLogs, boostAmount, amountKey = 'boostAmount') => {
+  let awardedAmount = boostAmount;
+  if (Array.isArray(statusChangeLogs) && statusChangeLogs.length > 0) {
+    const redemptionLog = statusChangeLogs.find((changeLog) => changeLog.logContext && changeLog.logContext.newStatus === 'REDEEMED');
+    awardedAmount = redemptionLog && redemptionLog.logContext ? (redemptionLog.logContext[amountKey]) : boostAmount;
+  }
+  return awardedAmount;
 }
 
 const BoostResultModal = ({
@@ -43,9 +54,16 @@ const BoostResultModal = ({
         body = DEFAULT_BODY[newStatus];
     }
 
-    if (newStatus === 'REDEEMED' || newStatus === 'EXPIRED') {
+    if (newStatus === 'EXPIRED') {
       const amountHasDecimals = hasDecimals(boostDetails.boostAmount, boostDetails.boostUnit);
       boostDetails.boostAwardedAmount = standardFormatAmount(boostDetails.boostAmount, boostDetails.boostUnit, boostDetails.boostCurrency, amountHasDecimals ? 2 : 0);
+    }
+
+    if (newStatus === 'REDEEMED') {
+      const { boostAmount, boostUnit, boostCurrency, statusChangeLogs } = boostDetails;
+      const awardedAmount = findAwardedAmount(statusChangeLogs, boostAmount); 
+      const amountHasDecimals = hasDecimals(awardedAmount, boostUnit);
+      boostDetails.boostAwardedAmount = standardFormatAmount(awardedAmount, boostUnit, boostCurrency, amountHasDecimals ? 2 : 0);      
     }
 
     body = formatStringTemplate(body, boostDetails);
