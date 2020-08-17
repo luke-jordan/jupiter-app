@@ -20,6 +20,15 @@ const DEFAULT_BODY = {
 const hideAndNavigage = (screen, navigation, hideModal) => {
   navigation.navigate(screen);
   hideModal();
+};
+
+const findAwardedAmount = (statusChangeLogs, boostAmount, amountKey = 'boostAmount') => {
+  let awardedAmount = boostAmount;
+  if (Array.isArray(statusChangeLogs) && statusChangeLogs.length > 0) {
+    const redemptionLog = statusChangeLogs.find((changeLog) => changeLog.logContext && changeLog.logContext.newStatus === 'REDEEMED');
+    awardedAmount = redemptionLog && redemptionLog.logContext ? (redemptionLog.logContext[amountKey]) : boostAmount;
+  }
+  return awardedAmount;
 }
 
 const BoostResultModal = ({
@@ -50,13 +59,14 @@ const BoostResultModal = ({
 
     if (newStatus === 'REDEEMED') {
       const { boostAmount, boostUnit, boostCurrency, statusChangeLogs } = boostDetails;
-      let awardedAmount = boostAmount;
-      if (Array.isArray(statusChangeLogs) && statusChangeLogs.length > 0) {
-        const redemptionLog = statusChangeLogs.find((changeLog) => changeLog.logContext && changeLog.logContext.newStatus === 'REDEEMED');
-        awardedAmount = redemptionLog ? (redemptionLog.logContext.boostAmount) : boostAmount;
-      }
+      const awardedAmount = findAwardedAmount(statusChangeLogs, boostAmount); 
       const amountHasDecimals = hasDecimals(awardedAmount, boostUnit);
       boostDetails.boostAwardedAmount = standardFormatAmount(awardedAmount, boostUnit, boostCurrency, amountHasDecimals ? 2 : 0);      
+    }
+
+    if (newStatus === 'CONSOLED') {
+      const { boostAmount, statusChangeLogs } = boostDetails;
+      let awardedAmount = 0;
     }
 
     body = formatStringTemplate(body, boostDetails);

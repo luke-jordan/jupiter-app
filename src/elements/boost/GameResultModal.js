@@ -96,15 +96,22 @@ export default class GameResultModal extends React.PureComponent {
   }
   
   renderTournamentResult (gameDetails) {
+    let title = 'The boost results are in!';
+    let body = 'Thank you for taking part in this challenge';
+
     const userWon = gameDetails.gameResult === 'REDEEMED';
+
     const { accountScore, ranking, topScore, scoreType } = gameDetails.gameLog;
     const scoreIsPercent = scoreType === 'PERCENT';
     
-    const title = userWon ? 'You won the boost challenge!' : 'The boost results are in!';
-
-    // const boostAwardAmount = `${getCurrencySymbol(gameDetails.boostCurrency)}${gameDetails.boostAmount}`
-    const boostAwardAmount = standardFormatAmount(gameDetails.boostAmount, gameDetails.boostUnit, gameDetails.boostCurrency);
-    const body = userWon ? `Congrats! ${boostAwardAmount} will be add to your Jupiter savings` : 'Thank you for taking part in this challenge';
+    if (userWon) {
+      const boostAwardAmount = standardFormatAmount(gameDetails.boostAmount, gameDetails.boostUnit, gameDetails.boostCurrency);
+      title = 'You won the tournament!';
+      body = `Congrats! ${boostAwardAmount} will be add to your Jupiter savings`;
+    } else if (gameDetails.gameResult === 'CONSOLED') {
+      title = 'The results are in!'; // very slightly shorter
+      body = 'Sadly, you didn\'t win, but to thank you for taking part, we\'ve given you a small top-up! Head to your history to see how much';
+    }
 
     return (
       <>

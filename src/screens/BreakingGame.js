@@ -203,7 +203,6 @@ class BreakingGame extends React.PureComponent {
     const percentDestroyed = this.calculatePercentDestroyed();
     const gameResultParams = { ...resultOfGame, percentDestroyed, timeTaken: this.state.timeLimit };
 
-    // console.log('Game result params: ', gameResultParams);
     if (amountWon) {
       // want to force this, for now (but check speed)
       await this.updateBalance();

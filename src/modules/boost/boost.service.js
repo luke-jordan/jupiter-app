@@ -59,8 +59,13 @@ export const boostService = {
 
       const boost = { ...boostFromDisplayEndpoint };
 
-      const { gameParams, gameLogs } = boost; 
-      boost.gameResult = boost.boostStatus === 'REDEEMED' ? 'REDEEMED' : 'FAILED';
+      const { boostStatus, gameParams, gameLogs } = boost;
+      
+      let gameResult = 'FAILED';
+      if (boostStatus === 'REDEEMED' || boostStatus === 'CONSOLED') {
+        gameResult = boostStatus;
+      }
+      boost.gameResult = gameResult;
       boost.awardBasis = gameParams && gameParams.numberWinners ? 'TOURNAMENT' : 'THRESHOLD';
 
       const outcomeLogs = gameLogs ? gameLogs.filter((log) => log.logType === 'GAME_OUTCOME').
