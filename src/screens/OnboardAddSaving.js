@@ -103,7 +103,7 @@ class OnboardAddSaving extends React.Component {
     const unit = 'WHOLE_CURRENCY';
     const currency = 'ZAR';
 
-    return standardFormatAmount(this.getProjectedAmountNumber(), unit, currency, 0);
+    return standardFormatAmount(this.getProjectedAmountNumber(), unit, currency, 2);
   }
 
   isNoAmount = () => this.state.amountToAdd.trim().length === 0;

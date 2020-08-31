@@ -204,7 +204,7 @@ class AddCash extends React.Component {
     const unit = 'WHOLE_CURRENCY';
     const currency = 'ZAR';
 
-    return standardFormatAmount(this.getProjectedAmountNumber(), unit, currency, 0);
+    return standardFormatAmount(this.getProjectedAmountNumber(), unit, currency, 2);
   }
 
   renderHeader() {
