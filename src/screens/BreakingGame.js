@@ -39,11 +39,13 @@ const mapPropsToDispatch = {
 const GAME_BACKGROUNDS = {
   'CREDIT_CARD': require('../../assets/credit-card.png'),
   'LOAN_SHARK': require('../../assets/loan-shark.png'),
+  'PYRAMID_SCHEME': require('../../assets/pyramid-scheme.png'),
 };
 
 const GAME_TITLES = {
   'CREDIT_CARD': 'credit card',
   'LOAN_SHARK': 'loan shark',
+  'PYRAMID_SCHEME': 'pyramid scheme',
 };
 
 class BreakingGame extends React.PureComponent {

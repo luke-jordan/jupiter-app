@@ -184,22 +184,27 @@ class AddCash extends React.Component {
     return '';
   }
 
-  getProjectedAmount() {
+  getProjectedAmountNumber() {
+    if (!this.props.comparatorRates.referenceRate) {
+      return 0;
+    }
+
+    if (!this.state.amountToAdd || this.state.amountToAdd.trim().length === 0) {
+      return 0;
+    }
+    
+    const relevantAmount = parseInt(this.state.amountToAdd, 10);
+    const referenceRate = parseFloat(this.props.comparatorRates.referenceRate / (100 * 100)); // rate is in bps, need as 0-1
+    const projectedAmount = relevantAmount * ((1 + referenceRate) ** 1 - 1); // removing "5 year" but keeping the formula
+    
+    return projectedAmount;
+  }
+
+  getProjectedAmountText() {
     const unit = 'WHOLE_CURRENCY';
     const currency = 'ZAR';
 
-    if (!this.state.amountToAdd || this.state.amountToAdd.trim().length === 0) {
-      return standardFormatAmount(0, unit, currency, 0);
-    }
-
-    if (this.props.comparatorRates && this.props.comparatorRates.referenceRate) {
-      const relevantAmount = parseInt(this.state.amountToAdd, 10);
-      const referenceRate = parseFloat(this.props.comparatorRates.referenceRate / (100 * 100)); // rate is in bps, need as 0-1
-      const projectedAmount = relevantAmount * ((1 + referenceRate) ** 5);
-      return standardFormatAmount(projectedAmount, unit, currency, 2);
-    }
-
-    return standardFormatAmount(0, unit, currency, 0);
+    return standardFormatAmount(this.getProjectedAmountNumber(), unit, currency, 2);
   }
 
   renderHeader() {
@@ -279,9 +284,9 @@ class AddCash extends React.Component {
               </Text>
             </View>
           )}
-          {this.props.comparatorRates ? (
+          {this.props.comparatorRates && this.getProjectedAmountNumber() >= 1 ? (
             <Text style={styles.moneyGrowth}>
-              This save grows to <Text style={styles.boldAmount}>{this.getProjectedAmount()}</Text> in five years!
+              This save pays you <Text style={styles.boldAmount}>{this.getProjectedAmountText()}</Text> each year!
             </Text>
           ) : null}
           {this.props.comparatorRates ? (

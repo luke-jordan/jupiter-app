@@ -219,6 +219,10 @@ class Boosts extends React.Component {
     if (boostDetails.boostStatus === 'PENDING') {
       return <Text style={styles.boostExpiring}>{this.getPendingLabel(boostDetails)}</Text>;
     }
+
+    if (boostDetails.boostStatus === 'FAILED') {
+      return <Text style={styles.boostFailed}>Sorry, you didn&apos;t win this time</Text>
+    }
     
     if (this.isBoostExpired({ boostStatus: boostDetails.boostStatus, endTime: boostDetails.endTime})) {
       return <Text style={styles.boostExpired}>Boost Expired.</Text>;
@@ -375,7 +379,7 @@ class Boosts extends React.Component {
   isBoostExpired({ boostStatus, endTime }) {
     // the server sometimes will not have set a boost status to expire even when its end time is past
     // in that case, as a fallback, we should set the status to expired here
-    if (boostStatus === 'EXPIRED') {
+    if (boostStatus === 'EXPIRED' || boostStatus === 'FAILED') {
       return true;
     }
 
@@ -669,6 +673,11 @@ const styles = StyleSheet.create({
     color: Colors.RED,
   },
   boostExpiring: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 13,
+    color: Colors.LIGHT_RED,
+  },
+  boostFailed: {
     fontFamily: 'poppins-semibold',
     fontSize: 13,
     color: Colors.LIGHT_RED,
