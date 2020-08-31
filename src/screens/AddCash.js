@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 import { Icon, Input, Button } from 'react-native-elements';
 
+import Confetti from '../elements/Confetti';
+
 import { Colors } from '../util/Values';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { getDivisor, standardFormatAmount  } from '../util/AmountUtil';
@@ -119,7 +121,8 @@ class AddCash extends React.Component {
       return;
     }
 
-    this.setState({ loading: true }, () => this.transitionToTransferMethod());
+    // this.setState({ loading: true }, () => this.transitionToTransferMethod());
+    this.setState({ loading: true, showConfetti: true });
   };
 
   onChangeAmount = text => {
@@ -244,6 +247,7 @@ class AddCash extends React.Component {
           style={styles.mainContent}
           contentContainerStyle={styles.mainContentContainer}
         >
+          {this.state.showConfetti && <Confetti />}
           <View style={styles.currentBalance}>
             <Text style={styles.balanceAmount}>
               {this.state.currency}
