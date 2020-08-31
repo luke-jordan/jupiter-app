@@ -83,22 +83,27 @@ class OnboardAddSaving extends React.Component {
     this.amountInputRef.blur();
   };
 
-  getProjectedAmount() {
+  getProjectedAmountNumber() {
+    if (!this.props.comparatorRates.referenceRate) {
+      return 0;
+    }
+
+    if (!this.state.amountToAdd || this.state.amountToAdd.trim().length === 0) {
+      return 0;
+    }
+    
+    const relevantAmount = parseInt(this.state.amountToAdd, 10);
+    const referenceRate = parseFloat(this.props.comparatorRates.referenceRate / (100 * 100)); // rate is in bps, need as 0-1
+    const projectedAmount = relevantAmount * ((1 + referenceRate) ** 1 - 1); // removing "5 year" but keeping the formula
+    
+    return projectedAmount;
+  }
+
+  getProjectedAmountText() {
     const unit = 'WHOLE_CURRENCY';
     const currency = 'ZAR';
 
-    if (!this.state.amountToAdd || this.state.amountToAdd.trim().length === 0) {
-      return standardFormatAmount(0, unit, currency, 0);
-    }
-
-    if (this.props.comparatorRates.referenceRate) {
-      const relevantAmount = parseInt(this.state.amountToAdd, 10);
-      const referenceRate = parseFloat(this.props.comparatorRates.referenceRate / (100 * 100)); // rate is in bps, need as 0-1
-      const projectedAmount = relevantAmount * ((1 + referenceRate) ** 5);
-      return standardFormatAmount(projectedAmount, unit, currency, 2);
-    }
-
-    return standardFormatAmount(0, unit, currency, 0);
+    return standardFormatAmount(this.getProjectedAmountNumber(), unit, currency, 0);
   }
 
   isNoAmount = () => this.state.amountToAdd.trim().length === 0;
@@ -308,15 +313,15 @@ class OnboardAddSaving extends React.Component {
                 containerStyle={styles.containerStyle}
               />
             </View>
-            {!this.state.notWholeNumber && !this.state.emptyAmountError && this.state.amountToAdd.trim() === '' && (
+            {!this.state.notWholeNumber && !this.state.emptyAmountError && this.getProjectedAmountNumber() < 1 && (
               <Text style={styles.footnoteText}>* no minimum required</Text>
             )}
 
             {this.state.notWholeNumber && <Text style={styles.errorText}>Please enter a whole number</Text>}
             {this.state.emptyAmountError && <Text style={styles.errorText}>Please enter an amount to continue</Text>}
-            {this.props.comparatorRates && this.state.amountToAdd.trim() !== '' ? (
+            {this.props.comparatorRates && this.state.amountToAdd.trim() !== '' && this.getProjectedAmountNumber() >= 1 ? (
               <Text style={styles.moneyGrowth}>
-                This save grows to <Text style={styles.boldAmount}>{this.getProjectedAmount()}</Text> in five years!
+                This save pays you <Text style={styles.boldAmount}>{this.getProjectedAmountText()}</Text> every year!
               </Text>
             ) : null}
 
