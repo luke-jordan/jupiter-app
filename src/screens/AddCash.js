@@ -51,8 +51,7 @@ class AddCash extends React.Component {
   }
 
   async componentDidMount() {
-    console.log('*** ADD CASH MOUNTED :: ', (new Date()) / 1000);
-
+    // console.log('*** ADD CASH MOUNTED :: ', (new Date()) / 1000);
     const { params } = this.props.navigation.state;
 
     if (params && params.startNewTransaction) {
