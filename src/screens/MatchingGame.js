@@ -366,7 +366,7 @@ class MatchingGame extends React.PureComponent {
 
   onPressDone = () => {
     this.setState({ showGameResultDialog: false, gameResultParams: null });
-    this.props.navigation.navigate('Home');
+    this.props.navigation.navigate('Home', { makeWheelGold: true });
   }
 
   onPressBoosts = () => {
