@@ -31,9 +31,10 @@ export default class Stokvel extends React.PureComponent {
     return (
       <View style={styles.container}>
         <ConfettiCannon 
-          count={200} 
+          count={100} 
           origin={{x: -10, y: 0}} 
-          colors={[Colors.GOLD, Colors.PURPLE, Colors.SKY_BLUE]} 
+          colors={[Colors.GOLD, Colors.PURPLE, Colors.SKY_BLUE]}
+          explosionSpeed={300}
           fadeOut 
         />
         <View style={styles.header}>
