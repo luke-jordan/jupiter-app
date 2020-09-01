@@ -113,6 +113,7 @@ class Home extends React.Component {
       inPreviewMode: this.props.navigation.getParam('inPreviewMode') || false,
 
       showSnippet: false,
+      makeWheelGold: false,
     };
   }
 
@@ -124,6 +125,10 @@ class Home extends React.Component {
   }
 
   async handleRefocus() {
+    // check params if we come from payment etc, we make the wheel gold
+    if (this.props.navigation.getParam('makeWheelGold')) {
+      this.setState({ makeWheelGold: true });
+    }
     // check params if we have params.showModal we show modal with game
     if (this.props.navigation.getParam('showGameUnlockedModal')) {
       this.showGameUnlocked(this.props.navigation.getParam('boostDetails'));
@@ -183,6 +188,10 @@ class Home extends React.Component {
 
     if (this.state.inPreviewMode) {
       this.fetchMessagesIfNeeded();
+    }
+
+    if (params && params.makeWheelGold) {
+      this.setState({ makeWheelGold: true });
     }
     
     // check params if we have params.showModal we show modal with game
@@ -485,6 +494,7 @@ class Home extends React.Component {
     // finally, update balance, if boost was redeemed (and, if we are onboarding, get the whole profile)
     if (boostToView.boostStatus === 'REDEEMED' || boostToView.boostStatus === 'CONSOLED') {
       this.fetchCurrentProfileFromServer();
+      this.setState({ makeWheelGold: true });
     }
   }
 
@@ -684,7 +694,7 @@ class Home extends React.Component {
 
     return (
       <>
-        <Image style={styles.coloredCircle} source={require('../../assets/oval.png')} />
+        <Image style={styles.coloredCircle} source={require('../../assets/oval.png')} tintColor={this.state.makeWheelGold ? Colors.GOLD : null} />
         <Animated.View
           style={[styles.whiteCircle, { transform: [{ rotate: circleRotation }] }]}
         >

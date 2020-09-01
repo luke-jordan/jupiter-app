@@ -1,11 +1,14 @@
 import React from 'react';
 
-import { Text, TouchableOpacity, ScrollView, StyleSheet, View, Linking } from 'react-native';
+import { Text, TouchableOpacity, ScrollView, StyleSheet, View, Linking, Dimensions } from 'react-native';
 import { Icon } from 'react-native-elements';
 
-import { LoggingUtil } from '../util/LoggingUtil';
+import ConfettiCannon from 'react-native-confetti-cannon';
 
+import { LoggingUtil } from '../util/LoggingUtil';
 import { Colors } from '../util/Values';
+
+const { height } = Dimensions.get('window');
 
 export default class Stokvel extends React.PureComponent {
   constructor(props) {
@@ -28,6 +31,13 @@ export default class Stokvel extends React.PureComponent {
   render() {
     return (
       <View style={styles.container}>
+        <ConfettiCannon 
+          count={100} 
+          origin={{x: -20, y: height / 2}} 
+          colors={[Colors.GOLD, Colors.PURPLE, Colors.SKY_BLUE]}
+          explosionSpeed={200}
+          fadeOut 
+        />
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.headerButton}
