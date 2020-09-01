@@ -8,6 +8,7 @@ import {
   AsyncStorage,
   TouchableOpacity,
   ScrollView,
+  Dimensions,
 } from 'react-native';
 import { Icon, Input, Button } from 'react-native-elements';
 
@@ -22,6 +23,8 @@ import { getAccountId } from '../modules/profile/profile.reducer';
 import { getCurrentServerBalanceFull, getComparatorRates } from '../modules/balance/balance.reducer';
 
 import { clearCurrentTransaction, updateCurrentTransaction } from '../modules/transaction/transaction.actions';
+
+const { height } = Dimensions.get('window');
 
 const mapStateToProps = state => ({
   accountId: getAccountId(state),
@@ -45,8 +48,6 @@ class AddCash extends React.Component {
       notWholeNumber: false,
       loadConfetti: false,
     };
-
-    this.confettiRef = React.createRef();
   }
 
   async componentDidMount() {
@@ -63,6 +64,7 @@ class AddCash extends React.Component {
     this.setState({
       balance: this.props.currentBalance.amount,
       unit: this.props.currentBalance.unit,
+      loadConfetti: true,
     });
 
     const preFilledAmount = this.props.navigation.getParam('preFilledAmount');
@@ -91,8 +93,6 @@ class AddCash extends React.Component {
       this.props.updateCurrentTransaction({ boostId: params.boostId });
     }
 
-    // get this ready
-    // this.setState({ loadConfetti: true });
   }
 
   onPressBack = () => {
@@ -130,9 +130,9 @@ class AddCash extends React.Component {
       return;
     }
 
-    // console.log('*** BUTTON PRESSED :: ', (new Date() / 1000));
-    // this.confettiRef && this.confettiRef.start();
-    this.setState({ loading: true }, () => this.transitionToTransferMethod());
+    this.setState({ loading: true }, () => {
+      setTimeout(() => this.transitionToTransferMethod(), 50);
+    });
   };
 
   onChangeAmount = text => {
@@ -252,17 +252,15 @@ class AddCash extends React.Component {
   render() {
     return (
       <View style={styles.container}>
-        {this.renderHeader()}
         {this.state.loadConfetti && (
           <ConfettiCannon 
-            count={200} 
-            origin={{x: -10, y: 0}} 
+            count={50} 
+            origin={{x: -20, y: height / 2 }} 
             colors={[Colors.GOLD, Colors.PURPLE, Colors.SKY_BLUE]} 
-            autoStart={false}
             fadeOut 
-            ref={ref => (this.confettiRef = ref)}
           />
         )}
+        {this.renderHeader()}
         <ScrollView
           style={styles.mainContent}
           contentContainerStyle={styles.mainContentContainer}

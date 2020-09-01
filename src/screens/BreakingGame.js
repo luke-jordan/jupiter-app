@@ -129,7 +129,7 @@ class BreakingGame extends React.PureComponent {
 
   onPressDone = () => {
     this.setState({ showGameResultDialog: false, gameResult: null });
-    this.props.navigation.navigate('Home');
+    this.props.navigation.navigate('Home', { makeWheelGold: true });
   }
 
   onPressBoosts = () => {

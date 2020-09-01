@@ -183,7 +183,6 @@ class SelectTransferMethod extends React.PureComponent {
 
   tellBackendToUpdate = async (paymentMethod) => {
     try {
-      console.log('UPDATING TRANSACTION ....');
       const { transactionId, transactionAmount: wholeAmount } = this.props.transactionDetails;
       const multiplier = getConvertor(wholeAmount.unit, 'HUNDREDTH_CENT');
       const transactionAmount = { amount: wholeAmount.amount * multiplier, unit: 'HUNDREDTH_CENT', currency: wholeAmount.currency };
@@ -341,11 +340,12 @@ const styles = StyleSheet.create({
   scrollContainer: {
     alignItems: 'center',
     justifyContent: 'space-around',
+    flex: 1,
   },
   mainContent: {
     flex: 1,
     width: '100%',
-    justifyContent: 'center',
+    // justifyContent: 'center',
     paddingHorizontal: 15,
     paddingVertical: 10,
   },

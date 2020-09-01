@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { Button, Icon } from 'react-native-elements';
+import ConfettiCannon from 'react-native-confetti-cannon';
 
 import { NavigationUtil } from '../util/NavigationUtil';
 import { LoggingUtil } from '../util/LoggingUtil';
@@ -23,7 +24,7 @@ import { getCurrentTransactionDetails } from '../modules/transaction/transaction
 
 import { updateAllFields } from '../modules/profile/profile.actions';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 const FONT_UNIT = 0.01 * width;
 
 const mapStateToProps = state => ({ 
@@ -91,6 +92,7 @@ class PaymentComplete extends React.Component {
       NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'Home', {
         userInfo: this.state.userInfo,
         showModal: this.state.showModal,
+        makeWheelGold: true,
       });
     }
   }
@@ -142,6 +144,12 @@ class PaymentComplete extends React.Component {
 
     return (
       <View style={styles.container}>
+        <ConfettiCannon 
+          count={200} 
+          origin={{x: -20, y: height / 2 }} 
+          colors={[Colors.GOLD, Colors.PURPLE, Colors.SKY_BLUE]} 
+          fadeOut 
+        />
         <TouchableOpacity style={styles.closeButton} onPress={this.onPressDone}>
           <Icon
             name="close"

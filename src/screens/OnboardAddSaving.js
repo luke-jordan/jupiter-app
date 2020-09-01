@@ -1,8 +1,10 @@
 import React from 'react';
 import { connect } from 'react-redux';
 
-import { View, Text, Image, StyleSheet, KeyboardAvoidingView, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, Image, StyleSheet, KeyboardAvoidingView, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { Input, Icon } from 'react-native-elements';
+
+import ConfettiCannon from 'react-native-confetti-cannon';
 
 import OnboardBreadCrumb from '../elements/OnboardBreadCrumb';
 import { LoggingUtil } from '../util/LoggingUtil';
@@ -17,6 +19,8 @@ import { updateCurrentTransaction, clearCurrentTransaction } from '../modules/tr
 
 import { Colors, Endpoints } from '../util/Values';
 import { getDivisor, standardFormatAmount } from '../util/AmountUtil';
+
+const { height } = Dimensions.get('window');
 
 const mapStateToProps = state => ({
   authToken: getAuthToken(state),
@@ -293,6 +297,12 @@ class OnboardAddSaving extends React.Component {
           All that&apos;s left is to make your first save - from as little as R1!
           </Text>
           <View style={styles.inputBody}>
+            <ConfettiCannon 
+              count={50} 
+              origin={{x: -20, y: height / 2 }} 
+              colors={[Colors.GOLD, Colors.PURPLE, Colors.SKY_BLUE]} 
+              fadeOut 
+            />
             <Text style={styles.inputLabel}>Add Savings</Text>
             <View style={styles.inputWrapper}>
               <View style={styles.inputWrapperLeft}>
