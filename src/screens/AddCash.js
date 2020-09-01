@@ -11,7 +11,8 @@ import {
 } from 'react-native';
 import { Icon, Input, Button } from 'react-native-elements';
 
-import Confetti from '../elements/Confetti';
+// import Confetti from '../elements/Confetti';
+import ConfettiCannon from 'react-native-confetti-cannon';
 
 import { Colors } from '../util/Values';
 import { LoggingUtil } from '../util/LoggingUtil';
@@ -42,10 +43,15 @@ class AddCash extends React.Component {
       amountToAdd: '',
       loading: false,
       notWholeNumber: false,
+      loadConfetti: false,
     };
+
+    this.confettiRef = React.createRef();
   }
 
   async componentDidMount() {
+    console.log('*** ADD CASH MOUNTED :: ', (new Date()) / 1000);
+
     const { params } = this.props.navigation.state;
 
     if (params && params.startNewTransaction) {
@@ -84,6 +90,9 @@ class AddCash extends React.Component {
     if (params.boostId) {
       this.props.updateCurrentTransaction({ boostId: params.boostId });
     }
+
+    // get this ready
+    // this.setState({ loadConfetti: true });
   }
 
   onPressBack = () => {
@@ -121,8 +130,9 @@ class AddCash extends React.Component {
       return;
     }
 
-    // this.setState({ loading: true }, () => this.transitionToTransferMethod());
-    this.setState({ loading: true, showConfetti: true });
+    // console.log('*** BUTTON PRESSED :: ', (new Date() / 1000));
+    // this.confettiRef && this.confettiRef.start();
+    this.setState({ loading: true }, () => this.transitionToTransferMethod());
   };
 
   onChangeAmount = text => {
@@ -243,11 +253,20 @@ class AddCash extends React.Component {
     return (
       <View style={styles.container}>
         {this.renderHeader()}
+        {this.state.loadConfetti && (
+          <ConfettiCannon 
+            count={200} 
+            origin={{x: -10, y: 0}} 
+            colors={[Colors.GOLD, Colors.PURPLE, Colors.SKY_BLUE]} 
+            autoStart={false}
+            fadeOut 
+            ref={ref => (this.confettiRef = ref)}
+          />
+        )}
         <ScrollView
           style={styles.mainContent}
           contentContainerStyle={styles.mainContentContainer}
         >
-          {this.state.showConfetti && <Confetti />}
           <View style={styles.currentBalance}>
             <Text style={styles.balanceAmount}>
               {this.state.currency}

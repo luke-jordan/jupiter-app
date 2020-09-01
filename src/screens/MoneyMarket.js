@@ -3,6 +3,8 @@ import React from 'react';
 import { Text, TouchableOpacity, ScrollView, StyleSheet, View, Linking } from 'react-native';
 import { Icon } from 'react-native-elements';
 
+import ConfettiCannon from 'react-native-confetti-cannon';
+
 import { LoggingUtil } from '../util/LoggingUtil';
 
 import { Colors } from '../util/Values';
@@ -28,6 +30,12 @@ export default class Stokvel extends React.PureComponent {
   render() {
     return (
       <View style={styles.container}>
+        <ConfettiCannon 
+          count={200} 
+          origin={{x: -10, y: 0}} 
+          colors={[Colors.GOLD, Colors.PURPLE, Colors.SKY_BLUE]} 
+          fadeOut 
+        />
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.headerButton}
