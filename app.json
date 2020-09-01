@@ -32,7 +32,7 @@
     },
     "android": {
       "package": "com.jupitersave.app",
-      "versionCode": 40,
+      "versionCode": 41,
       "permissions": [],
       "googleServicesFile": "./google-services.json",
       "intentFilters": [
