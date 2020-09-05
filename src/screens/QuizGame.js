@@ -88,12 +88,9 @@ class QuizGame extends React.PureComponent {
 
     console.log('Need correct: ', gameParams.winningThreshold);
 
-    const { boostId } = gameParams; 
+    const { boostId } = gameParams;
     this.fetchAndLoadQuestions(boostId);  
     LoggingUtil.logEvent('USER_PLAYED_QUIZ_GAME'); 
-
-    // const resultOfQuiz = { numberCorrectAnswers: 0 };
-    // this.showGameResultOverlay({ isBoostRedeemed: true, resultOfQuiz });
   }
 
   async fetchAndLoadQuestions(boostId) {
@@ -187,7 +184,7 @@ class QuizGame extends React.PureComponent {
         <Text style={styles.questionCount}>{currentIndex + 1} of {this.state.questions.length}</Text>
         <Text style={styles.questionText}>{currentQuestion.question}</Text>
         {currentQuestion.answers && currentQuestion.answers.map((answer, index) => this.renderAnswerOption(answer, index))}
-        {this.state.noAnswerSelectedError && <Text style={styles.noAnswerError}>Please select an answer (even &quot;I don&apos;t know) to continue)</Text>}
+        {this.state.noAnswerSelectedError && <Text style={styles.noAnswerError}>Please select an answer (even &quot;I don&apos;t know) to continue</Text>}
         <View style={styles.questionFooter}>
           <TouchableOpacity style={styles.questionNext} onPress={this.onPressNext}>
             <Text style={styles.nextText}>Next</Text>
@@ -211,6 +208,7 @@ class QuizGame extends React.PureComponent {
     }
 
     const resultOfSubmission = await boostService.sendQuizGameAnswers(resultOptions);
+
     if (!resultOfSubmission) {
       LoggingUtil.logError(Error('Result of game was null'));
       this.showErrorDialog();
@@ -221,12 +219,14 @@ class QuizGame extends React.PureComponent {
       statusMet.forEach((viewedStatus) => this.props.updateBoostViewed({ boostId, viewedStatus }));
     }
 
-    this.showGameResultOverlay(resultOfSubmission);
+    this.displayGameResult(resultOfSubmission);
   }
 
-  showGameResultOverlay(gameResult) {
+  displayGameResult(gameResult) {
     const { isBoostRedeemed, resultOfQuiz } = gameResult;
+    
     this.setState({
+      showSubmittingModal: false,
       showGameResultOverlay: true,
       isBoostRedeemed,
       numberCorrectAnswers: resultOfQuiz.numberCorrectAnswers,
@@ -336,16 +336,22 @@ class QuizGame extends React.PureComponent {
 
           {this.state.errorFetchingQuestions && (
           <>
-            <Text style={styles.errorFetchingText}>
-              Sorry, there was an error fetching the quiz. You can try fetching again, or try playing later.
+            <Text style={styles.fetchingQuizText}>
+              Sorry, there was an error fetching the quiz. You can try fetching again, or playing later.
             </Text>
             <Button 
-              label="TRY AGAIN"
-              onPress={() => this.setState({ fetchingQuestions: true }, () => this.fetchAndLoadQuestions())}
+              title="TRY AGAIN"
+              onPress={() => this.setState({ fetchingQuestions: true, errorFetchingQuestions: false }, () => this.fetchAndLoadQuestions(this.state.boostId))}
+              titleStyle={styles.buttonTitleStyle}
+              buttonStyle={styles.buttonStyle}
+              containerStyle={styles.buttonContainerStyle}
             />
             <Button 
-              label="HOME"
+              title="HOME"
               onPress={this.onPressErrorGoHome}
+              titleStyle={styles.buttonTitleStyle}
+              buttonStyle={styles.buttonStyle}
+              containerStyle={styles.buttonContainerStyle}
             />
           </>
           )}
@@ -415,9 +421,10 @@ const styles = StyleSheet.create({
   fetchingQuizText: {
     fontFamily: 'poppins-semibold',
     color: Colors.WHITE,
-    fontSize: 28,
-    lineHeight: 42,
+    fontSize: 24,
+    lineHeight: 36,
     textAlign: 'center',
+    paddingHorizontal: 15,
   },
   questionContainer: {
     paddingHorizontal: 15,

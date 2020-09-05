@@ -59,6 +59,7 @@ export const boostService = {
         };
 
         const result = await postRequest({ token, url, params });
+        
         if (result.ok) {
             const resultJson = await result.json();
             // for the moment, no quiz tournament (but will come), so just check if redeemed, and return results
