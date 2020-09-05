@@ -655,6 +655,9 @@ class Home extends React.Component {
     } else if (gameParams.gameType.includes('MATCH_TILES')) {
       this.setState({ showGameUnlockeModal: false });
       this.props.navigation.navigate('MatchingGame', { gameParams });
+    } else if (gameParams.gameType.includes('QUIZ')) {
+      this.setState({ showGameUnlockeModal: false });
+      this.props.navigation.navigate('QuizGame', { gameParams });
     }
 
     LoggingUtil.logEvent('GAME_USER_INITIATED');
