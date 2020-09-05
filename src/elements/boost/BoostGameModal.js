@@ -5,7 +5,7 @@ import { Button } from 'react-native-elements';
 
 import { Colors } from '../../util/Values';
 
-const KNOWN_GAMES = ['TAP_SCREEN', 'CHASE_ARROW', 'DESTROY_IMAGE', 'MATCH_TILES'];
+const KNOWN_GAMES = ['TAP_SCREEN', 'CHASE_ARROW', 'DESTROY_IMAGE', 'MATCH_TILES', 'QUIZ'];
 
 export default class BoostGameModal extends React.PureComponent {
           
@@ -46,6 +46,10 @@ export default class BoostGameModal extends React.PureComponent {
       if (gameDetails.gameType === 'MATCH_TILES') {
         return `Flip tiles to see the pictures, and try to match at least ${gameDetails.winningThreshold} before the time is up!`
       }
+
+      if (gameDetails.gameType === 'QUIZ') {
+        return `Answer the questions, and get at least ${gameDetails.winningThreshold}% correct to win!`
+      }
     };
 
     getTournamentStrap = (gameDetails) => {
@@ -65,6 +69,10 @@ export default class BoostGameModal extends React.PureComponent {
 
       if (gameDetails.gameType === 'MATCH_TILES') {
         return `Flip tiles to see the pictures and match as many as you can! The most matches will win the boost`;
+      }
+
+      if (gameDetails.gameType === 'QUIZ') {
+        return `Answer as many questions correctly as you can! The most correct answers will win the boost`;
       }
 
     };

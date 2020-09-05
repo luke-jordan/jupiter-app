@@ -1,5 +1,5 @@
 import { Endpoints } from '../../util/Values';
-import { postRequest } from '../auth/auth.helper';
+import { postRequest, getRequest } from '../auth/auth.helper';
 
 export const boostService = {
 
@@ -49,7 +49,7 @@ export const boostService = {
 
     async sendQuizGameAnswers({ boostId, timeTaken, userResponses, token }) {
       try {
-        const url = `${Endpoints.CORE}boost/respond`
+        const url = `${Endpoints.CORE}boost/respond`;
         const timeTakenMillis = timeTaken ? timeTaken * 1000 : 0; // since at first we do no-time-limit quizzes, hence everyone takes 0 time 
         const params = {
           eventType: 'USER_GAME_COMPLETION',
@@ -67,7 +67,7 @@ export const boostService = {
             const isBoostTriggered = serverResult && serverResult.includes('TRIGGERED');
             const isBoostRedeemed = isBoostTriggered && statusMet && statusMet.includes('REDEEMED');
 
-            return { isBoostTriggered, isBoostRedeemed, resultOfQuiz };
+            return { isBoostTriggered, isBoostRedeemed, statusMet, resultOfQuiz };
         } else {
           const resultBody = await result.json();
           console.log('Error submitting quiz: ', resultBody);
@@ -76,6 +76,21 @@ export const boostService = {
       } catch (error) {
           console.log('Error sending quiz results!', JSON.stringify(error));
       }    
+    },
+
+    async fetchBoostDetails(boostId, token) {
+      try {
+        const url = `${Endpoints.CORE}boost/detail`;
+        const result = await getRequest({ token, url, params: { boostId }});
+        if (!result.ok) {
+          throw result;
+        }
+        const boostDetails = await result.json();
+        return boostDetails;
+      } catch (error) {
+        console.log('Error fetching boost details: ', JSON.stringify(error));
+        return null;
+      }
     },
 
     convertBoostAndLogsToGameDetails(boostFromDisplayEndpoint) {
