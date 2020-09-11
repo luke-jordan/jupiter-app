@@ -52,6 +52,7 @@ import Friends from './src/screens/FriendList';
 import FriendRequestList from './src/screens/FriendRequestList';
 import AddFriend from './src/screens/AddFriend';
 import AddFriendMessage from './src/screens/AddFriendMessage';
+import ReferralCode from './src/screens/ReferralCode';
 
 import AddSavingPool from './src/screens/AddSavingPool';
 import ViewSavingPool from './src/screens/ViewSavingPool';
@@ -110,6 +111,7 @@ const AppContainer = createAppContainer(
       AddFriend: { screen: AddFriend },
       AddFriendMessage: { screen: AddFriendMessage },
       FriendRequestList: { screen: FriendRequestList },
+      ReferralCode: { screen: ReferralCode },
 
       AddSavingPool: { screen: AddSavingPool },
       ViewSavingPool: { screen: ViewSavingPool },

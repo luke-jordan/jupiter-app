@@ -23,6 +23,7 @@ import { Endpoints, Colors } from '../util/Values';
 import PendingTransactionModal from '../elements/PendingTransactionModal';
 
 import { getAuthToken } from '../modules/auth/auth.reducer';
+import HeaderWithBack from '../elements/HeaderWithBack';
 
 const HIGHLIGHTED_TYPES = ['USER_SAVING_EVENT', 'BOOST_REDEMPTION', 'CAPITALIZATION'];
 const pendingIcon = require('../../assets/pending-clock.png');
@@ -388,20 +389,10 @@ class History extends React.Component {
   render() {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.headerButton}
-            onPress={this.onPressBack}
-          >
-            <Icon
-              name="chevron-left"
-              type="evilicon"
-              size={45}
-              color={Colors.GRAY}
-            />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>History</Text>
-        </View>
+        <HeaderWithBack 
+          headerText="History"
+          onPressBack={this.onPressBack}
+        />
         {this.state.loading ? (
           <View style={styles.contentWrapper}>
             <ActivityIndicator size="large" color={Colors.PURPLE} />
