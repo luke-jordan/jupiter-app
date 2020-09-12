@@ -1,5 +1,6 @@
 import React from 'react';
 import { connect } from 'react-redux';
+import moment from 'moment';
 
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Image, Share } from 'react-native';
 import { Overlay, Button, Input } from 'react-native-elements';
@@ -7,12 +8,13 @@ import { Overlay, Button, Input } from 'react-native-elements';
 import HeaderWithBack from '../elements/HeaderWithBack';
 
 import { Colors, Endpoints } from '../util/Values';
+import { safeFormatStringOrDict } from '../util/AmountUtil';
 
 import { LoggingUtil } from '../util/LoggingUtil';
 import { friendService } from '../modules/friend/friend.service';
 
 import { getAuthToken } from '../modules/auth/auth.reducer';
-import { getRequest, postRequest } from '../modules/auth/auth.helper';
+import { postRequest } from '../modules/auth/auth.helper';
 
 import { getProfileData } from '../modules/profile/profile.reducer';
 import { getReferralData } from '../modules/friend/friend.reducer';
@@ -40,27 +42,47 @@ class ReferralCode extends React.PureComponent {
 
   async componentDidMount() {
     this.onLoadFetchCodeStatus();
+    // this.handleCodeUsedResult({
+    //   result: 'BOOST_CREATED',
+    //   codeBoostDetails: {
+    //     codeOwnerName: 'Luke',
+    //     boostAmountOffered: { amount: 20, unit: 'WHOLE_CURRENCY', currency: 'ZAR' },
+    //     redeemConditionAmount: { amount: 100, unit: 'WHOLE_CURRENCY', currency: 'ZAR' },
+    //     daysToMaintain: 30,
+    //     boostEndTimeMillis: moment().add(7, 'days').valueOf(),
+    //   },
+    // });
   }
 
   onLoadFetchCodeStatus = async () => {
     try {
-      const url = `${Endpoints.CORE}referral/status`;
-      const referralResponse = await getRequest({ token: this.props.token, url });
+      const url = `${Endpoints.CORE}referral/use`;
+      const params = { obtainReferralData: true };
+      const referralResponse = await postRequest({ token: this.props.token, url, params });
       if (!referralResponse.ok) {
         throw referralResponse;
       }
 
       const referralData = await referralResponse.json();
       
-      const { canUseReferralCode, hasUsedReferralCode, referralBonusData } = referralData;
-
-      const newState = { canUseReferralCode, hasUsedReferralCode, referralBonusData };
+      const { canUseReferralCode, hasUsedReferralCode, boostOnOffer, referralBonusData: rawBonusData } = referralData;
+      const newState = { canUseReferralCode, hasUsedReferralCode, boostOnOffer };
+      
       if (hasUsedReferralCode) {
         newState.referralCodeUsed = this.props.referralCodeUsed;
       }
 
       if (!this.state.referralCode) {
         newState.referralCode = referralData.userReferralCode;
+      }
+
+      if (boostOnOffer && rawBonusData) {
+        const referralBonusData = {
+          daysToMaintain: rawBonusData.daysToMaintain,
+          boostBalanceRequirement: safeFormatStringOrDict(rawBonusData.redeemConditionAmount),
+          boostAmount: safeFormatStringOrDict(rawBonusData.boostAmountOffered),
+        }
+        newState.referralBonusData = referralBonusData;
       }
 
       this.setState(newState);
@@ -77,6 +99,7 @@ class ReferralCode extends React.PureComponent {
 
   onPressSubmitUsedCode = async () => {
     if (this.state.loading) {
+      console.log('Loading')
       return false;
     }
 
@@ -91,15 +114,18 @@ class ReferralCode extends React.PureComponent {
       const params = { referralCodeUsed: codeToSubmit };
       const url = `${Endpoints.CORE}referral/use`;
       const result = await postRequest({ token: this.props.token, url, params });
-      if (result.ok) {
-        // display boost parameters etc
-        this.setState({ loading: false });
+      if (!result.ok) {
+        throw result;
       }
+      // display boost parameters etc
+      const resultBody = await result.json();
+      this.setState({ loading: false });
+      this.handleCodeUsedResult(resultBody);      
     } catch (err) {
       // display why
       this.setState({ loading: false });
+      this.handleCodeSubmissionError(err);
     }
-
   };
 
   handleCodeUsedResult(serverResult) {
@@ -111,15 +137,28 @@ class ReferralCode extends React.PureComponent {
       this.setState({ codeSubmissionError: 'Sorry, that code is not open to you at this moment' });
     }
     if (result === 'CODE_SET_NO_BOOST') {
-      this.setState({ showUsedCodeModal: true, codeBonusDetails: null });
+      this.setState({ showUsedCodeModal: true, codeBoostDetails: null });
     }
-    if (result === 'BOOST_TRIGGERED') {
-      this.setState({ showUsedCodeModal: true, codeBonusDetails: result.codeBonusDetails });
+    if (result === 'BOOST_CREATED') {
+      const { codeBoostDetails: rawDetails } = serverResult;
+      const codeBoostDetails = {
+        codeOwnerName: rawDetails.codeOwnerName,
+        boostAmount: safeFormatStringOrDict(rawDetails.boostAmountOffered),
+        boostBalanceRequirement: safeFormatStringOrDict(rawDetails.redeemConditionAmount),
+        daysToMaintain: rawDetails.daysToMaintain,
+        crossByDate: moment(rawDetails.boostEndTimeMillis).format('DD ddd MMM'),
+      };
+      this.setState({ showUsedCodeModal: true, canUseReferralCode: false, codeBoostDetails });
     }
   }
 
+  handleCodeSubmissionError(err) {
+    console.log('Handling submission error, response: ', JSON.stringify(err));
+    this.setState({ codeSubmissionError: 'Sorry, there was an error submitting the code, please try again later or contact support' });
+  }
+
   renderOwnReferralCode() {
-    const { referralCode, referralBonusData } = this.state;
+    const { referralCode, boostOnOffer, referralBonusData } = this.state;
     return referralCode && (
       <View style={styles.ownCodeHolder}>
         <Text style={styles.sectionHeader}>Your referral code is:</Text>
@@ -131,25 +170,29 @@ class ReferralCode extends React.PureComponent {
             resizeMode="contain"
           />
         </TouchableOpacity>
-        {referralBonusData && (
+        {boostOnOffer && (
           <Text style={styles.referralBonusData}>
-            Share your referral code with your friends, and we&amp;ll BOOST both of you!{'\n'}
+            Share your referral code with your friends, and we&apos;ll 
+            {' '}<Text style={styles.boldText}>BOOST</Text> both of you!{'\n'}
             If a new user uses your code, gets their Jupiter MoneyWheel balance above 
-            R{referralBonusData.redeemConditionAmount} and keeps it there for at least {referralBonusData.daysToMaintain} days,
-            then both of you will get a R{referralBonusData.boostAmountOffered} boost!
+            {' '}<Text style={styles.boldText}>{referralBonusData.boostBalanceRequirement}</Text> and keeps it there 
+            for at least <Text style={styles.boldText}>{referralBonusData.daysToMaintain} days</Text>,
+            then both of you will get a <Text style={[styles.boldText, styles.purpleText]}>{referralBonusData.boostAmount}</Text> boost!
           </Text>
         )}
       </View>
     )
   }
 
-  // renderUsedReferralCode() {
-  // }
-
   renderUseCodeForm() {
-    return this.state.canSubmitReferral && (
+    return this.state.canUseReferralCode && (
+    <>
+      <View style={styles.sectionSeparator} />
       <View style={styles.useCodeForm}>
         <Text style={styles.sectionHeader}>Use a referral code</Text>
+        <Text style={styles.referralBonusData}>
+          Did a friend refer Jupiter to you? Use their referral code here (caps or lower case):
+        </Text>
         <Input 
           value={this.state.referralCodeToUse}
           onChangeText={text => this.setState({ referralCodeToUse: text })}
@@ -174,34 +217,53 @@ class ReferralCode extends React.PureComponent {
           }}
         />
       </View>
+    </>
     );
   }
 
+  // eslint-disable-next-line react/sort-comp
+  onCloseDialog = () => this.setState({ showUsedCodeModal: false });
+
   renderCodeUsedModal() {
-    const { codeBonusDetails } = this.state;
+    const { codeBoostDetails } = this.state;
     return (
       <Overlay 
         isVisible={this.state.showUsedCodeModal}
         height="auto"
         width="auto"
-        onBackdropPress={() => this.setState({ showUsedCodeModal: false })}
-        onHardwareBackPress={() => this.setState({ showUsedCodeModal: false })}
+        onBackdropPress={this.onCloseDialog}
+        onHardwareBackPress={this.onCloseDialog}
       >
         <View style={styles.resultDialog}>
           <Text style={styles.resultHeader}>
             Success!
           </Text>
-          {codeBonusDetails ? (
+          {codeBoostDetails ? (
             <Text style={styles.resultBody}>
-              You have used {codeBonusDetails.codeOwnerName}&apos;s referral code. Keep your balance above
-              {codeBonusDetails.boostBalanceRequirement} and don&apost;t withdraw before {codeBonusDetails.noWithdrawDate},
-              and both of you will get a R{codeBonusDetails.boostAmount} boost!
+              You have used {codeBoostDetails.codeOwnerName}&apos;s referral code. Keep your balance above
+              {' '}{codeBoostDetails.boostBalanceRequirement} and don&apos;t withdraw before {codeBoostDetails.noWithdrawDate},
+              and both of you will get a {codeBoostDetails.boostAmount} boost!
             </Text>
           ) : (
             <Text style={styles.resultBody}>
               Thanks! We have recorded your use of the code {this.state.referralCodeUsed}. Keep being a smart saver!
             </Text>
           )}
+          <Button 
+            title="DONE"
+            onPress={this.onCloseDialog}
+            titleStyle={styles.submitBtnTitle}
+            buttonStyle={styles.submitBtnStyle}
+            containerStyle={styles.modalBtnContainer}
+            linearGradientProps={{
+              colors: [Colors.LIGHT_BLUE, Colors.PURPLE],
+              start: { x: 0, y: 0.5 },
+              end: { x: 1, y: 0.5 },
+            }}
+          />
+          <TouchableOpacity style={styles.closeDialog} onPress={this.onCloseDialog}>
+            <Image source={require('../../assets/close.png')} />
+          </TouchableOpacity>
         </View>
       </Overlay>
     )
@@ -216,8 +278,8 @@ class ReferralCode extends React.PureComponent {
         />
         <ScrollView style={styles.scrollOuter} contentContainerStyle={styles.scrollInner}>
           {this.renderOwnReferralCode()}
-          {/* {this.state.canUseReferralCode && this.renderUseCodeForm()} */}
-          {!this.state.canUseReferralCode && this.state.hasUsedReferralCode && this.renderUsedReferralCode()}
+          {this.state.canUseReferralCode && this.renderUseCodeForm()}
+          {/* {!this.state.canUseReferralCode && this.state.hasUsedReferralCode && this.renderUsedReferralCode()} */}
         </ScrollView>
         {this.state.showUsedCodeModal && this.renderCodeUsedModal()}
       </View>
@@ -227,7 +289,125 @@ class ReferralCode extends React.PureComponent {
 };
 
 const styles = StyleSheet.create({ 
-
+  container: {
+    flex: 1,
+  },
+  scrollOuter: {
+    flex: 1,
+    backgroundColor: Colors.BACKGROUND_GRAY,
+  },
+  scrollInner: {
+    padding: 15,
+  },
+  ownCodeHolder: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  sectionHeader: {
+    fontFamily: 'poppins-semibold',
+    color: Colors.DARK_GRAY,
+    fontSize: 14,
+  },
+  referralCodeShareHolder: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 10,
+  },
+  referralCodeText: {
+    fontFamily: 'poppins-semibold',
+    color: Colors.PURPLE,
+    fontSize: 20,
+    marginRight: 10,
+  },
+  referralBonusData: {
+    width: '100%',
+    textAlign: 'center',
+    marginTop: 10,
+    fontFamily: 'poppins-regular',
+    fontSize: 15,
+    lineHeight: 21,
+  },
+  boldText: {
+    fontFamily: 'poppins-semibold',
+  },
+  purpleText: {
+    color: Colors.PURPLE,
+  },
+  sectionSeparator: {
+    width: '100%',
+    height: 1,
+    backgroundColor: Colors.GRAY,
+  },
+  useCodeForm: {
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  inputWrapperStyle: {
+    marginTop: 20,
+    backgroundColor: Colors.WHITE,
+    minHeight: 50,
+    borderRadius: 10,
+    paddingVertical: 10,
+  },
+  inputContainerStyle: {
+    borderBottomWidth: 0,
+  },
+  inputStyle: {
+    backgroundColor: Colors.WHITE,
+    fontFamily: 'poppins-regular',
+    fontSize: 13,
+    marginLeft: 5,
+  },
+  submitBtnContainerStyle: {
+    marginTop: 15,
+    width: '100%',
+  },
+  submitBtnStyle: {
+    borderRadius: 4,
+    paddingVertical: 12,
+  },
+  submitBtnTitle: {
+    fontFamily: 'poppins-semibold',
+    fontWeight: '600',
+    color: Colors.WHITE,
+    fontSize: 16,
+  },
+  codeSubmissionError: {
+    fontFamily: 'poppins-regular',
+    color: Colors.RED,
+    marginTop: 5,
+  },
+  resultDialog: {
+    width: '90%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+  },
+  resultHeader: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 18,
+    color: Colors.DARK_GRAY,
+    marginTop: 10,
+    marginBottom: 5,
+  },
+  resultBody: {
+    fontFamily: 'poppins-regular',
+    textAlign: 'center',
+    color: Colors.MEDIUM_GRAY,
+    fontSize: 15,
+    lineHeight: 21,
+  },
+  closeDialog: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+  },
+  modalBtnContainer: {
+    minWidth: '100%',
+    marginTop: 10,
+  },
 });
 
 export default connect(mapStateToProps)(ReferralCode);

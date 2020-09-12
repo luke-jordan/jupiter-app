@@ -123,7 +123,7 @@ class Boosts extends React.Component {
 
   getBoostButton(boostDetails) {
     const isBoostExpired = this.isBoostExpired({ boostStatus: boostDetails.boostStatus, endTime: boostDetails.endTime });
-    if (boostDetails.boostStatus === 'REDEEMED' || boostDetails.boostStatus === 'CONSOLED' || isBoostExpired) {
+    if (['REDEEMED', 'CONSOLED', 'REVOKED'].includes(boostDetails.boostStatus) || isBoostExpired) {
       return null;
     }
 
@@ -222,6 +222,10 @@ class Boosts extends React.Component {
 
     if (boostDetails.boostStatus === 'FAILED') {
       return <Text style={styles.boostFailed}>Sorry, you didn&apos;t win this time</Text>
+    }
+
+    if (boostDetails.boostStatus === 'REVOKED') {
+      return <Text style={styles.boostFailed}>This boost was revoked because of a withdrawal</Text>
     }
     
     if (this.isBoostExpired({ boostStatus: boostDetails.boostStatus, endTime: boostDetails.endTime})) {
@@ -379,7 +383,7 @@ class Boosts extends React.Component {
   isBoostExpired({ boostStatus, endTime }) {
     // the server sometimes will not have set a boost status to expire even when its end time is past
     // in that case, as a fallback, we should set the status to expired here
-    if (boostStatus === 'EXPIRED' || boostStatus === 'FAILED') {
+    if (['EXPIRED', 'FAILED', 'REVOKED'].includes(boostStatus)) {
       return true;
     }
 
