@@ -18,8 +18,8 @@ const transformBoostToTournament = (boost) => ({
 
 export const friendService = {
 
-  DEFAULT_TEXT_MESSAGE: `The Jupiter Savings app REWARDS me for saving & gives a GREAT interest rate! ` +
-    `If you join me as my savings buddy, we can earn EXTRA rewards!`,
+  DEFAULT_TEXT_MESSAGE: `The Jupiter Savings app REWARDS me for saving & gives a great interest rate! ` +
+    `If you join me as my savings buddy, we can earn extra rewards!`,
 
   sharingMessage(referralCode, baseMessage = this.DEFAULT_TEXT_MESSAGE) {
     // const referralLink = `${Endpoints.MESSAGES}/referral/${referralCode}`;

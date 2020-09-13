@@ -94,6 +94,21 @@ class Boosts extends React.Component {
     }
   }
 
+  // eslint-disable-next-line react/sort-comp
+  selectThresholdEvent(condition) {
+    let thresholdEventType = '';
+    if (condition.includes('save_event')) thresholdEventType = 'save_event';
+    if (condition.includes('balance_crossed_major_digit')) thresholdEventType = 'save_event';
+    if (condition.includes('balance_crossed_abs_target')) thresholdEventType = 'save_event';
+    if (condition.includes('first_save_above')) thresholdEventType = 'onboard_save_event';
+    if (condition.includes('friends_added_since')) thresholdEventType = 'social_event';
+    if (condition.includes('total_number_friends')) thresholdEventType = 'social_event';
+    if (condition.includes('number_taps')) thresholdEventType = 'game_event';
+    if (condition.includes('percent_destroyed')) thresholdEventType = 'game_event';
+    if (condition === 'event_occurs #{WITHDRAWAL_EVENT_CANCELLED}') thresholdEventType = 'cancel_withdrawal';
+    return thresholdEventType;
+  }
+
   getNextStatusAndThresholdEvent(boostStatus, statusConditions) {
     const nextStatus = this.getNextStatus(boostStatus, Object.keys(statusConditions));
 
@@ -106,16 +121,8 @@ class Boosts extends React.Component {
 
     let thresholdEventType = '';
     if (conditions && conditions.length > 0) {
-      const condition = conditions[0];
-      if (condition.includes('save_event')) thresholdEventType = 'save_event';
-      if (condition.includes('balance_crossed_major_digit')) thresholdEventType = 'save_event';
-      if (condition.includes('balance_crossed_abs_target')) thresholdEventType = 'save_event';
-      if (condition.includes('first_save_above')) thresholdEventType = 'onboard_save_event';
-      if (condition.includes('friends_added_since')) thresholdEventType = 'social_event';
-      if (condition.includes('total_number_friends')) thresholdEventType = 'social_event';
-      if (condition.includes('number_taps')) thresholdEventType = 'game_event';
-      if (condition.includes('percent_destroyed')) thresholdEventType = 'game_event';
-      if (condition === 'event_occurs #{WITHDRAWAL_EVENT_CANCELLED}') thresholdEventType = 'cancel_withdrawal';
+      const conditionWithThreshold = conditions.find((condition) => this.selectThresholdEvent(condition).length > 0);
+      thresholdEventType = this.selectThresholdEvent(conditionWithThreshold);
     }
     
     return { nextStatus, thresholdEventType };

@@ -3,7 +3,7 @@ import { connect } from 'react-redux';
 import moment from 'moment';
 
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Image, Share } from 'react-native';
-import { Overlay, Button, Input } from 'react-native-elements';
+import { Overlay, Button, Input, Icon } from 'react-native-elements';
 
 import HeaderWithBack from '../elements/HeaderWithBack';
 
@@ -42,16 +42,7 @@ class ReferralCode extends React.PureComponent {
 
   async componentDidMount() {
     this.onLoadFetchCodeStatus();
-    // this.handleCodeUsedResult({
-    //   result: 'BOOST_CREATED',
-    //   codeBoostDetails: {
-    //     codeOwnerName: 'Luke',
-    //     boostAmountOffered: { amount: 20, unit: 'WHOLE_CURRENCY', currency: 'ZAR' },
-    //     redeemConditionAmount: { amount: 100, unit: 'WHOLE_CURRENCY', currency: 'ZAR' },
-    //     daysToMaintain: 30,
-    //     boostEndTimeMillis: moment().add(7, 'days').valueOf(),
-    //   },
-    // });
+    LoggingUtil.logEvent('USER_OPENED_REFERRAL_SCREEN');
   }
 
   onLoadFetchCodeStatus = async () => {
@@ -164,10 +155,11 @@ class ReferralCode extends React.PureComponent {
         <Text style={styles.sectionHeader}>Your referral code is:</Text>
         <TouchableOpacity style={styles.referralCodeShareHolder} onPress={this.onPressShareReferral}>
           <Text style={styles.referralCodeText}>{this.state.referralCode.toUpperCase()}</Text>
-          <Image
-            style={styles.copyIcon}
-            source={require('../../assets/copy.png')}
-            resizeMode="contain"
+          <Icon
+            name="share"
+            type="entypo"
+            size={22}
+            color={Colors.PURPLE}
           />
         </TouchableOpacity>
         {boostOnOffer && (
@@ -206,6 +198,7 @@ class ReferralCode extends React.PureComponent {
         )}
         <Button 
           title="SUBMIT"
+          loading={this.state.loading}
           onPress={this.onPressSubmitUsedCode}
           titleStyle={styles.submitBtnTitle}
           buttonStyle={styles.submitBtnStyle}
