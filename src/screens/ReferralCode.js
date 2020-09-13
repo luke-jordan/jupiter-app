@@ -2,7 +2,7 @@ import React from 'react';
 import { connect } from 'react-redux';
 import moment from 'moment';
 
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Image, Share } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Image, Share, KeyboardAvoidingView } from 'react-native';
 import { Overlay, Button, Input, Icon } from 'react-native-elements';
 
 import HeaderWithBack from '../elements/HeaderWithBack';
@@ -269,11 +269,17 @@ class ReferralCode extends React.PureComponent {
           headerText="Referral Code"
           onPressBack={() => this.props.navigation.goBack()}
         />
-        <ScrollView style={styles.scrollOuter} contentContainerStyle={styles.scrollInner}>
-          {this.renderOwnReferralCode()}
-          {this.state.canUseReferralCode && this.renderUseCodeForm()}
-          {/* {!this.state.canUseReferralCode && this.state.hasUsedReferralCode && this.renderUsedReferralCode()} */}
-        </ScrollView>
+        <KeyboardAvoidingView 
+          style={styles.container}
+          contentContainerStyle={styles.container}
+          behavior="height"
+        >
+          <ScrollView style={styles.scrollOuter} contentContainerStyle={styles.scrollInner}>
+            {this.renderOwnReferralCode()}
+            {this.state.canUseReferralCode && this.renderUseCodeForm()}
+            {/* {!this.state.canUseReferralCode && this.state.hasUsedReferralCode && this.renderUsedReferralCode()} */}
+          </ScrollView>
+        </KeyboardAvoidingView>
         {this.state.showUsedCodeModal && this.renderCodeUsedModal()}
       </View>
     )
@@ -286,7 +292,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollOuter: {
-    flex: 1,
     backgroundColor: Colors.BACKGROUND_GRAY,
   },
   scrollInner: {
@@ -316,7 +321,6 @@ const styles = StyleSheet.create({
   referralBonusData: {
     width: '100%',
     textAlign: 'center',
-    marginTop: 10,
     fontFamily: 'poppins-regular',
     fontSize: 15,
     lineHeight: 21,
