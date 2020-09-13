@@ -52,6 +52,7 @@ import Friends from './src/screens/FriendList';
 import FriendRequestList from './src/screens/FriendRequestList';
 import AddFriend from './src/screens/AddFriend';
 import AddFriendMessage from './src/screens/AddFriendMessage';
+import ReferralCode from './src/screens/ReferralCode';
 
 import AddSavingPool from './src/screens/AddSavingPool';
 import ViewSavingPool from './src/screens/ViewSavingPool';
@@ -62,6 +63,7 @@ import ViewFriendTournament from './src/screens/ViewFriendTournament';
 import CircleGame from './src/screens/CircleGame';
 import BreakingGame from './src/screens/BreakingGame';
 import MatchingGame from './src/screens/MatchingGame';
+import QuizGame from './src/screens/QuizGame';
 
 const AppContainer = createAppContainer(
   createStackNavigator(
@@ -109,6 +111,7 @@ const AppContainer = createAppContainer(
       AddFriend: { screen: AddFriend },
       AddFriendMessage: { screen: AddFriendMessage },
       FriendRequestList: { screen: FriendRequestList },
+      ReferralCode: { screen: ReferralCode },
 
       AddSavingPool: { screen: AddSavingPool },
       ViewSavingPool: { screen: ViewSavingPool },
@@ -119,6 +122,7 @@ const AppContainer = createAppContainer(
       CircleGame: { screen: CircleGame },
       BreakingGame: { screen: BreakingGame },
       MatchingGame: { screen: MatchingGame },
+      QuizGame: { screen: QuizGame },
     },
     { initialRouteName: 'Splash', headerMode: 'none' }
   )

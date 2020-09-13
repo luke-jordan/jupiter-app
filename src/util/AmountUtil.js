@@ -96,6 +96,19 @@ export const safeAmountStringSplit = (amountString) => {
   }
 };
 
+export const safeFormatStringOrDict = (amountStringOrDict, decimals = 0) => {
+  if (!amountStringOrDict) {
+    return 0;
+  }
+
+  const amountDict = typeof amountStringOrDict === 'string' ? safeAmountStringSplit(amountStringOrDict) : amountStringOrDict;
+  if (!amountStringOrDict || Object.keys(amountStringOrDict).length === 0) {
+    return 0;
+  }
+
+  return standardFormatAmountDict(amountDict, decimals);
+}
+
 export const formatPercent = (percentNumber) => `${parseInt(percentNumber, 10).toFixed(0)}%`;
 
 /**

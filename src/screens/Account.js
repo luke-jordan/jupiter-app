@@ -106,6 +106,26 @@ class Account extends React.Component {
     }
   }
 
+  renderTopButton = (label, icon, onPress) => (
+    <TouchableOpacity
+      style={[styles.buttonLine, styles.accountButtonLine]}
+      onPress={onPress}
+    >
+      <View style={styles.accountLineContent}>
+        <Image style={styles.accountLineIcon} source={icon} />
+        <View style={styles.accountInfo}>
+          <Text style={styles.accountLineText}>{label}</Text>
+        </View>
+      </View>
+      <Icon
+        name="chevron-right"
+        type="evilicon"
+        size={50}
+        color={Colors.MEDIUM_GRAY}
+      />
+    </TouchableOpacity>
+  )
+
   render() {
     return (
       <View style={styles.container}>
@@ -119,79 +139,18 @@ class Account extends React.Component {
               <Text style={styles.nameText}>{this.state.fullName}</Text>
             </View> */}
             <View style={styles.mainContent}>
+
+              {/* top buttons - relatively more important */}
               <View style={styles.sectionContent}>
-                {/* <Text style={styles.sectionHead}>MY ACCOUNT</Text> */}
-                <TouchableOpacity
-                  style={[styles.buttonLine, styles.accountButtonLine]}
-                  onPress={this.onPressHistory}
-                >
-                  <View style={styles.accountLineContent}>
-                    <Image style={styles.accountLineIcon} source={require('../../assets/history.png')} />
-                    <View style={styles.accountInfo}>
-                      <Text style={styles.accountLineText}>History</Text>
-                    </View>
-                  </View>
-                  <Icon
-                    name="chevron-right"
-                    type="evilicon"
-                    size={50}
-                    color={Colors.MEDIUM_GRAY}
-                  />
-                </TouchableOpacity>
+                {this.renderTopButton('Referral', require('../../assets/buddy.png'), () => this.props.navigation.navigate('ReferralCode'))}
                 <View style={styles.internalSeparator} />
-                <TouchableOpacity
-                  style={[styles.buttonLine, styles.accountButtonLine]}
-                  onPress={this.onPressDetails}
-                >
-                  <View style={styles.accountLineContent}>
-                    <Image style={styles.accountLineIcon} source={require('../../assets/profile.png')} />
-                    <View style={styles.accountInfo}>
-                      <Text style={styles.accountLineText}>Profile</Text>
-                    </View>
-                  </View>
-                  <Icon
-                    name="chevron-right"
-                    type="evilicon"
-                    size={50}
-                    color={Colors.MEDIUM_GRAY}
-                  />
-                </TouchableOpacity>
+                {this.renderTopButton('History', require('../../assets/history.png'), this.onPressHistory)}
                 <View style={styles.internalSeparator} />
-                <TouchableOpacity
-                  style={[styles.buttonLine, styles.accountButtonLine]}
-                  onPress={this.onPressWithdraw}
-                >
-                  <View style={styles.accountLineContent}>
-                    <Image style={styles.accountLineIcon} source={require('../../assets/withdraw.png')} />
-                    <View style={styles.accountInfo}>
-                      <Text style={styles.accountLineText}>Withdraw Cash</Text>
-                    </View>
-                  </View>
-                  <Icon
-                    name="chevron-right"
-                    type="evilicon"
-                    size={50}
-                    color={Colors.MEDIUM_GRAY}
-                  />
-                </TouchableOpacity>
+                {this.renderTopButton('Profile', require('../../assets/profile.png'), this.onPressDetails)}
                 <View style={styles.internalSeparator} />
-                <TouchableOpacity
-                  style={[styles.buttonLine, styles.accountButtonLine]}
-                  onPress={this.onPressMessages}
-                >
-                  <View style={styles.accountLineContent}>
-                    <Image style={styles.accountLineIcon} source={require('../../assets/messages.png')} />
-                    <View style={styles.accountInfo}>
-                      <Text style={styles.accountLineText}>Messages</Text>
-                    </View>
-                  </View>
-                  <Icon
-                    name="chevron-right"
-                    type="evilicon"
-                    size={50}
-                    color={Colors.MEDIUM_GRAY}
-                  />
-                </TouchableOpacity>
+                {this.renderTopButton('Withdraw Cash', require('../../assets/withdraw.png'), this.onPressWithdraw)}
+                <View style={styles.internalSeparator} />
+                {this.renderTopButton('Messages', require('../../assets/messages.png'), this.onPressMessages)}
               </View>
 
               <View style={styles.sectionContent}>

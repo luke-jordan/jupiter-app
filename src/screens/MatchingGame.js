@@ -85,7 +85,7 @@ class MatchingGame extends React.PureComponent {
 
       gameInProgress: false,
       matchInProgress: false,
-      showGameResultModal: false,
+      showGameResultDialog: false,
     }
   }
 
