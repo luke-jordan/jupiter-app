@@ -452,19 +452,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  header: {
-    width: '100%',
-    height: 50,
-    backgroundColor: Colors.WHITE,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 5,
-  },
-  headerTitle: {
-    marginLeft: -5,
-    fontFamily: 'poppins-semibold',
-    fontSize: 22,
-  },
   contentWrapper: {
     flex: 1,
     width: '100%',
