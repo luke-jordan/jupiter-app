@@ -88,7 +88,7 @@ class OnboardAddSaving extends React.Component {
   };
 
   getProjectedAmountNumber() {
-    if (!this.props.comparatorRates.referenceRate) {
+    if (!this.props.comparatorRates || !this.props.comparatorRates.referenceRate) {
       return 0;
     }
 

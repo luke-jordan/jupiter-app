@@ -212,6 +212,7 @@ class QuizGame extends React.PureComponent {
     if (!resultOfSubmission) {
       LoggingUtil.logError(Error('Result of game was null'));
       this.showErrorDialog();
+      return;
     }
 
     const { statusMet } = resultOfSubmission;

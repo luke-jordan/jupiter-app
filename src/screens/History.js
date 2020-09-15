@@ -69,6 +69,7 @@ class History extends React.Component {
       case 'USER_SAVING_EVENT':
         return require('../../assets/add.png');
       case 'WITHDRAWAL':
+      case 'BOOST_REVOCATION':
         return require('../../assets/withdrawal.png');
       case 'BOOST_POOL_FUNDING':
         return require('../../assets/friends_1.png');
@@ -115,6 +116,9 @@ class History extends React.Component {
 
       case 'PROFILE_UPDATED':
         return 'Changed your profile details';
+
+      case 'BOOST_REVOCATION':
+        return 'Boost revoked';
 
       default: {
         const result = type.split('_').map(word => word.toLowerCase()).join(' ');
