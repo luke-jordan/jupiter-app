@@ -1,10 +1,8 @@
 import React from 'react';
 import { connect } from 'react-redux';
 
-import { View, Text, Image, StyleSheet, KeyboardAvoidingView, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, Image, StyleSheet, KeyboardAvoidingView, ScrollView, TouchableOpacity } from 'react-native';
 import { Input, Icon } from 'react-native-elements';
-
-import ConfettiCannon from 'react-native-confetti-cannon';
 
 import OnboardBreadCrumb from '../elements/OnboardBreadCrumb';
 import { LoggingUtil } from '../util/LoggingUtil';
@@ -20,8 +18,6 @@ import { updateCurrentTransaction, clearCurrentTransaction } from '../modules/tr
 import { Colors, Endpoints } from '../util/Values';
 import { getDivisor, standardFormatAmount } from '../util/AmountUtil';
 
-const { height } = Dimensions.get('window');
-
 const mapStateToProps = state => ({
   authToken: getAuthToken(state),
   accountId: getAccountId(state),
@@ -36,8 +32,8 @@ const mapDispatchToProps = {
 };
 
 class OnboardAddSaving extends React.Component {
-  constructor(props) {
-    super(props);
+  constructor() {
+    super();
     this.state = {
       currency: 'R',
       amountToAdd: '',
@@ -281,130 +277,155 @@ class OnboardAddSaving extends React.Component {
     
     this.props.removeOnboardStep('ADD_CASH');
   }
+  
+  renderTopMatter = () => (
+    <>
+      <View style={styles.stepContainer}>
+        <Text style={styles.stepText}>Step 4 of 4</Text>
+      </View>
+      <OnboardBreadCrumb currentStep="ADD_SAVINGS" />
+    </>
+  )
+
+  renderInternalHeader = () => (
+    <View style={styles.internalHeaderWrapper}>
+      <Text style={styles.contentHeader}>
+        You&apos;re almost there!
+      </Text>
+      <Text style={styles.contentBody}>
+      All that&apos;s left is to make your first save - from as little as R1!
+      </Text>
+    </View>
+  )
+
+  renderInputBody = () => (
+    <View style={styles.inputBody}>
+      <Text style={styles.inputLabel}>Add Savings</Text>
+      <View style={styles.inputWrapper}>
+
+        <View style={styles.inputWrapperLeft}>
+          <Text style={styles.currencyLabel}>{this.state.currency}</Text>
+        </View>
+        <Input
+          testID="add-cash-input"
+          accessibilityLabel="add-cash-input"
+          keyboardType="numeric"
+          ref={ref => {
+            this.amountInputRef = ref;
+          }}
+          value={this.state.amountToAdd}
+          onChangeText={text => this.onChangeAmount(text)}
+          onEndEditing={() => this.onChangeAmountEnd()}
+          inputContainerStyle={styles.inputContainerStyle}
+          inputStyle={styles.inputStyle}
+          containerStyle={styles.containerStyle}
+        />
+      </View>
+
+      {!this.state.notWholeNumber && !this.state.emptyAmountError && this.getProjectedAmountNumber() < 1 && (
+        <Text style={styles.footnoteText}>* no minimum required</Text>
+      )}
+
+      {this.state.notWholeNumber && <Text style={styles.errorText}>Please enter a whole number</Text>}
+      {this.state.emptyAmountError && <Text style={styles.errorText}>Please enter an amount to continue</Text>}
+      {this.props.comparatorRates && this.state.amountToAdd.trim() !== '' && this.getProjectedAmountNumber() >= 1 ? (
+        <Text style={styles.moneyGrowth}>
+          This save pays you <Text style={styles.boldAmount}>{this.getProjectedAmountText()}</Text> every year!
+        </Text>
+      ) : null}
+
+      <TouchableOpacity 
+        style={styles.optionBox} 
+        onPress={this.onPressInstantEft} 
+        loading={this.state.loadingInstant}
+        disabled={this.state.loadingManual}
+      >
+        <Image
+          style={styles.optionImage}
+          source={require('../../assets/ozow-icon.png')}
+        />
+        <View style={styles.optionTextBox}>
+          <Text style={this.state.loadingManual ? styles.optionTitleDisabled : styles.optionTitle}>
+            { this.state.loadingInstant ? 'LOADING...' : 'PAY WITH OZOW' }
+          </Text>
+          <Text style={styles.optionSubtitle}>Safe &amp; secure instant transfer</Text>
+        </View>
+        <View style={styles.optionChevronWrapper}>
+          <Icon
+            name="chevron-right"
+            type="evilicon"
+            size={40}
+            color={Colors.MEDIUM_GRAY}
+          />
+        </View>
+      </TouchableOpacity>
+
+      <TouchableOpacity 
+        style={styles.optionBox} 
+        onPress={this.onPressManualEft} 
+        loading={this.state.loadingManual}
+        disabled={this.state.loadingInstant}
+      >
+        <Image
+          style={styles.optionImage}
+          source={require('../../assets/eft-positive.png')}
+        />
+        <View style={styles.optionTextBox}>
+          <Text style={this.state.loadingInstant ? styles.optionTitleDisabled : styles.optionTitle}>
+            { this.state.loadingManual ? 'LOADING...' : 'MANUAL EFT' }
+          </Text>
+          <Text style={styles.optionSubtitle}>2-3 working days to reflect</Text>
+        </View>
+        <View style={styles.optionChevronWrapper}>
+          <Icon
+            name="chevron-right"
+            type="evilicon"
+            size={40}
+            color={Colors.MEDIUM_GRAY}
+          />  
+        </View>
+      </TouchableOpacity>
+    </View>
+  );
 
   render() {
     return (
-      <KeyboardAvoidingView behavior="position">
-        <View style={styles.stepContainer}>
-          <Text style={styles.stepText}>Step 4 of 4</Text>
-        </View>
-        <ScrollView style={{ height: '100%' }}>
-          <OnboardBreadCrumb currentStep="ADD_SAVINGS" />
-          <Text style={styles.contentHeader}>
-            You&apos;re almost there!
-          </Text>
-          <Text style={styles.contentBody}>
-          All that&apos;s left is to make your first save - from as little as R1!
-          </Text>
-          <View style={styles.inputBody}>
-            <ConfettiCannon 
-              count={50} 
-              origin={{x: -20, y: height / 2 }} 
-              colors={[Colors.GOLD, Colors.PURPLE, Colors.SKY_BLUE]} 
-              fadeOut 
-            />
-            <Text style={styles.inputLabel}>Add Savings</Text>
-            <View style={styles.inputWrapper}>
-              <View style={styles.inputWrapperLeft}>
-                <Text style={styles.currencyLabel}>{this.state.currency}</Text>
-              </View>
-              <Input
-                testID="add-cash-input"
-                accessibilityLabel="add-cash-input"
-                keyboardType="numeric"
-                ref={ref => {
-                  this.amountInputRef = ref;
-                }}
-                value={this.state.amountToAdd}
-                onChangeText={text => this.onChangeAmount(text)}
-                onEndEditing={() => this.onChangeAmountEnd()}
-                inputContainerStyle={styles.inputContainerStyle}
-                inputStyle={styles.inputStyle}
-                containerStyle={styles.containerStyle}
-              />
-            </View>
-            {!this.state.notWholeNumber && !this.state.emptyAmountError && this.getProjectedAmountNumber() < 1 && (
-              <Text style={styles.footnoteText}>* no minimum required</Text>
-            )}
-
-            {this.state.notWholeNumber && <Text style={styles.errorText}>Please enter a whole number</Text>}
-            {this.state.emptyAmountError && <Text style={styles.errorText}>Please enter an amount to continue</Text>}
-            {this.props.comparatorRates && this.state.amountToAdd.trim() !== '' && this.getProjectedAmountNumber() >= 1 ? (
-              <Text style={styles.moneyGrowth}>
-                This save pays you <Text style={styles.boldAmount}>{this.getProjectedAmountText()}</Text> every year!
-              </Text>
-            ) : null}
-
-            <TouchableOpacity 
-              style={styles.optionBox} 
-              onPress={this.onPressInstantEft} 
-              loading={this.state.loadingInstant}
-              disabled={this.state.loadingManual}
-            >
-              <Image
-                style={styles.optionImage}
-                source={require('../../assets/ozow-icon.png')}
-              />
-              <View style={styles.optionTextBox}>
-                <Text style={this.state.loadingManual ? styles.optionTitleDisabled : styles.optionTitle}>
-                  { this.state.loadingInstant ? 'LOADING...' : 'PAY WITH OZOW' }
-                </Text>
-                <Text style={styles.optionSubtitle}>Safe &amp; secure instant transfer</Text>
-              </View>
-              <View style={styles.optionChevronWrapper}>
-                <Icon
-                  name="chevron-right"
-                  type="evilicon"
-                  size={40}
-                  color={Colors.MEDIUM_GRAY}
-                />
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.optionBox} 
-              onPress={this.onPressManualEft} 
-              loading={this.state.loadingManual}
-              disabled={this.state.loadingInstant}
-            >
-              <Image
-                style={styles.optionImage}
-                source={require('../../assets/eft-positive.png')}
-              />
-              <View style={styles.optionTextBox}>
-                <Text style={this.state.loadingInstant ? styles.optionTitleDisabled : styles.optionTitle}>
-                  { this.state.loadingManual ? 'LOADING...' : 'MANUAL EFT' }
-                </Text>
-                <Text style={styles.optionSubtitle}>2-3 working days to reflect</Text>
-              </View>
-              <View style={styles.optionChevronWrapper}>
-                <Icon
-                  name="chevron-right"
-                  type="evilicon"
-                  size={40}
-                  color={Colors.MEDIUM_GRAY}
-                />  
-              </View>
-            </TouchableOpacity>
-            
-          </View>
+      <KeyboardAvoidingView 
+        behavior="height"
+        style={styles.container}
+        contentContainerStyle={styles.container}
+      >
+        {this.renderTopMatter()}
+        <ScrollView>
+          {this.renderInternalHeader()}
+          {this.renderInputBody()}            
         </ScrollView>
       </KeyboardAvoidingView>
+      // </View>
     );
   }
 }
 
 const styles = StyleSheet.create({
+  container: { 
+    flex: 1,
+    // backgroundColor: Colors.BACKGROUND_GRAY,
+  },
   stepContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
     paddingHorizontal: 10,
+    backgroundColor: Colors.WHITE,
   },
   stepText: {
     fontFamily: 'poppins-semibold',
     fontSize: 16,
     color: Colors.DARK_GRAY,
+  },
+  internalHeaderWrapper: {
+    backgroundColor: Colors.WHITE,
+    paddingBottom: 20,
   },
   contentHeader: {
     fontFamily: 'poppins-semibold',
@@ -430,9 +451,7 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: Colors.BACKGROUND_GRAY,
     paddingHorizontal: 15,
-    marginTop: 20,
-    paddingBottom: 50,
-    marginBottom: 50,
+    paddingBottom: 20,
   },
   inputLabel: {
     fontFamily: 'poppins-semibold',
