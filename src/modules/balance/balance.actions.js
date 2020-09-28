@@ -3,6 +3,7 @@ export const namespace = 'BALANCE';
 export const UPDATE_SERVER_BALANCE = `${namespace}/UPDATE_BOOST_COUNT`;
 export const UPDATE_SHOWN_BALANCE = `${namespace}/UPDATE_SHOWN_BALANCE`;
 export const UPDATE_COMPARATOR_RATES = `${namespace}/UPDATE_COMPARATOR_RATES`;
+export const UPDATE_SAVING_HEAT = `${namespace}/UPDATE_SAVING_HEAT`;
 
 export const updateServerBalance = payload => ({
   type: UPDATE_SERVER_BALANCE,
@@ -17,4 +18,9 @@ export const updateShownBalance = payload => ({
 export const updateComparatorRates = payload => ({
   type: UPDATE_COMPARATOR_RATES,
   payload,
+});
+
+export const updateSavingHeat = currentSavingHeat => ({
+  type: UPDATE_SAVING_HEAT,
+  currentSavingHeat,
 });

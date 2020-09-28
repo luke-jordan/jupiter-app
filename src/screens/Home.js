@@ -30,12 +30,13 @@ import BoostResultModal from '../elements/boost/BoostResultModal';
 
 import { updateAuthToken } from '../modules/auth/auth.actions';
 import { getAuthToken } from '../modules/auth/auth.reducer';
+import { getRequest } from '../modules/auth/auth.helper';
 
 import { boostService } from '../modules/boost/boost.service';
 import handleMessageActionPress from '../modules/boost/helpers/handleMessageActionPress';
 
-import { updateServerBalance, updateShownBalance } from '../modules/balance/balance.actions';
-import { getCurrentServerBalanceFull } from '../modules/balance/balance.reducer';
+import { updateServerBalance, updateShownBalance, updateSavingHeat } from '../modules/balance/balance.actions';
+import { getCurrentServerBalanceFull, getCurrentHeatLevel } from '../modules/balance/balance.reducer';
 
 import { updateBoostCount, updateBoostViewed, updateMessagesAvailable, updateMessageSequence, updateMessageViewed } from '../modules/boost/boost.actions';
 import { getViewedBoosts, hasViewedFallback, getNextMessage, getAvailableMessages, getViewedMessages } from '../modules/boost/boost.reducer';
@@ -51,6 +52,10 @@ import GameResultModal from '../elements/boost/GameResultModal';
 
 import SnippetOverlay from './SnippetOverlay';
 
+const CIRCLE_IMAGES = {
+  DEFAULT: require('../../assets/oval.png'),
+}
+
 const mapDispatchToProps = {
   updateBoostCount,
   updateFriendAlerts,
@@ -64,6 +69,7 @@ const mapDispatchToProps = {
   updateProfileFields,
   updateOnboardSteps,
   updateAccountId,
+  updateSavingHeat,
   updateWholeProfile: updateAllFields,
   clearState: () => ({ type: 'USER_LOGOUT' }), 
 };
@@ -79,6 +85,7 @@ const mapStateToProps = state => ({
   availableMessages: getAvailableMessages(state),
   viewedMessages: getViewedMessages(state),
   currentBalance: getCurrentServerBalanceFull(state),
+  heatLevel: getCurrentHeatLevel(state),
 });
 
 const { height, width } = Dimensions.get('window');
@@ -125,9 +132,10 @@ class Home extends React.Component {
   }
 
   async handleRefocus() {
-    // check params if we come from payment etc, we make the wheel gold
+    // check params if we come from payment etc, we make the wheel gold, while also checking for and updating heat
     if (this.props.navigation.getParam('makeWheelGold')) {
       this.setState({ makeWheelGold: true });
+      this.fetchCurrentHeat();
     }
     // check params if we have params.showModal we show modal with game
     if (this.props.navigation.getParam('showGameUnlockedModal')) {
@@ -136,27 +144,6 @@ class Home extends React.Component {
     } else {
       this.checkBalanceOnReload();
     }
-  }
-
-  // can remove this once all converted, somewhat ugly (for robustness) thing to populate the store
-  // eslint-disable-next-line react/sort-comp
-  async hydrateStateIfNotPrior(storedInfo) {
-    
-    if (!this.props.authToken && storedInfo && storedInfo.token) {
-      this.props.updateAuthToken(storedInfo.token);
-    }
-
-    if (!this.props.profile || Object.keys(this.props.profile).length === 0 || !Array.isArray(this.props.onboardStepsRemaining)) {
-      this.props.updateWholeProfile(storedInfo);
-    }
-
-    // todo: again, some legacy handling, remove in future
-    const hasAccountIdAsString = typeof this.props.accountId === 'string' && this.props.accountId.length > 0;
-
-    if (!hasAccountIdAsString && Array.isArray(this.props.accountId) && this.props.accountId.length > 0) {
-      const internalAccountId = this.props.accountId[0];
-      this.props.updateAccountId(internalAccountId);
-    } 
   }
 
   logout() {
@@ -181,8 +168,6 @@ class Home extends React.Component {
       NavigationUtil.navigateWithoutBackstack(this.props.navigation, 'OnboardPending', { stepToTake: 'FAILED_VERIFICATION' });
       return;
     }
-
-    await this.hydrateStateIfNotPrior(info);
 
     this.setState({ firstName: this.props.profile.calledName || this.props.profile.personalName });
 
@@ -219,6 +204,7 @@ class Home extends React.Component {
 
     this.fetchCurrentProfileFromServer();
     this.checkForTriggeredBoost();
+    this.fetchCurrentHeat();
   }
 
   showLogoutAlert = () => {
@@ -257,43 +243,38 @@ class Home extends React.Component {
     this.setState({ loading: true });
 
     try {
-      const result = await fetch(`${Endpoints.AUTH}profile/fetch`, {
-        headers: {
-          Authorization: `Bearer ${this.props.authToken}`,
-        },
-        method: 'GET',
-      });
-
-      if (result.ok) {
-        const resultJson = await result.json();
-
-        this.props.updateWholeProfile(resultJson);
-        const { screen, params } = NavigationUtil.directBasedOnProfile(resultJson);
-        
-        if (screen && screen !== 'Home' && !this.state.inPreviewMode) {
-          NavigationUtil.navigateWithoutBackstack(this.props.navigation, screen, params);
-          return;
-        }
-        
-        const { balance } = resultJson;
-        
-        this.storeUpdatedBalance(balance);
-        this.props.updateServerBalance(balance);
-        this.props.updateBoostCount(
-          parseInt(balance.availableBoostCount || 0)
-        );
-        this.handlePendingTransactions(balance);
-        this.setState({
-          lastFetchTimeMillis: moment().valueOf(),
-          loading: false,
-        });
-      } else {
+      const result = await getRequest({ url: `${Endpoints.AUTH}profile/fetch`, token: this.props.authToken });
+      
+      if (!result.ok) {
         if (result.status === 401 || result.status === 403) {
           this.showLogoutAlert();
           return;
         }
         throw result;
       }
+
+      const resultJson = await result.json();
+
+      this.props.updateWholeProfile(resultJson);
+      const { screen, params } = NavigationUtil.directBasedOnProfile(resultJson);
+      
+      if (screen && screen !== 'Home' && !this.state.inPreviewMode) {
+        NavigationUtil.navigateWithoutBackstack(this.props.navigation, screen, params);
+        return;
+      }
+      
+      const { balance } = resultJson;
+      
+      this.storeUpdatedBalance(balance);
+      this.props.updateServerBalance(balance);
+      this.props.updateBoostCount(parseInt(balance.availableBoostCount || 0));
+      this.handlePendingTransactions(balance);
+
+      this.setState({
+        lastFetchTimeMillis: moment().valueOf(),
+        loading: false,
+      });
+
     } catch (error) {
       console.log('Error fetching balance!', error.message);
       this.setState({ loading: false });
@@ -337,6 +318,22 @@ class Home extends React.Component {
     const millisSinceLastFetch = moment().valueOf() - this.state.lastFetchTimeMillis;
     if (millisSinceLastFetch > TIME_BETWEEN_FETCH) {
       await Promise.all([this.fetchCurrentProfileFromServer(), this.checkForTriggeredBoost(), this.fetchMessagesIfNeeded()]);
+    }
+  }
+
+  async fetchCurrentHeat() {
+    try {
+      const result = await getRequest({ url: `${Endpoints.CORE}heat`, token: this.props.authToken });
+      if (!result.ok) {
+        throw result;
+      }
+
+      const { currentLevel } = await result.json();
+      this.props.updateSavingHeat(currentLevel);
+      console.log('Fetched saving heat: ', currentLevel);
+
+    } catch (err) {
+      console.log('Error fetching heat state: ', JSON.stringify(err));
     }
   }
 
@@ -695,9 +692,23 @@ class Home extends React.Component {
       outputRange: ['0deg', '360deg'],
     });
 
+    let tintColor = null;
+    let circleSource = require('../../assets/oval.png');
+
+    if (this.props.heatLevel && typeof this.props.heatLevel.levelColor === 'string') {
+      const levelColor = this.props.heatLevel.levelColor.toUpperCase();
+      tintColor = Colors[levelColor] || this.props.heatLevel.levelColorCode;
+      circleSource = CIRCLE_IMAGES[levelColor] || CIRCLE_IMAGES.DEFAULT; 
+    }
+
+    // this overrides, for now
+    if (this.state.makeWheelGold) {
+      tintColor = Colors.GOLD; 
+    }
+
     return (
       <>
-        <Image style={styles.coloredCircle} source={require('../../assets/oval.png')} tintColor={this.state.makeWheelGold ? Colors.GOLD : null} />
+        <Image style={styles.coloredCircle} source={circleSource} tintColor={tintColor} />
         <Animated.View
           style={[styles.whiteCircle, { transform: [{ rotate: circleRotation }] }]}
         >

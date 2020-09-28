@@ -65,6 +65,8 @@ import BreakingGame from './src/screens/BreakingGame';
 import MatchingGame from './src/screens/MatchingGame';
 import QuizGame from './src/screens/QuizGame';
 
+import SavingHeat from './src/screens/SavingHeat';
+
 const AppContainer = createAppContainer(
   createStackNavigator(
     {
@@ -123,6 +125,8 @@ const AppContainer = createAppContainer(
       BreakingGame: { screen: BreakingGame },
       MatchingGame: { screen: MatchingGame },
       QuizGame: { screen: QuizGame },
+
+      SavingHeat: { screen: SavingHeat },
     },
     { initialRouteName: 'Splash', headerMode: 'none' }
   )

@@ -4,6 +4,7 @@ import {
   UPDATE_SERVER_BALANCE,
   UPDATE_SHOWN_BALANCE,
   UPDATE_COMPARATOR_RATES,
+  UPDATE_SAVING_HEAT,
 } from './balance.actions';
 
 const initialState = {
@@ -15,6 +16,11 @@ const initialState = {
       currency: 'ZAR',
       datetime: moment().format(),
     },
+  },
+  currentSavingHeat: {
+    levelName: 'no heat',
+    levelColor: null,
+    levelColorCode: '#35BAD5',
   },
 };
 
@@ -42,6 +48,10 @@ const balanceReducer = (state = initialState, action) => {
         serverBalance: newServerBalance,
       };
     }
+    case UPDATE_SAVING_HEAT: {
+      const { currentSavingHeat } = action;
+      return { ...state, currentSavingHeat };
+    }
     default: {
       return state;
     }
@@ -62,6 +72,10 @@ export const getCurrentReferenceAmount = state => {
   }
 
   return state[STATE_KEY].serverBalance.balanceStartDayOrLastSettled.amount;
+}
+
+export const getCurrentHeatLevel = state => {
+  return state[STATE_KEY].currentSavingHeat;
 }
 
 export const getComparatorRates = state =>
