@@ -14,6 +14,7 @@ export const Colors = {
   RED: '#CE0D25',
   LIGHT_RED: '#FA7459',
   NOTIF_RED: '#F30E6E',
+  DEEP_RED: '#FF2D47',
   BACKGROUND_GRAY: '#F4F6F8',
   TRANSPARENT_BACKGROUND: '#212C3299',
   WHITE: '#FFFFFF',
@@ -73,12 +74,12 @@ export const Defaults = isMaster
       // MASTER
       LOGIN: '',
       PASS: '',
-      REFERRAL: 'RANDELAS',
+      REFERRAL: '',
     }
   : {
       // STAGING
       LOGIN: 'anotherguy@jupitersave.com',
       PASS: '#NewPass1234',
-      REFERRAL: 'LETMEIN',
+      REFERRAL: '',
     };
 

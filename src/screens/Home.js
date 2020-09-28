@@ -6,7 +6,7 @@ import * as Permissions from 'expo-permissions';
 import moment from 'moment';
 import React from 'react';
 import { connect } from 'react-redux';
-import { Alert, Animated, AsyncStorage, Dimensions, Easing, Image, StyleSheet, Text, TouchableOpacity, View, Modal, TouchableWithoutFeedback } from 'react-native';
+import { Alert, Animated, AsyncStorage, Dimensions, Easing, Image, StyleSheet, Text, TouchableOpacity, View, Modal, TouchableWithoutFeedback, ImageStore } from 'react-native';
 import { Icon } from 'react-native-elements';
 
 // import VersionCheck from 'react-native-version-check-expo';
@@ -54,6 +54,10 @@ import SnippetOverlay from './SnippetOverlay';
 
 const CIRCLE_IMAGES = {
   DEFAULT: require('../../assets/oval.png'),
+  CHILLY: require('../../assets/heat/chilly.png'),
+  GOLDEN: require('../../assets/heat/golden.png'),
+  TROPICAL: require('../../assets/heat/tropical.png'),
+  BLAZING: require('../../assets/heat/blazing.png'),
 }
 
 const mapDispatchToProps = {
@@ -121,6 +125,9 @@ class Home extends React.Component {
 
       showSnippet: false,
       makeWheelGold: false,
+
+      circleImage: CIRCLE_IMAGES.DEFAULT,
+      circleTint: null,
     };
   }
 
@@ -331,9 +338,24 @@ class Home extends React.Component {
       const { currentLevel } = await result.json();
       this.props.updateSavingHeat(currentLevel);
       console.log('Fetched saving heat: ', currentLevel);
-
+      this.setHeatColors(currentLevel);
     } catch (err) {
       console.log('Error fetching heat state: ', JSON.stringify(err));
+    }
+  }
+
+  // add to component did update if user feedback says need switch to happen quickly
+  setHeatColors(latestHeatLevel) {
+    const heatLevel = latestHeatLevel || this.props.heatLevel;
+    if (heatLevel && typeof heatLevel.levelColor === 'string') {
+      const levelColor = heatLevel.levelColor.toUpperCase();
+      const colorCode = Colors[levelColor] || this.props.heatLevel.levelColorCode;
+      const levelName = heatLevel.levelName ? heatLevel.levelName.toUpperCase() : '';
+      
+      const haveImage = Object.keys(CIRCLE_IMAGES).includes(levelName);
+      const circleTint = haveImage ? null : colorCode;
+      const circleImage = CIRCLE_IMAGES[levelName] || CIRCLE_IMAGES.DEFAULT;
+      this.setState({ circleImage, circleTint }); 
     }
   }
 
@@ -692,23 +714,16 @@ class Home extends React.Component {
       outputRange: ['0deg', '360deg'],
     });
 
-    let tintColor = null;
-    let circleSource = require('../../assets/oval.png');
-
-    if (this.props.heatLevel && typeof this.props.heatLevel.levelColor === 'string') {
-      const levelColor = this.props.heatLevel.levelColor.toUpperCase();
-      tintColor = Colors[levelColor] || this.props.heatLevel.levelColorCode;
-      circleSource = CIRCLE_IMAGES[levelColor] || CIRCLE_IMAGES.DEFAULT; 
-    }
+    let { circleTint } = this.state;
 
     // this overrides, for now
     if (this.state.makeWheelGold) {
-      tintColor = Colors.GOLD; 
+      circleTint = Colors.GOLD; 
     }
 
     return (
       <>
-        <Image style={styles.coloredCircle} source={circleSource} tintColor={tintColor} />
+        <Image style={styles.coloredCircle} source={this.state.circleImage} tintColor={circleTint} />
         <Animated.View
           style={[styles.whiteCircle, { transform: [{ rotate: circleRotation }] }]}
         >
