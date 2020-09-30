@@ -78,6 +78,10 @@ export const getCurrentHeatLevel = state => {
   return state[STATE_KEY].currentSavingHeat;
 }
 
+export const isAddCashFrozen = state => {
+  return state[STATE_KEY].serverBalance && state[STATE_KEY].serverBalance.haltNewSaves;
+}
+
 export const getComparatorRates = state =>
   state[STATE_KEY].serverBalance.comparatorRates;
 

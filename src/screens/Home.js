@@ -271,7 +271,7 @@ class Home extends React.Component {
       }
       
       const { balance } = resultJson;
-      
+
       this.storeUpdatedBalance(balance);
       this.props.updateServerBalance(balance);
       this.props.updateBoostCount(parseInt(balance.availableBoostCount || 0));

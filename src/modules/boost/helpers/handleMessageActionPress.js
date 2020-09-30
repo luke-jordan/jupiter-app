@@ -69,6 +69,10 @@ const handleMessageActionPress = (messageDetails, navigation, currentBalance = n
       }
       break;
 
+    case 'WITHDRAW':
+      navigation.navigate('WithdrawStep1');
+      break;
+
     default:
       break;
   }

@@ -150,9 +150,9 @@ class Account extends React.Component {
                 <View style={styles.internalSeparator} />
                 {this.renderTopButton('Referral', require('../../assets/buddy.png'), () => this.props.navigation.navigate('ReferralCode'))}
                 <View style={styles.internalSeparator} />
-                {this.renderTopButton('History', require('../../assets/history.png'), this.onPressHeat)}
+                {this.renderTopButton('History', require('../../assets/history.png'), this.onPressHistory)}
                 <View style={styles.internalSeparator} />
-                {this.renderTopButton('Savings Heat', require('../../assets/savings-heat.png'), this.onPressHistory)}
+                {this.renderTopButton('Savings Heat', require('../../assets/savings-heat.png'), this.onPressHeat)}
                 <View style={styles.internalSeparator} />
                 {this.renderTopButton('Withdraw Cash', require('../../assets/withdraw.png'), this.onPressWithdraw)}
                 <View style={styles.internalSeparator} />

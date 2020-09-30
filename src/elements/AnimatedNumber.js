@@ -93,11 +93,8 @@ export default class AnimatedNumber extends React.Component {
     if (this.state.isUnmounted) {
       return;
     }
-    this.setState(
-      {
-        currentNumber: nextNumber,
-      },
-      () => {
+
+    this.setState({ currentNumber: nextNumber }, () => {
         if (this.props.onAnimationProgress) {
           this.props.onAnimationProgress(nextNumber);
         }
