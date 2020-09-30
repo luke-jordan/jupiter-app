@@ -270,9 +270,7 @@ class ReferralCode extends React.PureComponent {
           onPressBack={() => this.props.navigation.goBack()}
         />
         <KeyboardAvoidingView 
-          style={styles.container}
-          contentContainerStyle={styles.container}
-          behavior="height"
+          behavior="position"
         >
           <ScrollView style={styles.scrollOuter} contentContainerStyle={styles.scrollInner}>
             {this.renderOwnReferralCode()}
@@ -290,6 +288,7 @@ class ReferralCode extends React.PureComponent {
 const styles = StyleSheet.create({ 
   container: {
     flex: 1,
+    backgroundColor: Colors.BACKGROUND_GRAY,
   },
   scrollOuter: {
     backgroundColor: Colors.BACKGROUND_GRAY,

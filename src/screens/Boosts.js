@@ -232,7 +232,7 @@ class Boosts extends React.Component {
     }
 
     if (boostDetails.boostStatus === 'REVOKED') {
-      return <Text style={styles.boostFailed}>This boost was revoked because of a withdrawal</Text>
+      return <Text style={styles.boostFailed}>Boost revoked</Text>
     }
     
     if (this.isBoostExpired({ boostStatus: boostDetails.boostStatus, endTime: boostDetails.endTime})) {

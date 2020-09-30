@@ -8,28 +8,25 @@ import {
   AsyncStorage,
   TouchableOpacity,
   ScrollView,
-  Dimensions,
 } from 'react-native';
-import { Icon, Input, Button } from 'react-native-elements';
-
-// import Confetti from '../elements/Confetti';
-import ConfettiCannon from 'react-native-confetti-cannon';
+import { Icon, Input, Button, Overlay } from 'react-native-elements';
 
 import { Colors } from '../util/Values';
 import { LoggingUtil } from '../util/LoggingUtil';
 import { getDivisor, standardFormatAmount  } from '../util/AmountUtil';
 
+import { NavigationUtil } from '../util/NavigationUtil';
+
 import { getAccountId } from '../modules/profile/profile.reducer';
-import { getCurrentServerBalanceFull, getComparatorRates } from '../modules/balance/balance.reducer';
+import { getCurrentServerBalanceFull, getComparatorRates, isAddCashFrozen } from '../modules/balance/balance.reducer';
 
 import { clearCurrentTransaction, updateCurrentTransaction } from '../modules/transaction/transaction.actions';
-
-const { height } = Dimensions.get('window');
 
 const mapStateToProps = state => ({
   accountId: getAccountId(state),
   comparatorRates: getComparatorRates(state),
   currentBalance: getCurrentServerBalanceFull(state),
+  addCashFrozen: isAddCashFrozen(state),
 });
 
 const mapDispatchToProps = {
@@ -46,12 +43,11 @@ class AddCash extends React.Component {
       amountToAdd: '',
       loading: false,
       notWholeNumber: false,
-      loadConfetti: false,
     };
   }
 
   async componentDidMount() {
-    // console.log('*** ADD CASH MOUNTED :: ', (new Date()) / 1000);
+    // console.log('*** ADD CASH MOUNTED, is frozen ? :: ', this.props.addCashFrozen);
     const { params } = this.props.navigation.state;
 
     if (params && params.startNewTransaction) {
@@ -63,8 +59,13 @@ class AddCash extends React.Component {
     this.setState({
       balance: this.props.currentBalance.amount,
       unit: this.props.currentBalance.unit,
-      loadConfetti: true,
+      haltNewSaves: this.props.addCashFrozen,
     });
+
+    if (this.props.addCashFrozen) {
+      // the rest is not relevant (and might cause complications)
+      return;
+    }
 
     const preFilledAmount = this.props.navigation.getParam('preFilledAmount');
     
@@ -122,7 +123,7 @@ class AddCash extends React.Component {
   }
 
   onPressAddCash = async () => {
-    if (this.state.loading) return;
+    if (this.state.loading || this.state.haltNewSaves) return;
     
     if(this.state.amountToAdd.trim().length === 0) {
       this.setState({ emptyAmountError: true });
@@ -248,17 +249,35 @@ class AddCash extends React.Component {
     );
   }
 
+  navigateToWithdrawal = () => NavigationUtil.navigateWithHomeBackstack(this.props.navigation, 'WithdrawStep1');
+
+  renderNoSaves = () => (
+    <Overlay
+      animationType="fade"
+      height="auto"
+      width="auto"
+      isVisible={this.state.haltNewSaves}
+      onBackdropPress={this.navigateToWithdrawal}
+      onHardwareBackPress={this.navigateToWithdrawal}
+    >
+      <View style={styles.dialogView}>
+        <View style={styles.dialogHeader}>
+          <Text style={styles.dialogTitle}>We&apos;re sorry</Text>
+        </View>
+        <View style={styles.dialogBodyContainer}>
+          <Text style={styles.dialogBody}>
+            Unfortunately, Jupiter is now closed to new saves by individual 
+            savers. Please go to the <Text onPress={this.navigateToWithdrawal} style={styles.boldText}>withdrawal screen</Text>
+            {' '}to have us return your interest and savings to you
+          </Text>
+        </View>
+      </View>
+    </Overlay>
+  )
+
   render() {
     return (
       <View style={styles.container}>
-        {this.state.loadConfetti && (
-          <ConfettiCannon 
-            count={50} 
-            origin={{x: -20, y: height / 2 }} 
-            colors={[Colors.GOLD, Colors.PURPLE, Colors.SKY_BLUE]} 
-            fadeOut 
-          />
-        )}
         {this.renderHeader()}
         <ScrollView
           style={styles.mainContent}
@@ -349,6 +368,7 @@ class AddCash extends React.Component {
             end: { x: 1, y: 0.5 },
           }}
         />
+        {this.state.haltNewSaves && this.renderNoSaves()}
       </View>
     );
   }
@@ -509,6 +529,33 @@ const styles = StyleSheet.create({
     fontFamily: 'poppins-regular',
     color: Colors.MEDIUM_GRAY,
     fontSize: 14,
+  },
+  dialogView: {
+    backgroundColor: Colors.WHITE,
+    borderRadius: 10,
+    justifyContent: 'space-around',
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    paddingTop: 10,
+    maxWidth: '90%',
+  },
+  dialogHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  dialogTitle: {
+    color: Colors.DARK_GRAY,
+    fontSize: 18,
+    fontFamily: 'poppins-semibold',
+    textAlign: 'center',
+  },
+  dialogBody: {
+    color: Colors.DARK_GRAY,
+    fontFamily: 'poppins-regular',
+    fontSize: 15,
+    lineHeight: 20,
   },
 });
 

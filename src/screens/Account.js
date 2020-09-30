@@ -66,6 +66,10 @@ class Account extends React.Component {
     this.props.navigation.navigate('History');
   };
 
+  onPressHeat = () => {
+    console.log('Pressed heat!');
+  };
+
   onPressMessages = () => {
     this.props.navigation.navigate('PastMessages');
   }
@@ -142,11 +146,13 @@ class Account extends React.Component {
 
               {/* top buttons - relatively more important */}
               <View style={styles.sectionContent}>
+                {this.renderTopButton('Profile', require('../../assets/profile.png'), this.onPressDetails)}
+                <View style={styles.internalSeparator} />
                 {this.renderTopButton('Referral', require('../../assets/buddy.png'), () => this.props.navigation.navigate('ReferralCode'))}
                 <View style={styles.internalSeparator} />
                 {this.renderTopButton('History', require('../../assets/history.png'), this.onPressHistory)}
                 <View style={styles.internalSeparator} />
-                {this.renderTopButton('Profile', require('../../assets/profile.png'), this.onPressDetails)}
+                {this.renderTopButton('Savings Heat', require('../../assets/savings-heat.png'), this.onPressHeat)}
                 <View style={styles.internalSeparator} />
                 {this.renderTopButton('Withdraw Cash', require('../../assets/withdraw.png'), this.onPressWithdraw)}
                 <View style={styles.internalSeparator} />
