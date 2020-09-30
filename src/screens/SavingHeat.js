@@ -3,12 +3,11 @@ import { connect } from 'react-redux';
 
 import moment from 'moment';
 
-import { StyleSheet, View, Image, Text, AsyncStorage, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Image, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 
 import * as Animatable from 'react-native-animatable';
 
 import { LoggingUtil } from '../util/LoggingUtil';
-import { getDivisor, getCurrencySymbol } from '../util/AmountUtil';
 import { Endpoints, Colors } from '../util/Values';
 
 import { getAuthToken } from '../modules/auth/auth.reducer';
@@ -24,8 +23,8 @@ const mapStateToProps = state => ({
 });
 
 class SavingHeat extends React.Component {
-  constructor(props) {
-    super(props);
+  constructor() {
+    super();
     this.state = {
       loading: true,
       fetching: false,
@@ -33,21 +32,8 @@ class SavingHeat extends React.Component {
   }
 
   async componentDidMount() {
-    LoggingUtil.logEvent('USER_ENTERED_SCREEN', { screen_name: 'History' });
-    
-    // this is the only big list in the app, so keeping it separate form state, otherwise will hit hydration & loading time
-    let history = await AsyncStorage.getItem('userHistory');
-    if (history) {
-      history = JSON.parse(history);
-      this.setState({
-        netSavings: history.netSavings,
-        totalEarnings: history.totalEarnings,
-        history: history.userHistory,
-        loading: false,
-      });
-    }
-
-    this.fetchHistory();
+    LoggingUtil.logEvent('USER_ENTERED_SCREEN', { screen_name: 'SavingHeat' });
+    this.fetchHeat();
   }
 
   onPressBack = () => {
@@ -59,12 +45,6 @@ class SavingHeat extends React.Component {
       case 'USER_SAVING_EVENT':
         return require('../../assets/add.png');
       case 'WITHDRAWAL':
-      case 'BOOST_REVOCATION':
-        return require('../../assets/withdrawal.png');
-      case 'BOOST_POOL_FUNDING':
-        return require('../../assets/friends_1.png');
-      case 'CAPITALIZATION':
-        return require('../../assets/interest.png');
       case 'BOOST_REDEMPTION':
         return require('../../assets/completed.png');
       default:
@@ -75,40 +55,13 @@ class SavingHeat extends React.Component {
   getItemTitle(type) {
     switch (type) {
       case 'USER_SAVING_EVENT':
-        return 'Cash Added';
+        return 'Made a save';
 
       case 'WITHDRAWAL':
         return 'Withdrawal';
 
-      case 'INTEREST':
-        return 'Interest';
-
       case 'BOOST_REDEMPTION':
         return 'Boost claimed';
-
-      case 'CAPITALIZATION':
-        return 'Interest paid';
-
-      case 'BOOST_POOL_FUNDING':
-        return 'Tournament contribution';
-
-      case 'USER_REGISTERED':
-        return 'Registered your account';
-
-      case 'PASSWORD_SET':
-        return 'Set your password';
-
-      case 'ID_VERIFIED':
-        return 'ID number verified';
-
-      case 'PASSWORD_CHANGED':
-        return 'Changed your password';
-
-      case 'PROFILE_UPDATED':
-        return 'Changed your profile details';
-
-      case 'BOOST_REVOCATION':
-        return 'Boost revoked';
 
       default: {
         const result = type.split('_').map(word => word.toLowerCase()).join(' ');
@@ -117,18 +70,7 @@ class SavingHeat extends React.Component {
     }
   }
 
-  getItemAmount(amount, unit, currency) {
-    const currencySymbol = getCurrencySymbol(currency);
-    const sign = amount > 0 ? '+' : '-';
-    return sign + currencySymbol + this.getFormattedBalance(amount, unit);
-  }
-
-  getFormattedBalance(balance, unit) {
-    if (balance < 0) balance *= -1;
-    return (balance / getDivisor(unit)).toFixed(2);
-  }
-
-  fetchHistory = async () => {
+  fetchHeat = async () => {
     try {
       if (this.state.fetching) return true;
       this.setState({ fetching: true });
@@ -138,13 +80,10 @@ class SavingHeat extends React.Component {
       if (result.ok) {
         const resultJson = await result.json();
         this.setState({
-          netSavings: resultJson.netSavings,
-          totalEarnings: resultJson.totalEarnings,
           history: resultJson.userHistory,
           loading: false,
           fetching: false,
         });
-        AsyncStorage.setItem('userHistory', JSON.stringify(resultJson));
       } else {
         throw result;
       }
@@ -185,7 +124,6 @@ class SavingHeat extends React.Component {
     } else if (element.type === 'TRANSACTION') {
       type = element.details.transactionType;
     }
-    const highlightAmount = HIGHLIGHTED_TYPES.includes(type);
     return (
       <View style={styles.historyItem} key={index ? index : null}>
         <TouchableOpacity onPress={() => this.onPressItem(element)}>
@@ -200,7 +138,7 @@ class SavingHeat extends React.Component {
           ) : null}
         </View>
         {element.type === 'TRANSACTION' ? (
-          <Text style={highlightAmount ? styles.historyAmountHighlight : styles.historyAmount}>
+          <Text style={styles.historyAmount}>
             {this.getItemAmount(
               element.details.amount,
               element.details.unit,
@@ -212,14 +150,13 @@ class SavingHeat extends React.Component {
     );
   }
 
-  renderHistory() {
+  renderHeatHistory() {
     if (this.state.history && this.state.history.length > 0) {
       const history = this.state.history.sort((a, b) =>
         a.timestamp < b.timestamp ? 1 : -1
       );
 
-      // setup
-      let currentDate = moment(history[0].timestamp); // there is always at least one record (user registration)
+      let currentDate = moment(history[0].timestamp); // there is always at least one record (first save)
       let currentDay = [currentDate];
       const renderInfo = [];
 
@@ -269,7 +206,7 @@ class SavingHeat extends React.Component {
                   {this.state.netSavings}
                 </Text>
                 <Text style={styles.savingsDesc}>
-                  Amount you&apos;ve put in
+                  Your heat level
                 </Text>
               </View>
               <View style={styles.separator} />
@@ -277,7 +214,7 @@ class SavingHeat extends React.Component {
                 <Text style={styles.savingsAmount}>
                   {this.state.totalEarnings}
                 </Text>
-                <Text style={styles.savingsDesc}>Total boosts + interest</Text>
+                <Text style={styles.savingsDesc}>Heat points</Text>
               </View>
             </View>
             <ScrollView
@@ -286,10 +223,10 @@ class SavingHeat extends React.Component {
             >
               { this.state.fetching && (
                 <Animatable.View animation="fadeInDown" style={styles.fetchingNoteContainer}>
-                  <Text style={styles.fetchingNote}>Fetching latest transactions&hellip;</Text>
+                  <Text style={styles.fetchingNote}>Fetching heat record&hellip;</Text>
                 </Animatable.View>
               )}
-              {this.renderHistory()}
+              {this.renderHeatHistory()}
             </ScrollView>
           </View>
         )}
@@ -397,12 +334,6 @@ const styles = StyleSheet.create({
     fontFamily: 'poppins-regular',
     fontSize: 16,
     color: Colors.DARK_GRAY,
-  },
-  historyAmountHighlight: {
-    marginHorizontal: 10,
-    fontFamily: 'poppins-semibold',
-    fontSize: 16,
-    color: Colors.HISTORY_GREEN,
   },
   daySeparator: {
     height: 1,

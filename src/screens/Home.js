@@ -6,7 +6,7 @@ import * as Permissions from 'expo-permissions';
 import moment from 'moment';
 import React from 'react';
 import { connect } from 'react-redux';
-import { Alert, Animated, AsyncStorage, Dimensions, Easing, Image, StyleSheet, Text, TouchableOpacity, View, Modal, TouchableWithoutFeedback, ImageStore } from 'react-native';
+import { Alert, Animated, AsyncStorage, Dimensions, Easing, Image, StyleSheet, Text, TouchableOpacity, View, Modal, TouchableWithoutFeedback } from 'react-native';
 import { Icon } from 'react-native-elements';
 
 // import VersionCheck from 'react-native-version-check-expo';
